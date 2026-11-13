@@ -2,48 +2,96 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "shellwords"
+require "tmpdir"
+require "dependabot/errors"
+require "dependabot/go_modules/go_work_parser"
 require "dependabot/go_modules/go_mod_manifest"
+require "dependabot/go_modules/native_helpers"
 
 module Dependabot
   module GoModules
-    # Given a go.mod file, find all `replace` directives pointing to a path
-    # on the local filesystem outside of the current checkout, and return a hash
-    # mapping the original path to a hash of the path.
-    #
-    # This lets us substitute all parts of the go.mod that are dependent on
-    # the layout of the filesystem with a structure we can reproduce (i.e.
-    # no paths such as ../../../foo), run the Go tooling, then reverse the
-    # process afterwards.
+    # Workspace members must agree on each external replacement target.
+    # Temporary edits share resolved targets and restore original bindings
+    # before returning changes or propagating a tooling failure.
     class ReplaceStubber
       extend T::Sig
 
+      ErrorHandler = T.type_alias { T.proc.params(stderr: String).returns(T.noreturn) }
+
+      class ReplacementBinding < T::ImmutableStruct
+        const :manifest, String
+        const :kind, String
+        const :old, GoModManifest::ModuleReference
+        const :original, String
+        const :stub, String
+      end
+
       sig { params(repo_contents_path: String).void }
       def initialize(repo_contents_path)
-        @repo_contents_path = repo_contents_path
+        @repo_contents_path = T.let(Pathname.new(repo_contents_path).realpath, Pathname)
       end
 
       sig do
-        params(manifest: GoModManifest, directory: T.nilable(String)).returns(T::Hash[String, String])
+        params(manifest: GoModManifest, directory: T.nilable(String), stub_root: T.nilable(String))
+          .returns(T::Hash[String, String])
       end
-      def stub_paths(manifest, directory)
-        manifest.replacements
-                .map { |replacement| replacement.new.path }
-                .select { |p| stub_replace_path?(p, directory) }
-                .to_h { |p| [p, "./" + Digest::SHA2.hexdigest(p)] }
+      def stub_paths(manifest, directory, stub_root: nil)
+        paths = manifest.replacements.map { |replacement| replacement.new.path }
+        paths.select { |path| stub_replace_path?(path, directory) }.to_h do |path|
+          identity = Digest::SHA2.hexdigest(resolved_path(path, directory).to_s)
+          [path, stub_root ? File.join(stub_root, identity) : "./#{identity}"]
+        end
+      end
+
+      sig do
+        type_parameters(:T)
+          .params(on_error: ErrorHandler, _block: T.proc.params(stubbed: T::Boolean).returns(T.type_parameter(:T)))
+          .returns(T.type_parameter(:T))
+      end
+      def with_stubs(on_error:, &_block)
+        Dir.mktmpdir("dependabot-replacements-") do |stub_root|
+          manifests = replacement_manifests(on_error: on_error)
+          original_modules = manifests.select { |_, kind| kind == "mod" }.transform_values { "" }
+          original_modules.each_key { |path| original_modules[path] = File.read(path) }
+          bindings = replacement_bindings(manifests, stub_root, on_error: on_error)
+          original_checksums = checksum_files(bindings.empty? ? {} : manifests)
+          build_module_stubs(bindings.map(&:stub).uniq)
+          begin
+            edit_replacement_bindings(bindings, restore: false, on_error: on_error)
+            yield(!bindings.empty?)
+          ensure
+            edit_replacement_bindings(bindings, restore: true, on_error: on_error)
+            restore_replaced_requirements(original_modules, bindings)
+            restore_checksums(original_checksums) unless bindings.empty?
+          end
+        end
       end
 
       private
 
       sig { params(path: String, directory: T.nilable(String)).returns(T::Boolean) }
       def stub_replace_path?(path, directory)
-        return true if absolute_path?(path)
-        return false unless relative_replacement_path?(path)
+        return false unless absolute_path?(path) || relative_replacement_path?(path)
 
-        resolved_path = module_pathname(directory).join(path).realpath
-        inside_repo_contents_path = resolved_path.to_s.start_with?(@repo_contents_path.to_s)
-        !inside_repo_contents_path
+        resolved = resolved_path(path, directory)
+        return true unless resolved.exist?
+
+        resolved != @repo_contents_path && !resolved.to_s.start_with?("#{@repo_contents_path}/")
+      end
+
+      sig { params(path: String, directory: T.nilable(String)).returns(Pathname) }
+      def resolved_path(path, directory)
+        resolve_existing_ancestor(module_pathname(directory).join(path).cleanpath)
+      end
+
+      sig { params(path: Pathname).returns(Pathname) }
+      def resolve_existing_ancestor(path)
+        path.realpath
       rescue Errno::ENOENT
-        true
+        return path if path.parent == path
+
+        resolve_existing_ancestor(path.parent).join(path.basename)
       end
 
       sig { params(path: String).returns(T::Boolean) }
@@ -54,15 +102,154 @@ module Dependabot
       sig { params(path: String).returns(T::Boolean) }
       def relative_replacement_path?(path)
         # https://golang.org/ref/mod#go-mod-file-replace
-        path.start_with?("./", "../")
+        [".", ".."].include?(path) || path.start_with?("./", "../")
       end
 
       sig { params(directory: T.nilable(String)).returns(Pathname) }
       def module_pathname(directory)
-        @module_pathname ||= T.let(
-          Pathname.new(@repo_contents_path).join(T.must(directory).sub(%r{^/}, "")),
-          T.nilable(Pathname)
-        )
+        @repo_contents_path.join(T.must(directory).sub(%r{^/}, ""))
+      end
+
+      sig { params(path: String, kind: String, on_error: ErrorHandler).returns(GoModManifest) }
+      def parse_replacement_manifest(path, kind, on_error:)
+        command = "go #{kind} edit -json"
+        stdout, stderr, status = Dir.chdir(File.dirname(path)) { Open3.capture3(command) }
+        on_error.call(stderr) unless status.success?
+
+        relative = Pathname.new(path).realpath.relative_path_from(replacement_repo_root)
+        GoModManifest.from_json(stdout, file_path: "/#{relative}", command: command)
+      end
+
+      sig { params(on_error: ErrorHandler).returns(T::Hash[String, String]) }
+      def replacement_manifests(on_error:)
+        paths = T.let({}, T::Hash[String, String])
+        current = File.expand_path("go.mod")
+        paths[current] = "mod" if File.file?(current)
+
+        work_file, stderr, status = Open3.capture3("go env GOWORK")
+        on_error.call(stderr) unless status.success?
+        work_file = work_file.strip
+        return paths if work_file.empty? || work_file == "off"
+
+        work_file = File.expand_path(work_file)
+        assert_manifest_in_repo(work_file)
+        paths[work_file] = "work"
+        GoWorkParser.use_paths(File.read(work_file)).each do |mod_path|
+          manifest = File.expand_path(File.join(mod_path, "go.mod"), File.dirname(work_file))
+          next unless File.file?(manifest)
+
+          assert_manifest_in_repo(manifest)
+          paths[manifest] = "mod"
+        end
+        paths
+      end
+
+      sig { returns(Pathname) }
+      def replacement_repo_root
+        @repo_contents_path
+      end
+
+      sig { params(path: String).void }
+      def assert_manifest_in_repo(path)
+        root = replacement_repo_root
+        resolved = resolve_existing_ancestor(Pathname.new(path))
+        return if resolved.to_s.start_with?("#{root}/")
+
+        raise Dependabot::DependencyFileNotResolvable, "Workspace file is outside the checkout: #{path}"
+      end
+
+      sig do
+        params(manifests: T::Hash[String, String], stub_root: String, on_error: ErrorHandler)
+          .returns(T::Array[ReplacementBinding])
+      end
+      def replacement_bindings(manifests, stub_root, on_error:)
+        root = replacement_repo_root
+        manifests.flat_map do |path, kind|
+          manifest = parse_replacement_manifest(path, kind, on_error: on_error)
+          directory = "/#{Pathname.new(File.dirname(path)).realpath.relative_path_from(root)}"
+          substitutions = stub_paths(manifest, directory, stub_root: stub_root)
+          manifest.replacements.filter_map do |replacement|
+            stub = substitutions[replacement.new.path]
+            next unless stub
+
+            ReplacementBinding.new(
+              manifest: path,
+              kind: kind,
+              old: replacement.old,
+              original: replacement.new.path,
+              stub: stub
+            )
+          end
+        end
+      end
+
+      sig { params(bindings: T::Array[ReplacementBinding], restore: T::Boolean, on_error: ErrorHandler).void }
+      def edit_replacement_bindings(bindings, restore:, on_error:)
+        bindings.group_by(&:manifest).each do |path, entries|
+          arguments = entries.map do |binding|
+            old = [binding.old.path, binding.old.version].compact.join("@")
+            target = restore ? binding.original : binding.stub
+            "-replace=#{old}=#{target}"
+          end
+          command = Shellwords.join(["go", T.must(entries.first).kind, "edit"] + arguments + [path])
+          _, stderr, status = Open3.capture3(command)
+          on_error.call(stderr) unless status.success?
+        end
+      end
+
+      sig { params(manifests: T::Hash[String, String]).returns(T::Hash[String, String]) }
+      def checksum_files(manifests)
+        checksums = T.let({}, T::Hash[String, String])
+        manifests.each do |path, kind|
+          sum = kind == "work" ? "#{path}.sum" : File.join(File.dirname(path), "go.sum")
+          next unless File.file?(sum)
+
+          assert_manifest_in_repo(sum)
+          checksums[sum] = File.read(sum)
+        end
+        checksums
+      end
+
+      sig { params(original: T::Hash[String, String]).void }
+      def restore_checksums(original)
+        # An incomplete stub graph cannot establish that these checksums are unused.
+        original.each do |path, content|
+          assert_manifest_in_repo(path)
+          restored = SharedHelpers.run_helper_subprocess(
+            command: NativeHelpers.helper_path,
+            function: "restoreReplacedChecksums",
+            args: { original_content: content, updated_content: File.file?(path) ? File.read(path) : "" }
+          )
+          File.write(path, T.cast(restored, String))
+        end
+      end
+
+      sig { params(original_modules: T::Hash[String, String], bindings: T::Array[ReplacementBinding]).void }
+      def restore_replaced_requirements(original_modules, bindings)
+        return if bindings.empty?
+
+        replaced_modules =
+          bindings.map { |binding| { "Path" => binding.old.path, "Version" => binding.old.version || "" } }
+        original_modules.each do |path, original|
+          content = SharedHelpers.run_helper_subprocess(
+            command: NativeHelpers.helper_path,
+            function: "restoreReplacedRequirements",
+            args: { original_content: original, updated_content: File.read(path), replaced_modules: replaced_modules }
+          )
+          File.write(path, T.cast(content, String))
+        end
+      end
+
+      sig { params(stub_paths: T::Array[String]).void }
+      def build_module_stubs(stub_paths)
+        # Create a fake empty module for each local module so that
+        # `go get` works, even if some modules have been `replace`d
+        # with a local module that we don't have access to.
+        stub_paths.each do |stub_path|
+          FileUtils.mkdir_p(stub_path)
+          FileUtils.touch(File.join(stub_path, "go.mod"))
+          FileUtils.touch(File.join(stub_path, "main.go"))
+        end
       end
     end
   end

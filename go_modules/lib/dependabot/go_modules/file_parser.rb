@@ -85,19 +85,15 @@ module Dependabot
       sig { params(command: String).returns(String) }
       def run_in_parsed_context(command)
         SharedHelpers.in_a_temporary_repo_directory(T.must(source&.directory), repo_contents_path) do |path|
-          # Create a fake empty module for local modules that are not inside the repository.
-          # This allows us to run go commands that require all modules to be present.
-          local_replacements.each do |_, stub_path|
-            FileUtils.mkdir_p(stub_path)
-            FileUtils.touch(File.join(stub_path, "go.mod"))
+          File.write("go.mod", go_mod&.content)
+          ReplaceStubber.new(repo_contents_path || Dir.pwd).with_stubs(
+            on_error: ->(stderr) { handle_parser_error(path, T.cast(stderr, String)) }
+          ) do |_stubbed|
+            stdout, stderr, status = Open3.capture3(command)
+            handle_parser_error(path, stderr) unless status.success?
+
+            stdout
           end
-
-          File.write("go.mod", go_mod_content)
-
-          stdout, stderr, status = Open3.capture3(command)
-          handle_parser_error(path, stderr) unless status.success?
-
-          stdout
         end
       end
 
@@ -372,19 +368,6 @@ module Dependabot
           )
       end
 
-      sig { returns(T::Hash[String, String]) }
-      def local_replacements
-        @local_replacements ||=
-          # Find all the local replacements, and return them with a stub path
-          # we can use in their place. Using generated paths is safer as it
-          # means we don't need to worry about references to parent
-          # directories, etc.
-          T.let(
-            ReplaceStubber.new(T.must(repo_contents_path)).stub_paths(manifest, go_mod&.directory),
-            T.nilable(T::Hash[String, String])
-          )
-      end
-
       sig { returns(GoModManifest) }
       def manifest
         @manifest ||=
@@ -403,13 +386,6 @@ module Dependabot
             end,
             T.nilable(GoModManifest)
           )
-      end
-
-      sig { returns(T.nilable(String)) }
-      def go_mod_content
-        local_replacements.reduce(go_mod&.content) do |body, (path, stub_path)|
-          body&.sub(path, stub_path)
-        end
       end
 
       sig { params(path: T.any(Pathname, String), stderr: String, file_path: T.nilable(String)).returns(T.noreturn) }
