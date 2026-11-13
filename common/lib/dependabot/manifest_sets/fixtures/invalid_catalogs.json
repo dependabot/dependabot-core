@@ -242,6 +242,21 @@
       "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"r\", \"filename_regex\": \"\\\\Areq.{1001}\\\\.txt\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"uv\", \"when_any_basename\": [\"uv.lock\"]}, {\"id\": \"pip\", \"otherwise\": true}]}]}"
     },
     {
+      "name": "zero-padded repeat bound",
+      "error": "non_portable_regex",
+      "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"r\", \"filename_regex\": \"\\\\Areq{01}\\\\.txt\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"uv\", \"when_any_basename\": [\"uv.lock\"]}, {\"id\": \"pip\", \"otherwise\": true}]}]}"
+    },
+    {
+      "name": "zero-padded upper repeat bound",
+      "error": "non_portable_regex",
+      "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"r\", \"filename_regex\": \"\\\\Areq{1,02}\\\\.txt\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"uv\", \"when_any_basename\": [\"uv.lock\"]}, {\"id\": \"pip\", \"otherwise\": true}]}]}"
+    },
+    {
+      "name": "nested repeats over limit",
+      "error": "non_portable_regex",
+      "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"r\", \"filename_regex\": \"\\\\A(?:q{1000}){2}\\\\.txt\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"uv\", \"when_any_basename\": [\"uv.lock\"]}, {\"id\": \"pip\", \"otherwise\": true}]}]}"
+    },
+    {
       "name": "posix class",
       "error": "non_portable_regex",
       "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"r\", \"filename_regex\": \"\\\\A[[:alpha:]]+\\\\.txt\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"uv\", \"when_any_basename\": [\"uv.lock\"]}, {\"id\": \"pip\", \"otherwise\": true}]}]}"
@@ -275,6 +290,16 @@
       "name": "reversed range",
       "error": "invalid_regex",
       "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"r\", \"filename_regex\": \"\\\\A[z-a]\\\\.txt\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"uv\", \"when_any_basename\": [\"uv.lock\"]}, {\"id\": \"pip\", \"otherwise\": true}]}]}"
+    },
+    {
+      "name": "unpaired high surrogate escape",
+      "error": "invalid_json",
+      "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"r\", \"filename_regex\": \"\\\\Arequirements\\\\.txt\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"uv\", \"when_any_basename\": [\"\\ud800\"]}, {\"id\": \"pip\", \"otherwise\": true}]}]}"
+    },
+    {
+      "name": "lone low surrogate escape",
+      "error": "invalid_json",
+      "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"r\", \"filename_regex\": \"\\\\Arequirements\\\\.txt\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"uv\", \"when_any_basename\": [\"uv\\udc00.lock\"]}, {\"id\": \"pip\", \"otherwise\": true}]}]}"
     }
   ]
 }
