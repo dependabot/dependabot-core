@@ -133,16 +133,18 @@ module Dependabot
       end
 
       # The original repository files that determined this directory's resolved dependencies: the union of every
-      # manifest group's files, collected before scoped graphers discard them, restricted to files that were
-      # fetched from the repository (generated files have no repository blob) and that the ecosystem treats as
-      # inputs. Requires the manifest group snapshots, which are built on first use.
+      # manifest group's files, collected before scoped graphers discard them, plus every fetched support file
+      # (such as a path dependency's setup.py), which the fetcher only retrieves because resolving the directory
+      # needs it, whether or not a manifest group lists it. Restricted to files that were fetched from the
+      # repository (generated files have no repository blob) and that the ecosystem treats as inputs. Requires
+      # the manifest group snapshots, which are built on first use.
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def manifest_set_input_files
         manifest_group_snapshots
         group_paths = T.must(@manifest_group_paths).to_set
 
         @original_dependency_files
-          .select { |file| group_paths.include?(file.path) && manifest_set_input_file?(file) }
+          .select { |file| (group_paths.include?(file.path) || file.support_file?) && manifest_set_input_file?(file) }
           .uniq(&:path)
       end
 

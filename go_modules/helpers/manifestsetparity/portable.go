@@ -7,7 +7,8 @@ import (
 	"unicode/utf8"
 )
 
-var boundedRepeat = regexp.MustCompile(`\A\{(\d{1,4})(,(\d{1,4})?)?\}`)
+// Bounds may not have leading zeros: Go treats {01} as literal text while Ruby treats it as a count.
+var boundedRepeat = regexp.MustCompile(`\A\{(0|[1-9]\d{0,3})(,(0|[1-9]\d{0,3})?)?\}`)
 
 const (
 	escapableLiterals = `.^$|?*+()[]{}\/-`
@@ -33,6 +34,11 @@ type portableScanner struct {
 	pos        int
 	groupDepth int
 	repeatable bool
+	// Largest product of nested {n,m} counts in the item being quantified (0 when there is none), in
+	// finished items at the current group level, and in the enclosing levels.
+	itemWeight   int
+	levelWeight  int
+	outerWeights []int
 }
 
 func validatePortable(ruleID, source string) error {
@@ -54,7 +60,7 @@ func validatePortable(ruleID, source string) error {
 		return reject("missing_anchor", `the final \z is escaped`)
 	}
 
-	s := &portableScanner{ruleID: ruleID, chars: []rune(body)}
+	s := &portableScanner{ruleID: ruleID, chars: []rune(body), levelWeight: 1}
 	if err := s.scan(); err != nil {
 		return err
 	}
@@ -91,12 +97,17 @@ func (s *portableScanner) scan() error {
 			}
 			s.groupDepth--
 			s.pos++
-			s.repeatable = true
+			s.finishItem()
+			groupWeight := s.levelWeight
+			s.levelWeight = s.outerWeights[len(s.outerWeights)-1]
+			s.outerWeights = s.outerWeights[:len(s.outerWeights)-1]
+			s.startItem(groupWeight)
 		case '|':
 			if s.groupDepth == 0 {
 				return s.reject("top-level alternation escapes the anchors")
 			}
 			s.pos++
+			s.finishItem()
 			s.repeatable = false
 		case '*', '+', '?':
 			if !s.repeatable {
@@ -112,7 +123,7 @@ func (s *portableScanner) scan() error {
 			return s.reject("unescaped %c", c)
 		default:
 			s.pos++
-			s.repeatable = true
+			s.startItem(1)
 		}
 		if err != nil {
 			return err
@@ -130,7 +141,7 @@ func (s *portableScanner) escape() error {
 		return s.reject(`unsupported escape \%c`, escaped)
 	}
 	s.pos += 2
-	s.repeatable = true
+	s.startItem(1)
 	return nil
 }
 
@@ -172,7 +183,7 @@ func (s *portableScanner) class() error {
 		return s.reject("empty character class")
 	}
 	s.pos++
-	s.repeatable = true
+	s.startItem(1)
 	return nil
 }
 
@@ -187,6 +198,9 @@ func (s *portableScanner) groupOpen() error {
 		s.pos++
 	}
 	s.groupDepth++
+	s.finishItem()
+	s.outerWeights = append(s.outerWeights, s.levelWeight)
+	s.levelWeight = 1
 	s.repeatable = false
 	return nil
 }
@@ -200,9 +214,12 @@ func (s *portableScanner) boundedRepeat() error {
 		return s.reject("quantifier has nothing to repeat")
 	}
 	minimum, _ := strconv.Atoi(m[1])
-	maximum := -1
+	// {n} repeats exactly n times; only {n,} is open-ended.
+	maximum := minimum
 	if m[3] != "" {
 		maximum, _ = strconv.Atoi(m[3])
+	} else if m[2] != "" {
+		maximum = -1
 	}
 	if minimum > MaxRepeat || maximum > MaxRepeat {
 		return s.reject("repetition count exceeds %d", MaxRepeat)
@@ -210,8 +227,41 @@ func (s *portableScanner) boundedRepeat() error {
 	if maximum >= 0 && maximum < minimum {
 		return s.reject("repetition {n,m} requires n <= m")
 	}
+	if err := s.repeatWeight(minimum, maximum); err != nil {
+		return err
+	}
 	s.pos += utf8.RuneCountInString(m[0])
 	return s.followQuantifier()
+}
+
+func (s *portableScanner) startItem(weight int) {
+	s.finishItem()
+	s.itemWeight = weight
+	s.repeatable = true
+}
+
+func (s *portableScanner) finishItem() {
+	s.levelWeight = max(s.levelWeight, s.itemWeight)
+	s.itemWeight = 0
+}
+
+// repeatWeight mirrors regexp/syntax repeatIsValid: {0} hides what it repeats, an open {n,} counts as n,
+// and counts along any nesting path may not multiply past MaxRepeat.
+func (s *portableScanner) repeatWeight(minimum, maximum int) error {
+	if maximum == 0 {
+		s.itemWeight = 1
+		return nil
+	}
+	count := maximum
+	if count < 0 {
+		count = minimum
+	}
+	weight := max(count, 1) * s.itemWeight
+	if weight > MaxRepeat {
+		return s.reject("nested repetition counts exceed %d", MaxRepeat)
+	}
+	s.itemWeight = weight
+	return nil
 }
 
 func (s *portableScanner) followQuantifier() error {

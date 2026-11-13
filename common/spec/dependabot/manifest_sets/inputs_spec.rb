@@ -125,6 +125,49 @@ RSpec.describe Dependabot::ManifestSets::Inputs do
       expect(inputs.resolved?).to be(false)
     end
 
+    context "with symlinked inputs" do
+      let(:commit) do
+        git("init", "--quiet")
+        write("api/base.txt", "requests==2.32.5\n")
+        write("base.txt", "unrelated==1.0.0\n")
+        File.symlink("base.txt", File.join(repo, "api", "requirements.txt"))
+        File.symlink("api", File.join(repo, "linked"))
+        git("add", "--all")
+        git("commit", "--quiet", "-m", "init")
+        git("rev-parse", "HEAD")
+      end
+
+      it "is unresolvable when an input is itself a symlink in the commit" do
+        inputs = described_class.resolve(
+          dependency_files: [file("requirements.txt", directory: "/api")], repo_contents_path: repo, commit: commit
+        )
+
+        expect(inputs.unresolvable_reason).to eq(described_class::UNKNOWN_PROVENANCE)
+      end
+
+      it "is unresolvable when the fetcher reports a symlink target" do
+        symlinked = Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          directory: "/api",
+          content: "requests==2.32.5\n",
+          type: "symlink",
+          symlink_target: "api/base.txt"
+        )
+
+        inputs = described_class.resolve(dependency_files: [symlinked], repo_contents_path: repo, commit: commit)
+
+        expect(inputs.unresolvable_reason).to eq(described_class::UNKNOWN_PROVENANCE)
+      end
+
+      it "is unresolvable when an input is reached through a symlinked directory" do
+        inputs = described_class.resolve(
+          dependency_files: [file("base.txt", directory: "/linked")], repo_contents_path: repo, commit: commit
+        )
+
+        expect(inputs.unresolvable_reason).to eq(described_class::UNKNOWN_PROVENANCE)
+      end
+    end
+
     it "rejects paths that cannot be looked up safely" do
       inputs = described_class.resolve(
         dependency_files: [file("requirements.txt"), file("evil\nHEAD:requirements.txt")],

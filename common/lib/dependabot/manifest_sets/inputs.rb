@@ -39,7 +39,8 @@ module Dependabot
 
       # Looks up the original blob of each dependency file at `commit` in the checkout at
       # `repo_contents_path`, so the result describes repository content rather than anything rewritten
-      # during fetching or resolution. Paths are deduplicated and sorted by bytes.
+      # during fetching or resolution. Paths are deduplicated and sorted by bytes. Symlinked inputs are
+      # unknown provenance: the link and every target it resolves through would all have to be recorded.
       sig do
         params(
           dependency_files: T::Array[Dependabot::DependencyFile],
@@ -49,6 +50,7 @@ module Dependabot
       end
       def self.resolve(dependency_files:, repo_contents_path:, commit:)
         return unresolvable(UNKNOWN_PROVENANCE) if repo_contents_path.nil?
+        return unresolvable(UNKNOWN_PROVENANCE) if dependency_files.any?(&:symlink_target)
 
         paths = dependency_files.map(&:realpath).uniq
         return unresolvable(UNKNOWN_PROVENANCE) unless paths.all? { |path| batch_safe?(path) }
@@ -69,7 +71,11 @@ module Dependabot
       end
       private_class_method :batch_safe?
 
-      # Returns one blob OID per path, in order, or nil if any path is not a blob at `commit`.
+      # Mode of a regular (possibly executable) file in a Git tree; symlinks (120000) and submodules differ.
+      REGULAR_FILE_MODES = %w(100644 100755).freeze
+
+      # Returns one blob OID per path, in order, or nil if any path is not a regular file at `commit`. A path
+      # through a symlinked directory is not in the tree, so it is reported missing rather than followed.
       sig do
         params(repo_contents_path: String, commit: String, paths: T::Array[String])
           .returns(T.nilable(T::Array[String]))
@@ -78,12 +84,13 @@ module Dependabot
         return [] if paths.empty?
 
         stdin = paths.map { |path| "#{commit}:#{path}\n" }.join
+        # Git versions without %(objectmode) fail here, which reports unknown provenance rather than guessing.
         stdout, status = Open3.capture2(
           "git",
           "-C",
           repo_contents_path,
           "cat-file",
-          "--batch-check=%(objecttype) %(objectname)",
+          "--batch-check=%(objectmode) %(objecttype) %(objectname)",
           stdin_data: stdin,
           binmode: true
         )
@@ -93,8 +100,9 @@ module Dependabot
         return nil unless lines.length == paths.length
 
         lines.map do |line|
-          type, oid = line.split(" ", 2)
-          return nil unless type == "blob" && oid&.match?(/\A(?:\h{40}|\h{64})\z/)
+          mode, type, oid = line.split(" ", 3)
+          return nil unless REGULAR_FILE_MODES.include?(mode) && type == "blob"
+          return nil unless oid&.match?(/\A(?:\h{40}|\h{64})\z/)
 
           oid.downcase
         end

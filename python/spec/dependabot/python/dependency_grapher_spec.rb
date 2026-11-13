@@ -1439,6 +1439,32 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
       )
     end
 
+    context "when the fetcher also retrieved a path dependency's setup.py" do
+      let(:path_dependency_setup_py) do
+        Dependabot::DependencyFile.new(
+          name: "pkg/setup.py",
+          content: "from setuptools import setup\nsetup(name=\"pkg\")\n",
+          directory: "/",
+          support_file: true
+        )
+      end
+
+      let(:dependency_files) do
+        [app_requirements_in, app_requirements_txt, test_requirements_in, test_requirements_txt,
+         path_dependency_setup_py]
+      end
+
+      it "keeps the support file among the directory's inputs although no layer lists it" do
+        expect(grapher.manifest_set_input_files.map(&:path)).to contain_exactly(
+          "/requirements.in",
+          "/requirements.txt",
+          "/requirements-tests.in",
+          "/requirements-tests.txt",
+          "/pkg/setup.py"
+        )
+      end
+    end
+
     context "when the directory has a single manifest" do
       let(:requirements_txt) do
         Dependabot::DependencyFile.new(
