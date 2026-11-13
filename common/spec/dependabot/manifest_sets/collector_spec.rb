@@ -162,4 +162,18 @@ RSpec.describe Dependabot::ManifestSets::Collector do
 
     expect(inputs.resolved?).to be(false)
   end
+
+  it "reports unknown provenance when an owner-selection file is a symlink" do
+    commit_files(["api/requirements.txt", "shared/uv.lock"])
+    File.symlink("../shared/uv.lock", File.join(repo, "api", "uv.lock"))
+    git("add", "--all")
+    git("commit", "--quiet", "-m", "link")
+
+    inputs = collect(
+      [file("api/requirements.txt")], directory: "/api", owner_id: "pip", commit: git("rev-parse", "HEAD")
+    )
+
+    expect(inputs.resolved?).to be(false)
+    expect(inputs.unresolvable_reason).to eq(Dependabot::ManifestSets::Inputs::UNKNOWN_PROVENANCE)
+  end
 end

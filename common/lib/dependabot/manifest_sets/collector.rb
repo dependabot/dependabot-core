@@ -48,8 +48,12 @@ module Dependabot
         )
         return Inputs.unresolvable(Inputs::UNKNOWN_PROVENANCE) if listing.nil?
 
+        selector_basenames = ecosystem.selector_basenames
+        # Like a symlinked input, a symlinked selector's link text says nothing about what it points to.
+        return Inputs.unresolvable(Inputs::UNKNOWN_PROVENANCE) if listing.symlinks.intersect?(selector_basenames)
+
         prefix = listing.directory == "." ? "" : "#{listing.directory}/"
-        selectors = ecosystem.selector_basenames.filter_map do |basename|
+        selectors = selector_basenames.filter_map do |basename|
           oid = listing.blobs[basename]
           InputFile.new(path: "#{prefix}#{basename}", blob_oid: oid) if oid
         end
