@@ -374,6 +374,21 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
       it "is a local replace" do
         expect(grapher.manifest_set_unresolvable_reason).to eq("local_replace")
       end
+
+      context "when the checkout is reached through a symlink" do
+        let(:link_dir) { Dir.mktmpdir }
+        let(:repo_contents_path) do
+          File.join(link_dir, "checkout").tap do |link|
+            File.symlink(File.expand_path(build_tmp_repo(project_name)), link)
+          end
+        end
+
+        after { FileUtils.rm_rf(link_dir) }
+
+        it "is still a local replace" do
+          expect(grapher.manifest_set_unresolvable_reason).to eq("local_replace")
+        end
+      end
     end
 
     context "with a relative replace resolving outside the repository" do

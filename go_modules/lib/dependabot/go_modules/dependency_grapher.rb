@@ -46,13 +46,15 @@ module Dependabot
 
       # A relative replace that resolves inside the repository makes the module's dependencies depend on files
       # beyond its own go.mod. Targets outside the repository are stubbed out by the parser and read nothing.
+      # The checkout path is resolved first because the stubber compares it with resolved replace targets, so a
+      # checkout reached through a symlink would otherwise make every in-repository target look external.
       sig { returns(T::Boolean) }
       def repository_local_replace?
         repo_contents_path = file_parser.repo_contents_path
         return false if repo_contents_path.nil? || go_mod.nil?
 
         manifest = go_mod_manifest
-        stubbed = ReplaceStubber.new(repo_contents_path).stub_paths(manifest, go_mod&.directory)
+        stubbed = ReplaceStubber.new(File.realpath(repo_contents_path)).stub_paths(manifest, go_mod&.directory)
         manifest.replacements.any? do |replacement|
           path = replacement.new.path
           path.start_with?("./", "../") && !stubbed.key?(path)

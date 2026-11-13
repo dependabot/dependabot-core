@@ -2,13 +2,13 @@
   "schema_version": 1,
   "owners": {
     "go_modules": {
-      "graph_version": "1",
+      "graph_version": "2",
       "sources": [
         "common/lib/dependabot/dependency_graphers/base.rb",
         "go_modules/lib/dependabot/go_modules/dependency_grapher.rb",
         "go_modules/lib/dependabot/go_modules/file_parser.rb"
       ],
-      "sources_sha256": "7b6135173ec8553e1783d46430b2aa2c088330f92d71c0cea09176140c02348c"
+      "sources_sha256": "d331cc40c572e207e6b71e8fdd9db8c6cf7dcf7784d5a99ee28d99cb11803aea"
     },
     "pip": {
       "graph_version": "1",
