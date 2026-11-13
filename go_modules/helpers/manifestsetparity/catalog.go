@@ -179,7 +179,7 @@ func hexEscape(data []byte, i int) (rune, bool) {
 	if i+6 > len(data) || data[i] != '\\' || data[i+1] != 'u' {
 		return 0, false
 	}
-	v, err := strconv.ParseUint(string(data[i+2:i+6]), 16, 32)
+	v, err := strconv.ParseUint(string(data[i+2:i+6]), 16, 16)
 	return rune(v), err == nil
 }
 

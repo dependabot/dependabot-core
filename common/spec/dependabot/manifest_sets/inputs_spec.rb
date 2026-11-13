@@ -97,6 +97,31 @@ RSpec.describe Dependabot::ManifestSets::Inputs do
       expect(inputs.files).to be_empty
     end
 
+    it "is unresolvable when the commit is not a full object ID" do
+      commit
+
+      inputs = described_class.resolve(
+        dependency_files: [file("requirements.txt")], repo_contents_path: repo, commit: "--output=#{repo}/x"
+      )
+
+      expect(inputs.unresolvable_reason).to eq(described_class::UNKNOWN_PROVENANCE)
+      expect(File.exist?(File.join(repo, "x"))).to be(false)
+    end
+
+    it "matches file names literally rather than as patterns" do
+      commit
+      write("f*.txt", "literal\n")
+      git("add", "--all")
+      git("commit", "--quiet", "-m", "pattern-like name")
+      head = git("rev-parse", "HEAD")
+
+      literal = described_class.resolve(dependency_files: [file("f*.txt")], repo_contents_path: repo, commit: head)
+      pattern = described_class.resolve(dependency_files: [file("f?.txt")], repo_contents_path: repo, commit: head)
+
+      expect(literal.files.map(&:blob_oid)).to eq([git("rev-parse", "#{head}:f*.txt")])
+      expect(pattern.resolved?).to be(false)
+    end
+
     it "is unresolvable rather than partial when any file has no blob at the commit" do
       inputs = described_class.resolve(
         dependency_files: [file("requirements.txt"), file("generated.lock")],
