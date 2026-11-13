@@ -79,6 +79,39 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
     its(:length) { is_expected.to eq(1) }
 
+    context "when the requirements are unchanged" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "co.aikar:acf-paper",
+          version: "0.5.0-SNAPSHOT",
+          requirements: [{
+            file: "build.gradle",
+            requirement: "0.5.0-SNAPSHOT",
+            groups: [],
+            source: nil,
+            metadata: nil
+          }],
+          previous_requirements: [{
+            file: "build.gradle",
+            requirement: "0.5.0-SNAPSHOT",
+            groups: [],
+            source: nil,
+            metadata: nil
+          }],
+          package_manager: "gradle"
+        )
+      end
+
+      it "raises with error report context attached" do
+        expect { updated_files }.to raise_error(RuntimeError, "No files changed!") do |error|
+          expect(Dependabot::ErrorReportContext.build(error: error)).to eq(
+            "dependency-names" => ["co.aikar:acf-paper"],
+            "dependency-files" => ["build.gradle", "gradle/wrapper/gradle-wrapper.properties"]
+          )
+        end
+      end
+    end
+
     describe "the updated build.gradle file" do
       subject(:updated_buildfile) do
         updated_files.find do |f|
@@ -1295,6 +1328,56 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           is_expected.to include(
             'ktlintUpdated = { id = "org.jlleitschuh.gradle.ktlint", version = "11.0.0" }'
           )
+        end
+      end
+
+      context "with multiple version catalogs" do
+        let(:dependency_files) { [libs_catalog, tools_catalog, plugins_catalog] }
+        let(:libs_catalog) do
+          Dependabot::DependencyFile.new(
+            name: "gradle/libs.versions.toml",
+            content: fixture("version_catalog_file", "libs.versions.toml")
+          )
+        end
+        let(:tools_catalog) do
+          Dependabot::DependencyFile.new(
+            name: "gradle/tools.versions.toml",
+            content: fixture("version_catalog_file", "tools.versions.toml")
+          )
+        end
+        let(:plugins_catalog) do
+          Dependabot::DependencyFile.new(
+            name: "gradle/plugins.versions.toml",
+            content: fixture("version_catalog_file", "plugins.versions.toml")
+          )
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "junit:junit",
+            version: "4.13.3",
+            previous_version: "4.13.2",
+            requirements: [{
+              file: "gradle/tools.versions.toml",
+              requirement: "4.13.3",
+              groups: [],
+              source: nil,
+              metadata: { property_name: "junit" }
+            }],
+            previous_requirements: [{
+              file: "gradle/tools.versions.toml",
+              requirement: "4.13.2",
+              groups: [],
+              source: nil,
+              metadata: { property_name: "junit" }
+            }],
+            package_manager: "gradle"
+          )
+        end
+
+        it "updates the correct version catalog" do
+          expect(updated_files.length).to eq(1)
+          expect(updated_files.first.name).to eq("gradle/tools.versions.toml")
+          expect(updated_files.first.content).to include('junit = "4.13.3"')
         end
       end
     end

@@ -803,6 +803,36 @@ RSpec.describe Dependabot::Job do
     end
   end
 
+  describe "#self_hosted_runner?" do
+    # Versions of dependabot-api, including older GHES releases, that don't send runner-type
+    it "is false when the runner type is not given" do
+      expect(job.runner_type).to be_nil
+      expect(job).not_to be_self_hosted_runner
+    end
+
+    it "is false on GitHub-hosted runners" do
+      job = described_class.new(attributes.merge(runner_type: "actions"))
+
+      expect(job).not_to be_self_hosted_runner
+    end
+
+    it "is true on self-hosted runners" do
+      job = described_class.new(attributes.merge(runner_type: "actions_self_hosted"))
+
+      expect(job.runner_type).to eq("actions_self_hosted")
+      expect(job).to be_self_hosted_runner
+    end
+
+    it "is read from the runner-type key of the job details" do
+      job_definition = JSON.parse(fixture("jobs/job_with_credentials.json"))
+      job_definition["job"]["runner-type"] = "actions_self_hosted"
+
+      job = described_class.new_update_job(job_id: "1", job_definition: job_definition)
+
+      expect(job).to be_self_hosted_runner
+    end
+  end
+
   describe "#vulnerable?" do
     subject(:vulnerable_for_update) { job.vulnerable?(dependency, check_previous_version) }
 

@@ -88,9 +88,9 @@ RSpec.describe Dependabot::Nix::UpdateChecker do
         allow(git_checker).to receive_messages(
           git_dependency?: true,
           pinned_ref_looks_like_version?: true,
-          local_tag_for_latest_version: {
+          local_tag_for_latest_version: Dependabot::GitTagDetails.new(
             tag: "v0.6.2", commit_sha: "def456", tag_sha: "def456"
-          }
+          )
         )
       end
 
@@ -166,9 +166,9 @@ RSpec.describe Dependabot::Nix::UpdateChecker do
         allow(git_checker).to receive_messages(
           git_dependency?: true,
           pinned_ref_looks_like_version?: true,
-          local_tag_for_latest_version: {
+          local_tag_for_latest_version: Dependabot::GitTagDetails.new(
             tag: "v0.6.2", commit_sha: "def456", tag_sha: "def456"
-          }
+          )
         )
       end
 
@@ -532,9 +532,9 @@ RSpec.describe Dependabot::Nix::UpdateChecker do
         allow(git_checker).to receive_messages(
           git_dependency?: true,
           pinned_ref_looks_like_version?: true,
-          local_tag_for_latest_version: {
+          local_tag_for_latest_version: Dependabot::GitTagDetails.new(
             tag: "v0.6.2", commit_sha: "def456", tag_sha: "def456"
-          }
+          )
         )
       end
 
