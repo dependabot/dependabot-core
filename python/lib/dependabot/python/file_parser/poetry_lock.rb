@@ -18,7 +18,7 @@ module Dependabot
           extend T::Sig
 
           # Packages from these sources are not on a package index, so they do not get a PyPI identity.
-          NON_INDEX_SOURCE_TYPES = %w(directory git url).freeze
+          NON_INDEX_SOURCE_TYPES = %w(directory file git url).freeze
 
           const :name, String
           const :version, String

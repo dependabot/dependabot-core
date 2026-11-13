@@ -1293,6 +1293,56 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         expect(grapher.resolved_dependencies.keys).not_to include("pkg:pypi/six@2.0.0")
       end
     end
+
+    context "when poetry.lock lists a local version of a package before its PyPI version" do
+      let(:pyproject_toml) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "poetry_local_version_before_index_version.toml"),
+          directory: "/"
+        )
+      end
+
+      let(:poetry_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: fixture("poetry_locks", "poetry_local_version_before_index_version.lock"),
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [pyproject_toml, poetry_lock_file] }
+
+      it "includes only the version from PyPI" do
+        expect(grapher.resolved_dependencies.keys).to include("pkg:pypi/six@1.17.0")
+        expect(grapher.resolved_dependencies.keys).not_to include("pkg:pypi/six@1.16.0")
+      end
+    end
+
+    context "when poetry.lock pins a package from a local archive and from PyPI" do
+      let(:pyproject_toml) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "poetry_archive_and_index_locked_versions.toml"),
+          directory: "/"
+        )
+      end
+
+      let(:poetry_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: fixture("poetry_locks", "poetry_archive_and_index_locked_versions.lock"),
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [pyproject_toml, poetry_lock_file] }
+
+      it "includes only the version from PyPI" do
+        expect(grapher.resolved_dependencies.keys).to include("pkg:pypi/six@1.17.0")
+        expect(grapher.resolved_dependencies.keys).not_to include("pkg:pypi/six@2.0.0")
+      end
+    end
   end
 
   # Regression: multiple independent pip-compile manifests stacked in a single directory.
