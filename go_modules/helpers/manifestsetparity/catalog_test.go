@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -204,22 +205,65 @@ func TestDigestManifest(t *testing.T) {
 		listed[file.Path] = true
 	}
 
-	published, err := filepath.Glob(filepath.Join(dir, "*.json"))
+	published, err := publishedFiles(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
-	fixtures, err := filepath.Glob(filepath.Join(dir, "fixtures", "*.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, path := range append(published, fixtures...) {
-		rel, err := filepath.Rel(dir, path)
-		if err != nil {
-			t.Fatal(err)
-		}
-		rel = filepath.ToSlash(rel)
-		if rel != "digests.json" && !listed[rel] {
+	for _, rel := range published {
+		if !listed[rel] {
 			t.Errorf("%s is published but missing from digests.json", rel)
 		}
+	}
+}
+
+// publishedFiles mirrors the Ruby generator's globs: *.json at the top level (except digests.json itself)
+// and fixtures/**/*.json at any depth. Paths are slash-separated and relative to dir.
+func publishedFiles(dir string) ([]string, error) {
+	top, err := filepath.Glob(filepath.Join(dir, "*.json"))
+	if err != nil {
+		return nil, err
+	}
+	var files []string
+	for _, path := range top {
+		if filepath.Base(path) != "digests.json" {
+			files = append(files, filepath.Base(path))
+		}
+	}
+	fixtures := filepath.Join(dir, "fixtures")
+	err = filepath.WalkDir(fixtures, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil || entry.IsDir() || filepath.Ext(path) != ".json" {
+			return err
+		}
+		rel, err := filepath.Rel(dir, path)
+		if err == nil {
+			files = append(files, filepath.ToSlash(rel))
+		}
+		return err
+	})
+	if errors.Is(err, fs.ErrNotExist) {
+		err = nil
+	}
+	return files, err
+}
+
+func TestPublishedFilesIncludesNestedFixtures(t *testing.T) {
+	dir := t.TempDir()
+	for _, rel := range []string{"catalog.json", "digests.json", "fixtures/owners.json", "fixtures/extra/nested.json", "fixtures/notes.txt"} {
+		path := filepath.Join(dir, filepath.FromSlash(rel))
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte("{}"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got, err := publishedFiles(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	slices.Sort(got)
+	want := []string{"catalog.json", "fixtures/extra/nested.json", "fixtures/owners.json"}
+	if fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Errorf("published files = %v, want %v", got, want)
 	}
 }
