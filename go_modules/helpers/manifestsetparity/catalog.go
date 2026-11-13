@@ -11,6 +11,8 @@ import (
 	"io"
 	"regexp"
 	"slices"
+	"strconv"
+	"unicode/utf16"
 	"unicode/utf8"
 )
 
@@ -128,6 +130,9 @@ func decodeStrict(data []byte) (any, error) {
 	if !utf8.Valid(data) {
 		return nil, invalid("invalid_json", "document is not valid UTF-8")
 	}
+	if err := checkSurrogateEscapes(data); err != nil {
+		return nil, err
+	}
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.UseNumber()
 	value, err := decodeValue(dec, 0)
@@ -138,6 +143,44 @@ func decodeStrict(data []byte) (any, error) {
 		return nil, invalid("invalid_json", "unexpected trailing content")
 	}
 	return value, nil
+}
+
+// checkSurrogateEscapes rejects \u escapes that are not valid UTF-16 surrogate pairs. encoding/json
+// silently replaces them with U+FFFD, whereas the Ruby reader rejects the document.
+func checkSurrogateEscapes(data []byte) error {
+	inString := false
+	for i := 0; i < len(data); i++ {
+		switch c := data[i]; {
+		case c == '"':
+			inString = !inString
+		case c == '\\' && inString:
+			if i+1 < len(data) && data[i+1] == 'u' {
+				r, ok := hexEscape(data, i)
+				switch {
+				case !ok:
+				case utf16.IsSurrogate(r) && r < 0xDC00:
+					low, ok := hexEscape(data, i+6)
+					if !ok || low < 0xDC00 || low > 0xDFFF {
+						return invalid("invalid_json", "unpaired UTF-16 surrogate escape")
+					}
+					i += 6
+				case utf16.IsSurrogate(r):
+					return invalid("invalid_json", "unpaired UTF-16 surrogate escape")
+				}
+			}
+			i++
+		}
+	}
+	return nil
+}
+
+// hexEscape reads the \uXXXX escape starting at data[i].
+func hexEscape(data []byte, i int) (rune, bool) {
+	if i+6 > len(data) || data[i] != '\\' || data[i+1] != 'u' {
+		return 0, false
+	}
+	v, err := strconv.ParseUint(string(data[i+2:i+6]), 16, 32)
+	return rune(v), err == nil
 }
 
 func decodeValue(dec *json.Decoder, depth int) (any, error) {

@@ -108,7 +108,10 @@ module Dependabot
         token = @scanner.scan(STRING_TOKEN)
         fail_at("expected string") unless token
 
-        T.cast(JSON.parse(token), String)
+        # Ruby's parser decodes an unpaired low surrogate escape into invalid UTF-8 rather than failing.
+        value = T.cast(JSON.parse(token), String)
+        fail_at("unpaired UTF-16 surrogate escape") unless value.valid_encoding?
+        value
       end
 
       sig { void }

@@ -508,6 +508,34 @@
       "basename": "ſpec.txt",
       "matching_rules": [],
       "note": "U+017F LONG S does not match an ASCII [Ss] class in either engine"
+    },
+    {
+      "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"product\", \"filename_regex\": \"\\\\A(?:q{10}){100}\\\\.txt\\\\z\", \"directory\": \"parent\"}, {\"id\": \"hidden\", \"filename_regex\": \"\\\\A(?:(?:z{1000}){0}){2}\\\\.lock\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"pip\", \"otherwise\": true}]}]}",
+      "ecosystem": "pypi",
+      "basename": "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq.txt",
+      "matching_rules": [
+        "product"
+      ]
+    },
+    {
+      "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"product\", \"filename_regex\": \"\\\\A(?:q{10}){100}\\\\.txt\\\\z\", \"directory\": \"parent\"}, {\"id\": \"hidden\", \"filename_regex\": \"\\\\A(?:(?:z{1000}){0}){2}\\\\.lock\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"pip\", \"otherwise\": true}]}]}",
+      "ecosystem": "pypi",
+      "basename": "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq.txt",
+      "matching_rules": []
+    },
+    {
+      "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"product\", \"filename_regex\": \"\\\\A(?:q{10}){100}\\\\.txt\\\\z\", \"directory\": \"parent\"}, {\"id\": \"hidden\", \"filename_regex\": \"\\\\A(?:(?:z{1000}){0}){2}\\\\.lock\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"pip\", \"otherwise\": true}]}]}",
+      "ecosystem": "pypi",
+      "basename": ".lock",
+      "matching_rules": [
+        "hidden"
+      ]
+    },
+    {
+      "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"product\", \"filename_regex\": \"\\\\A(?:q{10}){100}\\\\.txt\\\\z\", \"directory\": \"parent\"}, {\"id\": \"hidden\", \"filename_regex\": \"\\\\A(?:(?:z{1000}){0}){2}\\\\.lock\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"pip\", \"otherwise\": true}]}]}",
+      "ecosystem": "pypi",
+      "basename": "z.lock",
+      "matching_rules": []
     }
   ]
 }

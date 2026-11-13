@@ -12,11 +12,11 @@
     },
     {
       "path": "fixtures/filenames.json",
-      "sha256": "d3549d3a7c54f3e35c2037702a3f1d8d806614d2398e178408c6cca2bc97ff42"
+      "sha256": "5b41c6f739803bc6669974dd0f03c61f33b41357aae8d92912a66322113cfbdc"
     },
     {
       "path": "fixtures/invalid_catalogs.json",
-      "sha256": "a4cd73824a29456927e9cd6b88ffe3a754e4d7075179c64cb0b75aa8c75959e5"
+      "sha256": "35913245644c60f65e9cdc7efa412b0378029f69da4350c235fe5bb1e84f6949"
     },
     {
       "path": "fixtures/owners.json",
