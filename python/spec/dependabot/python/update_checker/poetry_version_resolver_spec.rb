@@ -115,6 +115,15 @@ RSpec.describe namespace::PoetryVersionResolver do
       expect(resolver.resolvable?(version: Gem::Version.new("2025.1.31"))).to be(false)
     end
 
+    it "also declines duplicate lock entries with the same version" do
+      second_entry = lockfile.content[/\[\[package\]\]\nname = "certifi".*?(?=\n\[\[package\]\])/m]
+      allow(resolver).to receive(:poetry_lock).and_return(
+        Dependabot::DependencyFile.new(name: "poetry.lock", content: "#{lockfile.content}\n#{second_entry}\n")
+      )
+
+      expect(resolver.latest_resolvable_version(requirement: "==2025.1.31")).to be_nil
+    end
+
     it "declines when no target requirement is given and the dependency is locked at several versions" do
       second_entry = lockfile.content[/\[\[package\]\]\nname = "certifi".*?(?=\n\[\[package\]\])/m]
                              .sub('version = "2024.2.2"', 'version = "2023.7.22"')
@@ -226,6 +235,59 @@ RSpec.describe namespace::PoetryVersionResolver do
         expect(project.dig("project", "dependencies")).to include("urllib3==2.2.0")
         expect(project.dig("project", "optional-dependencies", "extra")).to eq(["urllib3==2.2.0"])
         expect(project.dig("dependency-groups", "dev").first).to eq("urllib3==2.2.0")
+      end
+    end
+  end
+
+  describe "generated lockfile parsing" do
+    let(:generated_lockfile) do
+      <<~TOML
+        [[package]]
+        name = "unrelated"
+        version = false
+        [[package]]
+        name = "Requests"
+        version = "2.18.4"
+      TOML
+    end
+
+    before do
+      language_manager = instance_double(
+        Dependabot::Python::LanguageVersionManager,
+        python_version: "3.12.0",
+        python_major_minor: "3.12",
+        install_required_python: nil
+      )
+      allow(resolver).to receive(:language_version_manager).and_return(language_manager)
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with("pyenv exec poetry config system-git-client true", any_args).and_return("")
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with("pyenv exec poetry update requests --lock --no-interaction", any_args) do
+        File.write("poetry.lock", generated_lockfile)
+        ""
+      end
+    end
+
+    it "reads the selected version without decoding unrelated package fields" do
+      expect(resolver.latest_resolvable_version(requirement: "==2.18.4")).to eq(Gem::Version.new("2.18.4"))
+    end
+
+    context "with a malformed selected version" do
+      let(:generated_lockfile) { super().sub('version = "2.18.4"', "version = false") }
+
+      it "reports the consumed package field" do
+        expect { resolver.latest_resolvable_version(requirement: "==2.18.4") }
+          .to raise_error(TypeError, /Poetry lock package version/)
+      end
+    end
+
+    context "when the selected top-level package is absent" do
+      let(:generated_lockfile) { "[[package]]\nname = \"unrelated\"\nversion = \"1\"\n" }
+
+      it "keeps the missing-version failure" do
+        expect { resolver.latest_resolvable_version(requirement: "==2.18.4") }
+          .to raise_error(RuntimeError, "No version in lockfile!")
       end
     end
   end

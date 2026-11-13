@@ -90,6 +90,9 @@ module Dependabot
       class PyprojectDocument
         extend T::Sig
 
+        require_relative "pyproject_document/poetry_mutations"
+        require_relative "pyproject_document/pep621_mutations"
+
         PoetryRequirement = T.type_alias { PyprojectValueParser::PoetryRequirement }
         PoetryDependencyMap = T.type_alias { PyprojectValueParser::PoetryDependencyMap }
 

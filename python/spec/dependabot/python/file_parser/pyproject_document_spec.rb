@@ -337,4 +337,41 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectDocument do
         .to raise_error(TomlRB::ValueOverwriteError)
     end
   end
+
+  describe "scratch document mutation" do
+    it "writes changed and new Poetry tables back without dropping unrelated data" do
+      document.set_poetry_requirement(name: "requests", requirement: "==2.32.0")
+      document.add_poetry_dependency(name: "new-package", requirement: "3.0", production: false)
+      parsed = TomlRB.parse(document.to_toml)
+
+      expect(parsed.dig("tool", "poetry", "dependencies", "requests")).to eq("==2.32.0")
+      expect(parsed.dig("tool", "poetry", "dev-dependencies", "new-package")).to eq("3.0")
+      expect(parsed.dig("tool", "uv", "workspace", "members")).to eq(["packages/*"])
+      expect(parsed.dig("tool", "poetry", "dependencies", "attrs")).to eq([{ "version" => "^24.0" }])
+    end
+
+    it "updates PEP 621 declarations and appends scoped pins using declared group spelling" do
+      expect(document.replace_pep621_requirement(name: "requests", requirement: "==2.32.0")).to eq(1)
+      document.append_pep621_pins(main: nil, extras: { "TEST" => "certifi==1" }, groups: { "lint" => "attrs==2" })
+      parsed = TomlRB.parse(document.to_toml)
+
+      expect(parsed.dig("project", "dependencies")).to eq(["requests==2.32.0"])
+      expect(parsed.dig("project", "optional-dependencies")).to eq("test" => ["pytest", "certifi==1"])
+      expect(parsed.dig("dependency-groups", "lint")).to eq(["ruff", "attrs==2"])
+    end
+
+    context "with an enrichment-only Poetry declaration" do
+      let(:content) { super().sub('requests = "^2.0"', 'requests = { source = "private", extras = ["socks"] }') }
+
+      it "keeps enrichment-only entries when pinning but permits resolver target constraints" do
+        document.pin_poetry_requirement(name: "requests", requirement: "2.32.0")
+        entry = TomlRB.parse(document.to_toml).dig("tool", "poetry", "dependencies", "requests")
+        expect(entry).to eq("source" => "private", "extras" => ["socks"])
+
+        document.set_poetry_requirement(name: "requests", requirement: "==2.32.0")
+        expect(TomlRB.parse(document.to_toml).dig("tool", "poetry", "dependencies", "requests"))
+          .to eq("source" => "private", "extras" => ["socks"], "version" => "==2.32.0")
+      end
+    end
+  end
 end
