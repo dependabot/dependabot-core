@@ -347,6 +347,44 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
     end
   end
 
+  describe "#manifest_set_unresolvable_reason" do
+    def project_file(project, name)
+      Dependabot::DependencyFile.new(name: name, content: fixture("projects", project, name), directory: "/")
+    end
+
+    let(:project_name) { "simple" }
+    let(:dependency_files) { [project_file(project_name, "go.mod")] }
+
+    it "is nil for a module that reads only its go.mod" do
+      expect(grapher.manifest_set_unresolvable_reason).to be_nil
+    end
+
+    context "with a go.work file" do
+      let(:project_name) { "workspace" }
+      let(:dependency_files) { [project_file(project_name, "go.mod"), project_file(project_name, "go.work")] }
+
+      it "is a workspace" do
+        expect(grapher.manifest_set_unresolvable_reason).to eq("workspace")
+      end
+    end
+
+    context "with a relative replace resolving inside the repository" do
+      let(:project_name) { "monorepo" }
+
+      it "is a local replace" do
+        expect(grapher.manifest_set_unresolvable_reason).to eq("local_replace")
+      end
+    end
+
+    context "with a relative replace resolving outside the repository" do
+      let(:project_name) { "replace" }
+
+      it "is nil, as the target is stubbed and reads nothing" do
+        expect(grapher.manifest_set_unresolvable_reason).to be_nil
+      end
+    end
+  end
+
   describe "graph version" do
     it "is locked to the current grapher sources (run bin/update-manifest-set-graph-versions.rb)" do
       expect(Dependabot::DependencyGraphers::GraphVersions.stale_owners(owners: ["go_modules"])).to be_empty

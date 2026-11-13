@@ -3,7 +3,7 @@
 
 require "dependabot/dependency_graphers"
 require "dependabot/environment"
-require "dependabot/manifest_sets/inputs"
+require "dependabot/manifest_sets/descriptor"
 require "github_api/ecosystem_mapper"
 
 # This class provides a data object that can be submitted to a repository's dependency submission
@@ -55,10 +55,9 @@ module GithubApi
     sig { returns(T.nilable(String)) }
     attr_reader :reason
 
-    # The original repository inputs collected across every manifest group in the directory, or nil when
-    # they were not collected.
-    sig { returns(T.nilable(Dependabot::ManifestSets::Inputs)) }
-    attr_reader :manifest_set_inputs
+    # What the job reports about the directory's manifest set, or nil when it reports nothing.
+    sig { returns(T.nilable(Dependabot::ManifestSets::Descriptor)) }
+    attr_reader :manifest_set
 
     sig do
       params(
@@ -69,7 +68,7 @@ module GithubApi
         manifest_snapshots: T::Array[Dependabot::DependencyGraphers::ManifestGroupSnapshot],
         status: SnapshotStatus,
         reason: T.nilable(String),
-        manifest_set_inputs: T.nilable(Dependabot::ManifestSets::Inputs)
+        manifest_set: T.nilable(Dependabot::ManifestSets::Descriptor)
       ).void
     end
     def initialize(
@@ -80,7 +79,7 @@ module GithubApi
       manifest_snapshots:,
       status: SnapshotStatus::SUCCESS,
       reason: nil,
-      manifest_set_inputs: nil
+      manifest_set: nil
     )
       @job_id = job_id
       @branch = branch
@@ -99,7 +98,7 @@ module GithubApi
 
       @status = status
       @reason = reason
-      @manifest_set_inputs = manifest_set_inputs
+      @manifest_set = manifest_set
     end
 
     # The representative manifest file for the submission, used for the job correlator and scanned path. All

@@ -146,6 +146,13 @@ module Dependabot
           .uniq(&:path)
       end
 
+      # Why the directory's manifest set cannot be described by its input files, or nil when it can. Ecosystems
+      # override this for projects whose resolution reads files that are not reported as inputs.
+      sig { overridable.returns(T.nilable(String)) }
+      def manifest_set_unresolvable_reason
+        nil
+      end
+
       private
 
       # Whether an original dependency file belongs in the directory's input provenance. Ecosystems override

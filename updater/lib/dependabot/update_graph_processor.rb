@@ -8,6 +8,7 @@ require "dependabot/environment"
 require "dependabot/errors"
 require "dependabot/experiments"
 require "dependabot/dependency_graphers"
+require "dependabot/dependency_graphers/graph_versions"
 require "dependabot/logger"
 require "dependabot/manifest_sets/collector"
 
@@ -119,7 +120,8 @@ module Dependabot
                        branch,
                        directory_source,
                        GithubApi::DependencySubmission::SnapshotStatus::SKIPPED,
-                       GithubApi::DependencySubmission::EMPTY_REASON_NO_MANIFESTS
+                       GithubApi::DependencySubmission::EMPTY_REASON_NO_MANIFESTS,
+                       manifest_set: describe_manifest_set(directory_source, [])
                      )
                    else
                      create_submission(branch, directory_source, directory_dependency_files)
@@ -275,10 +277,11 @@ module Dependabot
         branch: String,
         source: Dependabot::Source,
         status: GithubApi::DependencySubmission::SnapshotStatus,
-        reason: T.nilable(String)
+        reason: T.nilable(String),
+        manifest_set: T.nilable(Dependabot::ManifestSets::Descriptor)
       ).returns(GithubApi::DependencySubmission)
     end
-    def empty_submission(branch, source, status, reason)
+    def empty_submission(branch, source, status, reason, manifest_set: nil)
       GithubApi::DependencySubmission.new(
         job_id: job.id.to_s,
         branch: branch,
@@ -291,7 +294,8 @@ module Dependabot
           )
         ],
         status: status,
-        reason: reason
+        reason: reason,
+        manifest_set: manifest_set
       )
     end
 
@@ -322,6 +326,12 @@ module Dependabot
         handle_subdependency_error(grapher.subdependency_error, source)
         status = GithubApi::DependencySubmission::SnapshotStatus::DEGRADED
         reason = GithubApi::DependencySubmission::DEGRADED_REASON_SUBDEPENDENCY_ERR
+      else
+        manifest_set = describe_manifest_set(
+          source,
+          grapher.manifest_set_input_files,
+          unresolvable_reason: grapher.manifest_set_unresolvable_reason
+        )
       end
 
       GithubApi::DependencySubmission.new(
@@ -332,28 +342,33 @@ module Dependabot
         manifest_snapshots: manifest_group_snapshots,
         status: status || GithubApi::DependencySubmission::SnapshotStatus::SUCCESS,
         reason: reason || nil,
-        manifest_set_inputs: collect_manifest_set_inputs(grapher, source)
+        manifest_set: manifest_set
       )
     end
 
-    # Hands the union of original repository inputs across every manifest group to submission code, so it never
-    # has to reconstruct them from the representative manifest files. The list also carries every owner-selection
-    # file in the directory, including ones this job's package manager does not read.
+    # Describes the directory's manifest set from the union of original repository inputs across every manifest
+    # group, so submission code never reconstructs it from the representative manifest files. Only successful
+    # results and the "no manifests" skip are described; failed, degraded and fetch-error snapshots carry no
+    # descriptor.
     sig do
       params(
-        grapher: Dependabot::DependencyGraphers::Base,
-        source: Dependabot::Source
-      ).returns(T.nilable(Dependabot::ManifestSets::Inputs))
+        source: Dependabot::Source,
+        input_files: T::Array[Dependabot::DependencyFile],
+        unresolvable_reason: T.nilable(String)
+      ).returns(T.nilable(Dependabot::ManifestSets::Descriptor))
     end
-    def collect_manifest_set_inputs(grapher, source)
+    def describe_manifest_set(source, input_files, unresolvable_reason: nil)
       return nil unless Dependabot::Experiments.enabled?(:emit_manifest_set_envelope)
+      return nil unless Dependabot::ManifestSets.catalog.ecosystem_for_owner(job.package_manager)
 
-      Dependabot::ManifestSets::Collector.collect(
-        dependency_files: grapher.manifest_set_input_files,
+      Dependabot::ManifestSets::Collector.describe(
+        dependency_files: input_files,
         repo_contents_path: job.repo_contents_path,
         commit: base_commit_sha,
         directory: T.must(source.directory),
-        owner_id: job.package_manager
+        owner_id: job.package_manager,
+        graph_version: Dependabot::DependencyGraphers::GraphVersions.for(job.package_manager),
+        unresolvable_reason: unresolvable_reason
       )
     end
 

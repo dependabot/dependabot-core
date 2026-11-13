@@ -64,24 +64,26 @@ RSpec.describe Dependabot::ManifestSets::Collector do
   after { FileUtils.rm_rf(repo) }
 
   # A catalog where two presence owners can both match, so the matrix also covers ambiguity.
-  two_presence_owners = Dependabot::ManifestSets::Catalog.parse(
-    JSON.generate(
-      "schema_version" => 1,
-      "ecosystems" => [{
-        "id" => "pypi",
-        "path_rules" => [{
-          "id" => "r",
-          "filename_regex" => "\\A(?:requirements\\.txt|uv\\.lock|poetry\\.lock)\\z",
-          "directory" => "parent"
-        }],
-        "owners" => [
-          { "id" => "uv", "when_any_basename" => ["uv.lock"] },
-          { "id" => "poetry", "when_any_basename" => ["poetry.lock"] },
-          { "id" => "pip", "otherwise" => true }
-        ]
-      }]
+  def self.two_presence_owners
+    @two_presence_owners ||= Dependabot::ManifestSets::Catalog.parse(
+      JSON.generate(
+        "schema_version" => 1,
+        "ecosystems" => [{
+          "id" => "pypi",
+          "path_rules" => [{
+            "id" => "r",
+            "filename_regex" => "\\A(?:requirements\\.txt|uv\\.lock|poetry\\.lock)\\z",
+            "directory" => "parent"
+          }],
+          "owners" => [
+            { "id" => "uv", "when_any_basename" => ["uv.lock"] },
+            { "id" => "poetry", "when_any_basename" => ["poetry.lock"] },
+            { "id" => "pip", "otherwise" => true }
+          ]
+        }]
+      )
     )
-  )
+  end
 
   # Selector completeness: for every combination of selector files in a directory and every package
   # manager's job, the job reports every present selector, and owner selection over its list equals
@@ -112,6 +114,19 @@ RSpec.describe Dependabot::ManifestSets::Collector do
             served = ecosystem.select_owner(directory_files)
             selected = ecosystem.select_owner(reported)
             expect([selected.owner&.id, selected.ambiguous]).to eq([served.owner&.id, served.ambiguous])
+
+            descriptor = described_class.describe(
+              dependency_files: read,
+              repo_contents_path: repo,
+              commit: commit,
+              directory: "/api",
+              owner_id: job_owner.id,
+              graph_version: "1",
+              catalog: catalog
+            )
+            expect(descriptor.reason).to eq(served.ambiguous ? "ambiguous_owner" : nil)
+            pairs = ->(files) { files.map { |f| [f.path, f.blob_oid] } }
+            expect(pairs.call(descriptor.files)).to eq(served.ambiguous ? [] : pairs.call(inputs.files))
           end
         end
       end
@@ -161,5 +176,132 @@ RSpec.describe Dependabot::ManifestSets::Collector do
     inputs = collect([file("api/missing.txt")], directory: "/api", owner_id: "pip", commit: commit)
 
     expect(inputs.resolved?).to be(false)
+  end
+
+  describe ".describe" do
+    def describe_set(files, directory:, owner_id:, commit:, catalog: Dependabot::ManifestSets.catalog, reason: nil)
+      described_class.describe(
+        dependency_files: files,
+        repo_contents_path: repo,
+        commit: commit,
+        directory: directory,
+        owner_id: owner_id,
+        graph_version: "7",
+        unresolvable_reason: reason,
+        catalog: catalog
+      )
+    end
+
+    def delete_and_commit(*paths)
+      git("rm", "--quiet", "-r", *paths)
+      git("commit", "--quiet", "-m", "delete")
+      git("rev-parse", "HEAD")
+    end
+
+    it "is present with every input, its owner and graph version" do
+      commit = commit_files(%w(api/requirements.in api/requirements.txt api/uv.lock))
+
+      descriptor = describe_set(
+        [file("api/requirements.in"), file("api/requirements.txt")], directory: "/api/", owner_id: "pip", commit: commit
+      )
+
+      expect(descriptor.to_h).to eq(
+        "schema_version" => 1,
+        "ecosystem" => "pypi",
+        "directory" => "api",
+        "owner" => "pip",
+        "graph_version" => "7",
+        "state" => "present",
+        "files" => %w(api/requirements.in api/requirements.txt api/uv.lock).map do |path|
+          { "path" => path, "blob_oid" => git("rev-parse", "#{commit}:#{path}") }
+        end
+      )
+    end
+
+    it "is absent once the last rule-matching file is deleted" do
+      commit_files(%w(api/requirements.txt api/README.md web/requirements.txt))
+      commit = delete_and_commit("api/requirements.txt")
+
+      descriptor = describe_set([], directory: "/api", owner_id: "uv", commit: commit)
+
+      expect(descriptor.to_h).to include("state" => "absent", "files" => [], "directory" => "api", "owner" => "uv")
+    end
+
+    it "is absent when the directory no longer exists" do
+      commit_files(%w(api/requirements.txt web/requirements.txt))
+      commit = delete_and_commit("api")
+
+      expect(describe_set([], directory: "/api", owner_id: "pip", commit: commit).state)
+        .to eq(Dependabot::ManifestSets::Descriptor::State::Absent)
+    end
+
+    it "is absent in the repository root" do
+      commit = commit_files(%w(README.md api/requirements.txt))
+
+      expect(describe_set([], directory: "/", owner_id: "pip", commit: commit).to_h)
+        .to include("directory" => ".", "state" => "absent", "files" => [])
+    end
+
+    it "reports nothing for an empty result while rule-matching files remain" do
+      commit = commit_files(%w(api/uv.lock api/pyproject.toml))
+
+      expect(describe_set([], directory: "/api", owner_id: "pip", commit: commit)).to be_nil
+    end
+
+    it "reports nothing for a package manager the catalog does not cover" do
+      commit = commit_files(%w(Gemfile))
+
+      expect(describe_set([file("./Gemfile")], directory: "/", owner_id: "bundler", commit: commit)).to be_nil
+    end
+
+    it "reports nothing for a directory outside the repository" do
+      commit = commit_files(%w(api/requirements.txt))
+
+      expect(describe_set([], directory: "/api/../..", owner_id: "pip", commit: commit)).to be_nil
+    end
+
+    it "is unresolvable with the grapher's reason and no file list" do
+      commit = commit_files(%w(go.mod go.work))
+
+      descriptor = describe_set(
+        [file("./go.mod")],
+        directory: "/",
+        owner_id: "go_modules",
+        commit: commit,
+        reason: Dependabot::ManifestSets::Descriptor::WORKSPACE
+      )
+
+      expect(descriptor.to_h).to eq(
+        "schema_version" => 1,
+        "ecosystem" => "golang",
+        "directory" => ".",
+        "owner" => "go_modules",
+        "graph_version" => "7",
+        "state" => "unresolvable",
+        "reason" => "workspace"
+      )
+    end
+
+    it "is unresolvable when an input has no repository blob" do
+      commit = commit_files(%w(api/requirements.txt))
+
+      descriptor = describe_set([file("api/missing.txt")], directory: "/api", owner_id: "pip", commit: commit)
+
+      expect(descriptor.reason).to eq(Dependabot::ManifestSets::Descriptor::UNKNOWN_PROVENANCE)
+    end
+
+    it "is unresolvable rather than picking an owner when two presence owners match" do
+      commit = commit_files(%w(api/requirements.txt api/uv.lock api/poetry.lock))
+
+      descriptor = describe_set(
+        [file("api/requirements.txt")],
+        directory: "/api",
+        owner_id: "pip",
+        commit: commit,
+        catalog: self.class.two_presence_owners
+      )
+
+      expect(descriptor.reason).to eq(Dependabot::ManifestSets::Descriptor::AMBIGUOUS_OWNER)
+    end
   end
 end

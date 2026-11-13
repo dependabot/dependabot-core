@@ -8,7 +8,7 @@
         "go_modules/lib/dependabot/go_modules/dependency_grapher.rb",
         "go_modules/lib/dependabot/go_modules/file_parser.rb"
       ],
-      "sources_sha256": "771e7c89e74e1d33d6fc73745a64f006cdb7df8b7513995e3d8b4e99d0741aa7"
+      "sources_sha256": "7b6135173ec8553e1783d46430b2aa2c088330f92d71c0cea09176140c02348c"
     },
     "pip": {
       "graph_version": "1",
@@ -22,7 +22,7 @@
         "python/lib/dependabot/python/pip_compile_file_matcher.rb",
         "python/lib/dependabot/python/requirement_references.rb"
       ],
-      "sources_sha256": "ecc28ef75a2e39070152b2c2cdaab6d915c28a3c40621cdf32013bb26715ff43"
+      "sources_sha256": "e2137528ccf184129f566797a31cd81b9adeba5603cb5e276fdc6072bee1c199"
     },
     "uv": {
       "graph_version": "1",
@@ -34,7 +34,7 @@
         "uv/lib/dependabot/uv/lockfile_document.rb",
         "uv/lib/dependabot/uv/name_normaliser.rb"
       ],
-      "sources_sha256": "483a4487085b189ca4ce2c66738cc45ac3cac63b476f5e0a20e4c2a589f210e1"
+      "sources_sha256": "a1b6b8f1437386a6b85057014821dba8ec32c2a86ea40b2dcd542648e3c4b5ce"
     }
   }
 }
