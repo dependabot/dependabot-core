@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/bazel/file_updater"
+require "dependabot/bazel/file_parser/starlark_parser"
 
 module Dependabot
   module Bazel
@@ -97,23 +98,50 @@ module Dependabot
           new_version = dependency.version
           return content unless new_version
 
-          escaped_name = Regexp.escape(dependency.name)
+          parser = FileParser::StarlarkParser.new(content)
+          calls = parser.parse_function_calls
+          replacements = T.let({}, T::Hash[T::Range[Integer], String])
 
-          bazel_dep_pattern = /bazel_dep\s*\(([^)]+?)\)/mx
+          calls.each do |call|
+            next unless call.name == "bazel_dep" && call.arguments["name"] == dependency.name
 
-          content.gsub(bazel_dep_pattern) do |match|
-            function_content = T.must(Regexp.last_match(1))
-
-            if /name\s*=\s*["']#{escaped_name}["']/.match?(function_content)
-              updated_function_content = function_content.gsub(
-                /version\s*=\s*["'][^"']*["']/,
-                "version = \"#{new_version}\""
-              )
-              "bazel_dep(#{updated_function_content})"
-            else
-              match
-            end
+            replacement = version_replacement(content, parser, call, new_version)
+            replacements[replacement[0]] = replacement[1] if replacement
           end
+
+          replacements.sort_by { |range, _| -range.begin }.each_with_object(content.dup) do |(range, value), updated|
+            updated[range] = value
+          end
+        end
+
+        sig do
+          params(
+            content: String,
+            parser: FileParser::StarlarkParser,
+            call: FileParser::StarlarkParser::FunctionCall,
+            new_version: String
+          ).returns(T.nilable([T::Range[Integer], String]))
+        end
+        def version_replacement(content, parser, call, new_version)
+          range = call.argument_ranges["version"]
+          return unless range
+
+          value = call.arguments["version"]
+          if value.is_a?(FileParser::StarlarkParser::Identifier)
+            assignment_range = parser.string_assignment_ranges[value.name]
+            return unless assignment_range
+
+            # Only the assignment and this use may reference a constant we rewrite.
+            if T.must(parser.identifier_locations[value.name]).uniq.length == 2
+              literal = T.must(content[assignment_range])
+              quote = literal.start_with?('"""', "'''") ? literal[0, 3] : literal[0]
+              return [assignment_range, "#{quote}#{new_version}#{quote}"]
+            end
+          elsif !value.is_a?(String)
+            return
+          end
+
+          [range, "\"#{new_version}\""]
         end
       end
     end
