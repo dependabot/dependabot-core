@@ -203,6 +203,24 @@ RSpec.describe Dependabot::Mise::FileParser do
             .to eq([["node", "20.0.0"], ["op", "2.30.0"], ["golang", "1.18"]])
         end
       end
+
+      context "with a config template that runs a command" do
+        let(:marker_dir) { Dir.mktmpdir }
+        let(:marker) { File.join(marker_dir, "marker") }
+        let(:dependency_files) do
+          [Dependabot::DependencyFile.new(
+            name: "mise.toml",
+            content: "[env]\nPROBE = \"{{ exec(command='touch #{marker}') }}\"\n[tools]\nnode = '20.0.0'\n"
+          )]
+        end
+
+        after { FileUtils.remove_entry(marker_dir) }
+
+        it "reads the tools without running the command" do
+          expect(dependencies.map { |dep| [dep.name, dep.version] }).to eq([["node", "20.0.0"]])
+          expect(File).not_to exist(marker)
+        end
+      end
     end
 
     context "with mixed version formats" do

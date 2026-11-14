@@ -103,6 +103,7 @@ module Dependabot
           stderr_to_stdout: false,
           env: {
             "MISE_YES" => "1",
+            "MISE_SAFE" => "1",
             "MISE_OVERRIDE_CONFIG_FILENAMES" => mise_file.name
           }
         )
