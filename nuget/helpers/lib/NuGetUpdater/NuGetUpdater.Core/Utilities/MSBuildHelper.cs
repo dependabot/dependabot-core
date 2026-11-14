@@ -13,6 +13,7 @@ using NuGet.Frameworks;
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.DependencySolver;
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Utilities;
 
@@ -204,7 +205,13 @@ internal static partial class MSBuildHelper
             .ToList();
 
             // Return as array
-            var candidatePackagesArray = candidatePackages.ToImmutableArray();
+            var candidatePackagesArray = await CentralTransitivePinResolver.ResolveAsync(tempProjectPath, packages, candidatePackages.ToImmutableArray(), logger);
+            if (candidatePackagesArray is null)
+            {
+                return packages;
+            }
+
+            candidatePackages = candidatePackagesArray.Value.ToList();
 
             var targetFrameworks = ImmutableArray.Create<NuGetFramework>(NuGetFramework.Parse(targetFramework));
 
@@ -234,6 +241,16 @@ internal static partial class MSBuildHelper
                 }
 
                 var nuGetVersion = nuGetVersionRange.MinVersion; // not a wildcard, so `MinVersion` is just the version itself
+                var existingPackage = packages.FirstOrDefault(p => p.Name.Equals(package.Name, StringComparison.OrdinalIgnoreCase));
+                if (NuGetVersion.TryParse(package.Version, out var candidateVersion) &&
+                    existingPackage?.Version is { } existingVersionString &&
+                    NuGetVersion.TryParse(existingVersionString, out var existingVersion) &&
+                    candidateVersion.Equals(existingVersion))
+                {
+                    // An unchanged package may already be part of the project even if it is not compatible with this target framework.
+                    continue;
+                }
+
                 var packageIdentity = new NuGet.Packaging.Core.PackageIdentity(package.Name, nuGetVersion);
 
                 bool isNewPackageCompatible = await CompatibilityChecker.CheckAsync(packageIdentity, targetFrameworks, nugetContext, logger, CancellationToken.None);
@@ -244,7 +261,7 @@ internal static partial class MSBuildHelper
                 }
             }
 
-            return candidatePackagesArray;
+            return candidatePackagesArray.Value;
         }
         finally
         {
