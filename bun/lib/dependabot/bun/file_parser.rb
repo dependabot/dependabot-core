@@ -61,19 +61,16 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependency]) }
       def parse
+        locked = lockfile_dependencies
         dependency_set = DependencySet.new
         dependency_set += manifest_dependencies
-        dependency_set += lockfile_dependencies
+        dependency_set += locked
         dependency_set += catalog_dependencies
 
         dependencies = Helpers.dependencies_with_all_versions_metadata(dependency_set)
 
-        dependencies.reject do |dep|
+        dependencies.filter_map { |dep| without_support_file_requirements(dep, locked) }.reject do |dep|
           reqs = dep.requirements
-
-          # Ignore dependencies defined in support files, since we don't want PRs for those
-          support_reqs = reqs.select { |r| support_package_files.any? { |f| f.name == r.file } }
-          next true if support_reqs.any?
 
           # TODO: Currently, Dependabot can't handle dependencies that have both
           # a git source *and* a non-git source. Fix that!
@@ -482,6 +479,65 @@ module Dependabot
           branch: nil,
           ref: details["ref"]
         }
+      end
+
+      # Ignore dependencies defined in support files, since we don't want PRs for those. A dependency that is also
+      # defined in a file of this directory is kept, with the requirements of the files that are updated.
+      sig do
+        params(dep: Dependabot::Dependency, locked: Dependabot::FileParsers::Base::DependencySet)
+          .returns(T.nilable(Dependabot::Dependency))
+      end
+      def without_support_file_requirements(dep, locked)
+        support_reqs = dep.requirements.select { |r| support_package_files.any? { |f| f.name == r.file } }
+        return dep if support_reqs.none?
+
+        own_reqs = dep.requirements - support_reqs
+        return if own_reqs.empty?
+
+        # The versions of the declarations are merged into one, the lowest, which may be the one of a support file
+        all_versions = T.cast(dep.metadata[:all_versions], T.nilable(T::Array[Dependabot::Dependency])) || []
+        locked_versions = locked.all_versions_for_name(dep.name).map(&:version)
+        own_versions = all_versions.filter_map do |version|
+          without_support_file_requirements_for_version(version, support_reqs, locked_versions)
+        end
+        own_version = DependencySet.new(own_versions).dependency_for_name(dep.name)&.version
+
+        Dependency.new(
+          name: dep.name,
+          version: own_version,
+          requirements: own_reqs,
+          package_manager: dep.package_manager,
+          subdependency_metadata: dep.subdependency_metadata,
+          metadata: dep.metadata.merge(all_versions: own_versions)
+        )
+      end
+
+      sig do
+        params(
+          version: Dependabot::Dependency,
+          support_reqs: T::Array[Dependabot::DependencyRequirement],
+          locked_versions: T::Array[T.nilable(String)]
+        ).returns(T.nilable(Dependabot::Dependency))
+      end
+      def without_support_file_requirements_for_version(version, support_reqs, locked_versions)
+        own_requirements = version.requirements - support_reqs
+        return version if own_requirements == version.requirements
+        # The lockfile entries of a version are merged into its declarations, so a version that only support files
+        # declare may still be locked by this project, for example as a transitive dependency. Keep that copy.
+        return if own_requirements.empty? && !locked_versions.include?(version.version)
+
+        Dependency.new(
+          name: version.name,
+          version: version.version,
+          requirements: own_requirements,
+          package_manager: version.package_manager,
+          previous_version: version.previous_version,
+          previous_requirements: version.previous_requirements,
+          directory: version.directory,
+          subdependency_metadata: version.subdependency_metadata,
+          removed: version.removed?,
+          metadata: version.metadata
+        )
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
