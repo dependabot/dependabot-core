@@ -47,7 +47,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
       .with(
         ["mise", "ls-remote", "--json", "--", dependency.name],
         stderr_to_stdout: false,
-        env: hash_including("MISE_YES" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
+        env: hash_including("MISE_YES" => "1", "MISE_SAFE" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
       )
       .and_return(JSON.dump(
                     [
@@ -108,7 +108,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
         .with(
           ["mise", "ls-remote", "--json", "--", tool_name],
           stderr_to_stdout: false,
-          env: hash_including("MISE_YES" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
+          env: hash_including("MISE_YES" => "1", "MISE_SAFE" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
         )
         .and_return(JSON.dump(remote_versions.map { |version| { "version" => version } }))
     end
@@ -203,7 +203,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
         .with(
           ["mise", "ls-remote", "--json", "--", dependency.name],
           stderr_to_stdout: false,
-          env: hash_including("MISE_YES" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
+          env: hash_including("MISE_YES" => "1", "MISE_SAFE" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
         )
         .and_return("[]")
     end
@@ -227,7 +227,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
         .with(
           ["mise", "ls-remote", "--json", "--", dependency.name],
           stderr_to_stdout: false,
-          env: hash_including("MISE_YES" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
+          env: hash_including("MISE_YES" => "1", "MISE_SAFE" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
         )
         .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
                      message: "mise not found",
@@ -263,7 +263,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
         .with(
           ["mise", "ls-remote", "--json", "--", "ruby"],
           stderr_to_stdout: false,
-          env: hash_including("MISE_YES" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
+          env: hash_including("MISE_YES" => "1", "MISE_SAFE" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
         )
         .and_return(JSON.dump(remote_versions.map { |version| { "version" => version } }))
     end
@@ -287,7 +287,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
         .with(
           ["mise", "ls-remote", "--json", "--", dependency.name],
           stderr_to_stdout: false,
-          env: hash_including("MISE_YES" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
+          env: hash_including("MISE_YES" => "1", "MISE_SAFE" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
         )
         .and_return("{")
     end
@@ -303,7 +303,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
         .with(
           ["mise", "ls-remote", "--json", "--", dependency.name],
           stderr_to_stdout: false,
-          env: hash_including("MISE_YES" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
+          env: hash_including("MISE_YES" => "1", "MISE_SAFE" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
         )
         .and_return(JSON.dump([{ "version" => "28.4.1", "created_at" => "invalid" }]))
     end
@@ -355,7 +355,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
           .with(
             ["mise", "ls-remote", "--json", "--", dependency.name],
             stderr_to_stdout: false,
-            env: hash_including("MISE_YES" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
+            env: hash_including("MISE_YES" => "1", "MISE_SAFE" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
           )
           .and_return(JSON.dump(
                         [
@@ -376,7 +376,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
           .with(
             ["mise", "ls-remote", "--json", "--", dependency.name],
             stderr_to_stdout: false,
-            env: hash_including("MISE_YES" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
+            env: hash_including("MISE_YES" => "1", "MISE_SAFE" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
           )
           .and_return(JSON.dump(
                         [
@@ -397,7 +397,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
           .with(
             ["mise", "ls-remote", "--json", "--", dependency.name],
             stderr_to_stdout: false,
-            env: hash_including("MISE_YES" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
+            env: hash_including("MISE_YES" => "1", "MISE_SAFE" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
           )
           .and_return(JSON.dump(
                         [
@@ -428,7 +428,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
           .with(
             ["mise", "ls-remote", "--json", "--", dependency.name],
             stderr_to_stdout: false,
-            env: hash_including("MISE_YES" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
+            env: hash_including("MISE_YES" => "1", "MISE_SAFE" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
           )
           .and_return(JSON.dump(
                         [
