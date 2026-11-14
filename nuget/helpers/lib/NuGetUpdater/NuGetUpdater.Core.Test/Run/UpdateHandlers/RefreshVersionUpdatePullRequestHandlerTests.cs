@@ -1009,7 +1009,6 @@ public class RefreshVersionUpdatePullRequestHandlerTests : UpdateHandlersTestsBa
                         ["operation"] = "update_version_pr",
                     }
                 },
-                new ClosePullRequest() { DependencyNames = ["Some.Dependency"], Reason = "dependencies_changed" },
                 new CreatePullRequest()
                 {
                     Dependencies = [
