@@ -30,19 +30,13 @@ module Dependabot
           T::Array[String]
         )
 
-        normal = requirements.reject { |r| r.match?(WILDCARD_PATTERN) }
-        # When all patterns are wildcards, pass a placeholder requirement so that
-        # Gem::Requirement doesn't fall back to a catch-all ">= 0". satisfied_by?
-        # only delegates to super when there are no wildcard patterns, so this
-        # placeholder is never evaluated for wildcard-only requirements.
-        super(normal.empty? ? ["!= 0"] : normal)
+        super(requirements.reject { |r| r.match?(WILDCARD_PATTERN) })
       end
 
+      # Comma-separated constraints must all hold, as in Gem::Requirement.
       sig { override.params(version: Gem::Version).returns(T::Boolean) }
       def satisfied_by?(version)
-        version_string = version.to_s
-        result = @wildcard_patterns.any? { |p| WildcardMatcher.match?(p, version_string) } ||
-                 (@wildcard_patterns.empty? && super)
+        result = @wildcard_patterns.all? { |pattern| WildcardMatcher.match?(pattern, version.to_s) } && super
         T.cast(result, T::Boolean)
       end
     end
