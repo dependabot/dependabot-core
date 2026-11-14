@@ -39,15 +39,14 @@ RSpec.describe Dependabot::Mise::FileParser do
     context "with simple exact versions" do
       before do
         allow(File).to receive(:write)
+        responses = {
+          "erlang" => [{ "requested_version" => "27.3.2", "version" => "27.3.2" }],
+          "elixir" => [{ "requested_version" => "1.18.4-otp-27", "version" => "1.18.4-otp-27" }],
+          "helm" => [{ "requested_version" => "3.17.3", "version" => "3.17.3" }]
+        }
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with("mise ls --current --local --json", hash_including(stderr_to_stdout: false))
-          .and_return(JSON.dump(
-                        {
-                          "erlang" => [{ "requested_version" => "27.3.2",        "version" => "27.3.2" }],
-                          "elixir" => [{ "requested_version" => "1.18.4-otp-27", "version" => "1.18.4-otp-27" }],
-                          "helm" => [{ "requested_version" => "3.17.3", "version" => "3.17.3" }]
-                        }
-                      ))
+          .with(["mise", "ls", "--current", "--local", "--json"], hash_including(stderr_to_stdout: false))
+          .and_return(JSON.dump(responses))
       end
 
       it "parses tool names correctly" do
@@ -72,14 +71,8 @@ RSpec.describe Dependabot::Mise::FileParser do
         )
       end
 
-      before do
-        allow(File).to receive(:write)
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with("mise ls --current --local --json", hash_including(stderr_to_stdout: false))
-          .and_return(JSON.dump({}))
-      end
-
       it "returns no dependencies" do
+        expect(Dependabot::SharedHelpers).not_to receive(:run_shell_command)
         expect(dependencies).to be_empty
       end
     end
@@ -88,12 +81,39 @@ RSpec.describe Dependabot::Mise::FileParser do
       before do
         allow(File).to receive(:write)
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with("mise ls --current --local --json", hash_including(stderr_to_stdout: false))
+          .with(["mise", "ls", "--current", "--local", "--json"], hash_including(stderr_to_stdout: false))
           .and_return("{")
       end
 
       it "returns no dependencies" do
         expect(dependencies).to eq([])
+      end
+    end
+
+    context "when mise cannot list one of the tools" do
+      let(:mise_toml) do
+        Dependabot::DependencyFile.new(
+          name: "mise.toml",
+          content: "[tools]\nnode = '20.0.0'\nmissing-tool-xyz = '1.0.0'\n"
+        )
+      end
+
+      before do
+        allow(File).to receive(:write)
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(["mise", "ls", "--current", "--local", "--json"], hash_including(stderr_to_stdout: false))
+          .and_return(JSON.dump("node" => [{ "requested_version" => "20.0.0", "version" => "20.0.0" }]))
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(["mise", "ls", "--current", "--local", "--json", "--", "missing-tool-xyz"],
+                hash_including(stderr_to_stdout: false))
+          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                       message: "missing-tool-xyz not found in mise tool registry",
+                       error_context: {}
+                     ))
+      end
+
+      it "skips that tool and keeps the others" do
+        expect(dependencies.map { |dep| [dep.name, dep.version] }).to eq([["node", "20.0.0"]])
       end
     end
 
@@ -143,24 +163,58 @@ RSpec.describe Dependabot::Mise::FileParser do
           expect(dependencies.map { |dep| [dep.name, dep.version] }).to eq([["node", "18.0.0"]])
         end
       end
+
+      context "with a registry alias, a renamed alias and an unknown tool" do
+        let(:dependency_files) do
+          [Dependabot::DependencyFile.new(
+            name: "mise.toml",
+            content: "[tools]\nnode = '20.0.0'\nop = '2.30.0'\ngolang = '1.18'\nmissing-tool-xyz = '1.0.0'\n"
+          )]
+        end
+
+        it "reads every tool mise can resolve under its manifest key" do
+          expect(dependencies.map { |dep| [dep.name, dep.version] })
+            .to eq([["node", "20.0.0"], ["op", "2.30.0"], ["golang", "1.18"]])
+        end
+      end
     end
 
     context "with mixed version formats" do
+      let(:mise_toml) do
+        Dependabot::DependencyFile.new(
+          name: "mise.toml",
+          content: <<~TOML
+            [tools]
+            node = "20"
+            erlang = "27.3.2"
+            "npm:@redocly/cli" = "2.19.1"
+            python = "latest"
+            helm = "3.17.3"
+            ruby = "3.3.0"
+            [tools.golang]
+            version = "1.18"
+          TOML
+        )
+      end
+
       before do
         allow(File).to receive(:write)
+        listing = {
+          "node" => [{ "requested_version" => "20", "version" => "20.20.2" }],
+          "erlang" => [{ "requested_version" => "27.3.2", "version" => "27.3.2" }],
+          "npm:@redocly/cli" => [{ "requested_version" => "2.19.1", "version" => "2.19.1" }],
+          "python" => [{ "requested_version" => "latest", "version" => "3.14.3" }],
+          "helm" => [{ "requested_version" => "3.17.3", "version" => "3.17.3" }],
+          "ruby" => [{ "requested_version" => "3.3.0", "version" => "3.3.0" }],
+          "go" => [{ "requested_version" => "1.18", "version" => "1.18" }]
+        }
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with("mise ls --current --local --json", hash_including(stderr_to_stdout: false))
-          .and_return(JSON.dump(
-                        {
-                          "node" => [{ "requested_version" => "20", "version" => "20.20.2" }],
-                          "erlang" => [{ "requested_version" => "27.3.2", "version" => "27.3.2" }],
-                          "npm:@redocly/cli" => [{ "requested_version" => "2.19.1", "version" => "2.19.1" }],
-                          "python" => [{ "requested_version" => "latest", "version" => "3.14.3" }],
-                          "helm" => [{ "requested_version" => "3.17.3", "version" => "3.17.3" }],
-                          "ruby" => [{ "requested_version" => "3.3.0",  "version" => "3.3.0" }],
-                          "go" => [{ "requested_version" => "1.18", "version" => "1.18" }]
-                        }
-                      ))
+          .with(["mise", "ls", "--current", "--local", "--json"], hash_including(stderr_to_stdout: false))
+          .and_return(JSON.dump(listing))
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(["mise", "ls", "--current", "--local", "--json", "--", "golang"],
+                hash_including(stderr_to_stdout: false))
+          .and_return(JSON.dump(listing.fetch("go")))
       end
 
       it "returns only tools with parseable version strings" do
@@ -170,7 +224,7 @@ RSpec.describe Dependabot::Mise::FileParser do
           "npm:@redocly/cli",
           "node",
           "ruby",
-          "go"
+          "golang"
         )
       end
 
@@ -214,7 +268,8 @@ RSpec.describe Dependabot::Mise::FileParser do
           }
         }
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with("mise ls --current --local --json", hash_including(stderr_to_stdout: false)) do |_, env:, **|
+          .with(["mise", "ls", "--current", "--local", "--json"],
+                hash_including(stderr_to_stdout: false)) do |_, env:, **|
           JSON.dump(responses.fetch(env.fetch("MISE_OVERRIDE_CONFIG_FILENAMES")))
         end
       end
@@ -278,10 +333,8 @@ RSpec.describe Dependabot::Mise::FileParser do
       before do
         allow(File).to receive(:write)
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with("mise ls --current --local --json", hash_including(stderr_to_stdout: false))
-          .and_return(JSON.dump(
-                        "node" => [{ "requested_version" => "20.0.0", "version" => "20.0.0" }]
-                      ))
+          .with(["mise", "ls", "--current", "--local", "--json"], hash_including(stderr_to_stdout: false))
+          .and_return(JSON.dump("node" => [{ "requested_version" => "20.0.0", "version" => "20.0.0" }]))
       end
 
       it "parses dotfile mise config" do
@@ -292,6 +345,10 @@ RSpec.describe Dependabot::Mise::FileParser do
 
     context "with environment-specific config files" do
       let(:dependency_files) { [mise_toml, mise_dev_toml, mise_local_toml] }
+
+      let(:mise_toml) do
+        Dependabot::DependencyFile.new(name: "mise.toml", content: "[tools]\nerlang = '27.3.2'\n")
+      end
 
       let(:mise_dev_toml) do
         Dependabot::DependencyFile.new(
@@ -322,7 +379,8 @@ RSpec.describe Dependabot::Mise::FileParser do
           ".mise.local.toml" => { "erlang" => [{ "requested_version" => "26.0.0", "version" => "26.0.0" }] }
         }
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with("mise ls --current --local --json", hash_including(stderr_to_stdout: false)) do |_, env:, **|
+          .with(["mise", "ls", "--current", "--local", "--json"],
+                hash_including(stderr_to_stdout: false)) do |_, env:, **|
           JSON.dump(responses.fetch(env.fetch("MISE_OVERRIDE_CONFIG_FILENAMES")))
         end
       end
@@ -344,6 +402,10 @@ RSpec.describe Dependabot::Mise::FileParser do
     context "when one file is already on latest version" do
       let(:dependency_files) { [mise_toml, mise_production_toml] }
 
+      let(:mise_toml) do
+        Dependabot::DependencyFile.new(name: "mise.toml", content: "[tools]\nerlang = '28.0.0'\n")
+      end
+
       let(:mise_production_toml) do
         Dependabot::DependencyFile.new(
           name: "mise.production.toml",
@@ -362,7 +424,8 @@ RSpec.describe Dependabot::Mise::FileParser do
           "mise.production.toml" => { "erlang" => [{ "requested_version" => "27.0.0", "version" => "27.0.0" }] }
         }
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with("mise ls --current --local --json", hash_including(stderr_to_stdout: false)) do |_, env:, **|
+          .with(["mise", "ls", "--current", "--local", "--json"],
+                hash_including(stderr_to_stdout: false)) do |_, env:, **|
           JSON.dump(responses.fetch(env.fetch("MISE_OVERRIDE_CONFIG_FILENAMES")))
         end
       end

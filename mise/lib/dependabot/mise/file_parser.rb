@@ -9,6 +9,7 @@ require "dependabot/mise/helpers"
 require "dependabot/mise/version"
 require "dependabot/shared_helpers"
 require "json"
+require "toml-rb"
 
 module Dependabot
   module Mise
@@ -49,18 +50,13 @@ module Dependabot
         Dependabot::SharedHelpers.in_a_temporary_directory do
           File.write(mise_file.name, mise_file.content)
 
-          raw = Dependabot::SharedHelpers.run_shell_command(
-            "mise ls --current --local --json",
-            stderr_to_stdout: false,
-            env: {
-              "MISE_YES" => "1",
-              "MISE_OVERRIDE_CONFIG_FILENAMES" => mise_file.name
-            }
-          )
+          tool_names = manifest_tool_names(mise_file)
+          next if tool_names.empty?
 
-          JSON.parse(raw).each do |tool_name, entries|
-            entry = Array(entries).first
-            next unless entry
+          listed = T.cast(JSON.parse(run_mise_ls(mise_file)), T::Hash[String, Object])
+          tool_names.each do |tool_name|
+            entry = tool_entries(mise_file, listed, tool_name).first
+            next unless entry.is_a?(Hash)
 
             requested = entry["requested_version"]
             next unless requested
@@ -69,26 +65,57 @@ module Dependabot
 
             resolved = entry["version"] || requested
 
-            # Add or update the dependency with this file's requirement
-            dependencies_by_name[tool_name] = if dependencies_by_name[tool_name]
-                                                # Tool already exists from another file, add this file's requirement
-                                                add_requirement_to_dependency(
-                                                  T.must(dependencies_by_name[tool_name]),
-                                                  mise_file.name,
-                                                  requested,
-                                                  resolved
-                                                )
-                                              else
-                                                # New tool, create dependency
-                                                build_dependency(
-                                                  tool_name,
-                                                  resolved,
-                                                  requested,
-                                                  mise_file.name
-                                                )
-                                              end
+            dependency = dependencies_by_name[tool_name]
+            dependencies_by_name[tool_name] =
+              if dependency
+                add_requirement_to_dependency(dependency, mise_file.name, requested, resolved)
+              else
+                build_dependency(tool_name, resolved, requested, mise_file.name)
+              end
           end
         end
+      end
+
+      # Prefer the full listing: filtering can reject uninstalled plugins such as `op`.
+      # Query missing keys separately because mise renames aliases such as `golang` to `go`.
+      sig do
+        params(
+          mise_file: Dependabot::DependencyFile,
+          listed: T::Hash[String, Object],
+          tool_name: String
+        ).returns(T::Array[Object])
+      end
+      def tool_entries(mise_file, listed, tool_name)
+        entries = listed.fetch(tool_name) { T.cast(JSON.parse(run_mise_ls(mise_file, tool_name)), Object) }
+        entries.is_a?(Array) ? entries : []
+      rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+        Dependabot.logger.warn("mise ls failed for #{tool_name} in #{mise_file.name}: #{e.message}")
+        []
+      end
+
+      sig { params(mise_file: Dependabot::DependencyFile, tool_name: T.nilable(String)).returns(String) }
+      def run_mise_ls(mise_file, tool_name = nil)
+        command = ["mise", "ls", "--current", "--local", "--json"]
+        command += ["--", tool_name] if tool_name
+
+        Dependabot::SharedHelpers.run_shell_command(
+          command,
+          stderr_to_stdout: false,
+          env: {
+            "MISE_YES" => "1",
+            "MISE_OVERRIDE_CONFIG_FILENAMES" => mise_file.name
+          }
+        )
+      end
+
+      sig { params(mise_file: Dependabot::DependencyFile).returns(T::Array[String]) }
+      def manifest_tool_names(mise_file)
+        tools = T.cast(TomlRB.parse(T.must(mise_file.content)), T::Hash[String, Object])["tools"]
+        return [] unless tools.is_a?(Hash)
+
+        tools.keys
+      rescue TomlRB::Error => e
+        raise Dependabot::DependencyFileNotParseable.new(mise_file.name, e.message)
       end
 
       sig do
