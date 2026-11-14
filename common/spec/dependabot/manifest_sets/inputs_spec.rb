@@ -9,7 +9,7 @@ require "dependabot/dependency_file"
 require "dependabot/manifest_sets/inputs"
 
 RSpec.describe Dependabot::ManifestSets::Inputs do
-  def git(*args, stdin: nil)
+  def git(*args)
     stdout, status = Open3.capture2(
       "git",
       "-C",
@@ -18,8 +18,7 @@ RSpec.describe Dependabot::ManifestSets::Inputs do
       "user.name=test",
       "-c",
       "user.email=test@example.com",
-      *args,
-      stdin_data: stdin.to_s
+      *args
     )
     raise "git #{args.join(' ')} failed" unless status.success?
 
@@ -68,8 +67,9 @@ RSpec.describe Dependabot::ManifestSets::Inputs do
     end
 
     it "describes the committed content rather than the fetched content" do
-      committed = git("hash-object", "--stdin", stdin: "requests==2.32.5\n")
+      committed = git("rev-parse", "#{commit}:requirements.txt")
       write("requirements.txt", "rewritten during resolution\n")
+      expect(git("hash-object", "requirements.txt")).not_to eq(committed)
 
       inputs = described_class.resolve(
         dependency_files: [file("requirements.txt", content: "rewritten during resolution\n")],
