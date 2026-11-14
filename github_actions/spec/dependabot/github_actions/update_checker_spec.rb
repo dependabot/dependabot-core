@@ -685,9 +685,8 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
             .and_return("  origin/3.3-stable\n  origin/production\n")
         end
 
-        it "raises an error" do
-          expect { latest_version }
-            .to raise_error("Multiple ambiguous branches (3.3-stable, production) include #{reference}!")
+        it "does not raise, and proposes no update" do
+          expect(latest_version).to be_nil
         end
       end
 
