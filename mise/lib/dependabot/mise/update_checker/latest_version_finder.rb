@@ -55,7 +55,7 @@ module Dependabot
 
             JSON.parse(raw).filter_map do |entry|
               version = entry["version"]
-              next unless version
+              next unless Dependabot::Mise::Version.correct?(version)
 
               released_at = entry["created_at"] ? Time.parse(entry["created_at"]) : nil
 
@@ -65,7 +65,7 @@ module Dependabot
               )
             end
           end
-        rescue StandardError
+        rescue Dependabot::SharedHelpers::HelperSubprocessFailed, JSON::ParserError
           nil
         end
       end

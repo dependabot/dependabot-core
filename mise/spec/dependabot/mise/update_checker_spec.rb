@@ -120,6 +120,77 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
     end
   end
 
+  context "with Ruby releases from multiple implementations" do
+    let(:mise_toml) do
+      Dependabot::DependencyFile.new(name: "mise.toml", content: "[tools]\nruby = '3.3.0'\n")
+    end
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "ruby",
+        version: "3.3.0",
+        package_manager: "mise",
+        requirements: [{ requirement: "3.3.0", file: "mise.toml", groups: [], source: nil }]
+      )
+    end
+
+    let(:remote_versions) { %w(3.3.0 artichoke-dev jruby-9.4.12.0 3.4.2 truffleruby-24.2.0) }
+
+    before do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with(
+          ["mise", "ls-remote", "--json", "--", "ruby"],
+          stderr_to_stdout: false,
+          env: { "MISE_YES" => "1" }
+        )
+        .and_return(JSON.dump(remote_versions.map { |version| { "version" => version } }))
+    end
+
+    it "finds the latest supported release without discarding valid versions" do
+      expect(checker.latest_version).to eq("3.4.2")
+    end
+
+    context "when no releases have supported versions" do
+      let(:remote_versions) { %w(artichoke-dev jruby-9.4.12.0 truffleruby-24.2.0) }
+
+      it "returns nil" do
+        expect(checker.latest_version).to be_nil
+      end
+    end
+  end
+
+  context "when mise ls-remote returns invalid JSON" do
+    before do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with(
+          ["mise", "ls-remote", "--json", "--", dependency.name],
+          stderr_to_stdout: false,
+          env: { "MISE_YES" => "1" }
+        )
+        .and_return("{")
+    end
+
+    it "returns nil" do
+      expect(checker.latest_version).to be_nil
+    end
+  end
+
+  context "when a release has an invalid timestamp" do
+    before do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with(
+          ["mise", "ls-remote", "--json", "--", dependency.name],
+          stderr_to_stdout: false,
+          env: { "MISE_YES" => "1" }
+        )
+        .and_return(JSON.dump([{ "version" => "28.4.1", "created_at" => "invalid" }]))
+    end
+
+    it "does not hide the timestamp parsing error" do
+      expect { checker.latest_version }.to raise_error(ArgumentError)
+    end
+  end
+
   context "when dependency has a fuzzy version pin" do
     let(:dependency) do
       Dependabot::Dependency.new(
