@@ -19,15 +19,18 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
-        dependencies_by_name = {}
+        requirements_by_tool = T.let({}, T::Hash[String, T::Array[Dependabot::DependencyRequirement]])
         mise_files = dependency_files.select { |f| Dependabot::Mise::FileFetcher.mise_config_file?(f.name) }
+        mise_files.each { |mise_file| collect_requirements(mise_file, requirements_by_tool) }
 
-        # Parse each mise config file in isolation to track which file each dependency comes from
-        mise_files.each do |mise_file|
-          parse_mise_file(mise_file, dependencies_by_name)
+        requirements_by_tool.map do |tool_name, requirements|
+          Dependabot::Dependency.new(
+            name: tool_name,
+            version: lowest_resolved_version(requirements),
+            package_manager: "mise",
+            requirements: requirements
+          )
         end
-
-        dependencies_by_name.values
       end
 
       private
@@ -35,15 +38,14 @@ module Dependabot
       sig do
         params(
           mise_file: Dependabot::DependencyFile,
-          dependencies_by_name: T::Hash[String, Dependabot::Dependency]
+          requirements_by_tool: T::Hash[String, T::Array[Dependabot::DependencyRequirement]]
         )
           .void
       end
-      def parse_mise_file(mise_file, dependencies_by_name)
+      def collect_requirements(mise_file, requirements_by_tool)
         tools = supported_tools(mise_file)
         return if tools.empty?
 
-        # Parse this file in isolation by writing only this file to a temp directory
         Dependabot::SharedHelpers.in_a_temporary_directory do
           write_manifest_files([mise_file])
 
@@ -57,15 +59,13 @@ module Dependabot
             # Skip fuzzy pins like "latest" or "lts"
             next unless Dependabot::Mise::Version.correct?(requested)
 
-            resolved = entry["version"] || requested
-
-            dependency = dependencies_by_name[tool_name]
-            dependencies_by_name[tool_name] =
-              if dependency
-                add_requirement_to_dependency(dependency, mise_file.name, requested, resolved)
-              else
-                build_dependency(tool_name, resolved, requested, mise_file.name)
-              end
+            (requirements_by_tool[tool_name] ||= []) << Dependabot::DependencyRequirement.create(
+              requirement: requested,
+              file: mise_file.name,
+              groups: [],
+              source: nil,
+              metadata: { resolved_version: entry["version"] || requested }
+            )
           end
         end
       rescue Dependabot::SharedHelpers::HelperSubprocessFailed, JSON::ParserError => e
@@ -133,63 +133,10 @@ module Dependabot
         raise Dependabot::DependencyFileNotParseable.new(mise_file.name, e.message)
       end
 
-      sig do
-        params(
-          dependency: Dependabot::Dependency,
-          file_name: String,
-          requirement: String,
-          version: String
-        )
-          .returns(Dependabot::Dependency)
-      end
-      def add_requirement_to_dependency(dependency, file_name, requirement, version)
-        # Check if we already have this file in requirements (shouldn't happen, but be safe)
-        return dependency if dependency.requirements.any? { |r| r.file == file_name }
-
-        # Add the new requirement for this file
-        new_requirement = Dependabot::DependencyRequirement.create(
-          requirement: requirement,
-          file: file_name,
-          groups: [],
-          source: nil,
-          metadata: { resolved_version: version }
-        )
-
-        updated_requirements = dependency.requirements + [new_requirement]
-
-        # Use the LOWEST version across all files
-        # This ensures Dependabot will suggest updates for files that are behind
-        # If we used the highest, files already on latest wouldn't trigger updates for outdated files
-        current_version = Dependabot::Mise::Version.new(dependency.version)
-        new_version = Dependabot::Mise::Version.new(version)
-        updated_version = new_version < current_version ? version : dependency.version
-
-        # Create a new Dependency object with updated requirements and version
-        Dependabot::Dependency.new(
-          name: dependency.name,
-          version: updated_version,
-          package_manager: dependency.package_manager,
-          requirements: updated_requirements
-        )
-      end
-
-      sig do
-        params(name: String, version: String, requirement: String, file_name: String)
-          .returns(Dependabot::Dependency)
-      end
-      def build_dependency(name, version, requirement, file_name)
-        Dependabot::Dependency.new(
-          name: name,
-          version: version,
-          package_manager: "mise",
-          requirements: [{
-            requirement: requirement,
-            file: file_name,
-            groups: [],
-            source: nil,
-            metadata: { resolved_version: version }
-          }]
-        )
+      sig { params(requirements: T::Array[Dependabot::DependencyRequirement]).returns(T.nilable(String)) }
+      def lowest_resolved_version(requirements)
+        requirements.filter_map { |req| req.metadata_string("resolved_version") }
+                    .min_by { |version| Dependabot::Mise::Version.new(version) }
       end
 
       sig { override.void }

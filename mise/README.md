@@ -22,6 +22,8 @@ See [mise's configuration file locations](https://mise.jdx.dev/configuration.htm
 - Manifests with templates in `[tools]`, such as `node = "{{ env.NODE_VERSION }}"`, are skipped.
   Dependabot runs mise in [safe mode](https://mise.jdx.dev/security.html), which disables
   templates, and it can't rewrite templated values. Other manifests are still updated.
+- [`mise.lock`](https://mise.jdx.dev/dev-tools/mise-lock.html) files aren't updated. If you use
+  one, run `mise lock` after merging a Dependabot pull request.
 
 ### Running locally
 

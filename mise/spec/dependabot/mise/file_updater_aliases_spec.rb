@@ -32,12 +32,7 @@ RSpec.describe Dependabot::Mise::FileUpdater do
 
         before do
           allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
-          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-            .with(
-              ["mise", "ls-remote", "--json", "--", original_name],
-              stderr_to_stdout: false,
-              env: hash_including("MISE_YES" => "1", "MISE_SAFE" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
-            )
+          allow(Dependabot::SharedHelpers).to mise_ls_remote(original_name)
             .and_return(JSON.dump([{ "version" => new_version }]))
         end
 
@@ -80,12 +75,7 @@ RSpec.describe Dependabot::Mise::FileUpdater do
       before do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
         %w(golang go).each do |name|
-          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-            .with(
-              ["mise", "ls-remote", "--json", "--", name],
-              stderr_to_stdout: false,
-              env: hash_including("MISE_YES" => "1", "MISE_SAFE" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
-            )
+          allow(Dependabot::SharedHelpers).to mise_ls_remote(name)
             .and_return(JSON.dump([{ "version" => "1.22.0" }]))
         end
       end

@@ -221,7 +221,7 @@ RSpec.describe Dependabot::Mise::FileFetcher do
 
       it "raises a helpful error" do
         expect { file_fetcher_instance.files }
-          .to raise_error(Dependabot::DependencyFileNotFound, "No mise configuration file found")
+          .to raise_error(Dependabot::DependencyFileNotFound, described_class.required_files_message)
       end
     end
   end

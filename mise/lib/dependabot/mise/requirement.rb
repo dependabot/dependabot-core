@@ -33,7 +33,6 @@ module Dependabot
         super(requirements.reject { |r| r.match?(WILDCARD_PATTERN) })
       end
 
-      # Comma-separated constraints must all hold, as in Gem::Requirement.
       sig { override.params(version: Gem::Version).returns(T::Boolean) }
       def satisfied_by?(version)
         result = @wildcard_patterns.all? { |pattern| WildcardMatcher.match?(pattern, version.to_s) } && super
