@@ -427,11 +427,11 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
     context "with a feature dependency, when the feature has been removed" do
       let(:manifest_fixture_name) { "feature_removed" }
       let(:lockfile_fixture_name) { "feature_removed" }
-      let(:dependency_name) { "syntect" }
-      let(:dependency_version) { "1.8.1" }
-      let(:string_req) { "1.8" }
+      let(:dependency_name) { "bitflags" }
+      let(:dependency_version) { "0.8.0" }
+      let(:string_req) { "0.8" }
 
-      it { is_expected.to eq(Gem::Version.new("1.8.1")) }
+      it { is_expected.to eq(Gem::Version.new("0.8.2")) }
     end
 
     context "with multiple versions available of the dependency" do
