@@ -56,7 +56,9 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
   let(:job) do
     instance_double(
       Dependabot::Job,
-      source: instance_double(Dependabot::Source, directory: "/api")
+      source: instance_double(Dependabot::Source, directory: "/api"),
+      security_updates_only?: false,
+      dependencies: nil
     )
   end
 
@@ -264,6 +266,28 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       it "logs filtered dependencies" do
         expect(selector).to receive(:log_filtered_dependencies) do |filtered_deps|
           expect(filtered_deps.any?).to be true
+        end
+
+        selector.filter_to_group!(dependency_change)
+      end
+    end
+
+    context "when a security job targets a dependency missing from its advisories" do
+      before do
+        allow(dependency_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+        allow(dependency_group).to receive(:respond_to?).with(:applies_to).and_return(false)
+        allow(dependency_group).to receive(:contains?).and_return(true)
+        allow(job).to receive_messages(
+          ignore_conditions_for: [],
+          allowed_update?: false,
+          security_updates_only?: true,
+          dependencies: ["Rails"]
+        )
+      end
+
+      it "keeps the targeted dependency and drops the others" do
+        expect(dependency_change.updated_dependencies).to receive(:concat) do |kept|
+          expect(kept.map(&:name)).to eq(["rails"])
         end
 
         selector.filter_to_group!(dependency_change)
