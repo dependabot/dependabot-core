@@ -86,67 +86,25 @@ module Dependabot
               @current_dependency = dependency_to_update
               next if previous_line_already_replaced?
 
-              lockfile_before = File.read("Cargo.lock")
+              precise = precise_update?
+              command = "cargo update -p #{dependency_spec}"
+              command += " --precise #{dependency.version}" if precise
+              fingerprint = if precise
+                              "cargo update -p <dependency_spec> --precise <version>"
+                            else
+                              "cargo update -p <dependency_spec>"
+                            end
               run_cargo_command(
-                "cargo update -p #{dependency_spec}",
-                fingerprint: "cargo update -p <dependency_spec>"
+                command,
+                fingerprint: fingerprint
               )
-
-              force_precise_update if precise_update_needed?(lockfile_before)
             end
           end
         end
 
-        # The `--precise` retry is a best-effort recovery, not a hard gate. If
-        # the movement detector misfires (e.g. an earlier command already
-        # repointed this dependency while another consumer legitimately keeps
-        # the old version), forcing `--precise` can fail on the surviving
-        # transitive requirement. Swallow that failure, restore the plain
-        # result, and let `validate_updates` decide — it tolerates "Cargo
-        # selected a different valid version" and fails only on a real no-op.
-        sig { void }
-        def force_precise_update
-          lockfile_before_precise = File.read("Cargo.lock")
-          run_cargo_command(
-            "cargo update -p #{dependency_spec} --precise #{dependency.version}",
-            fingerprint: "cargo update -p <dependency_spec> --precise <version>"
-          )
-        rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
-          Dependabot.logger.info(
-            "Precise fallback for #{dependency.name} failed (#{e.message.lines.first&.strip}); " \
-            "keeping the plain update result for validation"
-          )
-          File.write("Cargo.lock", lockfile_before_precise)
-        end
-
-        # `cargo update -p name:version` won't move a package whose bump
-        # requires lockstep updates to sibling crates shared with other members
-        # (e.g. the `futures` family: 0.3.34 needs `futures-*` at `^0.3.34`).
-        # Cargo leaves the line unchanged and a later validation fails, so we
-        # retry with `--precise` to force the exact target and cascade the
-        # siblings.
-        #
-        # Only retry on a genuine no-op. Comparing the dependency's entries
-        # *and* its incoming edges before/after the plain command distinguishes
-        # a stuck line from one Cargo did resolve — including an edge repointed
-        # onto an already-present target entry, where forcing `--precise` would
-        # wrongly fail.
-        sig { params(lockfile_before: String).returns(T::Boolean) }
-        def precise_update_needed?(lockfile_before)
-          return false if git_dependency?
-
-          version = dependency.version
-          return false unless version && version_class.correct?(version)
-
-          previous_version = dependency.previous_version
-          return false unless previous_version && version_class.correct?(previous_version)
-          return false if previous_version == version
-
-          lockfile_after = File.read("Cargo.lock")
-          return false if dependency_move_signature(lockfile_before, dependency) !=
-                          dependency_move_signature(lockfile_after, dependency)
-
-          package_version_count(lockfile_after, dependency, previous_version).positive?
+        sig { returns(T::Boolean) }
+        def precise_update?
+          git_dependency? || dependency.requirements.empty?
         end
 
         # An earlier command in this run may already have resolved this
@@ -177,7 +135,6 @@ module Dependabot
         sig { params(updated_lockfile: String).void }
         def validate_dependency_update(updated_lockfile)
           return if desired_version_present?(updated_lockfile)
-          return if git_line_resolved_differently?(updated_lockfile)
 
           raise "Failed to update #{dependency.name}!" unless dependency_updated?(updated_lockfile, dependency)
 
@@ -475,7 +432,7 @@ module Dependabot
         sig { params(file: Dependabot::DependencyFile).returns(String) }
         def prepared_manifest_content(file)
           content = updated_manifest_content(file)
-          content = pin_version(content) unless git_dependency?
+          content = pin_versions(content, file)
           content = replace_ssh_urls(content)
           content = remove_binary_specifications(content)
           content = remove_default_run_specification(content)
@@ -497,56 +454,85 @@ module Dependabot
           ).updated_manifest_content
         end
 
-        sig { params(content: String).returns(String) }
-        def pin_version(content)
+        sig { params(content: String, file: Dependabot::DependencyFile).returns(String) }
+        def pin_versions(content, file)
           parsed_manifest = TomlRB.parse(content)
 
-          Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
-            next unless (req = parsed_manifest.dig(type, dependency.name))
+          # Cargo can ignore --precise after a direct requirement changes, so
+          # constrain every declared update in the temporary manifests instead.
+          dependencies.each do |candidate|
+            next if git_dependency_for?(candidate)
+            next unless candidate.requirements.any? { |requirement| requirement.file == file.name }
+            next unless candidate.version && candidate.version_class.correct?(candidate.version)
 
-            updated_req = "=#{dependency.version}"
-
-            if req.is_a?(Hash)
-              parsed_manifest[type][dependency.name]["version"] = updated_req
-            else
-              parsed_manifest[type][dependency.name] = updated_req
-            end
+            pin_dependency_version!(parsed_manifest, candidate)
           end
-
-          pin_target_specific_dependencies!(parsed_manifest)
 
           TomlRB.dump(parsed_manifest)
         end
 
-        sig { params(parsed_manifest: T::Hash[String, T.anything]).void }
-        def pin_target_specific_dependencies!(parsed_manifest)
-          toml_table_or_empty(parsed_manifest.fetch("target", {})).each do |target, t_details|
-            t_details = toml_table_or_empty(t_details)
+        sig do
+          params(
+            parsed_manifest: T::Hash[String, T.anything],
+            candidate: Dependabot::Dependency
+          ).void
+        end
+        def pin_dependency_version!(parsed_manifest, candidate)
+          Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
+            pin_dependency_table!(toml_table_or_empty(parsed_manifest.fetch(type, {})), candidate)
+          end
+
+          toml_table_or_empty(parsed_manifest.fetch("target", {})).each_value do |target_details|
+            target_details = toml_table_or_empty(target_details)
             Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
-              toml_table_or_empty(t_details.fetch(type, {})).each do |name, requirement|
-                next unless name == dependency.name
-
-                updated_req = "=#{dependency.version}"
-
-                if T.cast(requirement, T.nilable(Object)).is_a?(Hash)
-                  toml_table_or_empty(
-                    toml_table_or_empty(
-                      toml_table_or_empty(
-                        toml_table_or_empty(parsed_manifest["target"])[target]
-                      )[type]
-                    )[name]
-                  )["version"] =
-                    updated_req
-                else
-                  toml_table_or_empty(
-                    toml_table_or_empty(
-                      toml_table_or_empty(parsed_manifest["target"])[target]
-                    )[type]
-                  )[name] = updated_req
-                end
-              end
+              pin_dependency_table!(toml_table_or_empty(target_details.fetch(type, {})), candidate)
             end
           end
+
+          workspace = toml_table_or_empty(parsed_manifest.fetch("workspace", {}))
+          pin_dependency_table!(toml_table_or_empty(workspace.fetch("dependencies", {})), candidate)
+        end
+
+        sig do
+          params(
+            table: T::Hash[String, T.anything],
+            candidate: Dependabot::Dependency
+          ).void
+        end
+        def pin_dependency_table!(table, candidate)
+          table.each do |name, declaration|
+            declaration_hash = toml_table_or_empty(declaration)
+            next unless name == candidate.name
+            next if T.cast(declaration_hash["workspace"], T.nilable(Object)) == true
+            next unless declaration_accepts_version?(declaration, candidate)
+
+            version = "=#{candidate.version}"
+            if T.cast(declaration, T.nilable(Object)).is_a?(Hash)
+              declaration_hash["version"] = version
+            else
+              table[name] = version
+            end
+          end
+        end
+
+        sig do
+          params(
+            declaration: T.anything,
+            candidate: Dependabot::Dependency
+          ).returns(T::Boolean)
+        end
+        def declaration_accepts_version?(declaration, candidate)
+          declaration_hash = toml_table_or_empty(declaration)
+          requirement = if T.cast(declaration, T.nilable(Object)).is_a?(Hash)
+                          T.cast(declaration_hash["version"], T.nilable(String))
+                        else
+                          T.cast(declaration, String)
+                        end
+          return true if requirement.nil? || requirement.empty?
+
+          candidate.requirement_class.new(requirement).satisfied_by?(
+            candidate.version_class.new(T.must(candidate.version))
+          )
         end
 
         sig { params(content: String).returns(String) }
@@ -648,8 +634,13 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         def git_dependency?
+          git_dependency_for?(dependency)
+        end
+
+        sig { params(candidate: Dependabot::Dependency).returns(T::Boolean) }
+        def git_dependency_for?(candidate)
           GitCommitChecker.new(
-            dependency: dependency,
+            dependency: candidate,
             credentials: credentials
           ).git_dependency?
         end
@@ -763,102 +754,6 @@ module Dependabot
             entries.select! { |entry| entry.match?(/^source = "(?!git\+)/) }
           end
           entries
-        end
-
-        # A "did this dependency move?" signature: the dependency's own package
-        # identity plus its incoming edges. An edge repointed onto an
-        # already-present target entry moves the dependency without changing any
-        # `[[package]]` block, so identity alone is not a reliable signal.
-        sig do
-          params(lockfile_content: String, dependency: Dependabot::Dependency)
-            .returns(T::Array[String])
-        end
-        def dependency_move_signature(lockfile_content, dependency)
-          dependency_identity_signature(lockfile_content, dependency) +
-            dependency_reference_edges(lockfile_content, dependency)
-        end
-
-        # Identity of each of the dependency's own `[[package]]` blocks, reduced
-        # to the fields that define which crate instance is present: `name`,
-        # `version` and `source`.
-        #
-        # This deliberately excludes the block's outgoing `dependencies` array
-        # (and checksum): during a grouped update Cargo may add or drop version
-        # qualifiers on this crate's own outgoing edges when a sibling starts or
-        # stops coexisting, even though this crate itself did not move. Folding
-        # the whole block in would misread that as movement and wrongly suppress
-        # the `--precise` fallback, leaving the requested version stuck.
-        sig do
-          params(lockfile_content: String, dependency: Dependabot::Dependency)
-            .returns(T::Array[String])
-        end
-        def dependency_identity_signature(lockfile_content, dependency)
-          dependency_lockfile_entries(lockfile_content, dependency).map do |entry|
-            entry.lines.filter_map do |line|
-              stripped = line.strip
-              stripped if stripped.match?(/\A(?:name|version|source) = /)
-            end.join("\n")
-          end.sort
-        end
-
-        # Incoming edges to the dependency (`"futures"` or `"futures 0.3.33"`
-        # inside other packages' `dependencies` arrays), each qualified by the
-        # parent package that owns it. Cargo only appends the version when
-        # several versions of the crate coexist, so a repointed edge is visible
-        # here even when both entries stay in place. Qualifying by parent means a
-        # pair of edges swapping targets between two parents (`foo 1` -> `foo 2`
-        # in one, `foo 2` -> `foo 1` in another) is still detected as movement
-        # rather than cancelling out in a globally-sorted list.
-        #
-        # The parent is identified by Cargo's full package identity
-        # (name/version/source), not just name/version: a lockfile can carry the
-        # same name *and* version from different sources (see the
-        # `duplicate_source_versions` fixture), and dropping the source would let
-        # such a pair swap edges without the signature changing.
-        sig do
-          params(lockfile_content: String, dependency: Dependabot::Dependency)
-            .returns(T::Array[String])
-        end
-        def dependency_reference_edges(lockfile_content, dependency)
-          edge_regex = /\A"#{Regexp.escape(dependency.name)}( [^"]+)?",?\z/
-          edges = T.let([], T::Array[String])
-          lockfile_content.scan(LOCKFILE_ENTRY_REGEX) do
-            block = Regexp.last_match.to_s
-            parent_id = [
-              block[/^name = "[^"]+"$/],
-              block[/^version = "[^"]+"$/],
-              block[/^source = "[^"]+"$/]
-            ].compact.join(" ")
-            block.lines.each do |line|
-              stripped = line.strip
-              edges << "#{parent_id} => #{stripped}" if stripped.match?(edge_regex)
-            end
-          end
-          edges.sort
-        end
-
-        # A git dependency can legitimately resolve to a different commit than
-        # the checker expected (e.g. the tracked branch advanced between the
-        # check and this update). Accept the update when the dependency's git
-        # line moved off the previous commit, mirroring the version tolerance
-        # for registry dependencies.
-        sig { params(updated_lockfile: String).returns(T::Boolean) }
-        def git_line_resolved_differently?(updated_lockfile)
-          return false unless git_dependency?
-
-          previous_sha = dependency.previous_version
-          return false unless previous_sha
-
-          shas = git_source_shas(updated_lockfile)
-          # SHA comparisons use prefix semantics, matching the update
-          # checkers: previous_version may be an abbreviated commit.
-          return false if shas.empty? || shas.any? { |sha| sha.start_with?(previous_sha) }
-
-          Dependabot.logger.info(
-            "Cargo resolved #{dependency.name} to #{shas.join(', ')} " \
-            "instead of #{dependency.version} for the tracked git reference"
-          )
-          true
         end
 
         sig { params(lockfile_content: String).returns(T::Array[String]) }

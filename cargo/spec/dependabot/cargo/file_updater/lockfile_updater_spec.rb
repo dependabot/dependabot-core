@@ -1,8 +1,6 @@
 # typed: false
 # frozen_string_literal: true
 
-# Sorbet cannot resolve the after_lockfile and project_name fixtures defined only in child contexts.
-
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
@@ -63,6 +61,94 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
     end
 
     it { expect { updated_lockfile_content }.not_to output.to_stdout }
+
+    context "when updating multiple declared dependencies" do
+      let(:dependencies) do
+        [
+          dependency,
+          Dependabot::Dependency.new(
+            name: "regex",
+            version: "0.2.10",
+            requirements: [{
+              file: "Cargo.toml",
+              requirement: "0.2.10",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            previous_version: "0.1.41",
+            previous_requirements: [{
+              file: "Cargo.toml",
+              requirement: "0.1.41",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "cargo"
+          )
+        ]
+      end
+      let(:commands) { [] }
+      let(:manifest_contents) { [] }
+
+      before do
+        allow(updater).to receive(:run_cargo_command) do |command, **|
+          commands << command
+          manifest_contents << File.read("Cargo.toml")
+
+          content = File.read("Cargo.lock")
+          content = content.sub(
+            %(name = "time"\nversion = "0.1.38"),
+            %(name = "time"\nversion = "0.1.40")
+          )
+          content = content.sub(
+            %(name = "regex"\nversion = "0.1.41"),
+            %(name = "regex"\nversion = "0.2.10")
+          )
+          File.write("Cargo.lock", content)
+        end
+      end
+
+      it "pins every declared dependency before running Cargo" do
+        expect(updated_lockfile_content).to include(%(name = "time"\nversion = "0.1.40"))
+        expect(updated_lockfile_content).to include(%(name = "regex"\nversion = "0.2.10"))
+        expect(manifest_contents).to all(
+          include('time = "=0.1.40"').and(include('regex = "=0.2.10"'))
+        )
+        expect(commands).to eq(["cargo update -p time:0.1.38"])
+      end
+    end
+
+    context "when another declaration aliases the same package" do
+      let(:manifest_body) do
+        super() + <<~TOML
+          local_time = { package = "time", path = "local-time", version = "0.1.38" }
+        TOML
+      end
+      let(:prepared_manifest) { [] }
+
+      before do
+        captured = prepared_manifest
+        allow(updater).to receive(:run_cargo_command) do
+          captured << TomlRB.parse(File.read("Cargo.toml"))
+          content = File.read("Cargo.lock").sub(
+            %(name = "time"\nversion = "0.1.38"),
+            %(name = "time"\nversion = "0.1.40")
+          )
+          File.write("Cargo.lock", content)
+        end
+      end
+
+      it "does not pin the unparsed alias" do
+        updated_lockfile_content
+
+        dependencies = prepared_manifest.first.fetch("dependencies")
+        expect(dependencies.fetch("time")).to eq("=0.1.40")
+        expect(dependencies.fetch("local_time")).to include(
+          "package" => "time",
+          "path" => "local-time",
+          "version" => "0.1.38"
+        )
+      end
+    end
 
     context "when using a toolchain file that is too old" do
       let(:toolchain_file) do
@@ -203,6 +289,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
       context "with a target-specific dependency" do
         let(:manifest_fixture_name) { "target_dependency" }
         let(:lockfile_fixture_name) { "target_dependency" }
+        let(:dependency_version) { "0.1.38" }
         let(:dependency_previous_version) { "0.1.12" }
         let(:requirements) do
           [{
@@ -223,7 +310,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
 
         it "updates the dependency version in the lockfile" do
           expect(updated_lockfile_content)
-            .to include(%(name = "time"\nversion = "0.1.40"))
+            .to include(%(name = "time"\nversion = "0.1.38"))
         end
       end
 
@@ -280,9 +367,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
 
         it "updates only the requested locked package" do
           expect(updated_getrandom_versions).to include(Gem::Version.new("0.2.17"))
-          expect(updated_getrandom_versions).to include(
-            satisfy { |version| version >= Gem::Version.new("0.4.3") && version < Gem::Version.new("0.5.0") }
-          )
+          expect(updated_getrandom_versions).to include(Gem::Version.new("0.4.3"))
           expect(updated_getrandom_versions).not_to include(Gem::Version.new("0.4.2"))
         end
 
@@ -327,7 +412,10 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
             expect(updated_lockfile_content).to include(%(name = "getrandom"\nversion = "0.2.18"))
             expect(updated_lockfile_content).to include(%(name = "getrandom"\nversion = "0.4.3"))
             expect(commands).to eq(
-              ["cargo update -p getrandom:0.2.17", "cargo update -p getrandom:0.4.2"]
+              [
+                "cargo update -p getrandom:0.2.17 --precise 0.2.18",
+                "cargo update -p getrandom:0.4.2 --precise 0.4.3"
+              ]
             )
           end
 
@@ -353,7 +441,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
             it "skips the consumed package specification" do
               expect(updated_lockfile_content).to include(%(name = "getrandom"\nversion = "0.2.18"))
               expect(updated_lockfile_content).to include(%(name = "getrandom"\nversion = "0.4.3"))
-              expect(commands).to eq(["cargo update -p getrandom:0.2.17"])
+              expect(commands).to eq(["cargo update -p getrandom:0.2.17 --precise 0.2.18"])
             end
           end
         end
@@ -373,12 +461,8 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
       end
 
       context "when a shared dependency family in a real workspace needs a lockstep update" do
-        # Regression for issue #16092. Mocking the subprocess (rather than
-        # resolving live) keeps this deterministic: otherwise future
-        # `futures`/transitive releases would drift the lockfile and break the
-        # spec. `tower` pins the shared `futures-*` siblings, so a plain
-        # `cargo update -p futures:0.3.33` is a genuine no-op and only the
-        # `--precise` retry moves the whole family in lockstep.
+        # Regression for issue #16092. The workspace declaration must be pinned
+        # before the plain Cargo update so the shared family moves in lockstep.
         let(:dependency_files) { project_dependency_files("futures_lockstep_workspace") }
         let(:dependency_name) { "futures" }
         let(:dependency_version) { "0.3.34" }
@@ -388,6 +472,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         end
         let(:previous_requirements) { requirements }
         let(:commands) { [] }
+        let(:manifest_contents) { [] }
         let(:resolved_lockfile) do
           fixture("updated_projects", "futures_lockstep_workspace", "Cargo.lock")
         end
@@ -397,11 +482,12 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           resolved = resolved_lockfile
           allow(updater).to receive(:run_cargo_command) do |command, **|
             commands << command
-            File.write("Cargo.lock", resolved) if command.include?("--precise")
+            manifest_contents << File.read("Cargo.toml")
+            File.write("Cargo.lock", resolved)
           end
         end
 
-        it "forces --precise so the whole futures family moves to 0.3.34" do
+        it "pins the workspace dependency so the whole futures family moves to 0.3.34" do
           expect(updated_lockfile_content).to include(%(name = "futures"\nversion = "0.3.34"))
           %w(futures futures-channel futures-core futures-executor futures-io
              futures-macro futures-sink futures-task futures-util).each do |crate|
@@ -410,12 +496,8 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           expect(updated_lockfile_content).to include(
             "9a31d2a3fbaaeb2af2368bbdd904aa8e812d3c04a1ee10d3171f52d556e5d0a3"
           )
-          expect(commands).to eq(
-            [
-              "cargo update -p futures:0.3.33",
-              "cargo update -p futures:0.3.33 --precise 0.3.34"
-            ]
-          )
+          expect(manifest_contents).to contain_exactly(a_string_including('futures = "=0.3.34"'))
+          expect(commands).to eq(["cargo update -p futures:0.3.33"])
         end
       end
 
@@ -427,17 +509,21 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         #
         # The plain update just repoints app's edge onto the existing 2.13.1:
         #   app: 1.3.2 -> 2.13.1   (keeper stays 1.3.2)
-        # That is a genuine move, so no `--precise` retry - which would fail
-        # anyway because keeper still needs 1.3.
+        # Pinning only app's declaration lets Cargo retain the old version for
+        # keeper while selecting the exact target for app.
         let(:dependency_files) { project_dependency_files("bitflags_coexisting") }
         let(:dependency_name) { "bitflags" }
         let(:dependency_version) { "2.13.1" }
         let(:dependency_previous_version) { "1.3.2" }
         let(:requirements) do
-          [{ file: "app/Cargo.toml", requirement: "2.4", groups: ["dependencies"], source: nil }]
+          [
+            { file: "app/Cargo.toml", requirement: "2.4", groups: ["dependencies"], source: nil },
+            { file: "keeper/Cargo.toml", requirement: "1.3", groups: ["dependencies"], source: nil }
+          ]
         end
         let(:previous_requirements) { requirements }
         let(:commands) { [] }
+        let(:manifest_contents) { {} }
         let(:resolved_lockfile) do
           fixture("updated_projects", "bitflags_coexisting", "Cargo.lock")
         end
@@ -446,13 +532,17 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           resolved = resolved_lockfile
           allow(updater).to receive(:run_cargo_command) do |command, **|
             commands << command
+            manifest_contents["app"] = File.read("app/Cargo.toml")
+            manifest_contents["keeper"] = File.read("keeper/Cargo.toml")
             File.write("Cargo.lock", resolved) unless command.include?("--precise")
           end
         end
 
-        it "respects the repointed edge and does not force a doomed --precise" do
+        it "pins only the declaration that accepts the target version" do
           expect(updated_lockfile_content)
             .to include(%(name = "app"\nversion = "0.1.0"\ndependencies = [\n "bitflags 2.13.1",))
+          expect(manifest_contents.fetch("app")).to include('bitflags = "=2.13.1"')
+          expect(manifest_contents.fetch("keeper")).to include('bitflags = "1.3"')
           expect(commands).to eq(["cargo update -p bitflags:1.3.2"])
         end
       end
@@ -651,6 +741,15 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
             .to include("utf8-ranges#be9b8dfcaf449453cbf83ac85260ee80323f4f77")
         end
 
+        it "asks Cargo to update to the exact git revision" do
+          expect(updater).to receive(:run_cargo_command).with(
+            "cargo update -p utf8-ranges:1.0.0 --precise be9b8dfcaf449453cbf83ac85260ee80323f4f77",
+            fingerprint: "cargo update -p <dependency_spec> --precise <version>"
+          ).and_call_original
+
+          updated_lockfile_content
+        end
+
         context "when the tracked reference resolves to a different commit" do
           before do
             allow(updater).to receive(:run_cargo_command) do
@@ -665,9 +764,8 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
             end
           end
 
-          it "accepts the commit Cargo resolved" do
-            expect(updated_lockfile_content)
-              .to include("utf8-ranges#0123456789abcdef0123456789abcdef01234567")
+          it "rejects the unverified commit" do
+            expect { updated_lockfile_content }.to raise_error("Failed to update utf8-ranges!")
           end
         end
 
@@ -725,11 +823,8 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
             end
           end
 
-          it "accepts drift on the targeted ref while the other ref keeps the old commit" do
-            expect(updated_lockfile_content)
-              .to include("?branch=main#0123456789abcdef0123456789abcdef01234567")
-            expect(updated_lockfile_content)
-              .to include("?branch=stable#83141b376b93484341c68fbca3ca110ae5cd2708")
+          it "rejects drift on the targeted ref" do
+            expect { updated_lockfile_content }.to raise_error("Failed to update utf8-ranges!")
           end
 
           context "when another ref already carries the expected commit" do
@@ -842,9 +937,8 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
               end
             end
 
-            it "accepts the commit resolved for the new tag" do
-              expect(updated_lockfile_content)
-                .to include("?tag=v2#0123456789abcdef0123456789abcdef01234567")
+            it "rejects the unverified commit resolved for the new tag" do
+              expect { updated_lockfile_content }.to raise_error("Failed to update utf8-ranges!")
             end
           end
 
@@ -1350,81 +1444,6 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           end
         end
       end
-    end
-  end
-
-  # Pure, offline unit tests of the movement detector that decides whether a
-  # plain `cargo update` moved the dependency (if not, the `--precise` fallback
-  # fires). Each runs over a real cargo lockfile with one targeted edit, locking
-  # the three review fixes in place without a subprocess.
-  describe "#dependency_move_signature" do
-    subject(:moved?) do
-      updater.send(:dependency_move_signature, before_lockfile, dependency) !=
-        updater.send(:dependency_move_signature, after_lockfile, dependency)
-    end
-
-    let(:before_lockfile) { fixture("projects", project_name, "Cargo.lock") }
-
-    # Applies the block to the single `[[package]]` entry named `owner`.
-    def edit_block(content, owner, &block)
-      block_regex = /^\[\[package\]\]\nname = "#{Regexp.escape(owner)}"\n.*?(?=\n\[\[package\]\]|\z)/m
-      content.sub(block_regex, &block)
-    end
-
-    context "when only the dependency's own outgoing edges are re-rendered" do
-      # Cargo version-qualifies an outgoing edge once a sibling coexists,
-      # rewriting `futures`'s block without `futures` itself moving. Identity is
-      # name/version/source only, so this must not read as movement.
-      let(:project_name) { "futures_lockstep" }
-      let(:dependency_name) { "futures" }
-      let(:dependency_version) { "0.3.34" }
-      let(:dependency_previous_version) { "0.3.33" }
-      let(:after_lockfile) do
-        edit_block(before_lockfile, "futures") do |block|
-          block.sub(%( "futures-util",), %( "futures-util 0.3.33",))
-        end
-      end
-
-      it { is_expected.to be(false) }
-    end
-
-    context "when two parents swap the dependency's version between them" do
-      # app: 1.3.2 -> 2.13.1 and other: 2.13.1 -> 1.3.2. The globally-sorted set
-      # of edge strings is unchanged, so movement is only visible because each
-      # edge is qualified by its parent package.
-      let(:project_name) { "bitflags_coexisting" }
-      let(:dependency_name) { "bitflags" }
-      let(:dependency_version) { "2.13.1" }
-      let(:dependency_previous_version) { "1.3.2" }
-      let(:after_lockfile) do
-        swapped = edit_block(before_lockfile, "app") do |block|
-          block.sub(%( "bitflags 1.3.2",), %( "bitflags 2.13.1",))
-        end
-        edit_block(swapped, "other") do |block|
-          block.sub(%( "bitflags 2.13.1",), %( "bitflags 1.3.2",))
-        end
-      end
-
-      it { is_expected.to be(true) }
-    end
-  end
-
-  describe "#dependency_reference_edges" do
-    subject(:edges) { updater.send(:dependency_reference_edges, lockfile, dependency) }
-
-    # `nix 0.29.0` is locked twice - from crates.io and from the git tag - so
-    # two parents share name+version and differ only by `source`, both pointing
-    # at `bitflags 2.13.1`. The edges must stay distinct; dropping `source` from
-    # the parent id would collapse them and let a move between them cancel out.
-    let(:lockfile) { fixture("projects", "duplicate_source_parents", "Cargo.lock") }
-    let(:dependency_name) { "bitflags" }
-
-    it "qualifies duplicate-source parents distinctly by source" do
-      nix_edges = edges.select { |edge| edge.include?(%(name = "nix")) }
-      expect(nix_edges.length).to eq(2)
-      expect(nix_edges.uniq.length).to eq(2)
-      expect(nix_edges).to include(a_string_including('source = "registry+'))
-      expect(nix_edges).to include(a_string_including('source = "git+'))
     end
   end
 end
