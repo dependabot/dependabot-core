@@ -43,34 +43,51 @@ module Dependabot
         end
 
         deps_for_file.each_with_object(content.dup) do |dep, updated_content|
-          updated_content.replace(update_dependency(updated_content, dep, file_name))
+          next if requested_version_for(dep, file_name) == new_version_string_for(dep, file_name)
+
+          new_content = update_dependency(updated_content, dep, file_name)
+          if new_content == updated_content
+            raise no_files_changed_error(
+              "Expected content to change for #{dep.name} in #{file_name}!",
+              dependency_name: dep.name,
+              dependency_file: file_name
+            )
+          end
+
+          updated_content.replace(new_content)
         end
       end
 
       sig { params(content: String, dep: Dependabot::Dependency, file_name: String).returns(String) }
       def update_dependency(content, dep, file_name)
         tool = Regexp.escape(dep.name)
+        tool_key = "(?:\"#{tool}\"|'#{tool}'|#{tool})"
         old_version = Regexp.escape(requested_version_for(dep, file_name))
         new_version = new_version_string_for(dep, file_name)
 
         # Handles plain keys:   erlang = "27.3.2"
         # Handles quoted keys:  "npm:@redocly/cli" = "2.19.1"
         content = content.gsub(
-          /^("#{tool}"|#{tool})\s*=\s*"#{old_version}"/,
-          "\\1 = \"#{new_version}\""
+          /^([ \t]*#{tool_key}[ \t]*=[ \t]*)(["'])#{old_version}\2/,
+          "\\1\\2#{new_version}\\2"
         )
 
         # Handles inline table: python = { version = "3.11.0", virtualenv = ".venv" }
         content = content.gsub(
-          /^("#{tool}"|#{tool})(\s*=\s*\{.*?version\s*=\s*)"#{old_version}"/,
-          "\\1\\2\"#{new_version}\""
+          /^([ \t]*#{tool_key}[ \t]*=[ \t]*\{.*?version[ \t]*=[ \t]*)(["'])#{old_version}\2/,
+          "\\1\\2#{new_version}\\2"
         )
 
         # Handles table header: [tools.golang]
         #                       version = "1.18"
+        # Stop at the next table header, allowing array values before the version.
         content.gsub(
-          /(\[tools\.#{tool}\][^\[]*version\s*=\s*)"#{old_version}"/m,
-          "\\1\"#{new_version}\""
+          /(
+            ^[ \t]*\[tools\.#{tool_key}\]
+            (?:(?!^[ \t]*\[).)*?
+            ^[ \t]*version[ \t]*=[ \t]*
+          )(["'])#{old_version}\2/mx,
+          "\\1\\2#{new_version}\\2"
         )
       end
 
