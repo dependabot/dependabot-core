@@ -23,7 +23,7 @@ module Dependabot
 
       sig { override.returns(T.nilable(String)) }
       def latest_resolvable_version_with_no_unlock
-        # mise.lock isn't managed, so staying on the current pin is the only update without an unlock.
+        # Lockfile-only updates within a loose pin (mise lock --bump) aren't supported yet.
         dependency.version
       end
 
@@ -35,7 +35,7 @@ module Dependabot
             next req unless latest
 
             req.merge(
-              requirement: latest.to_s,
+              requirement: updated_requirement_string(req, latest),
               metadata: (req.metadata || {}).transform_keys(&:to_sym).merge(resolved_version: latest.to_s)
             )
           end
@@ -62,8 +62,24 @@ module Dependabot
       def version_updates(versions = latest_versions)
         versions.filter_map do |req, latest|
           current = current_version_for(req)
-          [req, latest] if latest && current && latest > current
+          next unless latest && current && latest > current
+          next if updated_requirement_string(req, latest) == req.requirement_string
+
+          [req, latest]
         end.to_h
+      end
+
+      # A loose pin such as "24" (resolved to 24.22.2) becomes "26" rather than "26.13.1", but only when mise
+      # resolves "26" to the selected version; otherwise ignore rules or cooldown could be bypassed.
+      sig { params(req: Dependabot::DependencyRequirement, latest: Dependabot::Version).returns(String) }
+      def updated_requirement_string(req, latest)
+        requested = req.requirement_string.to_s
+        return latest.to_s unless req.metadata_string("resolved_version")&.start_with?("#{requested}.")
+
+        pin = latest.to_s.split(".").first(requested.split(".").length).join(".")
+        return pin if pin == requested || finder_for(req).resolved_pin(pin) == latest.to_s
+
+        latest.to_s
       end
 
       sig { returns(T::Hash[Dependabot::DependencyRequirement, T.nilable(Dependabot::Version)]) }
@@ -87,6 +103,17 @@ module Dependabot
 
       sig { params(req: Dependabot::DependencyRequirement).returns(T.nilable(Dependabot::Version)) }
       def latest_version_for(req)
+        finder_for(req).latest_version
+      end
+
+      sig { params(req: Dependabot::DependencyRequirement).returns(LatestVersionFinder) }
+      def finder_for(req)
+        finders = @finders ||= T.let({}, T.nilable(T::Hash[Dependabot::DependencyRequirement, LatestVersionFinder]))
+        finders[req] ||= build_finder(req)
+      end
+
+      sig { params(req: Dependabot::DependencyRequirement).returns(LatestVersionFinder) }
+      def build_finder(req)
         manifest = dependency_files.find { |file| file.name == req.file }
         unless manifest
           raise Dependabot::DependencyFileNotFound.new(
@@ -108,7 +135,7 @@ module Dependabot
           raise_on_ignored: raise_on_ignored,
           security_advisories: security_advisories,
           cooldown_options: update_cooldown
-        ).latest_version
+        )
       end
 
       sig { params(req: Dependabot::DependencyRequirement).returns(T.nilable(Dependabot::Version)) }

@@ -17,6 +17,13 @@ The first two groups and `conf.d` folders also support environment and local var
 Hidden fragment files and folders are ignored.
 See [mise's configuration file locations](https://mise.jdx.dev/configuration.html#config-file-locations).
 
+### Loose pins
+
+A loose pin such as `node = "24"` keeps its precision: Dependabot updates it to `"26"`, not
+`"26.13.1"`, and proposes no update while the newest release still matches the pin. The pin
+stays loose only when mise resolves it to the version Dependabot selected; when ignore rules
+or cooldown hold back newer matching releases, it's pinned to the selected version exactly.
+
 ### Lockfiles
 
 When a manifest has a [`mise.lock`](https://mise.jdx.dev/dev-tools/mise-lock.html) (or

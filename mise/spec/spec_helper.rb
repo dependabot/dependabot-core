@@ -22,6 +22,14 @@ def mise_ls(tool = nil)
   )
 end
 
+def mise_latest(query)
+  receive(:run_shell_command).with(
+    ["mise", "latest", "--", query],
+    stderr_to_stdout: false,
+    env: hash_including("MISE_YES" => "1", "MISE_SAFE" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
+  )
+end
+
 def mise_ls_remote(tool)
   receive(:run_shell_command).with(
     ["mise", "ls-remote", "--json", "--", tool],

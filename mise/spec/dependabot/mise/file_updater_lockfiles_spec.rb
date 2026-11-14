@@ -71,6 +71,38 @@ RSpec.describe Dependabot::Mise::FileUpdater do
       end
     end
 
+    context "with a loose pin updated by the update checker" do
+      let(:manifests) { { "mise.toml" => "[tools]\nnode = '20'\n" } }
+      let(:ignored_versions) { [] }
+      let(:parsed) { Dependabot::Mise::FileParser.new(dependency_files: dependency_files, source: nil).parse.fetch(0) }
+      let(:checker) do
+        Dependabot::Mise::UpdateChecker.new(
+          dependency: parsed,
+          dependency_files: dependency_files,
+          credentials: [],
+          ignored_versions: ignored_versions,
+          raise_on_ignored: false
+        )
+      end
+      let(:dependency) { checker.updated_dependencies(requirements_to_unlock: :own).fetch(0) }
+      let(:locked_version) { locked(updated_files["mise.lock"], "node").fetch(0)["version"] }
+
+      it "keeps the pin loose and locks the selected version" do
+        expect(updated_files["mise.toml"]).to eq("[tools]\nnode = '#{dependency.version.split('.').first}'\n")
+        expect(locked_version).to eq(dependency.version)
+      end
+
+      context "when an ignore rule holds back newer releases matching the new pin" do
+        let(:ignored_versions) { ["> 22.0.0"] }
+
+        it "pins and locks the selected version exactly" do
+          expect(dependency.version).to eq("22.0.0")
+          expect(updated_files["mise.toml"]).to eq("[tools]\nnode = '22.0.0'\n")
+          expect(locked_version).to eq("22.0.0")
+        end
+      end
+    end
+
     context "with an environment lockfile" do
       let(:manifests) do
         { "mise.toml" => "[tools]\nnode = '20.0.0'\n", "mise.dev.toml" => "[tools]\nnode = '20.0.0'\n" }

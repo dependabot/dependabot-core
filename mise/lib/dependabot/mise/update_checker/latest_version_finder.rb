@@ -30,7 +30,35 @@ module Dependabot
           releases.max_by(&:version)&.version
         end
 
+        # Asks mise, so tool options such as minimum_release_age apply.
+        sig { params(pin: String).returns(T.nilable(String)) }
+        def resolved_pin(pin)
+          cache = @resolved_pins ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))
+          return cache[pin] if cache.key?(pin)
+
+          cache[pin] = begin
+            Dependabot::SharedHelpers.in_a_temporary_directory do
+              write_manifest_files(dependency_files)
+              Dependabot::SharedHelpers.run_shell_command(
+                ["mise", "latest", "--", "#{dependency.name}@#{pin}"], stderr_to_stdout: false, env: mise_env
+              ).strip
+            end
+          rescue Dependabot::SharedHelpers::HelperSubprocessFailed
+            nil
+          end
+        end
+
         private
+
+        # UpdateChecker scopes each finder to a single manifest.
+        sig { returns(T::Hash[String, String]) }
+        def mise_env
+          {
+            "MISE_YES" => "1",
+            "MISE_SAFE" => "1",
+            "MISE_OVERRIDE_CONFIG_FILENAMES" => T.must(dependency_files.first).name
+          }
+        end
 
         sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
         def package_releases
@@ -42,18 +70,13 @@ module Dependabot
 
         sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
         def fetch_releases
-          # UpdateChecker scopes each finder to a single manifest.
           Dependabot::SharedHelpers.in_a_temporary_directory do
             write_manifest_files(dependency_files)
 
             raw = Dependabot::SharedHelpers.run_shell_command(
               ["mise", "ls-remote", "--json", "--", dependency.name],
               stderr_to_stdout: false,
-              env: {
-                "MISE_YES" => "1",
-                "MISE_SAFE" => "1",
-                "MISE_OVERRIDE_CONFIG_FILENAMES" => T.must(dependency_files.first).name
-              }
+              env: mise_env
             )
 
             JSON.parse(raw).filter_map do |entry|

@@ -168,6 +168,73 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
       end
     end
 
+    context "with a loose pin" do
+      let(:pin) { "27" }
+      let(:remote_versions) { %w(27.3.2 27.4.0 28.0.0 28.0.1) }
+      let(:mise_resolves) { { "erlang@28" => "28.0.1", "erlang@28.0" => "28.0.1" } }
+      let(:mise_toml) do
+        Dependabot::DependencyFile.new(name: "mise.toml", content: "[tools]\nerlang = '#{pin}'\n")
+      end
+      let(:requirements) do
+        [{
+          requirement: pin, file: "mise.toml", groups: [], source: nil,
+          metadata: { resolved_version: current_version }
+        }]
+      end
+      let(:updated) do
+        checker.updated_requirements.map { |req| [req.requirement_string, req.metadata_string("resolved_version")] }
+      end
+
+      before do
+        mise_resolves.each do |query, version|
+          allow(Dependabot::SharedHelpers).to mise_latest(query).and_return("#{version}\n")
+        end
+      end
+
+      it "keeps the pin's precision" do
+        expect(updated).to eq([%w(28 28.0.1)])
+        expect(checker.updated_dependencies(requirements_to_unlock: :own).first.version).to eq("28.0.1")
+      end
+
+      context "when the pin includes the minor version" do
+        let(:pin) { "27.3" }
+
+        it "keeps both parts" do
+          expect(updated).to eq([%w(28.0 28.0.1)])
+        end
+      end
+
+      context "when the newest release still matches the pin" do
+        let(:remote_versions) { %w(27.3.2 27.4.0) }
+
+        it "reports the dependency as up to date" do
+          expect(checker).to be_up_to_date
+          expect(checker.updated_requirements).to eq(dependency.requirements)
+        end
+      end
+
+      context "when an ignore rule holds back the newest release matching the new pin" do
+        let(:ignored_versions) { [">= 28.0.1"] }
+
+        it "pins the selected version exactly, so mise can't install the ignored one" do
+          expect(updated).to eq([%w(28.0.0 28.0.0)])
+        end
+      end
+
+      context "when mise can't resolve the new pin" do
+        let(:mise_resolves) { {} }
+
+        before do
+          allow(Dependabot::SharedHelpers).to mise_latest("erlang@28")
+            .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "boom", error_context: {}))
+        end
+
+        it "pins the selected version exactly" do
+          expect(updated).to eq([%w(28.0.1 28.0.1)])
+        end
+      end
+    end
+
     context "with an OTP-qualified Elixir version" do
       let(:tool_name) { "elixir" }
       let(:current_version) { "1.18.4-otp-27" }
