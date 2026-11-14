@@ -152,6 +152,16 @@ module Dependabot
         match&.named_captures&.fetch("version", nil)
       end
 
+      sig do
+        params(message: String, regex: Regexp).returns(T::Array[T::Hash[Symbol, String]])
+      end
+      def self.missing_extensions_from(message, regex)
+        message.scan(regex).flatten.map do |extension_string|
+          name, requirement = extension_string.to_s.strip.split(" ", 2)
+          { name: name.to_s, requirement: requirement.to_s }
+        end
+      end
+
       # Capture the platform PHP version from composer.json
       sig { params(parsed_composer_json: ManifestDocument).returns(T.nilable(String)) }
       def self.capture_platform_php(parsed_composer_json)
