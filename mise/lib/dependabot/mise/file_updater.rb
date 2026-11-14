@@ -7,24 +7,20 @@ require "dependabot/errors"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/mise/file_fetcher"
-require "dependabot/mise/helpers"
 
 module Dependabot
   module Mise
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
-      include Dependabot::Mise::Helpers
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         updated_files = []
 
-        # Get all unique files that need updates from dependency requirements
         files_to_update = dependencies.flat_map do |dep|
           dep.requirements.map(&:file)
         end.uniq
 
-        # Update only the files that contain dependencies being updated
         files_to_update.each do |file_name|
           mise_file = dependency_files.find { |f| f.name == file_name }
           next unless mise_file
@@ -40,7 +36,6 @@ module Dependabot
 
       sig { params(content: String, file_name: String).returns(String) }
       def updated_mise_toml_content(content, file_name)
-        # Only update dependencies that have requirements in this specific file
         deps_for_file = dependencies.select do |dep|
           dep.requirements.any? { |r| r.file == file_name }
         end
@@ -94,7 +89,6 @@ module Dependabot
         value if value.is_a?(String)
       end
 
-      # Invalid candidates are skipped; invalid original manifests still raise.
       sig { params(content: String, tool: String).returns(T.nilable(String)) }
       def candidate_version(content, tool)
         declared_version(content, tool)
@@ -104,7 +98,6 @@ module Dependabot
 
       sig { params(dep: Dependabot::Dependency, file_name: String).returns(String) }
       def requested_version_for(dep, file_name)
-        # Get the requirement from the specific file being updated
         requirement = T.must(dep.previous_requirements)
                        .find { |r| r.file == file_name }
 
@@ -113,7 +106,6 @@ module Dependabot
 
       sig { params(dep: Dependabot::Dependency, file_name: String).returns(String) }
       def new_version_string_for(dep, file_name)
-        # Get the new requirement for the specific file
         requirement = dep.requirements.find { |r| r.file == file_name }
 
         requirement&.requirement_string || dep.version.to_s

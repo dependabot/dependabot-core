@@ -9,18 +9,23 @@ module Dependabot
     class FileFetcher < Dependabot::FileFetchers::Base
       extend T::Sig
 
-      # Project config locations from mise's SHARED_CONFIG_FILENAMES and
-      # env_config_patterns (src/config/mod.rs); keep them in sync on mise bumps.
       CONF_D_DIRECTORIES = %w(.config/mise/conf.d .mise/conf.d mise/conf.d).freeze
       CONFIG_DIRECTORIES = T.let(
         (%w(. .config .config/mise .mise mise) + CONF_D_DIRECTORIES).freeze,
         T::Array[String]
       )
-      # conf.d folders read only mise.toml, mise.local.toml, mise.<env>.toml and mise.<env>.local.toml.
-      CONF_D_FOLDER_FILE = %r{
-        \A(?:\.config/mise|\.?mise)/conf\.d/[^./][^/]*/
-        mise(?:\.[a-zA-Z0-9_-]+)?(?:\.local)?\.toml\z
-      }x
+      # Project config locations from mise's SHARED_CONFIG_FILENAMES and
+      # env_config_patterns (src/config/mod.rs); keep them in sync on mise bumps.
+      CONFIG_FILE_PATTERNS = T.let(
+        [
+          %r{\A(?:\.config/mise|\.?mise)(?:\.[a-zA-Z0-9_-]+)?(?:\.local)?\.toml\z},
+          %r{\A(?:\.config/mise|\.?mise)/config(?:\.[a-zA-Z0-9_-]+)?(?:\.local)?\.toml\z},
+          %r{\A\.config/mise/mise(?:\.local)?\.toml\z},
+          %r{\A(?:\.config/mise|\.?mise)/conf\.d/[^./][^/]*\.toml\z},
+          %r{\A(?:\.config/mise|\.?mise)/conf\.d/[^./][^/]*/mise(?:\.[a-zA-Z0-9_-]+)?(?:\.local)?\.toml\z}
+        ].freeze,
+        T::Array[Regexp]
+      )
 
       sig { override.returns(String) }
       def self.required_files_message
@@ -35,11 +40,7 @@ module Dependabot
 
       sig { params(filename: String).returns(T::Boolean) }
       def self.mise_config_file?(filename)
-        filename.match?(%r{\A(?:\.?mise|\.config/mise)(?:\.[a-zA-Z0-9_-]+)?(?:\.local)?\.toml\z}) ||
-          filename.match?(%r{\A(?:\.config/mise|\.?mise)/config(?:\.[a-zA-Z0-9_-]+)?(?:\.local)?\.toml\z}) ||
-          %w(.config/mise/mise.toml .config/mise/mise.local.toml).include?(filename) ||
-          filename.match?(%r{\A(?:\.config/mise|\.?mise)/conf\.d/[^./][^/]*\.toml\z}) ||
-          filename.match?(CONF_D_FOLDER_FILE)
+        CONFIG_FILE_PATTERNS.any? { |pattern| filename.match?(pattern) }
       end
 
       sig { override.returns(T::Array[DependencyFile]) }
@@ -64,15 +65,7 @@ module Dependabot
 
         return fetched_files unless fetched_files.empty?
 
-        raise Dependabot::DependencyFileNotFound.new(
-          "mise.toml",
-          "No mise configuration file found"
-        )
-      end
-
-      sig { override.returns(T.nilable(T::Hash[Symbol, T.anything])) }
-      def ecosystem_versions
-        nil
+        raise Dependabot::DependencyFileNotFound.new(nil, self.class.required_files_message)
       end
 
       private

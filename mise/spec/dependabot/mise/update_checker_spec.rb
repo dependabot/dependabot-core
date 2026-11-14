@@ -43,12 +43,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
   end
 
   before do
-    allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-      .with(
-        ["mise", "ls-remote", "--json", "--", dependency.name],
-        stderr_to_stdout: false,
-        env: hash_including("MISE_YES" => "1", "MISE_SAFE" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
-      )
+    allow(Dependabot::SharedHelpers).to mise_ls_remote(dependency.name)
       .and_return(JSON.dump(
                     [
                       { "version" => "27.3.2", "created_at" => "2026-01-13T20:06:42.23Z", "rolling" => false },
@@ -104,12 +99,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
     end
 
     before do
-      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-        .with(
-          ["mise", "ls-remote", "--json", "--", tool_name],
-          stderr_to_stdout: false,
-          env: hash_including("MISE_YES" => "1", "MISE_SAFE" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
-        )
+      allow(Dependabot::SharedHelpers).to mise_ls_remote(tool_name)
         .and_return(JSON.dump(remote_versions.map { |version| { "version" => version } }))
     end
 
@@ -199,12 +189,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
 
   context "when mise ls-remote returns empty" do
     before do
-      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-        .with(
-          ["mise", "ls-remote", "--json", "--", dependency.name],
-          stderr_to_stdout: false,
-          env: hash_including("MISE_YES" => "1", "MISE_SAFE" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
-        )
+      allow(Dependabot::SharedHelpers).to mise_ls_remote(dependency.name)
         .and_return("[]")
     end
 
@@ -223,12 +208,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
 
   context "when mise ls-remote fails" do
     before do
-      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-        .with(
-          ["mise", "ls-remote", "--json", "--", dependency.name],
-          stderr_to_stdout: false,
-          env: hash_including("MISE_YES" => "1", "MISE_SAFE" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
-        )
+      allow(Dependabot::SharedHelpers).to mise_ls_remote(dependency.name)
         .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
                      message: "mise not found",
                      error_context: {}
@@ -259,12 +239,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
     let(:remote_versions) { %w(3.3.0 artichoke-dev jruby-9.4.12.0 3.4.2 truffleruby-24.2.0 4.1.0-preview1) }
 
     before do
-      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-        .with(
-          ["mise", "ls-remote", "--json", "--", "ruby"],
-          stderr_to_stdout: false,
-          env: hash_including("MISE_YES" => "1", "MISE_SAFE" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
-        )
+      allow(Dependabot::SharedHelpers).to mise_ls_remote("ruby")
         .and_return(JSON.dump(remote_versions.map { |version| { "version" => version } }))
     end
 
@@ -283,12 +258,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
 
   context "when mise ls-remote returns invalid JSON" do
     before do
-      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-        .with(
-          ["mise", "ls-remote", "--json", "--", dependency.name],
-          stderr_to_stdout: false,
-          env: hash_including("MISE_YES" => "1", "MISE_SAFE" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
-        )
+      allow(Dependabot::SharedHelpers).to mise_ls_remote(dependency.name)
         .and_return("{")
     end
 
@@ -299,12 +269,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
 
   context "when a release has an invalid timestamp" do
     before do
-      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-        .with(
-          ["mise", "ls-remote", "--json", "--", dependency.name],
-          stderr_to_stdout: false,
-          env: hash_including("MISE_YES" => "1", "MISE_SAFE" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
-        )
+      allow(Dependabot::SharedHelpers).to mise_ls_remote(dependency.name)
         .and_return(JSON.dump([{ "version" => "28.4.1", "created_at" => "invalid" }]))
     end
 
@@ -351,12 +316,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
 
     context "when latest version was released within the cooldown period" do
       before do
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(
-            ["mise", "ls-remote", "--json", "--", dependency.name],
-            stderr_to_stdout: false,
-            env: hash_including("MISE_YES" => "1", "MISE_SAFE" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
-          )
+        allow(Dependabot::SharedHelpers).to mise_ls_remote(dependency.name)
           .and_return(JSON.dump(
                         [
                           { "version" => "27.3.2", "created_at" => "2026-01-13T20:06:42.23Z", "rolling" => false },
@@ -372,12 +332,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
 
     context "when latest version was released outside the cooldown period" do
       before do
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(
-            ["mise", "ls-remote", "--json", "--", dependency.name],
-            stderr_to_stdout: false,
-            env: hash_including("MISE_YES" => "1", "MISE_SAFE" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
-          )
+        allow(Dependabot::SharedHelpers).to mise_ls_remote(dependency.name)
           .and_return(JSON.dump(
                         [
                           { "version" => "27.3.2", "created_at" => "2026-01-13T20:06:42.23Z", "rolling" => false },
@@ -393,12 +348,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
 
     context "when created_at is missing" do
       before do
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(
-            ["mise", "ls-remote", "--json", "--", dependency.name],
-            stderr_to_stdout: false,
-            env: hash_including("MISE_YES" => "1", "MISE_SAFE" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
-          )
+        allow(Dependabot::SharedHelpers).to mise_ls_remote(dependency.name)
           .and_return(JSON.dump(
                         [
                           { "version" => "27.3.2", "rolling" => false },
@@ -424,12 +374,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
       end
 
       before do
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(
-            ["mise", "ls-remote", "--json", "--", dependency.name],
-            stderr_to_stdout: false,
-            env: hash_including("MISE_YES" => "1", "MISE_SAFE" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
-          )
+        allow(Dependabot::SharedHelpers).to mise_ls_remote(dependency.name)
           .and_return(JSON.dump(
                         [
                           { "version" => "27.3.2", "created_at" => "2026-01-13T20:06:42.23Z",

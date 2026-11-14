@@ -18,5 +18,3 @@ Dependabot::PullRequestCreator::Labeler
 
 require "dependabot/dependency"
 Dependabot::Dependency.register_production_check("mise", ->(_) { true })
-
-Dependabot::Utils.register_version_class("mise", Dependabot::Mise::Version)

@@ -23,8 +23,7 @@ module Dependabot
 
       sig { override.returns(T.nilable(String)) }
       def latest_resolvable_version_with_no_unlock
-        # mise has no lockfile; the version pinned in mise.toml IS the resolved version.
-        # "No unlock" means staying at the current pin.
+        # mise.lock isn't managed, so staying on the current pin is the only update without an unlock.
         dependency.version
       end
 
