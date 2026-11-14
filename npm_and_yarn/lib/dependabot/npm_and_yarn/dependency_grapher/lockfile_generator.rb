@@ -156,7 +156,7 @@ module Dependabot
         sig { void }
         def run_pnpm_lockfile_generation
           # pnpm uses --lockfile-only to generate lockfile without installing
-          command = "install --lockfile-only --ignore-scripts"
+          command = "install --lockfile-only #{Helpers::PNPM_NO_FROZEN_LOCKFILE} --ignore-scripts"
           Helpers.run_pnpm_command(command, fingerprint: command)
         end
 
