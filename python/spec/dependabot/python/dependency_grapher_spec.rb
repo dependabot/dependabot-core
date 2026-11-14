@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/dependency_graphers/graph_versions"
 require "dependabot/python"
 
 RSpec.describe Dependabot::Python::DependencyGrapher do
@@ -1432,6 +1433,38 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         .to be(true)
     end
 
+    it "reports every layer's original files as the directory's inputs" do
+      expect(grapher.manifest_set_input_files.map(&:path)).to contain_exactly(
+        "/requirements.in", "/requirements.txt", "/requirements-tests.in", "/requirements-tests.txt"
+      )
+    end
+
+    context "when the fetcher also retrieved a path dependency's setup.py" do
+      let(:path_dependency_setup_py) do
+        Dependabot::DependencyFile.new(
+          name: "pkg/setup.py",
+          content: "from setuptools import setup\nsetup(name=\"pkg\")\n",
+          directory: "/",
+          support_file: true
+        )
+      end
+
+      let(:dependency_files) do
+        [app_requirements_in, app_requirements_txt, test_requirements_in, test_requirements_txt,
+         path_dependency_setup_py]
+      end
+
+      it "keeps the support file among the directory's inputs although no layer lists it" do
+        expect(grapher.manifest_set_input_files.map(&:path)).to contain_exactly(
+          "/requirements.in",
+          "/requirements.txt",
+          "/requirements-tests.in",
+          "/requirements-tests.txt",
+          "/pkg/setup.py"
+        )
+      end
+    end
+
     context "when the directory has a single manifest" do
       let(:requirements_txt) do
         Dependabot::DependencyFile.new(
@@ -1494,6 +1527,24 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         expect(snapshots.length).to eq(1)
         expect(snapshots.first.manifest_file).to eql(pipfile_lock_file)
       end
+    end
+  end
+
+  describe "graph version" do
+    let(:graph_versions) { Dependabot::DependencyGraphers::GraphVersions }
+
+    it "is locked to the current grapher sources (run bin/update-manifest-set-graph-versions.rb)" do
+      expect(graph_versions.stale_owners(owners: ["pip"])).to be_empty
+    end
+
+    # uv's lock also covers parsing code in this gem, but this image has no uv sources and uv's CI does not run
+    # when only this gem changes. A change to that shared code still makes pip stale here, and the refresh
+    # script then requires a decision for every stale owner, uv included.
+    it "covers every source uv shares with this gem" do
+      shared = graph_versions.entries.fetch("uv").sources.reject { |source| source.start_with?("uv/") }
+      pip = graph_versions.entries.fetch("pip").sources
+
+      expect(graph_versions.source_files(shared) - graph_versions.source_files(pip)).to be_empty
     end
   end
 end
