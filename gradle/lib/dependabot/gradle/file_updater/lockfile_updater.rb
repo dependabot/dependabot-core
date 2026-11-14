@@ -7,7 +7,6 @@ require "shellwords"
 require "sorbet-runtime"
 
 require "dependabot/gradle/file_updater"
-require "dependabot/gradle/file_fetcher/settings_file_parser"
 
 module Dependabot
   module Gradle
@@ -31,13 +30,8 @@ module Dependabot
           @repo_contents_path = repo_contents_path
         end
 
-        sig do
-          params(
-            build_file: Dependabot::DependencyFile,
-            build_files: T::Array[Dependabot::DependencyFile]
-          ).returns(T::Array[Dependabot::DependencyFile])
-        end
-        def update_lockfiles(build_file, build_files: [build_file])
+        sig { params(build_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
+        def update_lockfiles(build_file)
           root_dir = determine_root_dir(build_file: build_file)
           lockfiles = lockfiles_for_root(root_dir)
 
@@ -59,7 +53,7 @@ module Dependabot
             command_parts = [
               gradle_executable_for(cwd: cwd, workspace_root: temp_dir.to_s),
               "--init-script", init_script_path,
-              *lockfile_tasks_for(build_files),
+              INIT_SCRIPT_TASK_NAME,
               "--write-locks",
               "--no-daemon"
             ]
@@ -321,13 +315,9 @@ systemProp.https.proxyPort=#{https_proxy_port}"
             #{compiler_fallback_snippet}
 
               gradle.rootProject.allprojects { target ->
-                target.configurations.findAll {
-                  it.canBeResolved &&
-                    it.resolutionStrategy.dependencyLockingEnabled &&
-                    it.allDependencies.any { dependency ->
-                      dependency instanceof org.gradle.api.artifacts.ModuleDependency
-                    }
-                }.each { it.incoming.resolutionResult.allDependencies }
+                target.configurations.matching {
+                  it.canBeResolved && it.resolutionStrategy.dependencyLockingEnabled
+                }.toList().each { it.incoming.resolutionResult.allDependencies }
               }
             }
           GRADLE
@@ -372,46 +362,6 @@ systemProp.https.proxyPort=#{https_proxy_port}"
                 }
               }
           GRADLE
-        end
-
-        sig { params(build_files: T::Array[Dependabot::DependencyFile]).returns(T::Array[String]) }
-        def lockfile_tasks_for(build_files)
-          build_files.filter_map { |build_file| dependency_task_for(build_file) }.uniq << INIT_SCRIPT_TASK_NAME
-        end
-
-        sig { params(build_file: Dependabot::DependencyFile).returns(T.nilable(String)) }
-        def dependency_task_for(build_file)
-          settings_file = find_settings_file(build_file)
-          return nil unless settings_file
-
-          root_dir = determine_root_dir(build_file: build_file)
-          file_path = normalized_file_path(build_file)
-          relative_path = path_relative_to_root(file_path, root_dir)
-
-          return nil if relative_path.start_with?("gradle/")
-
-          dirname = File.dirname(relative_path)
-          return nil if dirname == "." || dirname.empty?
-
-          # Look up the canonical Gradle project name from the settings file to handle repos
-          # that use custom projectDir mappings
-          # (e.g. project(':chrome-trace').projectDir = file('subprojects/chrome-trace')).
-          # Deriving the task from the filesystem path alone would produce a wrong Gradle task path.
-          parser = FileFetcher::SettingsFileParser.new(settings_file: settings_file)
-          project_name = parser.subproject_path_to_name_map[dirname]
-          return nil unless project_name
-
-          "#{project_name}:dependencies"
-        end
-
-        sig { params(file_path: String, root_dir: String).returns(String) }
-        def path_relative_to_root(file_path, root_dir)
-          return file_path.sub(%r{^/}, "") if root_dir == "/"
-
-          root_prefix = "#{root_dir}/"
-          return file_path.delete_prefix(root_prefix) if file_path.start_with?(root_prefix)
-
-          file_path.sub(%r{^/}, "")
         end
 
         sig { params(cwd: String, workspace_root: String).returns(String) }
