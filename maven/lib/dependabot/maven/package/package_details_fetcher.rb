@@ -139,7 +139,7 @@ module Dependabot
             url: dependency_pom_url(repository_url, version),
             headers: repository_auth_headers(repository_details)
           )
-          return unless response.status < 400
+          return unless response.status.between?(200, 299)
 
           last_modified = response.headers["Last-Modified"] || response.headers["last-modified"]
           return unless last_modified
