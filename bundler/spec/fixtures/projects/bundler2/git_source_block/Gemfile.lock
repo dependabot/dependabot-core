@@ -1,0 +1,21 @@
+GIT
+  remote: https://github.com/dependabot-fixtures/que
+  revision: 997d1a6ee76a1f254fd72ce16acbc8d347fcaee3
+  tag: v0.11.6
+  specs:
+    que (0.11.6)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    statesman (1.2.5)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  que!
+  statesman (~> 1.2.0)
+
+BUNDLED WITH
+   2.2.0
