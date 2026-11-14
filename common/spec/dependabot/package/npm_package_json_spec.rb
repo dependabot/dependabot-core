@@ -162,7 +162,7 @@ RSpec.describe Dependabot::Package::NpmPackageJson do
       expect(reader.name).to eq("example")
       expect { dependencies }
         .to raise_error(TypeError, "#{file.path}: dependencies must be an object")
-      expect { reader.package_manager_config }.to raise_error(TypeError, "engines must be an object")
+      expect(reader.package_manager_config.engines).to be_nil
     end
   end
 
