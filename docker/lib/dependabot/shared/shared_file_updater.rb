@@ -5,6 +5,7 @@ require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/errors"
 require "sorbet-runtime"
+require "dependabot/shared/helm_tag_updater"
 require "dependabot/shared/utils/helpers"
 
 module Dependabot
@@ -150,19 +151,13 @@ module Dependabot
 
       sig { params(file: Dependabot::DependencyFile, content: T.nilable(String)).returns(T.nilable(String)) }
       def update_helm(file, content)
-        old_tags = old_helm_tags(file)
-        return if old_tags.empty?
+        return unless content
 
-        modified_content = content
-        replacement = new_helm_tag(file)
-
-        old_tags.each do |old_tag|
-          old_tag_regex = /^\s*(?:-\s)?(?:tag|version):\s+["']?#{Regexp.escape(old_tag)}["']?(?=\s|$)/
-          modified_content = modified_content&.gsub(old_tag_regex) do |old_img_tag|
-            old_img_tag.gsub(old_tag.to_s, replacement.to_s)
-          end
-        end
-        modified_content
+        HelmTagUpdater.new.updated_content(
+          content: content,
+          old_images: old_yaml_images(file),
+          new_tag: new_helm_tag(file)
+        )
       end
 
       sig { params(file: Dependabot::DependencyFile, content: T.nilable(String)).returns(T.nilable(String)) }
@@ -200,16 +195,6 @@ module Dependabot
           digest = source[:digest] ? "@sha256:#{source[:digest]}" : ""
           tag = source[:tag] ? ":#{source[:tag]}" : ""
           "#{prefix}#{T.must(dependency).name}#{tag}#{digest}"
-        end.uniq
-      end
-
-      sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
-      def old_helm_tags(file)
-        T.must(previous_requirements(file)).map do |r|
-          source = image_source(r)
-          tag = source[:tag] || ""
-          digest = source[:digest] ? "@sha256:#{source[:digest]}" : ""
-          "#{tag}#{digest}"
         end.uniq
       end
 
