@@ -4231,6 +4231,68 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
 
       describe "pnpm catalog protocol" do
+        context "when the catalog is in a file that pnpm-workspace.yaml includes" do
+          let(:project_name) { "pnpm/catalog_include" }
+          let(:dependency_name) { "prettier" }
+          let(:dependencies) do
+            [
+              create_dependency(
+                file: "pnpm-catalogs.yaml",
+                name: "prettier",
+                version: "3.3.3",
+                required_version: "3.3.3",
+                previous_required_version: "3.3.0"
+              )
+            ]
+          end
+          let(:updated_pnpm_catalogs) { updated_files.find { |f| f.name == "pnpm-catalogs.yaml" } }
+
+          it "updates the included file and the lockfile, and leaves pnpm-workspace.yaml alone" do
+            expect(updated_files.map(&:name)).to eq(%w(pnpm-catalogs.yaml pnpm-lock.yaml))
+            expect(updated_pnpm_catalogs.content)
+              .to eq("catalog:\n  prettier: 3.3.3\n\ncatalogs:\n  legacy:\n    is-even: 0.1.2\n")
+            expect(updated_pnpm_lock.content).to include("prettier:\n      specifier: 3.3.3\n      version: 3.3.3")
+            expect(updated_pnpm_lock.content).not_to include("prettier@3.3.0")
+          end
+        end
+
+        context "when one dependency is in catalogs in several included files" do
+          # catalogs/legacy.yaml has is-even 0.1.1 and config/pnpm-workspace.yaml has is-even 0.1.2
+          let(:project_name) { "pnpm/catalog_include_multiple" }
+          let(:dependency_name) { "is-even" }
+          let(:dependencies) do
+            [
+              Dependabot::Dependency.new(
+                name: "is-even",
+                version: "1.0.0",
+                previous_version: "0.1.2",
+                package_manager: "npm_and_yarn",
+                requirements: [
+                  { file: "catalogs/legacy.yaml", requirement: "1.0.0", groups: ["dependencies"], source: nil },
+                  { file: "config/pnpm-workspace.yaml", requirement: "1.0.0", groups: ["dependencies"], source: nil }
+                ],
+                previous_requirements: [
+                  { file: "catalogs/legacy.yaml", requirement: "0.1.1", groups: ["dependencies"], source: nil },
+                  { file: "config/pnpm-workspace.yaml", requirement: "0.1.2", groups: ["dependencies"], source: nil }
+                ]
+              )
+            ]
+          end
+
+          it "updates each file from its own previous requirement, and the lockfile from both" do
+            expect(updated_files.map(&:name))
+              .to eq(%w(catalogs/legacy.yaml config/pnpm-workspace.yaml pnpm-lock.yaml))
+            expect(updated_files.find { |f| f.name == "catalogs/legacy.yaml" }.content)
+              .to eq("catalogs:\n  legacy:\n    is-even: 1.0.0\n")
+            expect(updated_files.find { |f| f.name == "config/pnpm-workspace.yaml" }.content)
+              .to eq("catalogs:\n  current:\n    is-even: 1.0.0\n")
+            expect(updated_pnpm_lock.content)
+              .to include("  current:\n    is-even:\n      specifier: 1.0.0\n      version: 1.0.0")
+            expect(updated_pnpm_lock.content)
+              .to include("  legacy:\n    is-even:\n      specifier: 1.0.0\n      version: 1.0.0")
+          end
+        end
+
         context "when individual dependency needs updating" do
           let(:project_name) { "pnpm/catalog_monorepo" }
           let(:dependency_name) { "prettier" }

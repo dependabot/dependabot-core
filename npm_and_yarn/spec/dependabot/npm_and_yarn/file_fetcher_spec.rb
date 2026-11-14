@@ -2294,6 +2294,82 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
   end
 
+  context "with a pnpm-workspace.yaml that includes other files" do
+    let(:repo_contents_path) { build_tmp_repo("pnpm/catalog_include", path: "projects") }
+    let(:file_fetcher_instance) do
+      described_class.new(source: source, credentials: credentials, repo_contents_path: repo_contents_path)
+    end
+
+    after { FileUtils.rm_rf(repo_contents_path) }
+
+    it "fetches the included files" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to contain_exactly("package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "pnpm-catalogs.yaml")
+    end
+
+    it "does not mark the included files as support files" do
+      catalogs = file_fetcher_instance.files.find { |f| f.name == "pnpm-catalogs.yaml" }
+
+      expect(catalogs.support_file?).to be(false)
+    end
+
+    context "when an included file is in a git submodule" do
+      before do
+        allow(file_fetcher_instance).to receive(:in_submodule?).and_call_original
+        allow(file_fetcher_instance).to receive(:in_submodule?).with("/pnpm-catalogs.yaml").and_return(true)
+      end
+
+      it "keeps it a support file" do
+        catalogs = file_fetcher_instance.files.find { |f| f.name == "pnpm-catalogs.yaml" }
+
+        expect(catalogs.support_file?).to be(true)
+      end
+    end
+
+    context "when an included file does not exist" do
+      before { FileUtils.rm(File.join(repo_contents_path, "pnpm-catalogs.yaml")) }
+
+      it "raises a DependencyFileNotFound error for that file" do
+        expect { file_fetcher_instance.files }.to raise_error(Dependabot::DependencyFileNotFound) do |error|
+          expect(error.file_path).to eq("/pnpm-catalogs.yaml")
+        end
+      end
+    end
+
+    context "when an included file is outside the repository" do
+      before do
+        File.write(
+          File.join(repo_contents_path, "pnpm-workspace.yaml"),
+          "packages:\n  - packages/*\n\ninclude:\n  ../pnpm-catalogs.yaml: [catalogs]\n"
+        )
+      end
+
+      it "raises a DependencyFileNotFound error instead of reading another file" do
+        expect { file_fetcher_instance.files }.to raise_error(Dependabot::DependencyFileNotFound) do |error|
+          expect(error.file_path).to eq("../pnpm-catalogs.yaml")
+        end
+      end
+    end
+
+    context "when the workspace is fetched from a parent directory" do
+      let(:directory) { "/packages/app" }
+
+      before do
+        FileUtils.mkdir_p(File.join(repo_contents_path, "packages", "app"))
+        File.write(File.join(repo_contents_path, "packages", "app", "package.json"), '{"name":"app","version":"1.0.0"}')
+      end
+
+      it "fetches the included files next to it, as support files like the workspace file" do
+        files = file_fetcher_instance.files
+        workspace = files.find { |f| f.name == "../../pnpm-workspace.yaml" }
+        catalogs = files.find { |f| f.name == "../../pnpm-catalogs.yaml" }
+
+        expect(catalogs).not_to be_nil
+        expect(catalogs.support_file?).to eq(workspace.support_file?)
+      end
+    end
+  end
+
   context "with package.json file just including a dummy string" do
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
