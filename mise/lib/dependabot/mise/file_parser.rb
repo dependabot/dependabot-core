@@ -52,7 +52,10 @@ module Dependabot
           raw = Dependabot::SharedHelpers.run_shell_command(
             "mise ls --current --local --json",
             stderr_to_stdout: false,
-            env: { "MISE_YES" => "1" }
+            env: {
+              "MISE_YES" => "1",
+              "MISE_OVERRIDE_CONFIG_FILENAMES" => mise_file.name
+            }
           )
 
           JSON.parse(raw).each do |tool_name, entries|
