@@ -49,6 +49,12 @@ module Dependabot
       @dependencies.values.flatten
     end
 
+    sig { params(directory: String).returns(T::Array[Dependabot::Dependency]) }
+    def dependencies_in_directory(directory)
+      normalized = Pathname.new(directory).cleanpath.to_s
+      @dependencies.select { |dir, _| Pathname.new(dir).cleanpath.to_s == normalized }.values.flatten
+    end
+
     sig { returns(T::Array[Dependabot::DependencyFile]) }
     def dependency_files
       assert_current_directory_set!
