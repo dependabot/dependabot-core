@@ -2662,4 +2662,117 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
       end
     end
   end
+
+  context "with a GitHub-hosted runner label dependency" do
+    let(:workflow_file_body) { fixture("workflow_files", "workflow_runner_labels.yml") }
+    let(:runner_changes) do
+      [
+        ["ubuntu-22.04", "ubuntu-26.04", %w(jobs build runs-on)],
+        ["ubuntu-22.04", "ubuntu-26.04", ["jobs", "lint", "runs-on", 0]]
+      ]
+    end
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "ubuntu",
+        version: "26.04",
+        previous_version: "22.04",
+        requirements: runner_changes.map { |_old, new, path| runner_requirement(new, path) },
+        previous_requirements: runner_changes.map { |old, _new, path| runner_requirement(old, path) },
+        package_manager: "github_actions"
+      )
+    end
+    let(:updated_content) { updater.updated_dependency_files.first.content }
+
+    def runner_requirement(label, path)
+      {
+        requirement: nil,
+        groups: [],
+        file: ".github/workflows/workflow.yml",
+        source: { "type" => "runner" },
+        metadata: { "declaration_string" => label, "yaml_source" => { "path" => path } }
+      }
+    end
+
+    it "rewrites the plain and listed labels and leaves every other runs-on as it was" do
+      expected = workflow_file_body
+                 .sub("    runs-on: ubuntu-22.04\n", "    runs-on: ubuntu-26.04\n")
+                 .sub("    runs-on: [ubuntu-22.04]\n", "    runs-on: [ubuntu-26.04]\n")
+
+      expect(updated_content).to eq(expected)
+    end
+
+    context "with a quoted label" do
+      let(:runner_changes) { [["macos-14-xlarge", "macos-26-xlarge", %w(jobs mac runs-on)]] }
+
+      it "keeps the quotes" do
+        expect(updated_content).to include('    runs-on: "macos-26-xlarge"' + "\n")
+        expect(updated_content).not_to include("macos-14-xlarge")
+      end
+    end
+
+    context "with an anchored label" do
+      let(:runner_changes) { [["macos-15", "macos-26", %w(jobs anchored runs-on)]] }
+
+      it "raises instead of moving the jobs that alias it" do
+        expect { updater.updated_dependency_files }
+          .to raise_error(RuntimeError, /Expected runner label macos-15 at jobs.anchored.runs-on/)
+      end
+    end
+
+    context "with a label spelled with an escape" do
+      let(:workflow_file_body) do
+        <<~'YAML'
+          jobs:
+            build:
+              runs-on: "ubuntu\x2d22.04"
+        YAML
+      end
+      let(:runner_changes) { [["ubuntu-22.04", "ubuntu-26.04", %w(jobs build runs-on)]] }
+
+      it "raises a clear error, since only a literal label can be rewritten in place" do
+        expect { updater.updated_dependency_files }
+          .to raise_error(
+            RuntimeError,
+            "Expected runner label ubuntu-22.04 to be written literally in .github/workflows/workflow.yml"
+          )
+      end
+    end
+
+    context "when the label is no longer at the parsed path" do
+      let(:runner_changes) { [["ubuntu-22.04", "ubuntu-26.04", %w(jobs latest runs-on)]] }
+
+      it "raises instead of leaving the workflow half updated" do
+        expect { updater.updated_dependency_files }
+          .to raise_error(RuntimeError, /Expected runner label ubuntu-22.04 at jobs.latest.runs-on/)
+      end
+    end
+
+    context "with an actions lockfile onboarding the workflow" do
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: ".github/workflows/actions.lock",
+          content: <<~LOCK
+            version: v0.0.2
+            workflows:
+              ".github/workflows/workflow.yml":
+                - "actions/checkout@v1"
+            dependencies:
+              "actions/checkout@v1":
+                ref: v1
+                commit: sha1-5273d0df9c603edc4284ac8402cf650b4f1f6686
+                owner_id: 44036562
+                repo_id: 197814629
+          LOCK
+        )
+      end
+      let(:files) { [workflow_file, lockfile] }
+
+      before { allow(Dependabot::GithubActions::Lockfile::CliEngine).to receive(:new) }
+
+      it "updates the workflow without relocking, since runs-on is not in the lock" do
+        expect(updater.updated_dependency_files.map(&:name)).to eq([".github/workflows/workflow.yml"])
+        expect(Dependabot::GithubActions::Lockfile::CliEngine).not_to have_received(:new)
+      end
+    end
+  end
 end
