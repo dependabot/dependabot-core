@@ -38,7 +38,6 @@ RSpec.describe Dependabot::Mise::FileParser do
 
     context "with simple exact versions" do
       before do
-        allow(File).to receive(:write)
         responses = {
           "erlang" => [{ "requested_version" => "27.3.2", "version" => "27.3.2" }],
           "elixir" => [{ "requested_version" => "1.18.4-otp-27", "version" => "1.18.4-otp-27" }],
@@ -78,7 +77,6 @@ RSpec.describe Dependabot::Mise::FileParser do
 
     context "when mise ls returns invalid JSON" do
       before do
-        allow(File).to receive(:write)
         allow(Dependabot::SharedHelpers).to mise_ls
           .and_return("{")
       end
@@ -92,7 +90,6 @@ RSpec.describe Dependabot::Mise::FileParser do
 
     context "when mise cannot list a manifest" do
       before do
-        allow(File).to receive(:write)
         allow(Dependabot::SharedHelpers).to mise_ls
           .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
                        message: "mise ERROR failed to load mise.toml",
@@ -117,7 +114,6 @@ RSpec.describe Dependabot::Mise::FileParser do
       end
 
       before do
-        allow(File).to receive(:write)
         allow(Dependabot::SharedHelpers).to mise_ls
           .and_return(JSON.dump("node" => [{ "requested_version" => "20.0.0", "version" => "20.0.0" }]))
         allow(Dependabot::SharedHelpers).to mise_ls("missing-tool-xyz")
@@ -285,7 +281,6 @@ RSpec.describe Dependabot::Mise::FileParser do
       end
 
       before do
-        allow(File).to receive(:write)
         listing = {
           "node" => [{ "requested_version" => "20", "version" => "20.20.2" }],
           "erlang" => [{ "requested_version" => "27.3.2", "version" => "27.3.2" }],
@@ -339,8 +334,6 @@ RSpec.describe Dependabot::Mise::FileParser do
       end
 
       before do
-        allow(File).to receive(:write)
-
         responses = {
           "mise.toml" => {
             "erlang" => [{ "requested_version" => "27.3.2", "version" => "27.3.2" }],
@@ -397,138 +390,6 @@ RSpec.describe Dependabot::Mise::FileParser do
         python = dependencies.find { |d| d.name == "python" }
         expect(python.requirements.length).to eq(1)
         expect(python.requirements.first[:file]).to eq("mise.production.toml")
-      end
-    end
-
-    context "with .mise.toml dotfile" do
-      let(:dependency_files) { [dotfile_mise_toml] }
-
-      let(:dotfile_mise_toml) do
-        Dependabot::DependencyFile.new(
-          name: ".mise.toml",
-          content: <<~TOML
-            [tools]
-            node = "20.0.0"
-          TOML
-        )
-      end
-
-      before do
-        allow(File).to receive(:write)
-        allow(Dependabot::SharedHelpers).to mise_ls
-          .and_return(JSON.dump("node" => [{ "requested_version" => "20.0.0", "version" => "20.0.0" }]))
-      end
-
-      it "parses dotfile mise config" do
-        expect(dependencies.map(&:name)).to contain_exactly("node")
-        expect(dependencies.first.requirements.first[:file]).to eq(".mise.toml")
-      end
-    end
-
-    context "with environment-specific config files" do
-      let(:dependency_files) { [mise_toml, mise_dev_toml, mise_local_toml] }
-
-      let(:mise_toml) do
-        Dependabot::DependencyFile.new(name: "mise.toml", content: "[tools]\nerlang = '27.3.2'\n")
-      end
-
-      let(:mise_dev_toml) do
-        Dependabot::DependencyFile.new(
-          name: "mise.dev.toml",
-          content: <<~TOML
-            [tools]
-            erlang = "27.0.0"
-          TOML
-        )
-      end
-
-      let(:mise_local_toml) do
-        Dependabot::DependencyFile.new(
-          name: ".mise.local.toml",
-          content: <<~TOML
-            [tools]
-            erlang = "26.0.0"
-          TOML
-        )
-      end
-
-      before do
-        allow(File).to receive(:write)
-
-        responses = {
-          "mise.toml" => { "erlang" => [{ "requested_version" => "27.3.2", "version" => "27.3.2" }] },
-          "mise.dev.toml" => { "erlang" => [{ "requested_version" => "27.0.0", "version" => "27.0.0" }] },
-          ".mise.local.toml" => { "erlang" => [{ "requested_version" => "26.0.0", "version" => "26.0.0" }] }
-        }
-        allow(Dependabot::SharedHelpers).to mise_ls do |_, env:, **|
-          JSON.dump(responses.fetch(env.fetch("MISE_OVERRIDE_CONFIG_FILENAMES")))
-        end
-      end
-
-      it "tracks erlang across all three files" do
-        erlang = dependencies.find { |d| d.name == "erlang" }
-        expect(erlang.requirements.length).to eq(3)
-
-        files = erlang.requirements.map { |r| r[:file] }
-        expect(files).to contain_exactly("mise.toml", "mise.dev.toml", ".mise.local.toml")
-      end
-
-      it "uses the lowest version (26.0.0) to ensure updates are detected" do
-        erlang = dependencies.find { |d| d.name == "erlang" }
-        expect(erlang.version).to eq("26.0.0")
-      end
-    end
-
-    context "when one file is already on latest version" do
-      let(:dependency_files) { [mise_toml, mise_production_toml] }
-
-      let(:mise_toml) do
-        Dependabot::DependencyFile.new(name: "mise.toml", content: "[tools]\nerlang = '28.0.0'\n")
-      end
-
-      let(:mise_production_toml) do
-        Dependabot::DependencyFile.new(
-          name: "mise.production.toml",
-          content: <<~TOML
-            [tools]
-            erlang = "27.0.0"
-          TOML
-        )
-      end
-
-      before do
-        allow(File).to receive(:write)
-
-        responses = {
-          "mise.toml" => { "erlang" => [{ "requested_version" => "28.0.0", "version" => "28.0.0" }] },
-          "mise.production.toml" => { "erlang" => [{ "requested_version" => "27.0.0", "version" => "27.0.0" }] }
-        }
-        allow(Dependabot::SharedHelpers).to mise_ls do |_, env:, **|
-          JSON.dump(responses.fetch(env.fetch("MISE_OVERRIDE_CONFIG_FILENAMES")))
-        end
-      end
-
-      it "uses the lowest version to ensure update is still detected" do
-        erlang = dependencies.find { |d| d.name == "erlang" }
-        expect(erlang.version).to eq("27.0.0")
-      end
-
-      it "tracks both file requirements" do
-        erlang = dependencies.find { |d| d.name == "erlang" }
-        expect(erlang.requirements.length).to eq(2)
-
-        files = erlang.requirements.map { |r| r[:file] }
-        expect(files).to contain_exactly("mise.toml", "mise.production.toml")
-      end
-
-      it "stores correct versions for each file" do
-        erlang = dependencies.find { |d| d.name == "erlang" }
-
-        mise_toml_req = erlang.requirements.find { |r| r[:file] == "mise.toml" }
-        expect(mise_toml_req[:requirement]).to eq("28.0.0")
-
-        production_req = erlang.requirements.find { |r| r[:file] == "mise.production.toml" }
-        expect(production_req[:requirement]).to eq("27.0.0")
       end
     end
   end

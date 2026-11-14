@@ -31,13 +31,14 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
   end
 
   let(:dependency_files) { [mise_toml] }
+  let(:ignored_versions) { [] }
 
   let(:checker) do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: [],
-      ignored_versions: [],
+      ignored_versions: ignored_versions,
       raise_on_ignored: false
     )
   end
@@ -120,6 +121,15 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
 
       it "allows newer prereleases" do
         expect(checker.latest_version).to eq("28.0-rc2")
+      end
+    end
+
+    context "when prereleases are ignored" do
+      let(:current_version) { "27.3.2-rc1" }
+      let(:ignored_versions) { ["*rc*"] }
+
+      it "rejects newer prereleases even when the current pin is a prerelease" do
+        expect(checker.latest_version).to eq("27.3.3")
       end
     end
 
@@ -359,36 +369,6 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
 
       it "returns the latest version ignoring cooldown" do
         expect(checker.latest_version.to_s).to eq("28.4.1")
-      end
-    end
-
-    context "when versions include release candidates filtered via ignored_versions" do
-      let(:checker) do
-        described_class.new(
-          dependency: dependency,
-          dependency_files: [mise_toml],
-          credentials: [],
-          ignored_versions: ["*rc*"],
-          raise_on_ignored: false
-        )
-      end
-
-      before do
-        allow(Dependabot::SharedHelpers).to mise_ls_remote(dependency.name)
-          .and_return(JSON.dump(
-                        [
-                          { "version" => "27.3.2", "created_at" => "2026-01-13T20:06:42.23Z",
-                            "rolling" => false },
-                          { "version" => "28.0-rc1", "created_at" => "2026-03-01T00:00:00Z",
-                            "rolling" => false },
-                          { "version" => "28.0-rc2", "created_at" => "2026-03-10T00:00:00Z",
-                            "rolling" => false }
-                        ]
-                      ))
-      end
-
-      it "does not suggest a release candidate as the latest version" do
-        expect(checker.latest_version.to_s).to eq("27.3.2")
       end
     end
   end

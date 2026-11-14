@@ -36,11 +36,9 @@ RSpec.describe Dependabot::Mise::FileUpdater do
             .and_return(JSON.dump([{ "version" => new_version }]))
         end
 
-        it "uses the original manifest key as the dependency name" do
+        it "preserves the manifest key and rewrites only the aliased tool's version" do
           expect(dependency.name).to eq(original_name)
-        end
 
-        it "rewrites only the aliased tool's version" do
           updater = described_class.new(
             dependency_files: [manifest],
             dependencies: checker.updated_dependencies(requirements_to_unlock: :own),
