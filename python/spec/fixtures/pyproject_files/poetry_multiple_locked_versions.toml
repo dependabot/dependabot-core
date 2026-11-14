@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "multiple-locked-versions"
+version = "0.1.0"
+description = "Poetry project that locks one package at a different version per Python version range"
+authors = ["Test <test@example.com>"]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.9"
+requests = "^2.32.3"
+urllib3 = [
+    { version = "1.26.20", python = "<3.10" },
+    { version = "2.2.1", python = ">=3.10" },
+]
