@@ -121,6 +121,68 @@ RSpec.describe Dependabot::Mise::FileFetcher do
     end
   end
 
+  describe ".lockfile_path_for" do
+    {
+      "mise.toml" => "mise.lock",
+      ".mise.toml" => "mise.lock",
+      "mise.dev.toml" => "mise.dev.lock",
+      ".mise.dev.toml" => "mise.dev.lock",
+      "mise.local.toml" => "mise.local.lock",
+      "mise.dev.local.toml" => "mise.dev.local.lock",
+      ".config/mise.toml" => ".config/mise.lock",
+      ".config/mise/config.toml" => ".config/mise/mise.lock",
+      ".config/mise/config.dev.toml" => ".config/mise/mise.dev.lock",
+      ".config/mise/mise.local.toml" => ".config/mise/mise.local.lock",
+      ".mise/config.toml" => ".mise/mise.lock",
+      "mise/config.local.toml" => "mise/mise.local.lock",
+      "mise/conf.d/tools.toml" => "mise/mise.lock",
+      ".config/mise/conf.d/tools.local.toml" => ".config/mise/mise.local.lock",
+      "mise/conf.d/node/mise.toml" => "mise/mise.lock",
+      ".mise/conf.d/node/mise.dev.toml" => ".mise/mise.dev.lock"
+    }.each do |config, lockfile|
+      it "maps #{config} to #{lockfile}" do
+        expect(described_class.lockfile_path_for(config)).to eq(lockfile)
+      end
+    end
+  end
+
+  describe ".sidecar_dirs" do
+    def lockfile(entries)
+      entries.map { |line| "[[tools.\"npm:prettier\"]]\nversion = \"3.3.0\"\n#{line}\n" }.join
+    end
+
+    {
+      "mise.lock" => ".mise/locks/npm-prettier/3.3.0",
+      "mise.dev.lock" => ".mise/locks/mise.dev/npm-prettier/3.3.0",
+      ".mise/mise.lock" => "locks/npm-prettier/3.3.0",
+      ".config/mise.lock" => "mise/locks/npm-prettier/3.3.0",
+      ".config/mise/mise.lock" => "locks/npm-prettier/3.3.0"
+    }.each do |lockfile_name, recorded|
+      it "resolves #{recorded} relative to #{lockfile_name}" do
+        content = lockfile(["aube = { path = \"#{recorded}\", digest = \"sha256:abc\" }"])
+        expect(described_class.sidecar_dirs(lockfile_name, content))
+          .to eq([File.join(File.dirname(lockfile_name), recorded).delete_prefix("./")])
+      end
+    end
+
+    it "reads both sidecar kinds" do
+      content = "[[tools.\"pipx:black\"]]\nversion = \"24.1.0\"\n" \
+                "uv = { path = \"locks/pipx-black/24.1.0\", digest = \"sha256:abc\" }\n"
+      expect(described_class.sidecar_dirs(".mise/mise.lock", content)).to eq([".mise/locks/pipx-black/24.1.0"])
+    end
+
+    it "ignores paths without a digest, absolute paths and paths that leave the directory" do
+      content = lockfile(
+        [
+          "options = { path = \"bin/tool\" }",
+          "aube = { path = \"/etc/locks\", digest = \"sha256:abc\" }",
+          "aube = { path = \"../../outside\", digest = \"sha256:abc\" }"
+        ]
+      )
+      expect(described_class.sidecar_dirs("mise.lock", content)).to be_empty
+    end
+  end
+
   describe ".required_files_in?" do
     it "returns true when any mise config file is present" do
       filenames = ["README.md", "package.json", ".mise/config.dev.toml", "Gemfile"]
@@ -184,6 +246,61 @@ RSpec.describe Dependabot::Mise::FileFetcher do
 
       it "allows the optional configuration directories to be absent" do
         expect(file_fetcher_instance.files.map(&:name)).to eq(["mise.toml"])
+      end
+    end
+
+    context "with lockfiles" do
+      let(:manifest_names) { %w(mise.toml mise.dev.toml mise/conf.d/node.toml mise/conf.d/git/mise.toml) }
+      let(:other_files) { %w(mise.lock mise/mise.lock mise.ci.lock .mise/mise.lock) }
+
+      it "fetches the lockfiles that belong to a fetched manifest" do
+        expect(file_fetcher_instance.files.map(&:name)).to match_array(manifest_names + %w(mise.lock mise/mise.lock))
+      end
+
+      context "when a lockfile references sidecar files" do
+        let(:sidecar) { ".mise/locks/npm-prettier/3.3.0" }
+
+        before do
+          lock = "[[tools.\"npm:prettier\"]]\nversion = \"3.3.0\"\n" \
+                 "aube = { path = \"#{sidecar}\", digest = \"sha256:abc\" }\n"
+          File.write(File.join(repo_contents_path, "mise.lock"), lock)
+          %W(#{sidecar}/package.json #{sidecar}/nested/aube-lock.yaml .mise/locks/npm-other/1.0.0/package.json)
+            .each do |path|
+            FileUtils.mkdir_p(File.join(repo_contents_path, File.dirname(path)))
+            File.write(File.join(repo_contents_path, path), "{}")
+          end
+        end
+
+        it "fetches the referenced sidecar files only" do
+          expect(file_fetcher_instance.files.map(&:name)).to match_array(
+            manifest_names + %W(mise.lock mise/mise.lock #{sidecar}/package.json #{sidecar}/nested/aube-lock.yaml)
+          )
+        end
+      end
+
+      it "still requires a manifest" do
+        expect(described_class.required_files_in?(%w(mise.lock))).to be(false)
+      end
+    end
+
+    context "when two lockfiles share a sidecar directory" do
+      let(:manifest_names) { %w(mise.toml .mise/config.toml) }
+      let(:other_files) { %w(mise.lock .mise/mise.lock .mise/locks/npm-prettier/3.3.0/package.json) }
+
+      before do
+        { "mise.lock" => ".mise/locks/npm-prettier/3.3.0", ".mise/mise.lock" => "locks/npm-prettier/3.3.0" }
+          .each do |lockfile, recorded|
+          File.write(
+            File.join(repo_contents_path, lockfile),
+            "[[tools.\"npm:prettier\"]]\nversion = \"3.3.0\"\n" \
+            "aube = { path = \"#{recorded}\", digest = \"sha256:abc\" }\n"
+          )
+        end
+      end
+
+      it "fetches the shared sidecar files once" do
+        expect(file_fetcher_instance.files.map(&:name)).to eq(file_fetcher_instance.files.map(&:name).uniq)
+        expect(file_fetcher_instance.files.map(&:name)).to match_array(manifest_names + other_files)
       end
     end
 

@@ -1,6 +1,9 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "toml-rb"
+
+require "dependabot/errors"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 
@@ -43,6 +46,49 @@ module Dependabot
         CONFIG_FILE_PATTERNS.any? { |pattern| filename.match?(pattern) }
       end
 
+      # Sidecar tables such as `aube = { path = "locks/npm-prettier/3.3.0", digest = "..." }`, relative to the lockfile.
+      sig { params(lockfile_name: String, content: String).returns(T::Array[String]) }
+      def self.sidecar_dirs(lockfile_name, content)
+        tools = T.cast(TomlRB.parse(content), T::Hash[String, Object])["tools"]
+        recorded_sidecar_paths(tools).uniq.map do |path|
+          File.join(File.dirname(lockfile_name), path).delete_prefix("./")
+        end
+      end
+
+      sig { params(value: Object).returns(T::Array[String]) }
+      def self.recorded_sidecar_paths(value)
+        case value
+        when Hash
+          path = T.let(value["path"], Object)
+          digest = T.let(value["digest"], Object)
+          relative = path.is_a?(String) && !path.start_with?("/") && !path.split("/").include?("..")
+          own = relative && digest.is_a?(String) ? [path] : []
+          own + value.values.flat_map { |item| recorded_sidecar_paths(T.let(item, Object)) }
+        when Array
+          value.flat_map { |item| recorded_sidecar_paths(T.let(item, Object)) }
+        else
+          []
+        end
+      end
+      private_class_method :recorded_sidecar_paths
+
+      # Mirrors lockfile_path_for_config and the env and local helpers in mise's src/lockfile.rs.
+      sig { params(config_path: String).returns(String) }
+      def self.lockfile_path_for(config_path)
+        filename = File.basename(config_path)
+        env = filename[/\A(?:\.?mise|config)\.([^.]+)(?:\.local)?\.toml\z/, 1]
+        local = filename.include?(".local.")
+        name = ["mise", (env unless env == "local"), ("local" if local), "lock"].compact.join(".")
+
+        dir = File.dirname(config_path)
+        if File.basename(dir) == "conf.d"
+          dir = File.dirname(dir)
+        elsif File.basename(File.dirname(dir)) == "conf.d"
+          dir = File.dirname(dir, 2)
+        end
+        File.join(dir, name).delete_prefix("./")
+      end
+
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         unless allow_beta_ecosystems?
@@ -63,12 +109,38 @@ module Dependabot
           end
         end
 
-        return fetched_files unless fetched_files.empty?
+        return fetched_files + lockfiles_for(fetched_files) unless fetched_files.empty?
 
         raise Dependabot::DependencyFileNotFound.new(nil, self.class.required_files_message)
       end
 
       private
+
+      sig { params(config_files: T::Array[DependencyFile]).returns(T::Array[DependencyFile]) }
+      def lockfiles_for(config_files)
+        lockfiles = config_files.map { |file| self.class.lockfile_path_for(file.name) }.uniq
+                                .filter_map { |path| fetch_file_if_present(path) }
+        lockfiles + lockfiles.flat_map { |lockfile| sidecar_dirs_for(lockfile) }.uniq.flat_map { |dir| files_in(dir) }
+      end
+
+      sig { params(lockfile: DependencyFile).returns(T::Array[String]) }
+      def sidecar_dirs_for(lockfile)
+        self.class.sidecar_dirs(lockfile.name, lockfile.content.to_s)
+      rescue TomlRB::Error => e
+        raise Dependabot::DependencyFileNotParseable.new(lockfile.name, e.message)
+      end
+
+      sig { params(dir: String).returns(T::Array[DependencyFile]) }
+      def files_in(dir)
+        repo_contents(dir: dir, raise_errors: false).flat_map do |entry|
+          path = File.join(dir, entry.name)
+          case entry.type
+          when "file" then [fetch_file_from_host(path)]
+          when "dir" then files_in(path)
+          else []
+          end
+        end
+      end
 
       sig { returns(T::Array[String]) }
       def config_directories

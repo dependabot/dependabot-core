@@ -20,7 +20,6 @@ module Dependabot
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         requirements_by_tool = T.let({}, T::Hash[String, T::Array[Dependabot::DependencyRequirement]])
-        mise_files = dependency_files.select { |f| Dependabot::Mise::FileFetcher.mise_config_file?(f.name) }
         mise_files.each { |mise_file| collect_requirements(mise_file, requirements_by_tool) }
 
         requirements_by_tool.map do |tool_name, requirements|
@@ -47,7 +46,8 @@ module Dependabot
         return if tools.empty?
 
         Dependabot::SharedHelpers.in_a_temporary_directory do
-          write_manifest_files([mise_file])
+          # With the lockfile present, mise reports the locked version of loose pins such as "20".
+          write_manifest_files([mise_file, lockfile_for(mise_file)].compact)
 
           listed = T.cast(JSON.parse(run_mise_ls(mise_file)), T::Hash[String, Object])
           tools.each_key do |tool_name|
@@ -72,14 +72,41 @@ module Dependabot
         raise Dependabot::DependencyFileNotParseable.new(mise_file.name, e.message)
       end
 
-      # Safe mode rejects most templates, and the updater can't rewrite templated values.
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def mise_files
+        dependency_files.select { |f| Dependabot::Mise::FileFetcher.mise_config_file?(f.name) }
+      end
+
+      sig { params(mise_file: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile)) }
+      def lockfile_for(mise_file)
+        lockfile_name = Dependabot::Mise::FileFetcher.lockfile_path_for(mise_file.name)
+        dependency_files.find { |file| file.name == lockfile_name }
+      end
+
+      # Safe mode rejects templates, and relocking has to load every manifest sharing a lockfile.
       sig { params(mise_file: Dependabot::DependencyFile).returns(T::Hash[String, Object]) }
       def supported_tools(mise_file)
         tools = manifest_tools(mise_file)
-        return tools unless templated?(tools)
+        reason = if templated?(tools)
+                   "templates in [tools] are not supported"
+                 elsif (sibling = templated_lockfile_sibling(mise_file))
+                   "it shares a lockfile with #{sibling.name}, which uses templates in [tools]"
+                 end
+        return tools unless reason
 
-        Dependabot.logger.warn("Skipping #{mise_file.name}: templates in [tools] are not supported")
+        Dependabot.logger.warn("Skipping #{mise_file.name}: #{reason}")
         {}
+      end
+
+      sig { params(mise_file: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile)) }
+      def templated_lockfile_sibling(mise_file)
+        lockfile = lockfile_for(mise_file)
+        return unless lockfile
+
+        mise_files.find do |other|
+          other.name != mise_file.name && lockfile_for(other)&.name == lockfile.name &&
+            templated?(manifest_tools(other))
+        end
       end
 
       sig { params(value: Object).returns(T::Boolean) }

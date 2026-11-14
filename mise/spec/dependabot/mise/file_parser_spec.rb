@@ -260,6 +260,48 @@ RSpec.describe Dependabot::Mise::FileParser do
           end
         end
       end
+
+      context "with a lockfile pinning a loose version" do
+        let(:dependency_files) do
+          [
+            Dependabot::DependencyFile.new(name: "mise.toml", content: "[tools]\nnode = '20'\n"),
+            Dependabot::DependencyFile.new(
+              name: "mise.lock",
+              content: "[[tools.node]]\nversion = \"20.0.0\"\nbackend = \"core:node\"\nspecifiers = [\"20\"]\n"
+            )
+          ]
+        end
+
+        it "uses the locked version as the current version" do
+          node = dependencies.fetch(0)
+          expect([node.name, node.version, node.requirements.first.requirement_string]).to eq(%w(node 20.0.0 20))
+          expect(node.requirements.first.metadata_string("resolved_version")).to eq("20.0.0")
+        end
+      end
+
+      context "with a templated manifest sharing a lockfile" do
+        let(:manifests) do
+          [
+            Dependabot::DependencyFile.new(name: "mise/conf.d/node.toml", content: "[tools]\nnode = '20.0.0'\n"),
+            Dependabot::DependencyFile.new(
+              name: "mise/conf.d/python.toml", content: "[tools]\npython = \"{{ env.PY_VERSION }}\"\n"
+            )
+          ]
+        end
+        let(:dependency_files) { manifests + [Dependabot::DependencyFile.new(name: "mise/mise.lock", content: "")] }
+
+        it "skips every manifest that uses the lockfile" do
+          expect(dependencies).to be_empty
+        end
+
+        context "when there is no lockfile" do
+          let(:dependency_files) { manifests }
+
+          it "keeps the other manifests" do
+            expect(dependencies.map { |dep| [dep.name, dep.version] }).to eq([%w(node 20.0.0)])
+          end
+        end
+      end
     end
 
     context "with mixed version formats" do
