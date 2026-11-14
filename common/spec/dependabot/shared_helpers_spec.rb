@@ -883,6 +883,20 @@ RSpec.describe Dependabot::SharedHelpers do
       expect(sanitized["NPM_TOKEN"]).to eq("<redacted>")
     end
 
+    it "redacts authenticated pip index URLs" do
+      env = {
+        "PIP_INDEX_URL" => "https://user:password@registry.example.com/simple",
+        "PIP_EXTRA_INDEX_URL" => "https://other:secret@extra.example.com/simple",
+        "PIP_CONFIG_FILE" => "/tmp/pip.conf"
+      }
+
+      sanitized = described_class.sanitize_env_for_logging(env)
+
+      expect(sanitized["PIP_INDEX_URL"]).to eq("<redacted>")
+      expect(sanitized["PIP_EXTRA_INDEX_URL"]).to eq("<redacted>")
+      expect(sanitized["PIP_CONFIG_FILE"]).to eq("/tmp/pip.conf")
+    end
+
     it "handles empty hash" do
       env = {}
       sanitized = described_class.sanitize_env_for_logging(env)
