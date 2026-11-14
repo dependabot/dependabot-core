@@ -135,6 +135,39 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
 
       update_graph_processor.run
     end
+
+    it "does not collect manifest-set inputs by default" do
+      expect(service).to receive(:create_dependency_submission) do |args|
+        expect(args[:dependency_submission].manifest_set_inputs).to be_nil
+      end
+
+      update_graph_processor.run
+    end
+
+    context "when the manifest-set envelope experiment is enabled" do
+      let(:base_commit_sha) do
+        Dependabot::SharedHelpers.run_shell_command("git -C #{repo_contents_path} rev-parse HEAD").strip
+      end
+
+      before { Dependabot::Experiments.register(:emit_manifest_set_envelope, true) }
+
+      it "hands the directory's original repository inputs to the submission" do
+        expect(service).to receive(:create_dependency_submission) do |args|
+          inputs = args[:dependency_submission].manifest_set_inputs
+          expected = %w(Gemfile Gemfile.lock).map do |path|
+            oid = Dependabot::SharedHelpers.run_shell_command(
+              "git -C #{repo_contents_path} rev-parse #{base_commit_sha}:#{path}"
+            ).strip
+            [path, oid]
+          end
+
+          expect(inputs.resolved?).to be(true)
+          expect(inputs.files.map { |file| [file.path, file.blob_oid] }).to eq(expected)
+        end
+
+        update_graph_processor.run
+      end
+    end
   end
 
   context "with a small sinatra app" do
