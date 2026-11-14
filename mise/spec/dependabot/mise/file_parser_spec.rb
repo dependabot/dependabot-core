@@ -97,6 +97,54 @@ RSpec.describe Dependabot::Mise::FileParser do
       end
     end
 
+    context "when invoking the mise CLI" do
+      %w(
+        mise.toml
+        .mise.toml
+        mise.production.toml
+        .mise.dev.toml
+        mise.local.toml
+        .mise.local.toml
+        mise.my-env.toml
+        .mise.my_env.toml
+      ).each do |filename|
+        context "with #{filename}" do
+          let(:dependency_files) do
+            [Dependabot::DependencyFile.new(name: filename, content: "[tools]\nnode = '20.0.0'\n")]
+          end
+
+          it "reads the dependency and preserves its manifest filename" do
+            expect(dependencies.map { |dep| [dep.name, dep.version, dep.requirements.first[:file]] })
+              .to eq([["node", "20.0.0", filename]])
+          end
+        end
+      end
+
+      context "with multiple manifest files" do
+        let(:versions_by_file) do
+          {
+            "mise.toml" => "22.0.0",
+            "mise.production.toml" => "20.0.0",
+            ".mise.dev.toml" => "18.0.0"
+          }
+        end
+        let(:dependency_files) do
+          versions_by_file.map do |filename, version|
+            Dependabot::DependencyFile.new(name: filename, content: "[tools]\nnode = '#{version}'\n")
+          end
+        end
+
+        it "keeps the declared version from each file" do
+          expect(dependencies.fetch(0).requirements.to_h { |req| [req[:file], req[:requirement]] })
+            .to eq(versions_by_file)
+        end
+
+        it "compares updates against the lowest version" do
+          expect(dependencies.map { |dep| [dep.name, dep.version] }).to eq([["node", "18.0.0"]])
+        end
+      end
+    end
+
     context "with mixed version formats" do
       before do
         allow(File).to receive(:write)
@@ -152,28 +200,22 @@ RSpec.describe Dependabot::Mise::FileParser do
       end
 
       before do
-        # Allow File.write for any file
         allow(File).to receive(:write)
 
-        # Mock mise ls to return different results for each file
-        call_count = 0
+        responses = {
+          "mise.toml" => {
+            "erlang" => [{ "requested_version" => "27.3.2", "version" => "27.3.2" }],
+            "elixir" => [{ "requested_version" => "1.18.4-otp-27", "version" => "1.18.4-otp-27" }],
+            "helm" => [{ "requested_version" => "3.17.3", "version" => "3.17.3" }]
+          },
+          "mise.production.toml" => {
+            "erlang" => [{ "requested_version" => "28.0.0", "version" => "28.0.0" }],
+            "python" => [{ "requested_version" => "3.11.0", "version" => "3.11.0" }]
+          }
+        }
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with("mise ls --current --local --json", hash_including(stderr_to_stdout: false)) do
-          call_count += 1
-          if call_count == 1
-            # First call for mise.toml
-            JSON.dump(
-              "erlang" => [{ "requested_version" => "27.3.2", "version" => "27.3.2" }],
-              "elixir" => [{ "requested_version" => "1.18.4-otp-27", "version" => "1.18.4-otp-27" }],
-              "helm" => [{ "requested_version" => "3.17.3", "version" => "3.17.3" }]
-            )
-          else
-            # Second call for mise.production.toml
-            JSON.dump(
-              "erlang" => [{ "requested_version" => "28.0.0", "version" => "28.0.0" }],
-              "python" => [{ "requested_version" => "3.11.0", "version" => "3.11.0" }]
-            )
-          end
+          .with("mise ls --current --local --json", hash_including(stderr_to_stdout: false)) do |_, env:, **|
+          JSON.dump(responses.fetch(env.fetch("MISE_OVERRIDE_CONFIG_FILENAMES")))
         end
       end
 
@@ -272,22 +314,16 @@ RSpec.describe Dependabot::Mise::FileParser do
       end
 
       before do
-        # Allow File.write for any file
         allow(File).to receive(:write)
 
-        # Mock mise ls to return different results for each file
-        call_count = 0
+        responses = {
+          "mise.toml" => { "erlang" => [{ "requested_version" => "27.3.2", "version" => "27.3.2" }] },
+          "mise.dev.toml" => { "erlang" => [{ "requested_version" => "27.0.0", "version" => "27.0.0" }] },
+          ".mise.local.toml" => { "erlang" => [{ "requested_version" => "26.0.0", "version" => "26.0.0" }] }
+        }
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with("mise ls --current --local --json", hash_including(stderr_to_stdout: false)) do
-          call_count += 1
-          case call_count
-          when 1
-            JSON.dump("erlang" => [{ "requested_version" => "27.3.2", "version" => "27.3.2" }])
-          when 2
-            JSON.dump("erlang" => [{ "requested_version" => "27.0.0", "version" => "27.0.0" }])
-          when 3
-            JSON.dump("erlang" => [{ "requested_version" => "26.0.0", "version" => "26.0.0" }])
-          end
+          .with("mise ls --current --local --json", hash_including(stderr_to_stdout: false)) do |_, env:, **|
+          JSON.dump(responses.fetch(env.fetch("MISE_OVERRIDE_CONFIG_FILENAMES")))
         end
       end
 
@@ -319,25 +355,15 @@ RSpec.describe Dependabot::Mise::FileParser do
       end
 
       before do
-        # Allow File.write for any file
         allow(File).to receive(:write)
 
-        # Mock mise ls to return different results for each file
-        call_count = 0
+        responses = {
+          "mise.toml" => { "erlang" => [{ "requested_version" => "28.0.0", "version" => "28.0.0" }] },
+          "mise.production.toml" => { "erlang" => [{ "requested_version" => "27.0.0", "version" => "27.0.0" }] }
+        }
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with("mise ls --current --local --json", hash_including(stderr_to_stdout: false)) do
-          call_count += 1
-          if call_count == 1
-            # First call - mise.toml with latest version
-            JSON.dump(
-              "erlang" => [{ "requested_version" => "28.0.0", "version" => "28.0.0" }]
-            )
-          else
-            # Second call - mise.production.toml with older version
-            JSON.dump(
-              "erlang" => [{ "requested_version" => "27.0.0", "version" => "27.0.0" }]
-            )
-          end
+          .with("mise ls --current --local --json", hash_including(stderr_to_stdout: false)) do |_, env:, **|
+          JSON.dump(responses.fetch(env.fetch("MISE_OVERRIDE_CONFIG_FILENAMES")))
         end
       end
 
