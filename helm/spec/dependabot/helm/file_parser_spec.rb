@@ -286,5 +286,45 @@ RSpec.describe Dependabot::Helm::FileParser do
         expect(doubled_dep).to be_nil
       end
     end
+
+    context "with images inside lists" do
+      let(:values_content) do
+        <<~YAML
+          web:
+            image: nginx:1.27.0
+
+          template:
+            spec:
+              containers:
+                - name: worker
+                  image: busybox:1.36.0
+                - name: sidecar
+                  image:
+                    repository: curl/curl
+                    tag: 8.12.0
+                    registry: quay.io
+        YAML
+      end
+
+      it "finds images in list items alongside images at map paths" do
+        names = parser.parse.map(&:name)
+
+        expect(names).to contain_exactly("nginx", "busybox", "quay.io/curl/curl")
+      end
+
+      it "parses a scalar image inside a list" do
+        busybox = parser.parse.find { |d| d.name == "busybox" }
+
+        expect(busybox.version).to eq("1.36.0")
+        expect(busybox.requirements.first[:source][:tag]).to eq("1.36.0")
+      end
+
+      it "parses a repository and tag mapping inside a list" do
+        curl = parser.parse.find { |d| d.name == "quay.io/curl/curl" }
+
+        expect(curl.version).to eq("8.12.0")
+        expect(curl.requirements.first[:source][:registry]).to eq("quay.io")
+      end
+    end
   end
 end

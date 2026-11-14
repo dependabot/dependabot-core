@@ -175,7 +175,7 @@ module Dependabot
           elsif value.is_a?(Hash)
             images.concat(find_images_in_hash(value, current_path))
           elsif value.is_a?(Array)
-            images.concat(find_images_in_hash(value, current_path))
+            images.concat(handle_array_value(value, current_path))
           end
         end
 
