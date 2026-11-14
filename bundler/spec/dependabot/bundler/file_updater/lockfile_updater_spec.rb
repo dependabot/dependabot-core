@@ -487,4 +487,54 @@ RSpec.describe Dependabot::Bundler::FileUpdater::LockfileUpdater do
       expect(updated_lockfile_content).to include("docker_registry2 (1.15.0)")
     end
   end
+
+  describe "the bundler_conservative_update option" do
+    let(:updater) do
+      described_class.new(
+        dependencies: [dependency],
+        dependency_files: files,
+        options: options,
+        credentials: []
+      )
+    end
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "ibandit",
+        version: "1.1.0",
+        previous_version: "1.0.0",
+        requirements: [{ file: "Gemfile", requirement: ">= 0", groups: [:default], source: nil }],
+        previous_requirements: [{ file: "Gemfile", requirement: ">= 0", groups: [:default], source: nil }],
+        package_manager: "bundler"
+      )
+    end
+    let(:files) { bundler_project_dependency_files("conservative_update") }
+    let(:generated_lockfile) do
+      files.find { |f| f.name == "Gemfile.lock" }.content.sub("ibandit (1.0.0)", "ibandit (1.1.0)")
+    end
+
+    before do
+      allow(Dependabot::Bundler::NativeHelpers)
+        .to receive(:run_bundler_subprocess)
+        .and_return(generated_lockfile)
+    end
+
+    {
+      "is not set" => [{}, false],
+      "is set to false" => [{ bundler_conservative_update: "false" }, false],
+      "is set to true" => [{ bundler_conservative_update: true }, true],
+      "is set to \"true\"" => [{ bundler_conservative_update: "true" }, true]
+    }.each do |description, (option_values, expected)|
+      context "when the option #{description}" do
+        let(:options) { option_values }
+
+        it "passes conservative: #{expected} to the native helper" do
+          updated_lockfile_content
+
+          expect(Dependabot::Bundler::NativeHelpers)
+            .to have_received(:run_bundler_subprocess)
+            .with(hash_including(function: "update_lockfile", args: hash_including(conservative: expected)))
+        end
+      end
+    end
+  end
 end
