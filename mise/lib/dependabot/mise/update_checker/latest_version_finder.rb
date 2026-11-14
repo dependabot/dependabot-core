@@ -19,14 +19,12 @@ module Dependabot
         sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }
         def package_details; end
 
-        # We override latest_version rather than relying on the parent's fetch_latest_release
-        # because the parent's filter_prerelease_versions would incorrectly discard mise version
-        # strings like "1.18.4-otp-27": Gem::Version treats non-numeric segments as pre-release.
         sig { override.params(language_version: T.nilable(T.any(Dependabot::Version, String))).returns(T.nilable(Dependabot::Version)) }
         def latest_version(language_version: nil) # rubocop:disable Lint/UnusedMethodArgument
           releases = package_releases
           return nil if releases.nil? || releases.empty?
 
+          releases = filter_prerelease_versions(releases)
           releases = filter_ignored_versions(releases)
           releases = filter_by_cooldown(releases)
           releases.max_by(&:version)&.version
