@@ -101,7 +101,7 @@ module Dependabot
       stderr = T.let("", String)
       status = T.let(nil, T.nilable(ProcessStatus))
       pid = T.let(nil, T.nilable(Integer))
-      start_time = Time.now
+      start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC).to_f
 
       begin
         stdout_io, stderr_io, wait_thr = open_process(env_cmd)
@@ -136,12 +136,14 @@ module Dependabot
           # Array to monitor both stdout and stderr
           ios = [stdout_io, stderr_io]
 
-          last_output_time = Time.now # Track the last time output was received
+          last_output_time = Process.clock_gettime(Process::CLOCK_MONOTONIC).to_f
 
           until ios.empty?
+            select_timeout = T.let(nil, T.nilable(Float))
             if timeout.positive?
               # Calculate remaining timeout dynamically
-              remaining_timeout = timeout - (Time.now - last_output_time)
+              current_time = Process.clock_gettime(Process::CLOCK_MONOTONIC).to_f
+              remaining_timeout = timeout - (current_time - last_output_time)
 
               # Raise an error if timeout is exceeded
               if remaining_timeout <= 0
@@ -150,10 +152,12 @@ module Dependabot
                 status = ProcessStatus.new(wait_thr.value, 124)
                 raise Timeout::Error, "Timed out due to inactivity after #{timeout} seconds"
               end
+
+              select_timeout = remaining_timeout
             end
 
-            # Use IO.select with a dynamically calculated short timeout
-            ready_ios = IO.select(ios, nil, nil, 0)
+            # Wait for output, EOF, or the inactivity deadline
+            ready_ios = IO.select(ios, nil, nil, select_timeout)
 
             # Process ready IO streams
             ready_ios&.first&.each do |io|
@@ -168,7 +172,7 @@ module Dependabot
               data = data.encode("UTF-8", invalid: :replace, undef: :replace, replace: "?")
 
               # Reset the timeout if data is received
-              last_output_time = Time.now unless data.empty?
+              last_output_time = Process.clock_gettime(Process::CLOCK_MONOTONIC).to_f unless data.empty?
 
               # 4. Append data to the appropriate stream
               if io == stdout_io
@@ -186,7 +190,9 @@ module Dependabot
                 message = observation[:reason] || "Terminated by output_observer"
                 # If the observer indicates a graceful stop, terminate the process
                 # by adjusting the remaining timeout
-                timeout = [timeout, ((Time.now - last_output_time) + TIMEOUTS::GRACEFULLY_STOP).to_i].min
+                current_time = Process.clock_gettime(Process::CLOCK_MONOTONIC).to_f
+                elapsed_since_output = current_time - last_output_time
+                timeout = [timeout, (elapsed_since_output + TIMEOUTS::GRACEFULLY_STOP).to_i].min
                 Dependabot.logger.warn("Terminating process due to observer signal: #{message}")
               end
             rescue EOFError
@@ -218,7 +224,7 @@ module Dependabot
         stdout += e.message if stderr_to_stdout
       end
 
-      elapsed_time = Time.now - start_time
+      elapsed_time = Process.clock_gettime(Process::CLOCK_MONOTONIC).to_f - start_time
       log_level = short_git_config_command?(command_string_for_logging(env_cmd)) ? :debug : :info
       Dependabot.logger.public_send(log_level, "Total execution time: #{elapsed_time.round(2)} seconds")
       [stdout, stderr, status, elapsed_time]
