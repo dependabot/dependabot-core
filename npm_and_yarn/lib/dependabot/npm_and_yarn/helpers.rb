@@ -112,6 +112,9 @@ module Dependabot
       # whole tree. When pnpm isn't pinned, a lockfile older than this is updated by the pnpm major that wrote it.
       PNPM_MIN_DEFAULT_LOCKFILE_VERSION = 9.0
 
+      # Runs pnpm as if no pnpm-workspace.yaml were above the current directory (see ignore_ancestor_pnpm_workspace?)
+      PNPM_IGNORE_WORKSPACE_FLAG = "--ignore-workspace"
+
       # YARN Version Constants
       YARN_V3 = 3
       YARN_V2 = 2
@@ -823,6 +826,11 @@ module Dependabot
         ).returns(String)
       end
       def self.run_selected_pnpm(command, fingerprint: nil, env: nil)
+        if ignore_ancestor_pnpm_workspace?(dependency_files) && !command.strip.match?(/\A(?:-v|--version)\z/)
+          command = "#{command} #{PNPM_IGNORE_WORKSPACE_FLAG}"
+          fingerprint &&= "#{fingerprint} #{PNPM_IGNORE_WORKSPACE_FLAG}"
+        end
+
         matching_major = matching_pnpm_major_for_files(dependency_files)
 
         if matching_major
@@ -840,6 +848,72 @@ module Dependabot
           env: env
         )
       end
+
+      # The job runs in a sub-directory and no pnpm-workspace.yaml was fetched for it, either because there is none
+      # or because the file fetcher left out an ancestor one that does not include the directory. pnpm 10 and 11
+      # still find such an ancestor workspace on disk, apply its settings and leave the directory's own lockfile
+      # unchanged, so they run with --ignore-workspace, which treats the directory as pnpm 12 already does. Where
+      # there is no ancestor workspace, the flag changes nothing.
+      sig { params(files: T.nilable(T::Array[Dependabot::DependencyFile])).returns(T::Boolean) }
+      def self.ignore_ancestor_pnpm_workspace?(files)
+        return false if files.nil? || files.empty?
+        return false if files.any? { |file| File.basename(file.name) == PNPMPackageManager::PNPM_WS_YML_FILENAME }
+
+        manifest = files.find { |file| file.name == "package.json" } || files.first
+        !directory_components(T.must(manifest).directory).empty?
+      end
+
+      # Whether an ancestor pnpm-workspace.yaml includes `directory` (the job's), by the rules pnpm documents for
+      # `packages`: globs relative to the workspace root, `!` patterns exclude, and with no `packages` only the
+      # root is included. Anything this cannot read counts as included, which keeps the workspace as before.
+      sig { params(workspace_file: Dependabot::DependencyFile, directory: String).returns(T::Boolean) }
+      def self.pnpm_workspace_includes?(workspace_file, directory)
+        depth = Pathname.new(workspace_file.name).cleanpath.each_filename.take_while { |part| part == ".." }.size
+        components = directory_components(directory)
+        return true if depth.zero? || depth > components.size
+
+        patterns = pnpm_workspace_packages(workspace_file.content.to_s)
+        return true if patterns.nil?
+        return true if patterns.any? { |pattern| pattern.match?(/[?*+@!]\(/) }
+
+        relative = components.last(depth).join("/")
+        excluded, included = patterns.partition { |pattern| pattern.start_with?("!") }
+        included.any? { |pattern| pnpm_workspace_pattern_matches?(pattern, relative) } &&
+          excluded.none? { |pattern| pnpm_workspace_pattern_matches?(pattern.delete_prefix("!"), relative) }
+      end
+
+      # The `packages` patterns, [] when there are none, or nil when they cannot be read.
+      sig { params(content: String).returns(T.nilable(T::Array[String])) }
+      def self.pnpm_workspace_packages(content)
+        parsed = T.let(YAML.safe_load(content, aliases: true), T.untyped)
+        packages = parsed.is_a?(Hash) ? parsed["packages"] : nil
+        return [] if packages.nil?
+        return unless packages.is_a?(Array) && packages.all?(String)
+
+        packages
+      rescue Psych::Exception
+        nil
+      end
+      private_class_method :pnpm_workspace_packages
+
+      sig { params(pattern: String, path: String).returns(T::Boolean) }
+      def self.pnpm_workspace_pattern_matches?(pattern, path)
+        glob = pattern.strip.delete_prefix("./").squeeze("/").delete_suffix("/")
+        flags = File::FNM_PATHNAME | File::FNM_EXTGLOB
+        return File.fnmatch?(glob, path, flags) unless glob.end_with?("**")
+
+        # A trailing `**` matches at any depth, and the directory it is under is counted as matched too, which
+        # errs towards keeping the workspace.
+        base = glob.delete_suffix("**").delete_suffix("/")
+        File.fnmatch?(base, path, flags) || File.fnmatch?("#{glob}/*", path, flags)
+      end
+      private_class_method :pnpm_workspace_pattern_matches?
+
+      sig { params(directory: T.nilable(String)).returns(T::Array[String]) }
+      def self.directory_components(directory)
+        directory.to_s.split("/").reject { |part| part.empty? || part == "." }
+      end
+      private_class_method :directory_components
 
       # The pnpm major to run for a repository whose lockfile is older than the default pnpm reads (5.4 is pnpm 7,
       # 6.x is pnpm 8). Nil when the default should run: the lockfile is readable, unknown, or too old for any

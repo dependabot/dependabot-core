@@ -1,0 +1,7 @@
+{
+  "name": "lib",
+  "version": "1.0.0",
+  "dependencies": {
+    "etag": "1.8.1"
+  }
+}
