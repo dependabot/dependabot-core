@@ -74,6 +74,24 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         )
       end
 
+      it "only scans the tags once per version across repeated calls" do
+        expect(builder).to receive(:tags_matching_version).twice.and_call_original
+
+        3.times { builder.commits_url }
+        expect(builder.new_tag).to eq("v1.4.0")
+      end
+
+      context "when no tags match the versions" do
+        let(:upload_pack_fixture) { "no_tags" }
+
+        it "memoizes the nil result and does not re-scan" do
+          expect(builder).to receive(:tags_matching_version).twice.and_call_original
+
+          3.times { builder.commits_url }
+          expect(builder.new_tag).to be_nil
+        end
+      end
+
       context "without a previous version" do
         let(:dependency_requirements) do
           [{
