@@ -1,0 +1,13 @@
+{
+  "name": "subdep-override-with-unrelated-resolutions",
+  "version": "1.0.0",
+  "dependencies": {
+    "@actions/http-client": "^2.2.3"
+  },
+  "resolutions": {
+    "tunnel": "0.0.6"
+  },
+  "overrides": {
+    "undici": "6.23.0"
+  }
+}

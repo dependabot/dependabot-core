@@ -1,0 +1,14 @@
+{
+  "name": "overrides-with-unrelated-resolutions",
+  "version": "1.0.0",
+  "dependencies": {
+    "etag": "1.0.1",
+    "is-number": "6.0.0"
+  },
+  "resolutions": {
+    "etag": "1.0.1"
+  },
+  "overrides": {
+    "is-number": "6.0.0"
+  }
+}
