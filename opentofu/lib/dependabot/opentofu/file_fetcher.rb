@@ -17,7 +17,7 @@ module Dependabot
       include FileFilter
 
       # https://opentofu.org/docs/language/modules/sources/#local-paths
-      LOCAL_PATH_SOURCE = %r{source\s*=\s*['"](?<path>..?\/[^'"]+)}
+      LOCAL_PATH_SOURCE = %r{source\s*=\s*['"](?<path>\.\.?\/[^'"]+)}
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
@@ -72,16 +72,22 @@ module Dependabot
       sig do
         params(
           files: T::Array[Dependabot::DependencyFile],
-          dir: String
+          dir: String,
+          visited: T::Set[String]
         )
           .returns(T::Array[Dependabot::DependencyFile])
       end
-      def local_path_module_files(files, dir: ".")
+      def local_path_module_files(files, dir: ".", visited: Set[module_dir_key(directory)])
         opentofu_files = T.let([], T::Array[Dependabot::DependencyFile])
 
         files.each do |file|
           opentofu_file_local_module_details(file).each do |path|
             base_path = Pathname.new(File.join(dir, path)).cleanpath.to_path
+            # Read each module directory once, keyed on its path from the repository root
+            # (`../../modules/foo` and `.` can be the same directory): a module can refer back
+            # to one already read, through a cycle or in a commented-out usage example.
+            module_dir = Pathname.new(File.join(directory, base_path)).cleanpath.to_path
+            next unless visited.add?(module_dir_key(module_dir))
 
             # Skip excluded local module paths
             if Dependabot::FileFiltering.should_exclude_path?(base_path, "local path module directory", @exclude_paths)
@@ -93,13 +99,24 @@ module Dependabot
               .select { |f| f.type == "file" && f.name.end_with?(".tf", ".tofu") }
               .map { |f| fetch_file_from_host(File.join(base_path, f.name)) }
             opentofu_files += nested_opentofu_files
-            opentofu_files += local_path_module_files(nested_opentofu_files, dir: path)
+            opentofu_files += local_path_module_files(nested_opentofu_files, dir: base_path, visited: visited)
           end
         end
 
         # NOTE: The `support_file` attribute is not used but we set this to
         # match what we do in other ecosystems
         opentofu_files.tap { |fs| fs.each { |f| f.support_file = true } }
+      end
+
+      # In a cloned repository, symlinks are resolved too: through a symlink to a directory
+      # already read (`self -> .`), each lexical path would be new until the OS link limit.
+      sig { params(module_dir: String).returns(String) }
+      def module_dir_key(module_dir)
+        return module_dir unless repo_contents_path
+
+        File.realpath(File.join(clone_repo_contents, module_dir))
+      rescue SystemCallError
+        module_dir
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
