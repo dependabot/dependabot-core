@@ -122,12 +122,9 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
   end
 
   let(:dependency_group) do
-    instance_double(
-      Dependabot::DependencyGroup,
-      name: "dummy-group",
-      dependencies: [dependency],
-      rules: { "update-types" => ["all"] }
-    )
+    Dependabot::DependencyGroup.new(name: "dummy-group", rules: { "update-types" => ["all"] }).tap do |group|
+      group.dependencies << dependency
+    end
   end
 
   describe ".applies_to?" do

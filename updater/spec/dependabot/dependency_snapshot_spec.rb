@@ -294,6 +294,44 @@ RSpec.describe Dependabot::DependencySnapshot do
         )
       end
 
+      context "when the hosted service returns the configured parent name" do
+        before do
+          allow(job).to receive_messages(dependency_group_to_refresh: "monorepo-deps", dependencies: ["dummy-pkg-a"])
+        end
+
+        it "selects only the requested dependency's subgroup" do
+          group = create_dependency_snapshot.job_group
+          expect(group.name).to eq("monorepo-deps/dummy-pkg-a")
+          expect(group.dependencies.map(&:name).uniq).to eq(["dummy-pkg-a"])
+        end
+
+        it "keeps a removed dependency's empty subgroup for the normal close path" do
+          allow(job).to receive(:dependencies).and_return(["removed-package"])
+          group = create_dependency_snapshot.job_group
+          expect(group.name).to eq("monorepo-deps/removed-package")
+          expect(group.dependencies).to be_empty
+        end
+
+        it "does not broaden malformed or ambiguous refresh requests" do
+          [nil, [], %w(dummy-pkg-a dummy-pkg-b)].each do |names|
+            allow(job).to receive(:dependencies).and_return(names)
+            expect(create_dependency_snapshot.job_group).to be_nil
+          end
+        end
+
+        it "matches existing PRs by dependency as well as parent" do
+          prs = %w(dummy-pkg-b dummy-pkg-a).map do |name|
+            Dependabot::Job::ExistingGroupPullRequest.from_hash(
+              "dependency-group-name" => "monorepo-deps", "dependencies" => [{ "dependency-name" => name }]
+            )
+          end
+          allow(job).to receive(:existing_group_pull_requests).and_return(prs)
+          snapshot = create_dependency_snapshot
+          expect(snapshot.dependencies_in_existing_pr_for_group(snapshot.job_group).map(&:name))
+            .to eq(["dummy-pkg-a"])
+        end
+      end
+
       it "returns the dynamic subgroup when job_group is called" do
         snapshot = create_dependency_snapshot
 
@@ -556,7 +594,17 @@ RSpec.describe Dependabot::DependencySnapshot do
     end
 
     context "when group_by_dependency_name? is true" do
-      include_context "with cross-directory existing PR dependencies"
+      let(:existing_group_pull_requests) do
+        [
+          {
+            "dependency-group-name" => "group-a",
+            "dependencies" => [
+              { "dependency-name" => "dummy-pkg-a", "directory" => "/foo" },
+              { "dependency-name" => "dummy-pkg-a", "directory" => "/bar" }
+            ]
+          }
+        ]
+      end
 
       let(:dependency_groups) do
         [
@@ -570,21 +618,26 @@ RSpec.describe Dependabot::DependencySnapshot do
         ]
       end
 
-      it "includes dependencies from all directories in existing PRs (cross-directory inclusion)" do
+      it "handles the same dependency across directories without claiming its sibling" do
+        snapshot = create_dependency_snapshot
+        subgroup = snapshot.groups.find { |group| group.name == "group-a/dummy-pkg-a" }
+        snapshot.mark_group_handled(subgroup)
+
+        snapshot.current_directory = "/foo"
+        expect(snapshot.handled_dependencies).to eq(Set.new(["dummy-pkg-a"]))
+
+        snapshot.current_directory = "/bar"
+        expect(snapshot.handled_dependencies).to eq(Set.new(["dummy-pkg-a"]))
+      end
+
+      it "does not mark a child's PR as handled through the parent container" do
         snapshot = create_dependency_snapshot
         snapshot.mark_group_handled(snapshot.groups.first)
 
-        # Both directories should have BOTH deps from existing PR marked as handled
-        # because group_by_dependency_name includes deps from all directories
         snapshot.current_directory = "/foo"
-        handled_foo = snapshot.handled_dependencies
-        expect(handled_foo).to include("dummy-pkg-a")
-        expect(handled_foo).to include("dummy-pkg-b"), "expected cross-directory dep from /bar to be included in /foo"
-
+        expect(snapshot.handled_dependencies).to be_empty
         snapshot.current_directory = "/bar"
-        handled_bar = snapshot.handled_dependencies
-        expect(handled_bar).to include("dummy-pkg-a"), "expected cross-directory dep from /foo to be included in /bar"
-        expect(handled_bar).to include("dummy-pkg-b")
+        expect(snapshot.handled_dependencies).to be_empty
       end
 
       context "when existing PR has no dependencies" do
