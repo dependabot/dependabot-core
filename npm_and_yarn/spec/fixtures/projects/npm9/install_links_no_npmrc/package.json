@@ -1,0 +1,8 @@
+{
+  "name": "install-links-app",
+  "version": "1.0.0",
+  "dependencies": {
+    "etag": "^1.0.0",
+    "lib": "file:lib"
+  }
+}
