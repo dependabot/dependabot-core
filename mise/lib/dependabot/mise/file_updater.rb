@@ -1,6 +1,9 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "toml-rb"
+
+require "dependabot/errors"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/mise/file_fetcher"
@@ -58,37 +61,45 @@ module Dependabot
         end
       end
 
+      # Accept a text replacement only if it updates the parsed tool version.
       sig { params(content: String, dep: Dependabot::Dependency, file_name: String).returns(String) }
       def update_dependency(content, dep, file_name)
-        tool = Regexp.escape(dep.name)
-        tool_key = "(?:\"#{tool}\"|'#{tool}'|#{tool})"
-        old_version = Regexp.escape(requested_version_for(dep, file_name))
+        old_version = requested_version_for(dep, file_name)
         new_version = new_version_string_for(dep, file_name)
+        # An already-updated tool could otherwise validate an unrelated edit.
+        return content unless declared_version(content, dep.name) == old_version
 
-        # Handles plain keys:   erlang = "27.3.2"
-        # Handles quoted keys:  "npm:@redocly/cli" = "2.19.1"
-        content = content.gsub(
-          /^([ \t]*#{tool_key}[ \t]*=[ \t]*)(["'])#{old_version}\2/,
-          "\\1\\2#{new_version}\\2"
-        )
+        offset = 0
+        while (index = content.index(old_version, offset))
+          candidate = content.dup
+          candidate[index, old_version.length] = new_version
+          return candidate if candidate_version(candidate, dep.name) == new_version
 
-        # Handles inline table: python = { version = "3.11.0", virtualenv = ".venv" }
-        content = content.gsub(
-          /^([ \t]*#{tool_key}[ \t]*=[ \t]*\{.*?version[ \t]*=[ \t]*)(["'])#{old_version}\2/,
-          "\\1\\2#{new_version}\\2"
-        )
+          offset = index + 1
+        end
 
-        # Handles table header: [tools.golang]
-        #                       version = "1.18"
-        # Stop at the next table header, allowing array values before the version.
-        content.gsub(
-          /(
-            ^[ \t]*\[tools\.#{tool_key}\]
-            (?:(?!^[ \t]*\[).)*?
-            ^[ \t]*version[ \t]*=[ \t]*
-          )(["'])#{old_version}\2/mx,
-          "\\1\\2#{new_version}\\2"
-        )
+        content
+      rescue TomlRB::Error => e
+        raise Dependabot::DependencyFileNotParseable.new(file_name, e.message)
+      end
+
+      # Version arrays and arrays of tables are not managed, so they return nil.
+      sig { params(content: String, tool: String).returns(T.nilable(String)) }
+      def declared_version(content, tool)
+        tools = T.cast(TomlRB.parse(content), T::Hash[String, Object])["tools"]
+        return unless tools.is_a?(Hash)
+
+        value = T.let(tools[tool], Object)
+        value = T.let(value["version"], Object) if value.is_a?(Hash)
+        value if value.is_a?(String)
+      end
+
+      # Invalid candidates are skipped; invalid original manifests still raise.
+      sig { params(content: String, tool: String).returns(T.nilable(String)) }
+      def candidate_version(content, tool)
+        declared_version(content, tool)
+      rescue TomlRB::Error
+        nil
       end
 
       sig { params(dep: Dependabot::Dependency, file_name: String).returns(String) }

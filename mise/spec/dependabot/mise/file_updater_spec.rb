@@ -127,6 +127,191 @@ RSpec.describe Dependabot::Mise::FileUpdater do
       end
     end
 
+    [
+      [
+        "an environment variable after the tool declaration",
+        "[tools]\nerlang = '__VERSION__'\n[env]\nerlang = '27.3.2'\n"
+      ],
+      [
+        "an environment variable before the tool declaration",
+        "[env]\nerlang = '27.3.2'\n[tools]\nerlang = '__VERSION__'\n"
+      ],
+      [
+        "an inline table in the environment",
+        "[env]\nerlang = { version = '27.3.2' }\n[tools]\nerlang = { version = '__VERSION__' }\n"
+      ],
+      [
+        "a task-specific tool with the same name and version",
+        "[tools]\nerlang = '__VERSION__'\n[tasks.build.tools]\nerlang = '27.3.2'\n"
+      ],
+      [
+        "an environment version in a nested inline table",
+        "[tools]\nerlang = { install_env = { version = '27.3.2' }, version = '__VERSION__' }\n"
+      ],
+      [
+        "an environment version after another nested inline-table key",
+        "[tools]\nerlang = { install_env = { OTHER = 'x', version = '27.3.2' }, version = '__VERSION__' }\n"
+      ],
+      [
+        "another inline-table key ending in version",
+        "[tools]\nerlang = { minimum_version = '27.3.2', version = '__VERSION__' }\n"
+      ],
+      [
+        "another tool pinned to the same version earlier in the file",
+        "[tools]\nelixir = '27.3.2'\nerlang = '__VERSION__'\n"
+      ],
+      [
+        "a longer version that contains the same digits",
+        "[tools]\nerlang_ls = '127.3.2'\nerlang = '__VERSION__'\n"
+      ],
+      [
+        "a version-like assignment inside a string",
+        "[tools]\nerlang = { note = \"version = '27.3.2'\", version = '__VERSION__' }\n"
+      ],
+      [
+        "a nested environment table",
+        "[tools.erlang]\nversion = '__VERSION__'\n[tools.erlang.install_env]\nversion = '27.3.2'\n"
+      ],
+      [
+        "a version-like key before the actual version field",
+        "[tools.erlang]\nminimum_version = '27.3.2'\nversion = '__VERSION__'\n"
+      ],
+      [
+        "a fake tools table inside a multiline literal string",
+        "[tasks.example]\nrun = '''\n[tools]\nerlang = '27.3.2'\n'''\n[tools]\nerlang = '__VERSION__'\n"
+      ],
+      [
+        "a fake tool version inside a multiline basic string",
+        "[tasks.example]\nrun = \"\"\"\n[tools.erlang]\nversion = '27.3.2'\n\"\"\"\n" \
+        "[tools.erlang]\nversion = '__VERSION__'\n"
+      ],
+      [
+        "a comment containing a tool declaration",
+        "# erlang = '27.3.2'\n[tools]\nerlang = '__VERSION__' # version = '27.3.2'\n"
+      ],
+      [
+        "non-ASCII text and CRLF line endings",
+        "# versión 🎉\r\n[tools]\r\nerlang = '__VERSION__' # versión\r\n[env]\r\nerlang = '27.3.2'\r\n"
+      ],
+      [
+        "a dotted tool declaration",
+        "tools.erlang = '__VERSION__'\n[env]\nerlang = '27.3.2'\n"
+      ],
+      [
+        "a dotted version field",
+        "[tools]\nerlang.install_env.version = '27.3.2'\nerlang.version = '__VERSION__'\n"
+      ],
+      [
+        "whitespace and quotes in a table header",
+        "[ 'tools' . \"erlang\" ]\n'version' = '__VERSION__'\n[env]\nerlang = '27.3.2'\n"
+      ],
+      [
+        "an escaped tool key",
+        "[tools]\n\"erla\\u006eg\" = '__VERSION__'\n[env]\nerlang = '27.3.2'\n"
+      ],
+      [
+        "a tool declared within a top-level inline tools table",
+        "tools = { erlang = { version = '__VERSION__', install_env = { version = '27.3.2' } } }\n"
+      ]
+    ].each do |description, template|
+      context "with #{description}" do
+        let(:mise_toml) do
+          Dependabot::DependencyFile.new(name: "mise.toml", content: template.gsub("__VERSION__", "27.3.2"))
+        end
+
+        it "only replaces the intended tool version" do
+          expect(updated_files.map(&:content)).to eq([template.gsub("__VERSION__", "28.0.0")])
+        end
+      end
+    end
+
+    context "when the tool declaration is missing" do
+      let(:mise_toml) do
+        Dependabot::DependencyFile.new(name: "mise.toml", content: "[env]\nerlang = '27.3.2'\n")
+      end
+
+      it "raises instead of modifying the environment variable" do
+        expect { updated_files }
+          .to raise_error(RuntimeError, "Expected content to change for erlang in mise.toml!")
+      end
+
+      context "when only a nested version field exists" do
+        let(:mise_toml) do
+          Dependabot::DependencyFile.new(
+            name: "mise.toml",
+            content: "[tools]\nerlang = { install_env = { version = '27.3.2' } }\n"
+          )
+        end
+
+        it "raises instead of modifying the nested field" do
+          expect { updated_files }
+            .to raise_error(RuntimeError, "Expected content to change for erlang in mise.toml!")
+        end
+      end
+
+      context "when the matching declaration is in an array of tables" do
+        let(:mise_toml) do
+          Dependabot::DependencyFile.new(name: "mise.toml", content: "[[tools.erlang]]\nversion = '27.3.2'\n")
+        end
+
+        it "does not rewrite array entries" do
+          expect { updated_files }
+            .to raise_error(RuntimeError, "Expected content to change for erlang in mise.toml!")
+        end
+      end
+    end
+
+    context "when the tool already declares the new version" do
+      let(:mise_toml) do
+        Dependabot::DependencyFile.new(
+          name: "mise.toml",
+          content: "[tools]\nerlang = '28.0.0'\n[env]\nerlang = '27.3.2'\n"
+        )
+      end
+
+      it "raises instead of rewriting the environment variable to match" do
+        expect { updated_files }
+          .to raise_error(RuntimeError, "Expected content to change for erlang in mise.toml!")
+      end
+    end
+
+    # Versions never need escaping in TOML, and the update edits the raw text, so an escaped
+    # spelling can't be located. Failing loudly is deliberate: there is nothing safe to rewrite.
+    context "with an escaped version string" do
+      let(:mise_toml) do
+        Dependabot::DependencyFile.new(name: "mise.toml", content: "[tools]\nerlang = \"27\\u002e3.2\"\n")
+      end
+
+      it "raises because the version text cannot be found" do
+        expect { updated_files }
+          .to raise_error(RuntimeError, "Expected content to change for erlang in mise.toml!")
+      end
+    end
+
+    context "when the manifest is invalid TOML" do
+      let(:mise_toml) do
+        Dependabot::DependencyFile.new(name: "mise.toml", content: "[tools]\nerlang = '27.3.2'\ninvalid =\n")
+      end
+
+      it "identifies the file that cannot be parsed" do
+        expect { updated_files }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect(error.file_path).to eq("mise.toml")
+        end
+      end
+
+      context "when a key is defined twice" do
+        let(:mise_toml) do
+          Dependabot::DependencyFile.new(name: "mise.toml", content: "[tools]\nerlang = '27.3.2'\nerlang = '27.3.2'\n")
+        end
+
+        it "identifies the file that cannot be parsed" do
+          expect { updated_files }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+            expect(error.file_path).to eq("mise.toml")
+          end
+        end
+      end
+    end
+
     context "with quoted key (npm scoped package)" do
       let(:mise_toml) do
         Dependabot::DependencyFile.new(
