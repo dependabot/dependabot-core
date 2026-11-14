@@ -1110,6 +1110,76 @@ RSpec.describe Dependabot::GitCommitChecker do
           its(:tag) { is_expected.to eq("v1.11.1") }
         end
 
+        context "when the latest tag is a GitHub pre-release and the registry does not list the dependency" do
+          before do
+            allow(checker).to receive(:listing_source_url).and_return(nil)
+            stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(
+                status: 200,
+                body: [{ tag_name: "v1.13.0", prerelease: true, draft: false }].to_json,
+                headers: { "Content-Type" => "application/json" }
+              )
+          end
+
+          its([:tag]) { is_expected.to eq("v1.11.1") }
+
+          it "asks the registry for the source URL only once" do
+            local_tag_for_latest_version
+
+            expect(checker).to have_received(:listing_source_url).once
+          end
+        end
+
+        context "when the registry lists the dependency under a different repository than the git source" do
+          let(:repo_url) { "https://github.com/someone/business-fork.git" }
+          let(:source) do
+            {
+              type: "git",
+              url: "https://github.com/someone/business-fork",
+              branch: "master",
+              ref: "master"
+            }
+          end
+
+          before do
+            stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(
+                status: 200,
+                body: [{ tag_name: "v1.13.0", prerelease: true, draft: false }].to_json,
+                headers: { "Content-Type" => "application/json" }
+              )
+          end
+
+          its([:tag]) { is_expected.to eq("v1.11.1") }
+        end
+
+        context "when the git source is on an unknown host and the registry does not list the dependency" do
+          let(:repo_url) { "https://git.example.com/gocardless/business.git" }
+          let(:source) do
+            {
+              type: "git",
+              url: "https://git.example.com/gocardless/business",
+              branch: "master",
+              ref: "master"
+            }
+          end
+
+          before do
+            allow(checker).to receive(:listing_source_url).and_return(nil)
+            stub_request(:get, "https://git.example.com/status").to_return(status: 500)
+          end
+
+          its([:tag]) { is_expected.to eq("v1.13.0") }
+
+          it "checks whether the host is GHES only once" do
+            local_tag_for_latest_version
+
+            expect(WebMock).to have_requested(:get, "https://git.example.com/status").once
+          end
+        end
+
         context "when there is a pre-release latest version" do
           let(:upload_pack_fixture) { "k8s-apiextensions-apiserver" }
 
