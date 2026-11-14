@@ -1,0 +1,9 @@
+{
+  "name": "direct-dev-unrelated-production-copy",
+  "dependencies": {
+    "debug": "4.3.4"
+  },
+  "devDependencies": {
+    "ms": "2.0.0"
+  }
+}
