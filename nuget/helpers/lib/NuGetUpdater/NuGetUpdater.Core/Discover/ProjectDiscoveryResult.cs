@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Text.Json.Serialization;
 
 using NuGetUpdater.Core.Run.ApiModel;
 
@@ -20,5 +21,6 @@ public record ProjectDiscoveryResult : IDiscoveryResultWithDependencies
     /// <summary>
     /// Maps each package (keyed as "Name/Version") to its direct dependency package names, as extracted from project.assets.json.
     /// </summary>
+    [JsonConverter(typeof(DependencyGraphConverter))]
     public ImmutableDictionary<string, ImmutableArray<string>> DependencyGraph { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty;
 }
