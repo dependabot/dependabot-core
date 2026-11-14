@@ -46,6 +46,7 @@ Sentry.init do |config|
     hex|
     julia|
     maven|
+    nimble|
     nix|
     npm_and_yarn|
     nuget|

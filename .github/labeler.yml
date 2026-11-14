@@ -120,6 +120,10 @@
 - changed-files:
   - any-glob-to-any-file: bazel/**
 
+"L: nim:nimble":
+- changed-files:
+  - any-glob-to-any-file: nimble/**
+
 "L: nix":
 - changed-files:
   - any-glob-to-any-file: nix/**
