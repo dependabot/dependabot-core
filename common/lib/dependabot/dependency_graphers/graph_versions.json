@@ -10,7 +10,7 @@
         "go_modules/lib/dependabot/go_modules/go_mod_manifest.rb",
         "go_modules/lib/dependabot/go_modules/replace_stubber.rb"
       ],
-      "sources_sha256": "5ea4bbf0a01a1a94792ccd925d54018236493bb5a3bbdcb2da8d3c19778ed9fc"
+      "sources_sha256": "7bf2f46b98e5f91cd620ec7b84023874ac9398b1f46f36ce72973bdb4416d29f"
     },
     "pip": {
       "graph_version": "1",
@@ -27,7 +27,7 @@
         "python/lib/dependabot/python/pip_compile_file_matcher.rb",
         "python/lib/dependabot/python/requirement_references.rb"
       ],
-      "sources_sha256": "559805ed88e0b8ce58907207e653ec5c22d9f7126eaebb2b13e3d28d5420c6d7"
+      "sources_sha256": "dbcf1f80556cfc1df1a6d444b858421d5ad93021414ec4305e11a4715bfeb88c"
     },
     "uv": {
       "graph_version": "1",
@@ -48,7 +48,7 @@
         "uv/lib/dependabot/uv/requirements_file_matcher.rb",
         "uv/lib/dependabot/uv/sources_table.rb"
       ],
-      "sources_sha256": "563a572d99ccd1b44574d0549faa2ca28277f9a78009e427b8739e0a069e53e2"
+      "sources_sha256": "0abcbb0181bec0664f25ceb375566fed60cc9786bf4243ed3d7faa32375845c2"
     }
   }
 }

@@ -1380,6 +1380,36 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
       expect(resolved_package_names(snapshots.fetch("dev-requirements.txt"))).to contain_exactly("pytest")
       expect(resolved_package_names(snapshots.fetch("setup.py"))).to contain_exactly("requests")
     end
+
+    it "can describe the manifest set by its committed inputs" do
+      expect(grapher.manifest_set_unresolvable_reason).to be_nil
+    end
+
+    context "when the shared manifest is a Poetry project without a committed poetry.lock" do
+      let(:dependency_files) { [dev_requirements_txt, app_requirements_txt, pyproject_toml] }
+
+      let(:lockfile_generator) do
+        instance_double(
+          Dependabot::Python::DependencyGrapher::LockfileGenerator,
+          generate: Dependabot::DependencyFile.new(
+            name: "poetry.lock",
+            content: fixture("dependency_grapher", "poetry_lock_with_relationships.lock"),
+            directory: "/"
+          )
+        )
+      end
+
+      before do
+        allow(Dependabot::Python::DependencyGrapher::LockfileGenerator)
+          .to receive(:new).and_return(lockfile_generator)
+      end
+
+      it "reports the manifest set as unknown provenance, as a layer's graph used a generated lockfile" do
+        expect(grapher.manifest_set_unresolvable_reason).to eq("unknown_provenance")
+        expect(Dependabot::Python::DependencyGrapher::LockfileGenerator)
+          .to have_received(:new).once
+      end
+    end
   end
 
   # A `-c` target only pins versions for the file that references it; it does not add requirements.

@@ -77,7 +77,12 @@ module Dependabot
       sig { override.returns(T.nilable(String)) }
       def manifest_set_unresolvable_reason
         manifest_group_snapshots
-        Dependabot::ManifestSets::Descriptor::UNKNOWN_PROVENANCE if @ephemeral_lockfile_generated
+        Dependabot::ManifestSets::Descriptor::UNKNOWN_PROVENANCE if ephemeral_lockfile_generated?
+      end
+
+      sig { returns(T::Boolean) }
+      def ephemeral_lockfile_generated?
+        @ephemeral_lockfile_generated == true
       end
 
       # Layering is specific to pip / pip-compile for Python.
@@ -95,6 +100,16 @@ module Dependabot
       end
 
       private
+
+      # A layered directory resolves each group with a scoped grapher, so a Poetry pyproject.toml's lockfile is
+      # generated there rather than on this grapher.
+      sig { override.params(scoped: Dependabot::DependencyGraphers::Base).void }
+      def absorb_error_state(scoped)
+        super
+        return unless scoped.is_a?(DependencyGrapher) && scoped.ephemeral_lockfile_generated?
+
+        @ephemeral_lockfile_generated = T.let(true, T.nilable(T::Boolean))
+      end
 
       # pip.conf only configures where packages are fetched from, not which are resolved.
       sig { override.params(file: Dependabot::DependencyFile).returns(T::Boolean) }
