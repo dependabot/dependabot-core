@@ -47,7 +47,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
       .with(
         ["mise", "ls-remote", "--json", "--", dependency.name],
         stderr_to_stdout: false,
-        env: { "MISE_YES" => "1" }
+        env: hash_including("MISE_YES" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
       )
       .and_return(JSON.dump(
                     [
@@ -77,6 +77,16 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
     end
   end
 
+  context "when a requirement's manifest was not provided" do
+    let(:dependency_files) { [] }
+
+    it "identifies the requirement and missing manifest" do
+      expect { checker.latest_version }.to raise_error(
+        Dependabot::DependencyFileNotFound, "Manifest mise.toml referenced by erlang was not provided"
+      )
+    end
+  end
+
   context "with prerelease versions" do
     let(:tool_name) { "erlang" }
     let(:current_version) { "27.3.2" }
@@ -98,7 +108,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
         .with(
           ["mise", "ls-remote", "--json", "--", tool_name],
           stderr_to_stdout: false,
-          env: { "MISE_YES" => "1" }
+          env: hash_including("MISE_YES" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
         )
         .and_return(JSON.dump(remote_versions.map { |version| { "version" => version } }))
     end
@@ -132,8 +142,29 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
         super() + [{ requirement: "28.0-rc1", file: "mise.dev.toml", groups: [], source: nil }]
       end
 
-      it "allows newer prereleases" do
-        expect(checker.latest_version).to eq("28.0-rc2")
+      it "selects each manifest's target independently" do
+        expect(checker.updated_requirements.to_h { |req| [req.file, req.requirement_string] }).to eq(
+          "mise.toml" => "27.3.3", "mise.dev.toml" => "28.0-rc2"
+        )
+      end
+    end
+
+    context "with a partial pin resolved to a newer version" do
+      let(:current_version) { "27.3.4" }
+      let(:remote_versions) { %w(27.3.3) }
+      let(:mise_toml) do
+        Dependabot::DependencyFile.new(name: "mise.toml", content: "[tools]\nerlang = '27.3'\n")
+      end
+      let(:requirements) do
+        [{
+          requirement: "27.3", file: "mise.toml", groups: [], source: nil,
+          metadata: { resolved_version: "27.3.4" }
+        }]
+      end
+
+      it "does not pin an older release" do
+        expect(checker.updated_requirements).to eq(dependency.requirements)
+        expect(checker.updated_dependencies(requirements_to_unlock: :own)).to be_empty
       end
     end
 
@@ -172,7 +203,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
         .with(
           ["mise", "ls-remote", "--json", "--", dependency.name],
           stderr_to_stdout: false,
-          env: { "MISE_YES" => "1" }
+          env: hash_including("MISE_YES" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
         )
         .and_return("[]")
     end
@@ -196,7 +227,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
         .with(
           ["mise", "ls-remote", "--json", "--", dependency.name],
           stderr_to_stdout: false,
-          env: { "MISE_YES" => "1" }
+          env: hash_including("MISE_YES" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
         )
         .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
                      message: "mise not found",
@@ -232,7 +263,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
         .with(
           ["mise", "ls-remote", "--json", "--", "ruby"],
           stderr_to_stdout: false,
-          env: { "MISE_YES" => "1" }
+          env: hash_including("MISE_YES" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
         )
         .and_return(JSON.dump(remote_versions.map { |version| { "version" => version } }))
     end
@@ -256,7 +287,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
         .with(
           ["mise", "ls-remote", "--json", "--", dependency.name],
           stderr_to_stdout: false,
-          env: { "MISE_YES" => "1" }
+          env: hash_including("MISE_YES" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
         )
         .and_return("{")
     end
@@ -272,7 +303,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
         .with(
           ["mise", "ls-remote", "--json", "--", dependency.name],
           stderr_to_stdout: false,
-          env: { "MISE_YES" => "1" }
+          env: hash_including("MISE_YES" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
         )
         .and_return(JSON.dump([{ "version" => "28.4.1", "created_at" => "invalid" }]))
     end
@@ -324,7 +355,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
           .with(
             ["mise", "ls-remote", "--json", "--", dependency.name],
             stderr_to_stdout: false,
-            env: { "MISE_YES" => "1" }
+            env: hash_including("MISE_YES" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
           )
           .and_return(JSON.dump(
                         [
@@ -345,7 +376,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
           .with(
             ["mise", "ls-remote", "--json", "--", dependency.name],
             stderr_to_stdout: false,
-            env: { "MISE_YES" => "1" }
+            env: hash_including("MISE_YES" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
           )
           .and_return(JSON.dump(
                         [
@@ -366,7 +397,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
           .with(
             ["mise", "ls-remote", "--json", "--", dependency.name],
             stderr_to_stdout: false,
-            env: { "MISE_YES" => "1" }
+            env: hash_including("MISE_YES" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
           )
           .and_return(JSON.dump(
                         [
@@ -397,7 +428,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
           .with(
             ["mise", "ls-remote", "--json", "--", dependency.name],
             stderr_to_stdout: false,
-            env: { "MISE_YES" => "1" }
+            env: hash_including("MISE_YES" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
           )
           .and_return(JSON.dump(
                         [

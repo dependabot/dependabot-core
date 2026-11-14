@@ -136,7 +136,8 @@ module Dependabot
           requirement: requirement,
           file: file_name,
           groups: [],
-          source: nil
+          source: nil,
+          metadata: { resolved_version: version }
         )
 
         updated_requirements = dependency.requirements + [new_requirement]
@@ -170,7 +171,8 @@ module Dependabot
             requirement: requirement,
             file: file_name,
             groups: [],
-            source: nil
+            source: nil,
+            metadata: { resolved_version: version }
           }]
         )
       end

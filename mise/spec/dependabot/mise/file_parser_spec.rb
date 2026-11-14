@@ -236,6 +236,7 @@ RSpec.describe Dependabot::Mise::FileParser do
         node = dependencies.find { |d| d.name == "node" }
         expect(node.version).to eq("20.20.2")
         expect(node.requirements.first[:requirement]).to eq("20")
+        expect(node.requirements.first.metadata_string("resolved_version")).to eq("20.20.2")
       end
     end
 
