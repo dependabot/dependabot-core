@@ -48,7 +48,7 @@ module Dependabot
       def parse_mise_file(mise_file, dependencies_by_name)
         # Parse this file in isolation by writing only this file to a temp directory
         Dependabot::SharedHelpers.in_a_temporary_directory do
-          File.write(mise_file.name, mise_file.content)
+          write_manifest_files([mise_file])
 
           tool_names = manifest_tool_names(mise_file)
           next if tool_names.empty?

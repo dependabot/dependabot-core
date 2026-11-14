@@ -64,6 +64,26 @@ RSpec.describe Dependabot::Mise::FileUpdater do
       )
     end
 
+    context "with nested configuration files" do
+      let(:versions_by_file) do
+        {
+          ".config/mise.toml" => "27.3.2",
+          ".mise/config.dev.local.toml" => "28.0-rc1",
+          "mise/conf.d/erlang.toml" => "27.3.2",
+          ".config/mise/conf.d/erlang/mise.local.toml" => "28.0-rc1"
+        }
+      end
+
+      it "updates the right tool in each file and preserves its path" do
+        expect(updated_contents).to eq(
+          ".config/mise.toml" => "[env]\nerlang = '27.3.2'\n[tools]\nerlang = '27.3.3'\n",
+          ".mise/config.dev.local.toml" => "[env]\nerlang = '28.0-rc1'\n[tools]\nerlang = '28.0-rc2'\n",
+          "mise/conf.d/erlang.toml" => "[env]\nerlang = '27.3.2'\n[tools]\nerlang = '27.3.3'\n",
+          ".config/mise/conf.d/erlang/mise.local.toml" => "[env]\nerlang = '28.0-rc1'\n[tools]\nerlang = '28.0-rc2'\n"
+        )
+      end
+    end
+
     context "when only the prerelease pin can advance" do
       let(:versions_by_file) { { "mise.toml" => "27.3.3", "mise.dev.toml" => "28.0-rc1" } }
 

@@ -127,6 +127,32 @@ RSpec.describe Dependabot::Mise::FileParser do
         .mise.local.toml
         mise.my-env.toml
         .mise.my_env.toml
+        mise.production.local.toml
+        .mise.dev.local.toml
+        .config/mise.toml
+        .config/mise.local.toml
+        .config/mise.production.toml
+        .config/mise.production.local.toml
+        .config/mise/mise.toml
+        .config/mise/mise.local.toml
+        .config/mise/config.toml
+        .config/mise/config.local.toml
+        .config/mise/config.production.toml
+        .config/mise/config.production.local.toml
+        .mise/config.toml
+        .mise/config.local.toml
+        .mise/config.dev.toml
+        .mise/config.dev.local.toml
+        mise/config.toml
+        mise/config.local.toml
+        mise/config.my-env.toml
+        mise/config.my-env.local.toml
+        .config/mise/conf.d/tools.toml
+        .mise/conf.d/00-node.toml
+        mise/conf.d/tools.dev.local.toml
+        mise/conf.d/node/mise.toml
+        .config/mise/conf.d/git/mise.local.toml
+        .mise/conf.d/tools/mise.dev.toml
       ).each do |filename|
         context "with #{filename}" do
           let(:dependency_files) do
