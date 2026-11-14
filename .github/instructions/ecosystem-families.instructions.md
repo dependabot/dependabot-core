@@ -14,7 +14,7 @@ Grouping is a **prompt to check the siblings**, not a guarantee they share code.
 
 - **JavaScript / TypeScript**: `npm_and_yarn` (npm, Yarn, pnpm), `bun`, `deno`
 - **Python**: `python` (pip, pip-compile, pipenv, Poetry), `uv`, `conda`
-- **JVM**: `maven`, `gradle`, `sbt`
+- **JVM**: `maven`, `gradle`, `sbt`, `clojure`
 - **Containers**: `docker`, `docker_compose`
 
 A change to `common/` affects **every** ecosystem.

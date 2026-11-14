@@ -1,0 +1,9 @@
+{:paths ["src"]
+ :deps {org.clojure/clojure {:mvn/version "1.11.1"}
+        cheshire/cheshire   {:mvn/version "5.11.0"}
+        io.github.example/git-dep {:git/tag "v1.0.0" :git/sha "abc1234"}
+        example/local-dep {:local/root "../local-dep"}}
+ :mvn/repos {"private" {:url "https://repo.example.com/maven"}}
+ :aliases {:test {:extra-deps {lambdaisland/kaocha {:mvn/version "1.87.1366"}}}
+           :dev/repl {:extra-deps {nrepl/nrepl {:mvn/version "1.0.0"}}
+                      :main-opts ["-m" "nrepl.cmdline"]}}}

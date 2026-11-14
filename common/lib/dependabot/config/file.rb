@@ -65,6 +65,7 @@ module Dependabot
           "bun" => "bun",
           "bundler" => "bundler",
           "cargo" => "cargo",
+          "clojure" => "clojure",
           "composer" => "composer",
           "deno" => "deno",
           "conda" => "conda",
