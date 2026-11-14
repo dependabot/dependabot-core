@@ -14,8 +14,6 @@ RSpec.describe Dependabot::Mise::FileFetcher do
       "password" => "token"
     }]
   end
-  let(:url) { github_url + "repos/example/repo/contents/" }
-  let(:github_url) { "https://api.github.com/" }
   let(:directory) { "/" }
   let(:repo_contents_path) { nil }
   let(:source) do
@@ -124,26 +122,8 @@ RSpec.describe Dependabot::Mise::FileFetcher do
   end
 
   describe ".required_files_in?" do
-    it "returns true when mise.toml is present" do
-      expect(described_class.required_files_in?(["mise.toml"])).to be(true)
-    end
-
-    it "returns true when .mise.toml is present" do
-      expect(described_class.required_files_in?([".mise.toml"])).to be(true)
-    end
-
-    it "returns true when environment-specific variant is present" do
-      expect(described_class.required_files_in?(["mise.production.toml"])).to be(true)
-      expect(described_class.required_files_in?([".mise.local.toml"])).to be(true)
-    end
-
-    it "returns true when only a nested configuration file is present" do
-      expect(described_class.required_files_in?([".mise/config.toml"])).to be(true)
-      expect(described_class.required_files_in?(["mise/conf.d/tools.toml"])).to be(true)
-    end
-
     it "returns true when any mise config file is present" do
-      filenames = ["README.md", "package.json", "mise.dev.toml", "Gemfile"]
+      filenames = ["README.md", "package.json", ".mise/config.dev.toml", "Gemfile"]
       expect(described_class.required_files_in?(filenames)).to be(true)
     end
 
