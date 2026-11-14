@@ -89,6 +89,7 @@ module Dependabot
 
         identity = { ecosystem: ecosystem.id, directory: set_directory, owner: owner_id, graph_version: }
         return Descriptor.unresolvable(**identity, reason: unresolvable_reason) if unresolvable_reason
+        return Descriptor.unresolvable(**identity, reason: Descriptor::INPUT_LIMIT) if over_limits?(dependency_files)
 
         inputs = Inputs.resolve(dependency_files:, repo_contents_path:, commit:)
         return Descriptor.unresolvable(**identity, reason: T.must(inputs.unresolvable_reason)) unless inputs.resolved?
@@ -121,6 +122,14 @@ module Dependabot
         Descriptor.present(**identity, files: inputs.files)
       end
 
+      # Whether the grapher's inputs alone already exceed a descriptor limit. Checked before any Git lookup so
+      # an oversized list is reported as `input_limit` without listing it; selector files only add inputs.
+      sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).returns(T::Boolean) }
+      def self.over_limits?(dependency_files)
+        paths = dependency_files.map(&:realpath).uniq
+        paths.length > Descriptor::MAX_FILES || paths.any? { |path| path.bytesize > Descriptor::MAX_PATH_BYTES }
+      end
+
       sig { params(directory: String, files: T::Array[InputFile]).returns(T::Array[String]) }
       def self.basenames_in(directory, files)
         prefix = directory == "." ? "" : "#{directory}/"
@@ -150,7 +159,7 @@ module Dependabot
           InputFile.new(path: "#{prefix}#{basename}", blob_oid: oid) if oid
         end
       end
-      private_class_method :selector_files, :holds_set?, :symlinked_selector?, :basenames_in
+      private_class_method :selector_files, :holds_set?, :symlinked_selector?, :basenames_in, :over_limits?
     end
   end
 end

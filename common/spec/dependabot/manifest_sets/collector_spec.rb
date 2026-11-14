@@ -292,6 +292,26 @@ RSpec.describe Dependabot::ManifestSets::Collector do
       )
     end
 
+    it "reports input_limit for too many inputs without looking them up" do
+      commit = commit_files(%w(api/requirements.txt))
+      files = Array.new(Dependabot::ManifestSets::Descriptor::MAX_FILES + 1) { |i| file("api/r#{i}.txt") }
+      allow(Dependabot::ManifestSets::Inputs).to receive(:resolve).and_call_original
+
+      descriptor = describe_set(files, directory: "/api", owner_id: "pip", commit: commit)
+
+      expect(descriptor.reason).to eq(Dependabot::ManifestSets::Descriptor::INPUT_LIMIT)
+      expect(Dependabot::ManifestSets::Inputs).not_to have_received(:resolve)
+    end
+
+    it "reports input_limit for an over-long input path without looking it up" do
+      commit = commit_files(%w(api/requirements.txt))
+      long_name = "api/#{'r' * Dependabot::ManifestSets::Descriptor::MAX_PATH_BYTES}.txt"
+
+      descriptor = describe_set([file(long_name)], directory: "/api", owner_id: "pip", commit: commit)
+
+      expect(descriptor.reason).to eq(Dependabot::ManifestSets::Descriptor::INPUT_LIMIT)
+    end
+
     it "is unresolvable when an input has no repository blob" do
       commit = commit_files(%w(api/requirements.txt))
 

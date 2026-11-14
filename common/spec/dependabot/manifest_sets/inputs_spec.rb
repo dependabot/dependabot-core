@@ -122,6 +122,35 @@ RSpec.describe Dependabot::ManifestSets::Inputs do
       expect(pattern.resolved?).to be(false)
     end
 
+    it "looks up a long input list in bounded batches" do
+      stub_const("#{described_class}::MAX_ARGUMENT_BYTES", 20)
+      allow(IO).to receive(:popen).and_call_original
+
+      inputs = described_class.resolve(
+        dependency_files: [file("requirements.txt"), file("go.mod", directory: "/api"), file("B.txt")],
+        repo_contents_path: repo,
+        commit: commit
+      )
+
+      expect(IO).to have_received(:popen).exactly(2).times
+      expect(inputs.files.map(&:path)).to eq(%w(B.txt api/go.mod requirements.txt))
+      expect(inputs.files.map(&:blob_oid)).to eq(
+        inputs.files.map { |input| git("rev-parse", "#{commit}:#{input.path}") }
+      )
+    end
+
+    it "is unresolvable rather than partial when a later batch has no blob at the commit" do
+      stub_const("#{described_class}::MAX_ARGUMENT_BYTES", 20)
+
+      inputs = described_class.resolve(
+        dependency_files: [file("requirements.txt"), file("B.txt"), file("missing.txt")],
+        repo_contents_path: repo,
+        commit: commit
+      )
+
+      expect(inputs.unresolvable_reason).to eq(described_class::UNKNOWN_PROVENANCE)
+    end
+
     it "is unresolvable rather than partial when any file has no blob at the commit" do
       inputs = described_class.resolve(
         dependency_files: [file("requirements.txt"), file("generated.lock")],
