@@ -1,7 +1,7 @@
 # syntax=docker.io/docker/dockerfile:1.20
 FROM ghcr.io/dependabot/dependabot-updater-core
 
-ARG MISE_VERSION=v2026.3.9
+ARG MISE_VERSION=v2026.11.8
 RUN curl -fsSL https://github.com/jdx/mise/releases/download/${MISE_VERSION}/install.sh \
     | MISE_INSTALL_PATH=/usr/local/bin/mise sh
 
