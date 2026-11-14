@@ -162,10 +162,32 @@ module Dependabot
             elsif current_requirement.strip.split(SEPARATOR).one?
               update_version_string(current_requirement)
             else
-              current_requirement
+              "#{current_requirement.strip} || #{alternative_for_new_version(current_requirement)}"
             end
 
           Dependabot::DependencyRequirement.create(req.merge(requirement: updated_requirement))
+        end
+
+        # The alternative to add to "^1.0.0 || ^2.0.0": the last one written for the new version, as long as it is a
+        # single comparator that admits that version. Otherwise (">9.0.0" would give ">2.0.0", and "^2.0.0 >=2.1.0"
+        # is a range of its own) a caret on the new version, which admits it and stays bounded. The build metadata
+        # of the old version ("2.0.0+old") is not carried over.
+        sig { params(current_requirement: String).returns(String) }
+        def alternative_for_new_version(current_requirement)
+          last_alternative = current_requirement.split("||").last.to_s.strip.gsub(/\+[0-9A-Za-z.\-]+/, "")
+          version = T.must(latest_resolvable_version)
+          candidate = update_version_string(last_alternative) if last_alternative.split(SEPARATOR).one?
+
+          return candidate if candidate && admits?(candidate, version)
+
+          "^#{version}"
+        end
+
+        sig { params(requirement_string: String, version: NpmAndYarn::Version).returns(T::Boolean) }
+        def admits?(requirement_string, version)
+          ruby_requirements(requirement_string).any? { |r| r.satisfied_by?(version) }
+        rescue Dependabot::BadRequirementError
+          false
         end
 
         sig { params(requirement_string: String).returns(T::Array[NpmAndYarn::Requirement]) }
