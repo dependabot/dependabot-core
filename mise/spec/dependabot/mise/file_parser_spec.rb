@@ -85,8 +85,29 @@ RSpec.describe Dependabot::Mise::FileParser do
           .and_return("{")
       end
 
-      it "returns no dependencies" do
-        expect(dependencies).to eq([])
+      it "reports the manifest as unparseable" do
+        expect { dependencies }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect(error.file_name).to eq("mise.toml")
+        end
+      end
+    end
+
+    context "when mise cannot list a manifest" do
+      before do
+        allow(File).to receive(:write)
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(["mise", "ls", "--current", "--local", "--json"], hash_including(stderr_to_stdout: false))
+          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                       message: "mise ERROR failed to load mise.toml",
+                       error_context: {}
+                     ))
+      end
+
+      it "reports the manifest as unparseable" do
+        expect { dependencies }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect(error.file_name).to eq("mise.toml")
+          expect(error.message).to include("failed to load mise.toml")
+        end
       end
     end
 
@@ -219,6 +240,34 @@ RSpec.describe Dependabot::Mise::FileParser do
         it "reads the tools without running the command" do
           expect(dependencies.map { |dep| [dep.name, dep.version] }).to eq([["node", "20.0.0"]])
           expect(File).not_to exist(marker)
+        end
+      end
+
+      manifest_orders = [%w(valid templated), %w(templated valid)]
+      {
+        "a function in the version" => "python = \"{{ get_env(name='PY_VERSION', default='3.12.0') }}\"",
+        "an environment variable in the version" => "python = \"{{ env.PY_VERSION }}\"",
+        "a literal template in the version" => "python = \"{{ '3.12.0' }}\"",
+        "a template in a version table" => "python = { version = \"{{ env.PY_VERSION }}\" }",
+        "a template in tool options" =>
+          "python = { version = '3.12.0', install_env = { CC = \"{{ get_env(name='CC', default='cc') }}\" } }"
+      }.each do |description, declaration|
+        context "with #{description} next to a valid manifest" do
+          let(:valid) { Dependabot::DependencyFile.new(name: "mise.toml", content: "[tools]\nnode = '20.0.0'\n") }
+          let(:templated) do
+            Dependabot::DependencyFile.new(name: "mise.dev.toml", content: "[tools]\n#{declaration}\n")
+          end
+
+          manifest_orders.each do |order|
+            context "when the #{order.first} manifest comes first" do
+              let(:dependency_files) { order.map { |name| public_send(name) } }
+
+              it "skips the templated manifest and keeps the other dependencies" do
+                expect(dependencies.map { |dep| [dep.name, dep.version, dep.requirements.map(&:file)] })
+                  .to eq([["node", "20.0.0", ["mise.toml"]]])
+              end
+            end
+          end
         end
       end
     end

@@ -17,6 +17,12 @@ The first two groups and `conf.d` folders also support environment and local var
 Hidden fragment files and folders are ignored.
 See [mise's configuration file locations](https://mise.jdx.dev/configuration.html#config-file-locations).
 
+### Limitations
+
+- Manifests with templates in `[tools]`, such as `node = "{{ env.NODE_VERSION }}"`, are skipped.
+  Dependabot runs mise in [safe mode](https://mise.jdx.dev/security.html), which disables
+  templates, and it can't rewrite templated values. Other manifests are still updated.
+
 ### Running locally
 
 1. Start a development shell
