@@ -2,10 +2,12 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "toml-rb"
 
 require "dependabot/errors"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
+require "dependabot/pre_commit/prek_toml"
 
 module Dependabot
   module PreCommit
@@ -52,10 +54,80 @@ module Dependabot
         updated_content = T.must(file.content)
 
         updated_requirement_pairs.each do |new_req, old_req|
-          updated_content = apply_requirement_update(updated_content, new_req, old_req)
+          previous_content = updated_content
+          updated_content = apply_requirement_update(updated_content, new_req, old_req, file)
+          verify_toml_update(previous_content, updated_content, new_req, old_req) if toml?(file)
         end
 
         updated_content
+      end
+
+      # Re-parses an edited prek.toml and raises unless the edit changed exactly
+      # the requirement being updated, so a TOML construct PrekToml mislocates
+      # fails the update instead of corrupting the file.
+      sig do
+        params(
+          before: String,
+          after: String,
+          new_req: Dependabot::DependencyRequirement,
+          old_req: Dependabot::DependencyRequirement
+        ).void
+      end
+      def verify_toml_update(before, after, new_req, old_req)
+        return if before == after
+
+        expected = parse_toml(before)
+        repos = T.cast(expected.fetch("repos", []), T::Array[T::Hash[String, Object]])
+        if new_req.source_string("type") == "git"
+          expect_rev_update(repos, new_req, old_req)
+        else
+          expect_additional_dependency_update(repos, new_req, old_req)
+        end
+        return if parse_toml(after) == expected
+
+        raise "Updating prek.toml changed more than #{dependency.name}"
+      end
+
+      sig { params(content: String).returns(T::Hash[String, Object]) }
+      def parse_toml(content)
+        T.cast(TomlRB.parse(content), T::Hash[String, Object])
+      end
+
+      sig do
+        params(
+          repos: T::Array[T::Hash[String, Object]],
+          new_req: Dependabot::DependencyRequirement,
+          old_req: Dependabot::DependencyRequirement
+        ).void
+      end
+      def expect_rev_update(repos, new_req, old_req)
+        repos.each do |repo|
+          next unless old_req.source_string("url") == repo["repo"] && old_req.source_string("ref") == repo["rev"]
+
+          repo["rev"] = new_req.source_string("ref")
+        end
+      end
+
+      sig do
+        params(
+          repos: T::Array[T::Hash[String, Object]],
+          new_req: Dependabot::DependencyRequirement,
+          old_req: Dependabot::DependencyRequirement
+        ).void
+      end
+      def expect_additional_dependency_update(repos, new_req, old_req)
+        old_string = old_req.source_string("original_string")
+        repos.each do |repo|
+          next unless old_req.source_string("hook_repo") == repo["repo"]
+
+          T.cast(repo.fetch("hooks", []), T::Array[T::Hash[String, Object]]).each do |hook|
+            next unless old_req.source_string("hook_id") == hook["id"] && hook.key?("additional_dependencies")
+
+            dependencies = T.cast(hook["additional_dependencies"], T::Array[String])
+            hook["additional_dependencies"] =
+              dependencies.map { |dep| dep == old_string ? new_req.source_string("original_string") : dep }
+          end
+        end
       end
 
       sig do
@@ -84,15 +156,16 @@ module Dependabot
         params(
           content: String,
           new_req: Dependabot::DependencyRequirement,
-          old_req: Dependabot::DependencyRequirement
+          old_req: Dependabot::DependencyRequirement,
+          file: Dependabot::DependencyFile
         ).returns(String)
       end
-      def apply_requirement_update(content, new_req, old_req)
+      def apply_requirement_update(content, new_req, old_req, file)
         case new_req.source_string("type")
         when "git"
-          apply_git_requirement_update(content, new_req, old_req)
+          apply_git_requirement_update(content, new_req, old_req, file)
         when "additional_dependency"
-          apply_additional_dependency_update(content, new_req, old_req)
+          apply_additional_dependency_update(content, new_req, old_req, file)
         else
           content
         end
@@ -102,10 +175,11 @@ module Dependabot
         params(
           content: String,
           new_req: Dependabot::DependencyRequirement,
-          old_req: Dependabot::DependencyRequirement
+          old_req: Dependabot::DependencyRequirement,
+          file: Dependabot::DependencyFile
         ).returns(String)
       end
-      def apply_git_requirement_update(content, new_req, old_req)
+      def apply_git_requirement_update(content, new_req, old_req, file)
         repo_url = T.must(old_req.source_string("url"))
         old_ref = T.must(old_req.source_string("ref"))
         new_ref = T.must(new_req.source_string("ref"))
@@ -117,6 +191,7 @@ module Dependabot
           repo_url,
           old_ref,
           new_ref,
+          file,
           old_version: old_version,
           new_version: new_version
         )
@@ -126,14 +201,65 @@ module Dependabot
         params(
           content: String,
           new_req: Dependabot::DependencyRequirement,
-          old_req: Dependabot::DependencyRequirement
+          old_req: Dependabot::DependencyRequirement,
+          file: Dependabot::DependencyFile
         ).returns(String)
       end
-      def apply_additional_dependency_update(content, new_req, old_req)
+      def apply_additional_dependency_update(content, new_req, old_req, file)
         old_string = T.must(old_req.source_string("original_string"))
         new_string = T.must(new_req.source_string("original_string"))
+        return replace_additional_dependency_in_toml(content, old_req, old_string, new_string) if toml?(file)
 
         replace_additional_dependency_in_content(content, old_string, new_string)
+      end
+
+      # Rewrites the matching element of the hook's additional_dependencies
+      # only, so the same string elsewhere (e.g. in args) is left alone.
+      sig do
+        params(
+          content: String,
+          old_req: Dependabot::DependencyRequirement,
+          old_string: String,
+          new_string: String
+        ).returns(String)
+      end
+      def replace_additional_dependency_in_toml(content, old_req, old_string, new_string)
+        toml = PrekToml.new(content)
+        ranges = toml.additional_dependency_ranges(
+          T.must(old_req.source_string("hook_repo")),
+          T.must(old_req.source_string("hook_id")),
+          old_string
+        )
+        updated_content = content.dup
+        ranges.reverse_each { |range| updated_content[range] = toml.encoded(range, new_string) }
+        updated_content
+      end
+
+      # Any .toml dependency file is rewritten as TOML; everything else as YAML.
+      # In practice only prek.toml / .prek.toml reach here (the fetcher gates on
+      # CONFIG_FILE_PATTERN), which is the sole TOML config pre-commit supports.
+      sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
+      def toml?(file)
+        file.name.end_with?(".toml")
+      end
+
+      sig do
+        params(
+          content: String,
+          repo_url: String,
+          old_ref: String,
+          new_ref: String,
+          file: Dependabot::DependencyFile,
+          old_version: T.nilable(String),
+          new_version: T.nilable(String)
+        ).returns(String)
+      end
+      def replace_ref_in_content(content, repo_url, old_ref, new_ref, file, old_version: nil, new_version: nil)
+        if toml?(file)
+          replace_ref_in_toml(content, repo_url, old_ref, new_ref, old_version: old_version, new_version: new_version)
+        else
+          replace_ref_in_yaml(content, repo_url, old_ref, new_ref, old_version: old_version, new_version: new_version)
+        end
       end
 
       sig do
@@ -146,7 +272,7 @@ module Dependabot
           new_version: T.nilable(String)
         ).returns(String)
       end
-      def replace_ref_in_content(content, repo_url, old_ref, new_ref, old_version: nil, new_version: nil)
+      def replace_ref_in_yaml(content, repo_url, old_ref, new_ref, old_version: nil, new_version: nil)
         current_repo = T.let(nil, T.nilable(String))
 
         updated_lines = content.lines.map do |line|
@@ -164,6 +290,39 @@ module Dependabot
         end
 
         updated_lines.join
+      end
+
+      # Rewrites the `rev` value of each repo entry matching repo_url, then the
+      # version comment on that line.
+      sig do
+        params(
+          content: String,
+          repo_url: String,
+          old_ref: String,
+          new_ref: String,
+          old_version: T.nilable(String),
+          new_version: T.nilable(String)
+        ).returns(String)
+      end
+      def replace_ref_in_toml(content, repo_url, old_ref, new_ref, old_version: nil, new_version: nil)
+        updated_content = content.dup
+        toml = PrekToml.new(content)
+        rewritten_comment = T.let(nil, T.nilable(T::Range[Integer]))
+
+        toml.rev_value_ranges(repo_url).reverse_each do |range|
+          next unless content[range] == old_ref
+
+          # The comment follows the rev, so rewriting it first keeps range
+          # valid. Revs sharing a line share a comment, so rewrite it once.
+          comment = toml.line_comment_range(range.end)
+          if comment && comment != rewritten_comment
+            updated_content[comment] = update_version_comment(T.must(content[comment]), old_version, new_version)
+            rewritten_comment = comment
+          end
+          updated_content[range] = new_ref
+        end
+
+        updated_content
       end
 
       sig do
