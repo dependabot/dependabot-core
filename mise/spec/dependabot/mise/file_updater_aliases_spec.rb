@@ -36,7 +36,7 @@ RSpec.describe Dependabot::Mise::FileUpdater do
             .with(
               ["mise", "ls-remote", "--json", "--", original_name],
               stderr_to_stdout: false,
-              env: { "MISE_YES" => "1" }
+              env: hash_including("MISE_YES" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
             )
             .and_return(JSON.dump([{ "version" => new_version }]))
         end
@@ -84,7 +84,7 @@ RSpec.describe Dependabot::Mise::FileUpdater do
             .with(
               ["mise", "ls-remote", "--json", "--", name],
               stderr_to_stdout: false,
-              env: { "MISE_YES" => "1" }
+              env: hash_including("MISE_YES" => "1", "MISE_OVERRIDE_CONFIG_FILENAMES" => anything)
             )
             .and_return(JSON.dump([{ "version" => "1.22.0" }]))
         end

@@ -42,13 +42,17 @@ module Dependabot
 
         sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
         def fetch_releases
+          # UpdateChecker scopes each finder to a single manifest.
           Dependabot::SharedHelpers.in_a_temporary_directory do
             write_manifest_files(dependency_files)
 
             raw = Dependabot::SharedHelpers.run_shell_command(
               ["mise", "ls-remote", "--json", "--", dependency.name],
               stderr_to_stdout: false,
-              env: { "MISE_YES" => "1" }
+              env: {
+                "MISE_YES" => "1",
+                "MISE_OVERRIDE_CONFIG_FILENAMES" => T.must(dependency_files.first).name
+              }
             )
 
             JSON.parse(raw).filter_map do |entry|
