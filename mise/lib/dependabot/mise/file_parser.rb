@@ -111,7 +111,7 @@ module Dependabot
 
       sig { params(mise_file: Dependabot::DependencyFile, tool_name: T.nilable(String)).returns(String) }
       def run_mise_ls(mise_file, tool_name = nil)
-        command = ["mise", "ls", "--current", "--local", "--json"]
+        command = ["mise", "ls", "--current", "--no-global", "--json"]
         command += ["--", tool_name] if tool_name
 
         Dependabot::SharedHelpers.run_shell_command(
