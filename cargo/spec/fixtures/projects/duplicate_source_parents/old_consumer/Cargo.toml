@@ -1,7 +1,0 @@
-[package]
-name = "old_consumer"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-bitflags = "1.3"
