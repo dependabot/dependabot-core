@@ -196,8 +196,9 @@ module Dependabot
       end
 
       # Propagates a scoped grapher's subdependency error state onto this grapher so callers can inspect the
-      # aggregate result of resolving every group.
-      sig { params(scoped: Dependabot::DependencyGraphers::Base).void }
+      # aggregate result of resolving every group. Ecosystems override this to also absorb state their own
+      # hooks read, calling super.
+      sig { overridable.params(scoped: Dependabot::DependencyGraphers::Base).void }
       def absorb_error_state(scoped)
         return unless scoped.errored_fetching_subdependencies
 
