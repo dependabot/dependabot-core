@@ -1,0 +1,184 @@
+# GitHub's Generate release notes button and --generate-notes use this configuration.
+# Ecosystem categories exclude maintenance and dependency updates so those appear
+# in their own sections below. Keep Other changes last to retain unlabelled PRs.
+changelog:
+  exclude:
+    authors:
+      - "dependabot-core-action-automation[bot]"
+  categories:
+    - title: JavaScript and TypeScript
+      labels:
+        - "L: javascript"
+        - "L: javascript:npm"
+        - "L: javascript:pnpm"
+        - "L: javascript:yarn"
+        - "L: deno"
+      exclude:
+        labels: [dependencies, "sorbet 🍦", "T: tech-debt ⚙️", "build 🛠"]
+
+    - title: Python
+      labels:
+        - "L: python"
+        - "L: python:uv"
+        - "L: python:conda"
+        - "L: python:pip"
+        - "L: python:pipenv"
+        - "L: python:poetry"
+        - "L:python:pip-compile"
+      exclude:
+        labels: [dependencies, "sorbet 🍦", "T: tech-debt ⚙️", "build 🛠"]
+
+    - title: .NET
+      labels:
+        - "L: dotnet:nuget"
+        - "L: dotnet:dotnet-sdk"
+      exclude:
+        labels: [dependencies, "sorbet 🍦", "T: tech-debt ⚙️", "build 🛠"]
+
+    - title: Java and Scala
+      labels:
+        - "L: java:maven"
+        - "L: java:maven_osv"
+        - "L: java:gradle"
+        - "L: sbt"
+      exclude:
+        labels: [dependencies, "sorbet 🍦", "T: tech-debt ⚙️", "build 🛠"]
+
+    - title: Containers and Helm
+      labels:
+        - "L: docker"
+        - "L: docker:compose"
+        - "L:docker-compose"
+        - "L: devcontainers"
+        - "L: helm"
+      exclude:
+        labels: [dependencies, "sorbet 🍦", "T: tech-debt ⚙️", "build 🛠"]
+
+    - title: Terraform and OpenTofu
+      labels:
+        - "L: terraform"
+        - "L: opentofu"
+      exclude:
+        labels: [dependencies, "sorbet 🍦", "T: tech-debt ⚙️", "build 🛠"]
+
+    - title: Ruby
+      labels:
+        - "L: ruby:bundler"
+      exclude:
+        labels: [dependencies, "sorbet 🍦", "T: tech-debt ⚙️", "build 🛠"]
+
+    - title: Rust
+      labels:
+        - "L: rust:cargo"
+        - "L: rust:rust-toolchain"
+      exclude:
+        labels: [dependencies, "sorbet 🍦", "T: tech-debt ⚙️", "build 🛠"]
+
+    - title: Go
+      labels:
+        - "L: go:modules"
+      exclude:
+        labels: [dependencies, "sorbet 🍦", "T: tech-debt ⚙️", "build 🛠"]
+
+    - title: PHP
+      labels:
+        - "L: php:composer"
+        - "L: composer:v2"
+      exclude:
+        labels: [dependencies, "sorbet 🍦", "T: tech-debt ⚙️", "build 🛠"]
+
+    - title: Swift
+      labels:
+        - "L: swift"
+      exclude:
+        labels: [dependencies, "sorbet 🍦", "T: tech-debt ⚙️", "build 🛠"]
+
+    - title: Dart and Flutter
+      labels:
+        - "L: dart:pub"
+      exclude:
+        labels: [dependencies, "sorbet 🍦", "T: tech-debt ⚙️", "build 🛠"]
+
+    - title: Elixir
+      labels:
+        - "L: elixir:hex"
+      exclude:
+        labels: [dependencies, "sorbet 🍦", "T: tech-debt ⚙️", "build 🛠"]
+
+    - title: Elm
+      labels:
+        - "L: elm"
+      exclude:
+        labels: [dependencies, "sorbet 🍦", "T: tech-debt ⚙️", "build 🛠"]
+
+    - title: Julia
+      labels:
+        - "L: julia"
+      exclude:
+        labels: [dependencies, "sorbet 🍦", "T: tech-debt ⚙️", "build 🛠"]
+
+    - title: C++
+      labels:
+        - "L: cpp:vcpkg"
+      exclude:
+        labels: [dependencies, "sorbet 🍦", "T: tech-debt ⚙️", "build 🛠"]
+
+    - title: Bazel
+      labels:
+        - "L: bazel"
+      exclude:
+        labels: [dependencies, "sorbet 🍦", "T: tech-debt ⚙️", "build 🛠"]
+
+    - title: Nix
+      labels:
+        - "L: nix"
+      exclude:
+        labels: [dependencies, "sorbet 🍦", "T: tech-debt ⚙️", "build 🛠"]
+
+    - title: GitHub Actions
+      labels:
+        - "L: github:actions"
+      exclude:
+        labels: [dependencies, "sorbet 🍦", "T: tech-debt ⚙️", "build 🛠"]
+
+    - title: Git submodules
+      labels:
+        - "L: git:submodules"
+      exclude:
+        labels: [dependencies, "sorbet 🍦", "T: tech-debt ⚙️", "build 🛠"]
+
+    - title: pre-commit
+      labels:
+        - "L: pre:commit"
+      exclude:
+        labels: [dependencies, "sorbet 🍦", "T: tech-debt ⚙️", "build 🛠"]
+
+    - title: Agent Package Manager
+      labels:
+        - "L: apm"
+      exclude:
+        labels: [dependencies, "sorbet 🍦", "T: tech-debt ⚙️", "build 🛠"]
+
+    # Ecosystem categories take precedence over incidental shared-code changes.
+    - title: "⚙️ Core and updater"
+      labels:
+        - "core 🍏"
+      exclude:
+        labels: [dependencies, "sorbet 🍦", "T: tech-debt ⚙️", "build 🛠"]
+
+    - title: "🛠️ Maintenance and build"
+      labels:
+        - "sorbet 🍦"
+        - "T: tech-debt ⚙️"
+        - "build 🛠"
+      exclude:
+        labels:
+          - dependencies
+
+    - title: "📦 Dependency updates"
+      labels:
+        - dependencies
+
+    - title: "📝 Other changes"
+      labels:
+        - "*"
