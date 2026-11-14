@@ -30,10 +30,12 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
     )
   end
 
+  let(:dependency_files) { [mise_toml] }
+
   let(:checker) do
     described_class.new(
       dependency: dependency,
-      dependency_files: [mise_toml],
+      dependency_files: dependency_files,
       credentials: [],
       ignored_versions: [],
       raise_on_ignored: false
@@ -72,6 +74,95 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
   describe "#updated_requirements" do
     it "updates the requirement to the latest version" do
       expect(checker.updated_requirements.first[:requirement]).to eq("28.4.1")
+    end
+  end
+
+  context "with prerelease versions" do
+    let(:tool_name) { "erlang" }
+    let(:current_version) { "27.3.2" }
+    let(:remote_versions) { %w(27.3.2 27.3.3 28.0-rc1 28.0-rc2) }
+    let(:requirements) do
+      [{ requirement: current_version, file: "mise.toml", groups: [], source: nil }]
+    end
+    let(:mise_toml) do
+      Dependabot::DependencyFile.new(name: "mise.toml", content: "[tools]\n#{tool_name} = '#{current_version}'\n")
+    end
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: tool_name, version: current_version, package_manager: "mise", requirements: requirements
+      )
+    end
+
+    before do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with(
+          ["mise", "ls-remote", "--json", "--", tool_name],
+          stderr_to_stdout: false,
+          env: { "MISE_YES" => "1" }
+        )
+        .and_return(JSON.dump(remote_versions.map { |version| { "version" => version } }))
+    end
+
+    it "keeps stable dependencies on stable releases" do
+      expect(checker.latest_version).to eq("27.3.3")
+    end
+
+    context "when only prereleases are available" do
+      let(:remote_versions) { %w(28.0-rc1 28.0-rc2) }
+
+      it "returns nil" do
+        expect(checker.latest_version).to be_nil
+      end
+    end
+
+    context "when the current version is a prerelease" do
+      let(:current_version) { "28.0-rc1" }
+
+      it "allows newer prereleases" do
+        expect(checker.latest_version).to eq("28.0-rc2")
+      end
+    end
+
+    context "when another manifest explicitly requests a prerelease" do
+      let(:dev_mise_toml) do
+        Dependabot::DependencyFile.new(name: "mise.dev.toml", content: "[tools]\nerlang = '28.0-rc1'\n")
+      end
+      let(:dependency_files) { [mise_toml, dev_mise_toml] }
+      let(:requirements) do
+        super() + [{ requirement: "28.0-rc1", file: "mise.dev.toml", groups: [], source: nil }]
+      end
+
+      it "allows newer prereleases" do
+        expect(checker.latest_version).to eq("28.0-rc2")
+      end
+    end
+
+    context "with an OTP-qualified Elixir version" do
+      let(:tool_name) { "elixir" }
+      let(:current_version) { "1.18.4-otp-27" }
+      let(:remote_versions) { %w(1.18.5-otp-27 1.19.0-rc.1-otp-27 1.19.0-rc.2-otp-27) }
+
+      it "accepts stable OTP builds and excludes release candidates" do
+        expect(checker.latest_version.to_s).to eq("1.18.5-otp-27")
+      end
+
+      context "when the current OTP build is a prerelease" do
+        let(:current_version) { "1.19.0-rc.1-otp-27" }
+
+        it "allows newer prereleases" do
+          expect(checker.latest_version.to_s).to eq("1.19.0-rc.2-otp-27")
+        end
+      end
+    end
+
+    context "with another stable build qualifier" do
+      let(:tool_name) { "custom-tool" }
+      let(:current_version) { "1.2.3-linux-x64" }
+      let(:remote_versions) { %w(1.2.4-linux-x64 1.3.0-rc1-linux-x64) }
+
+      it "accepts stable builds and excludes release candidates" do
+        expect(checker.latest_version.to_s).to eq("1.2.4-linux-x64")
+      end
     end
   end
 
@@ -134,7 +225,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
       )
     end
 
-    let(:remote_versions) { %w(3.3.0 artichoke-dev jruby-9.4.12.0 3.4.2 truffleruby-24.2.0) }
+    let(:remote_versions) { %w(3.3.0 artichoke-dev jruby-9.4.12.0 3.4.2 truffleruby-24.2.0 4.1.0-preview1) }
 
     before do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
