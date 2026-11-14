@@ -134,6 +134,25 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       expect(finder.latest_version(language_version: "3.9")).to eq(Dependabot::Python::Version.new("1.5.0"))
     end
 
+    context "when an unsupported release has no publication date" do
+      let(:pypi_response) do
+        JSON.generate(
+          "files" => [
+            { "filename" => "demo-3.0.0.whl", "requires-python" => ">=3.10" },
+            { "filename" => "demo-1.5.0.whl", "requires-python" => ">=3.8",
+              "upload-time" => "2024-05-01T00:00:00Z" }
+          ]
+        )
+      end
+
+      it "does not report missing cooldown data for an ineligible release" do
+        expect(finder.eligible_versions(language_version: "3.9"))
+          .to eq([Dependabot::Python::Version.new("1.5.0")])
+        expect(finder.resolver_excluded_versions(language_version: "3.9")).to be_empty
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be_nil
+      end
+    end
+
     context "with a security advisory" do
       let(:security_advisories) do
         [Dependabot::SecurityAdvisory.new(

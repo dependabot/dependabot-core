@@ -33,8 +33,23 @@ RSpec.shared_examples "a pip resolver reading pyproject constraints" do
   end
 
   before do
-    language_manager = instance_double(Dependabot::Python::LanguageVersionManager, python_version: "3.11.0")
+    language_manager = instance_double(
+      Dependabot::Python::LanguageVersionManager,
+      python_version: "3.11.0",
+      python_major_minor: "3.11",
+      install_required_python: nil
+    )
     allow(Dependabot::Python::LanguageVersionManager).to receive(:new).and_return(language_manager)
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, **_args|
+      next "" unless command.include?("pip install")
+
+      version = File.read("constraints.txt").include?("==2.1.1") ? "2.1.1" : "3.2.4"
+      File.write(
+        "dependabot-pip-report.json",
+        JSON.dump("install" => [{ "metadata" => { "name" => "Django", "version" => version } }])
+      )
+      ""
+    end
     registry_finder = instance_double(
       Dependabot::Python::Package::PackageRegistryFinder, registry_urls: ["https://pypi.org/simple/"]
     )

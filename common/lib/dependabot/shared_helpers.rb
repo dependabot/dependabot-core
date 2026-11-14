@@ -35,6 +35,7 @@ module Dependabot
       "(+https://github.com/dependabot/dependabot-core)".freeze,
       String
     )
+    SENSITIVE_ENV_KEYS = %w(PIP_INDEX_URL PIP_EXTRA_INDEX_URL).freeze
     SIGKILL = 9
 
     sig do
@@ -624,7 +625,7 @@ module Dependabot
       return nil if env.nil?
 
       env.transform_keys(&:to_s).each_with_object({}) do |(key, value), result|
-        result[key] = if key.match?(/TOKEN|(?:^|_)KEY\z/i)
+        result[key] = if SENSITIVE_ENV_KEYS.include?(key) || key.match?(/TOKEN|(?:^|_)KEY\z/i)
                         "<redacted>"
                       else
                         value
