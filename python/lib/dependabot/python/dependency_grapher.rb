@@ -7,6 +7,7 @@ require "pathname"
 
 require "dependabot/dependency_graphers"
 require "dependabot/dependency_graphers/base"
+require "dependabot/manifest_sets/descriptor"
 require "dependabot/python/file_parser"
 require "dependabot/python/language_version_manager"
 require "dependabot/python/name_normaliser"
@@ -18,7 +19,7 @@ require "toml-rb"
 
 module Dependabot
   module Python
-    class DependencyGrapher < Dependabot::DependencyGraphers::Base
+    class DependencyGrapher < Dependabot::DependencyGraphers::Base # rubocop:disable Metrics/ClassLength
       require_relative "dependency_grapher/lockfile_generator"
       require_relative "dependency_grapher/requirements_layers"
 
@@ -71,6 +72,19 @@ module Dependabot
         super
       end
 
+      # A generated poetry.lock pins whatever resolved during this scan, so the repository inputs alone do not
+      # determine the graph.
+      sig { override.returns(T.nilable(String)) }
+      def manifest_set_unresolvable_reason
+        manifest_group_snapshots
+        Dependabot::ManifestSets::Descriptor::UNKNOWN_PROVENANCE if ephemeral_lockfile_generated?
+      end
+
+      sig { returns(T::Boolean) }
+      def ephemeral_lockfile_generated?
+        @ephemeral_lockfile_generated == true
+      end
+
       # Layering is specific to pip / pip-compile for Python.
       sig { override.returns(T::Array[Dependabot::DependencyGraphers::ManifestGroup]) }
       def manifest_groups
@@ -86,6 +100,22 @@ module Dependabot
       end
 
       private
+
+      # A layered directory resolves each group with a scoped grapher, so a Poetry pyproject.toml's lockfile is
+      # generated there rather than on this grapher.
+      sig { override.params(scoped: Dependabot::DependencyGraphers::Base).void }
+      def absorb_error_state(scoped)
+        super
+        return unless scoped.is_a?(DependencyGrapher) && scoped.ephemeral_lockfile_generated?
+
+        @ephemeral_lockfile_generated = T.let(true, T.nilable(T::Boolean))
+      end
+
+      # pip.conf only configures where packages are fetched from, not which are resolved.
+      sig { override.params(file: Dependabot::DependencyFile).returns(T::Boolean) }
+      def manifest_set_input_file?(file)
+        File.basename(file.name) != "pip.conf"
+      end
 
       # When a pip/pip-compile directory is split into requirements layers, any non-requirements manifest
       # sharing that directory (setup.py, setup.cfg, pyproject.toml) would otherwise fall outside every layer
