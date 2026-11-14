@@ -555,8 +555,9 @@ module Dependabot
         command,
         allow_unsafe_shell_command: allow_unsafe_shell_command
       )
+      command_description = command_description_for(fingerprint, command_for_output)
 
-      puts(fingerprint || command_for_output) if ENV["DEBUG_HELPERS"] == "true"
+      puts(command_description) if ENV["DEBUG_HELPERS"] == "true"
 
       opts = {}
       opts[:chdir] = cwd if cwd
@@ -581,7 +582,7 @@ module Dependabot
       return stdout || "" if process&.success?
 
       error_context = {
-        command: fingerprint || command_for_output,
+        command: command_description,
         fingerprint: fingerprint,
         time_taken: time_taken,
         process_exit_value: process.to_s
@@ -594,6 +595,12 @@ module Dependabot
         error_context: error_context
       )
     end
+
+    sig { params(fingerprint: T.nilable(String), command: String).returns(String) }
+    def self.command_description_for(fingerprint, command)
+      fingerprint || command
+    end
+    private_class_method :command_description_for
 
     sig { params(stderr: T.nilable(String), error_context: T::Hash[Symbol, String]).void }
     def self.check_out_of_disk_memory_error(stderr, error_context)
