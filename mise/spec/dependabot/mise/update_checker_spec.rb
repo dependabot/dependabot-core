@@ -42,7 +42,11 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
 
   before do
     allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-      .with(/mise ls-remote/, stderr_to_stdout: false, env: { "MISE_YES" => "1" })
+      .with(
+        ["mise", "ls-remote", "--json", "--", dependency.name],
+        stderr_to_stdout: false,
+        env: { "MISE_YES" => "1" }
+      )
       .and_return(JSON.dump(
                     [
                       { "version" => "27.3.2", "created_at" => "2026-01-13T20:06:42.23Z", "rolling" => false },
@@ -74,7 +78,11 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
   context "when mise ls-remote returns empty" do
     before do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-        .with(/mise ls-remote/, stderr_to_stdout: false, env: { "MISE_YES" => "1" })
+        .with(
+          ["mise", "ls-remote", "--json", "--", dependency.name],
+          stderr_to_stdout: false,
+          env: { "MISE_YES" => "1" }
+        )
         .and_return("[]")
     end
 
@@ -94,7 +102,11 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
   context "when mise ls-remote fails" do
     before do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-        .with(/mise ls-remote/, stderr_to_stdout: false, env: { "MISE_YES" => "1" })
+        .with(
+          ["mise", "ls-remote", "--json", "--", dependency.name],
+          stderr_to_stdout: false,
+          env: { "MISE_YES" => "1" }
+        )
         .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
                      message: "mise not found",
                      error_context: {}
@@ -147,7 +159,11 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
     context "when latest version was released within the cooldown period" do
       before do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(/mise ls-remote/, stderr_to_stdout: false, env: { "MISE_YES" => "1" })
+          .with(
+            ["mise", "ls-remote", "--json", "--", dependency.name],
+            stderr_to_stdout: false,
+            env: { "MISE_YES" => "1" }
+          )
           .and_return(JSON.dump(
                         [
                           { "version" => "27.3.2", "created_at" => "2026-01-13T20:06:42.23Z", "rolling" => false },
@@ -164,7 +180,11 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
     context "when latest version was released outside the cooldown period" do
       before do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(/mise ls-remote/, stderr_to_stdout: false, env: { "MISE_YES" => "1" })
+          .with(
+            ["mise", "ls-remote", "--json", "--", dependency.name],
+            stderr_to_stdout: false,
+            env: { "MISE_YES" => "1" }
+          )
           .and_return(JSON.dump(
                         [
                           { "version" => "27.3.2", "created_at" => "2026-01-13T20:06:42.23Z", "rolling" => false },
@@ -181,7 +201,11 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
     context "when created_at is missing" do
       before do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(/mise ls-remote/, stderr_to_stdout: false, env: { "MISE_YES" => "1" })
+          .with(
+            ["mise", "ls-remote", "--json", "--", dependency.name],
+            stderr_to_stdout: false,
+            env: { "MISE_YES" => "1" }
+          )
           .and_return(JSON.dump(
                         [
                           { "version" => "27.3.2", "rolling" => false },
@@ -208,7 +232,11 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
 
       before do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(/mise ls-remote/, stderr_to_stdout: false, env: { "MISE_YES" => "1" })
+          .with(
+            ["mise", "ls-remote", "--json", "--", dependency.name],
+            stderr_to_stdout: false,
+            env: { "MISE_YES" => "1" }
+          )
           .and_return(JSON.dump(
                         [
                           { "version" => "27.3.2", "created_at" => "2026-01-13T20:06:42.23Z",

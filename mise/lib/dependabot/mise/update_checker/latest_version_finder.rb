@@ -48,7 +48,7 @@ module Dependabot
             write_manifest_files(dependency_files)
 
             raw = Dependabot::SharedHelpers.run_shell_command(
-              "mise ls-remote --json #{dependency.name}",
+              ["mise", "ls-remote", "--json", "--", dependency.name],
               stderr_to_stdout: false,
               env: { "MISE_YES" => "1" }
             )
