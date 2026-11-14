@@ -98,6 +98,10 @@ module Dependabot
       end
       private_class_method :blob_oids
 
+      # Upper bound on the path bytes passed to one `git ls-tree`, well below the operating system's
+      # argument-size limit, so any number of inputs can be looked up.
+      MAX_ARGUMENT_BYTES = T.let(64 * 1024, Integer)
+
       # Maps each listed path to its `[mode, type, oid]` at `commit`, or returns nil if Git cannot list them.
       # `ls-tree` matches each path literally (no globbing) from the tree root and does not follow symlinks.
       sig do
@@ -108,16 +112,39 @@ module Dependabot
         # The commit precedes `--` on the command line, so it must not be readable as an option.
         return nil unless commit.match?(OBJECT_ID)
 
-        command = ["git", "-C", repo_contents_path, "ls-tree", "-z", "--full-tree", commit, "--", *paths]
-        stdout = IO.popen(command, "rb", err: File::NULL, &:read)
-        return nil unless Process.last_status&.success?
+        entries = T.let({}, T::Hash[String, T::Array[String]])
+        argument_batches(paths).each do |batch|
+          command = ["git", "-C", repo_contents_path, "ls-tree", "-z", "--full-tree", commit, "--", *batch]
+          stdout = IO.popen(command, "rb", err: File::NULL, &:read)
+          return nil unless Process.last_status&.success?
 
-        stdout.split("\0").to_h do |entry|
-          meta, path = entry.split("\t", 2)
-          [path.to_s.force_encoding(Encoding::UTF_8), meta.to_s.split(" ", 3)]
+          stdout.split("\0").each do |entry|
+            meta, path = entry.split("\t", 2)
+            entries[path.to_s.force_encoding(Encoding::UTF_8)] = meta.to_s.split(" ", 3)
+          end
         end
+        entries
       end
       private_class_method :tree_entries
+
+      # Splits `paths` into consecutive batches of at most MAX_ARGUMENT_BYTES each (counting a terminator per
+      # path); every batch holds at least one path.
+      sig { params(paths: T::Array[String]).returns(T::Array[T::Array[String]]) }
+      def self.argument_batches(paths)
+        batches = T.let([[]], T::Array[T::Array[String]])
+        size = 0
+        paths.each do |path|
+          bytes = path.bytesize + 1
+          if size + bytes > MAX_ARGUMENT_BYTES && !T.must(batches.last).empty?
+            batches << []
+            size = 0
+          end
+          T.must(batches.last) << path
+          size += bytes
+        end
+        batches
+      end
+      private_class_method :argument_batches
     end
   end
 end
