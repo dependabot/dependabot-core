@@ -736,7 +736,7 @@ module Dependabot
         )
       rescue SharedHelpers::HelperSubprocessFailed => e
         unless npm_version_selector
-          SubprocessErrorContext.new(executable: "npm", env: merge_corepack_env(env)).attach(e, command)
+          SubprocessErrorContext.new(executable: "npm", env: env, registry: configured_registry).attach(e, command)
         end
         raise
       end
@@ -847,7 +847,7 @@ module Dependabot
         )
       rescue SharedHelpers::HelperSubprocessFailed => e
         unless matching_major
-          SubprocessErrorContext.new(executable: "pnpm", env: merge_corepack_env(env)).attach(e, command)
+          SubprocessErrorContext.new(executable: "pnpm", env: env, registry: configured_registry).attach(e, command)
         end
         raise
       end
@@ -916,7 +916,7 @@ module Dependabot
           env: env
         )
       rescue SharedHelpers::HelperSubprocessFailed => e
-        SubprocessErrorContext.new(executable: "yarn", env: merge_corepack_env(env)).attach(e, command)
+        SubprocessErrorContext.new(executable: "yarn", env: env, registry: configured_registry).attach(e, command)
         raise
       end
 
@@ -1073,7 +1073,10 @@ module Dependabot
           env: env
         )
       rescue SharedHelpers::HelperSubprocessFailed => e
-        SubprocessErrorContext.new(executable: "corepack #{name}", env: env).attach(e, command)
+        error_context = SubprocessErrorContext.new(
+          executable: "corepack #{name}", env: env, registry: configured_registry
+        )
+        error_context.attach(e, command)
         raise
       end
 
@@ -1130,14 +1133,14 @@ module Dependabot
         corepack_env.merge(env)
       end
 
-      sig { returns(T.nilable(T::Hash[String, String])) }
-      def self.build_corepack_env_variables
+      sig { returns(T.nilable(RegistryHelper)) }
+      def self.build_registry_helper
         return nil if dependency_files.nil? || credentials.nil?
 
         files = T.must(dependency_files)
         creds = T.must(credentials)
 
-        registry_helper = RegistryHelper.new(
+        RegistryHelper.new(
           {
             npmrc: files.find { |f| f.name.end_with?(".npmrc") },
             yarnrc: files.find { |f| f.name.end_with?(".yarnrc") && !f.name.end_with?(".yarnrc.yml") },
@@ -1145,8 +1148,21 @@ module Dependabot
           },
           creds
         )
+      end
+      private_class_method :build_registry_helper
 
-        registry_helper.find_corepack_env_variables
+      sig { returns(T.nilable(T::Hash[String, String])) }
+      def self.build_corepack_env_variables
+        build_registry_helper&.find_corepack_env_variables
+      end
+
+      # The registry Dependabot resolved from .npmrc/.yarnrc(.yml)/dependabot.yml, with no network
+      # calls (unlike merge_corepack_env/build_corepack_env_variables, which can fetch Corepack
+      # integrity keys for a replaces-base registry). Safe to call from error-handling paths that
+      # haven't already paid that cost for the real command.
+      sig { returns(T.nilable(String)) }
+      def self.configured_registry
+        build_registry_helper&.registry_url
       end
 
       sig do

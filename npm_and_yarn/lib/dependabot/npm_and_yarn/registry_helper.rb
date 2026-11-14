@@ -188,6 +188,16 @@ module Dependabot
         env_variables
       end
 
+      # Returns just the configured registry URL (from dependabot.yml, .npmrc, .yarnrc or
+      # .yarnrc.yml), with no auth token and no Corepack integrity-key network fetch. Unlike
+      # find_corepack_env_variables, this never performs network I/O, so it's safe to call from
+      # error-handling paths that haven't already paid that cost for the real command.
+      sig { returns(T.nilable(String)) }
+      def registry_url
+        raw_registry = find_registry_and_token[:registry]
+        raw_registry && RegistryHelper.normalize_registry_url(raw_registry)
+      end
+
       private
 
       sig { returns(T::Hash[Symbol, T.nilable(String)]) }

@@ -17,14 +17,15 @@ module Dependabot
       VERSION = /\A\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?\z/
       PROBE_TIMEOUT = 10
 
-      sig { params(executable: String, env: T.nilable(T::Hash[String, String])).void }
-      def initialize(executable:, env:)
+      sig { params(executable: String, env: T.nilable(T::Hash[String, String]), registry: T.nilable(String)).void }
+      def initialize(executable:, env:, registry:)
         @executable = executable
         @env = env
+        @registry = registry
         parts = executable.delete_prefix("corepack ").split("@", 2)
         @package_manager = T.let(parts.fetch(0), String)
-        # A Corepack-pinned executable (e.g. "corepack npm@10") already carries the selected version, so
-        # it never needs probing. Only a bare "npm"/"pnpm"/"yarn" executable leaves this nil.
+        # A Corepack-pinned executable (e.g. "corepack npm@10") already carries the selected version, but
+        # it may only be a bare major (e.g. a cached-major fallback), not the exact installed version.
         @known_version = T.let(parts[1], T.nilable(String))
       end
 
@@ -38,8 +39,8 @@ module Dependabot
         ErrorReportContext.attach(
           error,
           {
-            package_manager_version: @known_version || probed_version,
-            host: ErrorReportContext.host_for(registry)
+            package_manager_version: precise_known_version || probed_version,
+            host: ErrorReportContext.host_for(@registry || RegistryHelper::DEFAULT_NPM_REGISTRY)
           }
         )
       end
@@ -52,14 +53,12 @@ module Dependabot
         action ? "#{@package_manager} #{action}" : @package_manager
       end
 
-      # Dependabot already resolves the configured registry from .npmrc/.yarnrc(.yml)/dependabot.yml
-      # before running any command (see Helpers.merge_corepack_env), and writes it into these same env
-      # keys for every package manager. Reading it back needs no subprocess.
-      sig { returns(String) }
-      def registry
-        @env&.fetch(RegistryHelper::NPM_CONFIG_REGISTRY_ENV, nil) ||
-          @env&.fetch(RegistryHelper::COREPACK_NPM_REGISTRY_ENV, nil) ||
-          RegistryHelper::DEFAULT_NPM_REGISTRY
+      # Only treat the already-known version as final when it's a full version: a bare major (e.g.
+      # a Corepack cached-major fallback, see PackageManager#install_cached_major) isn't precise
+      # enough to report as the installed version, so it falls through to probing instead.
+      sig { returns(T.nilable(String)) }
+      def precise_known_version
+        @known_version if @known_version && VERSION.match?(@known_version)
       end
 
       sig { returns(T.nilable(String)) }

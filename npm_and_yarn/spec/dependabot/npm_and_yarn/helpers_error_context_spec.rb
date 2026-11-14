@@ -11,8 +11,16 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
   # Keep signatures attached to their corresponding fixtures.
   # rubocop:disable RSpec/ScatteredLet
+  sig { returns(Dependabot::DependencyFile) }
+  let(:npmrc) do
+    Dependabot::DependencyFile.new(
+      name: ".npmrc",
+      content: "registry=https://registry.example.com/private\n_authToken=secret\n"
+    )
+  end
+
   sig { returns(T::Hash[String, String]) }
-  let(:env) { { "npm_config_registry" => "https://user:secret@registry.example.com/private?token=secret" } }
+  let(:env) { {} }
 
   sig { returns(String) }
   let(:command) { "update private-package --token=secret" }
@@ -28,27 +36,33 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
   before do
     described_class.npm_version_selector = nil
-    described_class.dependency_files = []
+    described_class.dependency_files = [npmrc]
     described_class.credentials = []
   end
 
   after { described_class.npm_version_selector = nil }
 
-  # The registry is always resolved from the already-merged `env` hash (see Helpers.merge_corepack_env),
-  # never probed, so only the version probe (when the version isn't already known) needs stubbing.
-  sig { params(executable: String, version: String, probes_version: T::Boolean).void }
-  def stub_command_failure(executable, version, probes_version:)
+  # The registry is resolved from .npmrc/.yarnrc(.yml) (see Helpers.configured_registry), never probed,
+  # so only the version probe (when the version isn't already known precisely) needs stubbing. A
+  # Corepack-pinned probe runs with the already-merged Corepack env (needed to resolve the right
+  # binary), not the bare `env` fixture, so the expected probe env is configurable.
+  sig { params(executable: String, version: String, probes_version: T::Boolean, probe_env: T.anything).void }
+  def stub_command_failure(executable, version, probes_version:, probe_env: env)
     allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
       .with("#{executable} #{command}", any_args).and_raise(error)
     return unless probes_version
 
     allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-      .with("#{executable} --version", hash_including(env: env, timeout: 10)).and_return("#{version}\n")
+      .with("#{executable} --version", hash_including(env: probe_env, timeout: 10)).and_return("#{version}\n")
   end
 
-  sig { params(manager: String, executable: String, version: String, probes_version: T::Boolean).void }
-  def expect_safe_context(manager, executable, version, probes_version: true)
-    stub_command_failure(executable, version, probes_version: probes_version)
+  sig do
+    params(
+      manager: String, executable: String, version: String, probes_version: T::Boolean, probe_env: T.anything
+    ).void
+  end
+  def expect_safe_context(manager, executable, version, probes_version: true, probe_env: env)
+    stub_command_failure(executable, version, probes_version: probes_version, probe_env: probe_env)
 
     expect { described_class.public_send("run_#{manager}_command", command, env: env) }.to raise_error do |raised|
       expect(raised).to equal(error)
@@ -71,22 +85,40 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     expect_safe_context("npm", "npm", "12.0.0")
   end
 
-  it "uses the version Corepack already selected, without probing the binary" do
+  it "uses the exact version Corepack selected, without probing the binary" do
+    described_class.npm_version_selector = "10.9.0"
+
+    expect_safe_context("npm", "corepack npm@10.9.0", "10.9.0", probes_version: false)
+  end
+
+  it "probes for the precise version when Corepack only has a cached major selected" do
     described_class.npm_version_selector = "10"
 
-    expect_safe_context("npm", "corepack npm@10", "10", probes_version: false)
+    # The Corepack-pinned path always runs with the already-merged Corepack env (see
+    # Helpers.merge_corepack_env), which carries the registry resolved from .npmrc.
+    expect_safe_context(
+      "npm",
+      "corepack npm@10",
+      "10.9.3",
+      probe_env: hash_including("npm_config_registry" => "https://registry.example.com/private")
+    )
   end
 
   it "reports safe context for default pnpm, probing for its version" do
     expect_safe_context("pnpm", "pnpm", "10.0.0")
   end
 
-  it "uses the major Corepack already selected for an older lockfile, without probing the binary" do
+  it "probes for the precise version when Corepack selected a major for an older lockfile" do
     described_class.dependency_files = [
-      Dependabot::DependencyFile.new(name: "pnpm-lock.yaml", content: "lockfileVersion: '6.0'")
+      npmrc, Dependabot::DependencyFile.new(name: "pnpm-lock.yaml", content: "lockfileVersion: '6.0'")
     ]
 
-    expect_safe_context("pnpm", "corepack pnpm@8", "8", probes_version: false)
+    expect_safe_context(
+      "pnpm",
+      "corepack pnpm@8",
+      "8.15.9",
+      probe_env: hash_including("npm_config_registry" => "https://registry.example.com/private")
+    )
   end
 
   it "reports safe context for Yarn Berry YN0001 errors, probing for its version" do
@@ -102,13 +134,50 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
   end
 
   it "falls back to the default public registry when none is configured" do
+    described_class.dependency_files = []
+
     allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
       .with("npm #{command}", any_args).and_raise(error)
     allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
       .with("npm --version", any_args).and_return("12.0.0")
 
-    expect { described_class.run_npm_command(command, env: nil) }.to raise_error do |raised|
+    expect { described_class.run_npm_command(command, env: env) }.to raise_error do |raised|
       expect(Dependabot::ErrorReportContext.build(error: raised)).to include("host" => "registry.npmjs.org")
+    end
+  end
+
+  it "never fetches Corepack integrity keys while resolving the registry for error context" do
+    # A replaces-base registry would otherwise trigger a network fetch for signing keys (see
+    # RegistryHelper#corepack_integrity_keys); error-context resolution must never do that, since it
+    # would reintroduce the exact "could hang while reporting a failure" risk this class exists to avoid.
+    allow(Dependabot::NpmAndYarn::RegistryHelper).to receive(:corepack_integrity_keys)
+      .and_raise("must not fetch integrity keys while reporting an error")
+    allow(described_class).to receive(:credentials).and_return(
+      [
+        Dependabot::Credential.new(
+          { "type" => "npm_registry", "registry" => "registry.example.com", "replaces-base" => true }
+        )
+      ]
+    )
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+      .with("npm #{command}", any_args).and_raise(error)
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+      .with("npm --version", any_args).and_return("12.0.0")
+
+    expect { described_class.run_npm_command(command, env: env) }.to raise_error do |raised|
+      expect(Dependabot::ErrorReportContext.build(error: raised)).to include("host" => "registry.example.com")
+    end
+    expect(Dependabot::NpmAndYarn::RegistryHelper).not_to have_received(:corepack_integrity_keys)
+  end
+
+  it "does not report the .npmrc auth token" do
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+      .with("npm #{command}", any_args).and_raise(error)
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+      .with("npm --version", any_args).and_return("12.0.0")
+
+    expect { described_class.run_npm_command(command, env: env) }.to raise_error do |raised|
+      expect(Dependabot::ErrorReportContext.build(error: raised).to_s).not_to include("secret")
     end
   end
 
