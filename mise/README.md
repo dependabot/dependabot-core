@@ -24,6 +24,17 @@ A loose pin such as `node = "24"` keeps its precision: Dependabot updates it to 
 stays loose only when mise resolves it to the version Dependabot selected; when ignore rules
 or cooldown hold back newer matching releases, it's pinned to the selected version exactly.
 
+### Build variants
+
+An exact pin with a build suffix, such as `elixir = "1.20.4-otp-29"`, only updates to versions
+that also have one, so it never drops to the plain `1.20.5` build. The newest allowed version
+with a build suffix wins, such as `1.20.5-otp-29` or `1.20.5-otp-30`. An exact pin without a
+suffix doesn't gain one. Fuzzy and loose pins such as `"latest"` or `"1.20"` leave build
+selection to mise.
+
+The suffix number isn't matched to other tools: moving to a newer OTP build doesn't update
+Erlang, so group the two tools if they should change together.
+
 ### Lockfiles
 
 When a manifest has a [`mise.lock`](https://mise.jdx.dev/dev-tools/mise-lock.html) (or

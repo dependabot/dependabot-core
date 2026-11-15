@@ -243,6 +243,16 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
           expect(checker.latest_version.to_s).to eq("28.0.1")
         end
 
+        context "when mise selects a different build variant" do
+          let(:current_version) { "27.3.2-linux-x64" }
+          let(:remote_versions) { %w(27.3.2-linux-x64 28.0.1-linux-arm64) }
+          let(:mise_resolves) { { "erlang@latest" => "28.0.1-linux-arm64" } }
+
+          it "follows the fuzzy request" do
+            expect(updated).to eq([%w(latest 28.0.1-linux-arm64)])
+          end
+        end
+
         context "when an ignore rule excludes the version mise resolves it to" do
           let(:ignored_versions) { [">= 28.0.1"] }
 
@@ -321,22 +331,119 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
           expect(updated).to eq([%w(28.0.1 28.0.1)])
         end
       end
+
+      context "when a partial pin resolves to a build variant" do
+        let(:current_version) { "27.3.2-linux-x64" }
+        let(:remote_versions) { %w(27.3.2-linux-x64 28.0.1-linux-arm64) }
+        let(:mise_resolves) { { "erlang@28" => "28.0.1-linux-arm64" } }
+
+        it "leaves variant selection to mise" do
+          expect(updated).to eq([%w(28 28.0.1-linux-arm64)])
+        end
+      end
     end
 
     context "with an OTP-qualified Elixir version" do
       let(:tool_name) { "elixir" }
-      let(:current_version) { "1.18.4-otp-27" }
-      let(:remote_versions) { %w(1.18.5-otp-27 1.19.0-rc.1-otp-27 1.19.0-rc.2-otp-27) }
+      let(:current_version) { "1.20.4-otp-29" }
+      let(:remote_versions) do
+        %w(1.20.5 1.20.5-otp-28 1.20.5-otp-29 1.21.0-rc.1-otp-29 1.21.0-rc.2-otp-29)
+      end
 
       it "accepts stable OTP builds and excludes release candidates" do
-        expect(checker.latest_version.to_s).to eq("1.18.5-otp-27")
+        expect(checker.latest_version.to_s).to eq("1.20.5-otp-29")
+      end
+
+      context "when the same Elixir release is built for a newer OTP" do
+        let(:current_version) { "1.20.4-otp-28" }
+        let(:remote_versions) { %w(1.20.4 1.20.4-otp-28 1.20.4-otp-29) }
+
+        it "moves to the newer OTP build" do
+          expect(checker.updated_requirements.first.requirement_string).to eq("1.20.4-otp-29")
+        end
+      end
+
+      context "when both the release and its OTP build advance" do
+        let(:remote_versions) { super() + %w(1.20.5-otp-30) }
+
+        it "selects the newest release's highest OTP build" do
+          expect(checker.latest_version.to_s).to eq("1.20.5-otp-30")
+        end
       end
 
       context "when the current OTP build is a prerelease" do
-        let(:current_version) { "1.19.0-rc.1-otp-27" }
+        let(:current_version) { "1.21.0-rc.1-otp-29" }
 
         it "allows newer prereleases" do
-          expect(checker.latest_version.to_s).to eq("1.19.0-rc.2-otp-27")
+          expect(checker.latest_version.to_s).to eq("1.21.0-rc.2-otp-29")
+        end
+      end
+
+      context "when the prerelease follows the OTP suffix" do
+        let(:current_version) { "1.21.0-otp-29-rc1" }
+        let(:remote_versions) { %w(1.21.0-otp-28-rc4 1.21.0-otp-29-rc2 1.21.0-otp-30-rc3 1.21.0-rc4) }
+
+        it "keeps a build suffix" do
+          expect(checker.latest_version.to_s).to eq("1.21.0-otp-30-rc3")
+        end
+      end
+
+      context "when the newer release only has a build without the suffix" do
+        let(:remote_versions) { %w(1.20.5) }
+
+        it "leaves the requirement unchanged" do
+          expect(checker.updated_dependencies(requirements_to_unlock: :own)).to be_empty
+          expect(checker.updated_requirements).to eq(dependency.requirements)
+        end
+      end
+
+      context "when the newer OTP builds are ignored" do
+        let(:ignored_versions) { %w(1.20.5-otp-28 1.20.5-otp-29) }
+
+        it "does not fall back to the build without the suffix" do
+          expect(checker.updated_dependencies(requirements_to_unlock: :own)).to be_empty
+        end
+      end
+
+      context "when the newer OTP build is still in cooldown" do
+        let(:checker) do
+          described_class.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: [],
+            update_cooldown: Dependabot::Package::ReleaseCooldownOptions.new(default_days: 30)
+          )
+        end
+
+        before do
+          allow(Dependabot::SharedHelpers).to mise_ls_remote(tool_name)
+            .and_return(JSON.dump(
+                          [
+                            { "version" => current_version, "created_at" => "2026-01-13T20:06:42Z" },
+                            { "version" => "1.20.5-otp-29", "created_at" => Time.now.utc.iso8601 },
+                            { "version" => "1.21.0", "created_at" => "2026-01-13T20:06:42Z" }
+                          ]
+                        ))
+        end
+
+        it "does not fall back to the build without the suffix" do
+          expect(checker.latest_version.to_s).to eq(current_version)
+          expect(checker.updated_dependencies(requirements_to_unlock: :own)).to be_empty
+        end
+      end
+
+      context "when another manifest pins the build without the suffix" do
+        let(:dependency_files) do
+          [mise_toml, Dependabot::DependencyFile.new(name: "mise.dev.toml", content: "[tools]\nelixir = '1.20.4'\n")]
+        end
+        let(:requirements) do
+          super() + [{ requirement: "1.20.4", file: "mise.dev.toml", groups: [], source: nil }]
+        end
+
+        it "keeps each manifest's build" do
+          expect(checker.updated_requirements.to_h { |req| [req.file, req.requirement_string] }).to eq(
+            "mise.toml" => "1.20.5-otp-29", "mise.dev.toml" => "1.20.5"
+          )
         end
       end
     end
@@ -344,10 +451,18 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
     context "with another stable build qualifier" do
       let(:tool_name) { "custom-tool" }
       let(:current_version) { "1.2.3-linux-x64" }
-      let(:remote_versions) { %w(1.2.4-linux-x64 1.3.0-rc1-linux-x64) }
+      let(:remote_versions) { %w(1.2.4 1.2.4-linux-x64 1.3.0-rc1-linux-x64) }
 
       it "accepts stable builds and excludes release candidates" do
         expect(checker.latest_version.to_s).to eq("1.2.4-linux-x64")
+      end
+
+      context "when the manifest pins a plain version" do
+        let(:current_version) { "1.2.3" }
+
+        it "does not introduce a build qualifier" do
+          expect(checker.latest_version.to_s).to eq("1.2.4")
+        end
       end
     end
   end

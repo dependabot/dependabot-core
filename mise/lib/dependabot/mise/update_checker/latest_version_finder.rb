@@ -52,9 +52,28 @@ module Dependabot
         sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
         def allowed_releases
           @allowed_releases ||= T.let(
-            filter_by_cooldown(filter_ignored_versions(filter_prerelease_versions(package_releases || []))),
+            begin
+              releases = filter_build_variants(package_releases || [])
+              releases = filter_prerelease_versions(releases)
+              releases = filter_ignored_versions(releases)
+              filter_by_cooldown(releases)
+            end,
             T.nilable(T::Array[Dependabot::Package::PackageRelease])
           )
+        end
+
+        # Exact pins keep (or keep lacking) a build suffix such as "-otp-29"; fuzzy and loose pins leave it to mise.
+        sig do
+          params(releases: T::Array[Dependabot::Package::PackageRelease])
+            .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def filter_build_variants(releases)
+          requested = dependency.requirements.first&.requirement_string.to_s
+          return releases unless Dependabot::Mise::Version.correct?(requested)
+          return releases if dependency.version&.start_with?("#{requested}.")
+
+          build_suffix = Dependabot::Mise::Version.build_suffix?(requested)
+          releases.select { |release| Dependabot::Mise::Version.build_suffix?(release.version.to_s) == build_suffix }
         end
 
         # UpdateChecker scopes each finder to a single manifest.

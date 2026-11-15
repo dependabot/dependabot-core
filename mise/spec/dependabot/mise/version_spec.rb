@@ -5,6 +5,26 @@ require "spec_helper"
 require "dependabot/mise/version"
 
 RSpec.describe Dependabot::Mise::Version do
+  describe ".build_suffix?" do
+    {
+      "1.20.4-otp-29" => true,
+      "1.2.3-linux-x64" => true,
+      "1.2.3-alpine3.18" => true,
+      "1.21.0-rc.1-otp-29" => true,
+      "1.21.0-otp-29-rc2" => true,
+      "1.2.3b2-linux-x64" => true,
+      "27.3.2" => false,
+      "1.2.3-rc.1" => false,
+      "1.0.0-beta-2" => false,
+      "3.15.0.post1" => false,
+      "21.0.1-12" => false
+    }.each do |version, build_suffix|
+      it "returns #{build_suffix} for #{version}" do
+        expect(described_class.build_suffix?(version)).to be(build_suffix)
+      end
+    end
+  end
+
   describe "#prerelease?" do
     %w(27.3.2 1.18.4-otp-27 1.2.3-linux-x64 1.2.3-alpine 3.15.0.post1).each do |version|
       it "returns false for #{version}" do
