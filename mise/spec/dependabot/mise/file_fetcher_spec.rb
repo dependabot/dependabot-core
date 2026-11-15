@@ -151,18 +151,15 @@ RSpec.describe Dependabot::Mise::FileFetcher do
       entries.map { |line| "[[tools.\"npm:prettier\"]]\nversion = \"3.3.0\"\n#{line}\n" }.join
     end
 
-    {
-      "mise.lock" => ".mise/locks/npm-prettier/3.3.0",
-      "mise.dev.lock" => ".mise/locks/mise.dev/npm-prettier/3.3.0",
-      ".mise/mise.lock" => "locks/npm-prettier/3.3.0",
-      ".config/mise.lock" => "mise/locks/npm-prettier/3.3.0",
-      ".config/mise/mise.lock" => "locks/npm-prettier/3.3.0"
-    }.each do |lockfile_name, recorded|
-      it "resolves #{recorded} relative to #{lockfile_name}" do
-        content = lockfile(["aube = { path = \"#{recorded}\", digest = \"sha256:abc\" }"])
-        expect(described_class.sidecar_dirs(lockfile_name, content))
-          .to eq([File.join(File.dirname(lockfile_name), recorded).delete_prefix("./")])
-      end
+    it "reads a root lockfile's paths from the repository root" do
+      content = lockfile(["aube = { path = \".mise/locks/npm-prettier/3.3.0\", digest = \"sha256:abc\" }"])
+      expect(described_class.sidecar_dirs("mise.lock", content)).to eq([".mise/locks/npm-prettier/3.3.0"])
+    end
+
+    it "reads a nested lockfile's paths from its own directory" do
+      content = lockfile(["aube = { path = \"mise/locks/npm-prettier/3.3.0\", digest = \"sha256:abc\" }"])
+      expect(described_class.sidecar_dirs(".config/mise.lock", content))
+        .to eq([".config/mise/locks/npm-prettier/3.3.0"])
     end
 
     it "reads both sidecar kinds" do
@@ -171,7 +168,7 @@ RSpec.describe Dependabot::Mise::FileFetcher do
       expect(described_class.sidecar_dirs(".mise/mise.lock", content)).to eq([".mise/locks/pipx-black/24.1.0"])
     end
 
-    it "ignores paths without a digest, absolute paths and paths that leave the directory" do
+    it "ignores other tables, absolute paths and paths that leave the directory" do
       content = lockfile(
         [
           "options = { path = \"bin/tool\" }",

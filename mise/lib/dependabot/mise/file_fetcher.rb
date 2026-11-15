@@ -46,31 +46,24 @@ module Dependabot
         CONFIG_FILE_PATTERNS.any? { |pattern| filename.match?(pattern) }
       end
 
-      # Sidecar tables such as `aube = { path = "locks/npm-prettier/3.3.0", digest = "..." }`, relative to the lockfile.
+      # The npm (aube) and Python (uv) dependency graphs mise records, e.g.
+      # `aube = { path = "locks/npm-prettier/3.3.0", digest = "..." }`, relative to the lockfile.
+      SIDECAR_KINDS = %w(aube uv).freeze
+
       sig { params(lockfile_name: String, content: String).returns(T::Array[String]) }
       def self.sidecar_dirs(lockfile_name, content)
         tools = T.cast(TomlRB.parse(content), T::Hash[String, Object])["tools"]
-        recorded_sidecar_paths(tools).uniq.map do |path|
-          File.join(File.dirname(lockfile_name), path).delete_prefix("./")
-        end
-      end
+        return [] unless tools.is_a?(Hash)
 
-      sig { params(value: Object).returns(T::Array[String]) }
-      def self.recorded_sidecar_paths(value)
-        case value
-        when Hash
-          path = T.let(value["path"], Object)
-          digest = T.let(value["digest"], Object)
-          relative = path.is_a?(String) && !path.start_with?("/") && !path.split("/").include?("..")
-          own = relative && digest.is_a?(String) ? [path] : []
-          own + value.values.flat_map { |item| recorded_sidecar_paths(T.let(item, Object)) }
-        when Array
-          value.flat_map { |item| recorded_sidecar_paths(T.let(item, Object)) }
-        else
-          []
+        paths = tools.values.flatten.grep(Hash).flat_map do |entry|
+          SIDECAR_KINDS.filter_map do |kind|
+            graph = T.let(entry[kind], Object)
+            path = graph.is_a?(Hash) ? T.let(graph["path"], Object) : nil
+            path if path.is_a?(String) && !path.start_with?("/") && !path.split("/").include?("..")
+          end
         end
+        paths.uniq.map { |path| File.join(File.dirname(lockfile_name), path).delete_prefix("./") }
       end
-      private_class_method :recorded_sidecar_paths
 
       # Mirrors lockfile_path_for_config and the env and local helpers in mise's src/lockfile.rs.
       sig { params(config_path: String).returns(String) }

@@ -240,9 +240,7 @@ module Dependabot
 
       sig { params(content: String, file_name: String).returns(String) }
       def updated_mise_toml_content(content, file_name)
-        deps_for_file = dependencies.select do |dep|
-          dep.requirements.any? { |r| r.file == file_name }
-        end
+        deps_for_file = dependencies.select { |dep| requirement_for(dep.requirements, file_name) }
 
         deps_for_file.each_with_object(content.dup) do |dep, updated_content|
           next if requested_version_for(dep, file_name) == new_version_string_for(dep, file_name)
@@ -302,17 +300,12 @@ module Dependabot
 
       sig { params(dep: Dependabot::Dependency, file_name: String).returns(String) }
       def requested_version_for(dep, file_name)
-        requirement = T.must(dep.previous_requirements)
-                       .find { |r| r.file == file_name }
-
-        requirement&.requirement_string || dep.previous_version.to_s
+        previous_requirement_for(dep, file_name)&.requirement_string || dep.previous_version.to_s
       end
 
       sig { params(dep: Dependabot::Dependency, file_name: String).returns(String) }
       def new_version_string_for(dep, file_name)
-        requirement = dep.requirements.find { |r| r.file == file_name }
-
-        requirement&.requirement_string || dep.version.to_s
+        requirement_for(dep.requirements, file_name)&.requirement_string || dep.version.to_s
       end
 
       sig { override.void }

@@ -92,7 +92,8 @@ module Dependabot
         dependency_files.find { |file| file.name == lockfile_name }
       end
 
-      # Safe mode rejects templates, and relocking has to load every manifest sharing a lockfile.
+      # Safe mode restricts template functions, templated values can't be rewritten, and relocking
+      # has to load every manifest sharing a lockfile.
       sig { params(mise_file: Dependabot::DependencyFile).returns(T::Hash[String, Object]) }
       def supported_tools(mise_file)
         tools = manifest_tools(mise_file)

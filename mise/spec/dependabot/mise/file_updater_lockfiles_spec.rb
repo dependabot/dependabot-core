@@ -31,7 +31,6 @@ RSpec.describe Dependabot::Mise::FileUpdater do
     let(:updated_files) { changes.to_h { |file| [file.name, file.content] } }
     let(:sidecar_names) { %w(aube-lock.yaml package.json) }
 
-    # Builds the starting lockfiles, and any sidecar files, with mise itself for one platform.
     def lock(files)
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do

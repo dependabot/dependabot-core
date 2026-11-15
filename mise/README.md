@@ -44,9 +44,10 @@ After relocking, Dependabot checks that each manifest resolves to the version it
 ### Limitations
 
 - Manifests with templates in `[tools]`, such as `node = "{{ env.NODE_VERSION }}"`, are skipped.
-  Dependabot runs mise in [safe mode](https://mise.jdx.dev/security.html), which disables
-  templates, and it can't rewrite templated values. Other manifests are still updated, except those
-  sharing a lockfile with a templated manifest, because mise has to load them together to relock.
+  Dependabot runs mise in [safe mode](https://mise.jdx.dev/security.html), which restricts
+  template functions, and it can't rewrite templated values. Other manifests are still updated,
+  except those sharing a lockfile with a templated manifest, because mise has to load them
+  together to relock.
 - Tools provided by plugins (`asdf:` and `vfox:` backends, such as `op`) aren't updated: safe mode
   doesn't install or run plugins, so mise can't list their versions.
 - Lockfiles are never created, only updated.

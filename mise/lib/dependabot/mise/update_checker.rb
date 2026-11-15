@@ -142,7 +142,7 @@ module Dependabot
           begin
             ignored = T.let(false, T::Boolean)
             versions = dependency.requirements.to_h do |req|
-              [req, latest_version_for(req)]
+              [req, finder_for(req).latest_version]
             rescue Dependabot::AllVersionsIgnored
               ignored = true
               [req, nil]
@@ -153,11 +153,6 @@ module Dependabot
           end,
           T.nilable(T::Hash[Dependabot::DependencyRequirement, T.nilable(Dependabot::Version)])
         )
-      end
-
-      sig { params(req: Dependabot::DependencyRequirement).returns(T.nilable(Dependabot::Version)) }
-      def latest_version_for(req)
-        finder_for(req).latest_version
       end
 
       sig { params(req: Dependabot::DependencyRequirement).returns(LatestVersionFinder) }
