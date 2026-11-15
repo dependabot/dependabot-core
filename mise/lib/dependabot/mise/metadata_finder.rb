@@ -13,8 +13,6 @@ module Dependabot
 
       sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
-        # Mise tools can come from various sources (GitHub, npm, cargo, etc.)
-        # We don't attempt to look up sources automatically
         nil
       end
     end

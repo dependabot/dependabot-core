@@ -63,8 +63,14 @@ module Dependabot
           next if lockfile.nil? || targets.none?(&:changed)
 
           lock_changes(lockfile, manifests, targets, files.values).each do |path, content|
-            change = changes[path] = changed_file(path, content, lockfile.directory)
-            change.nil? || change.deleted? ? files.delete(path) : files[path] = change
+            change = changed_file(path, content, lockfile.directory)
+            changes[path] = change
+            if change.nil? || change.deleted?
+              files.delete(path)
+              next
+            end
+
+            files[path] = change
           end
         end
         changes.values.compact

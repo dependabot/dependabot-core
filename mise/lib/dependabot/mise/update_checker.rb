@@ -22,8 +22,7 @@ module Dependabot
         latest_version
       end
 
-      # Lockfile-only updates go through the per-manifest :own path, with the requirement unchanged, so
-      # unlike Cargo the lockfile-only versioning strategy is honoured in planned_update, not by refusing to unlock.
+      # Use :own so lockfile-only updates retain per-manifest resolved_version metadata.
       sig { override.returns(T.nilable(String)) }
       def latest_resolvable_version_with_no_unlock
         dependency.version
@@ -123,8 +122,8 @@ module Dependabot
         end
       end
 
-      # A loose pin such as "24" (resolved to 24.22.2) becomes "26" rather than "26.13.1", but only when mise
-      # resolves "26" to the selected version; otherwise ignore rules or cooldown could be bypassed.
+      # Keep partial pins only when mise resolves them to the selected version.
+      # Otherwise pin exactly to preserve ignore rules and cooldown.
       sig { params(req: Dependabot::DependencyRequirement, latest: Dependabot::Version).returns(String) }
       def updated_requirement_string(req, latest)
         requested = req.requirement_string.to_s
