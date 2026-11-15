@@ -34,6 +34,13 @@ dependency graphs in sidecar directories, such as `npm:` tools, the directories 
 lockfile records are updated too: the new version's files are added and the old ones removed.
 Loose pins such as `node = "20"` are compared against the version the lockfile records.
 
+With a lockfile, pins the newest release still matches, such as `"latest"`, `"lts"` or `"24"`,
+get lockfile-only updates: the manifest stays as it is and `mise lock --bump` moves the locked
+version, but only when ignore rules and cooldown allow the version mise resolves the pin to.
+Without a lockfile these pins aren't updated, because mise picks the version at install time.
+After relocking, Dependabot checks that each manifest resolves to the version it selected. With
+`versioning-strategy: lockfile-only`, manifests are never changed and only these updates are made.
+
 ### Limitations
 
 - Manifests with templates in `[tools]`, such as `node = "{{ env.NODE_VERSION }}"`, are skipped.
@@ -43,8 +50,10 @@ Loose pins such as `node = "20"` are compared against the version the lockfile r
 - Tools provided by plugins (`asdf:` and `vfox:` backends, such as `op`) aren't updated: safe mode
   doesn't install or run plugins, so mise can't list their versions.
 - Lockfiles are never created, only updated.
-- Loose pins such as `node = "20"` aren't advanced in the lockfile, and monorepo-root lockfiles
-  aren't supported.
+- `mise lock --bump` moves every request for a tool in a lockfile at once. When manifests sharing
+  a lockfile declare the same tool, a lockfile-only update is skipped if it would also move
+  another of those requests to an ignored version or one still in cooldown.
+- Monorepo-root lockfiles aren't supported.
 
 ### Running locally
 

@@ -71,8 +71,7 @@ RSpec.describe Dependabot::Mise::FileUpdater do
       end
     end
 
-    context "with a loose pin updated by the update checker" do
-      let(:manifests) { { "mise.toml" => "[tools]\nnode = '20'\n" } }
+    context "when the update checker selects the version" do
       let(:ignored_versions) { [] }
       let(:parsed) { Dependabot::Mise::FileParser.new(dependency_files: dependency_files, source: nil).parse.fetch(0) }
       let(:checker) do
@@ -85,20 +84,46 @@ RSpec.describe Dependabot::Mise::FileUpdater do
         )
       end
       let(:dependency) { checker.updated_dependencies(requirements_to_unlock: :own).fetch(0) }
-      let(:locked_version) { locked(updated_files["mise.lock"], "node").fetch(0)["version"] }
+      let(:locked_node) { locked(updated_files["mise.lock"], "node").fetch(0) }
 
-      it "keeps the pin loose and locks the selected version" do
-        expect(updated_files["mise.toml"]).to eq("[tools]\nnode = '#{dependency.version.split('.').first}'\n")
-        expect(locked_version).to eq(dependency.version)
+      context "with a loose pin" do
+        let(:manifests) { { "mise.toml" => "[tools]\nnode = '20'\n" } }
+
+        it "keeps the pin loose and locks the selected version" do
+          expect(updated_files["mise.toml"]).to eq("[tools]\nnode = '#{dependency.version.split('.').first}'\n")
+          expect(locked_node["version"]).to eq(dependency.version)
+        end
+
+        context "when an ignore rule holds back newer releases matching the new pin" do
+          let(:ignored_versions) { ["> 22.0.0"] }
+
+          it "pins and locks the selected version exactly" do
+            expect(dependency.version).to eq("22.0.0")
+            expect(updated_files["mise.toml"]).to eq("[tools]\nnode = '22.0.0'\n")
+            expect(locked_node["version"]).to eq("22.0.0")
+          end
+        end
       end
 
-      context "when an ignore rule holds back newer releases matching the new pin" do
-        let(:ignored_versions) { ["> 22.0.0"] }
+      context "with a latest pin" do
+        let(:manifests) { { "mise.toml" => "[tools]\nnode = 'latest'\n" } }
+        let(:lockfiles) do
+          lock("mise.toml" => "[tools]\nnode = '20.0.0'\n")
+            .transform_values { |content| content.sub('specifiers = ["20.0.0"]', 'specifiers = ["latest"]') }
+        end
 
-        it "pins and locks the selected version exactly" do
-          expect(dependency.version).to eq("22.0.0")
-          expect(updated_files["mise.toml"]).to eq("[tools]\nnode = '22.0.0'\n")
-          expect(locked_version).to eq("22.0.0")
+        it "updates only the lockfile, to the selected version" do
+          expect(parsed.version).to eq("20.0.0")
+          expect(updated_files.keys).to eq(["mise.lock"])
+          expect([locked_node["version"], locked_node["specifiers"]]).to eq([dependency.version, ["latest"]])
+        end
+
+        context "when an ignore rule excludes the version mise resolves it to" do
+          let(:ignored_versions) { ["> 22.0.0"] }
+
+          it "proposes no update" do
+            expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+          end
         end
       end
     end
@@ -251,6 +276,24 @@ RSpec.describe Dependabot::Mise::FileUpdater do
 
       it "fails rather than leave the lockfile out of step with the manifest" do
         expect { changes }.to raise_error(Dependabot::DependencyFileNotResolvable, /unexpected\.txt/)
+      end
+    end
+
+    context "when mise locks a different version than the one selected" do
+      let(:lockfiles) { { "mise.lock" => "lockfile_version = 4\n" } }
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(["mise", "lock", "--", "node"], hash_including(stderr_to_stdout: false)) do
+          File.write("mise.lock", "lockfile_version = 4\n# updated\n")
+          ""
+        end
+        allow(Dependabot::SharedHelpers).to mise_ls("node").and_return(JSON.dump([{ "version" => "20.0.9" }]))
+      end
+
+      it "fails rather than report the wrong version" do
+        expect { changes }
+          .to raise_error(Dependabot::DependencyFileNotResolvable, /node in mise.toml to 20.0.9, not 20.1.0/)
       end
     end
 

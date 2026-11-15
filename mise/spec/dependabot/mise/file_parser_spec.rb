@@ -279,6 +279,32 @@ RSpec.describe Dependabot::Mise::FileParser do
         end
       end
 
+      context "with a latest pin" do
+        let(:manifest) { Dependabot::DependencyFile.new(name: "mise.toml", content: "[tools]\nnode = 'latest'\n") }
+        let(:dependency_files) do
+          [
+            manifest,
+            Dependabot::DependencyFile.new(
+              name: "mise.lock",
+              content: "[[tools.node]]\nversion = \"20.0.0\"\nbackend = \"core:node\"\nspecifiers = [\"latest\"]\n"
+            )
+          ]
+        end
+
+        it "tracks the version the lockfile records" do
+          node = dependencies.fetch(0)
+          expect([node.name, node.version, node.requirements.first.requirement_string]).to eq(%w(node 20.0.0 latest))
+        end
+
+        context "without a lockfile" do
+          let(:dependency_files) { [manifest] }
+
+          it "skips the tool, because mise picks the version at install time" do
+            expect(dependencies).to be_empty
+          end
+        end
+      end
+
       context "with a templated manifest sharing a lockfile" do
         let(:manifests) do
           [

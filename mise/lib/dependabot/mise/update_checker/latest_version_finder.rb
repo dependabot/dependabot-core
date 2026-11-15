@@ -21,13 +21,12 @@ module Dependabot
 
         sig { override.params(language_version: T.nilable(T.any(Dependabot::Version, String))).returns(T.nilable(Dependabot::Version)) }
         def latest_version(language_version: nil) # rubocop:disable Lint/UnusedMethodArgument
-          releases = package_releases
-          return nil if releases.nil? || releases.empty?
+          allowed_releases.max_by(&:version)&.version
+        end
 
-          releases = filter_prerelease_versions(releases)
-          releases = filter_ignored_versions(releases)
-          releases = filter_by_cooldown(releases)
-          releases.max_by(&:version)&.version
+        sig { params(version: String).returns(T::Boolean) }
+        def allowed?(version)
+          allowed_releases.any? { |release| release.version.to_s == version }
         end
 
         # Asks mise, so tool options such as minimum_release_age apply.
@@ -49,6 +48,14 @@ module Dependabot
         end
 
         private
+
+        sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
+        def allowed_releases
+          @allowed_releases ||= T.let(
+            filter_by_cooldown(filter_ignored_versions(filter_prerelease_versions(package_releases || []))),
+            T.nilable(T::Array[Dependabot::Package::PackageRelease])
+          )
+        end
 
         # UpdateChecker scopes each finder to a single manifest.
         sig { returns(T::Hash[String, String]) }

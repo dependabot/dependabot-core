@@ -1,6 +1,7 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "json"
 require "toml-rb"
 
 require "dependabot/errors"
@@ -8,6 +9,7 @@ require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/mise/file_fetcher"
 require "dependabot/mise/helpers"
+require "dependabot/mise/version"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -15,6 +17,14 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
       include Dependabot::Mise::Helpers
+
+      class LockTarget < T::Struct
+        const :file, String
+        const :tool, String
+        const :version, T.nilable(String)
+        const :changed, T::Boolean
+        const :lockfile_only, T::Boolean
+      end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
@@ -49,10 +59,10 @@ module Dependabot
 
         manifest_groups(files.values).each do |lockfile_name, manifests|
           lockfile = files[lockfile_name]
-          tools = tools_updated_in(manifests.map(&:name) & updated_manifests.map(&:name))
-          next if lockfile.nil? || tools.empty?
+          targets = lock_targets(manifests.map(&:name))
+          next if lockfile.nil? || targets.none?(&:changed)
 
-          lock_changes(lockfile, manifests, tools, files.values).each do |path, content|
+          lock_changes(lockfile, manifests, targets, files.values).each do |path, content|
             change = changes[path] = changed_file(path, content, lockfile.directory)
             change.nil? || change.deleted? ? files.delete(path) : files[path] = change
           end
@@ -69,14 +79,42 @@ module Dependabot
              .group_by { |file| Dependabot::Mise::FileFetcher.lockfile_path_for(file.name) }
       end
 
-      sig { params(file_names: T::Array[String]).returns(T::Array[String]) }
-      def tools_updated_in(file_names)
-        dependencies.select do |dep|
-          file_names.any? do |file_name|
-            dep.requirements.any? { |req| req.file == file_name } &&
-              requested_version_for(dep, file_name) != new_version_string_for(dep, file_name)
-          end
-        end.map(&:name).uniq
+      # Unchanged manifests declaring an updated tool are included, so the version check covers them too.
+      sig { params(file_names: T::Array[String]).returns(T::Array[LockTarget]) }
+      def lock_targets(file_names)
+        targets = dependencies.map { |dep| file_names.filter_map { |file_name| lock_target(dep, file_name) } }
+        targets.select { |dep_targets| dep_targets.any?(&:changed) }.flatten
+      end
+
+      sig { params(dep: Dependabot::Dependency, file_name: String).returns(T.nilable(LockTarget)) }
+      def lock_target(dep, file_name)
+        req = requirement_for(dep.requirements, file_name)
+        return unless req
+
+        previous = previous_requirement_for(dep, file_name)
+        version = req.metadata_string("resolved_version") || req.requirement_string
+        LockTarget.new(
+          file: file_name,
+          tool: dep.name,
+          version: Dependabot::Mise::Version.correct?(version) ? version : nil,
+          changed: req != previous,
+          lockfile_only: req != previous && req.requirement_string == previous&.requirement_string
+        )
+      end
+
+      sig do
+        params(requirements: T::Array[Dependabot::DependencyRequirement], file_name: String)
+          .returns(T.nilable(Dependabot::DependencyRequirement))
+      end
+      def requirement_for(requirements, file_name)
+        requirements.find { |req| req.file == file_name }
+      end
+
+      sig do
+        params(dep: Dependabot::Dependency, file_name: String).returns(T.nilable(Dependabot::DependencyRequirement))
+      end
+      def previous_requirement_for(dep, file_name)
+        requirement_for(dep.previous_requirements || [], file_name)
       end
 
       # Every manifest sharing the lockfile is loaded, or mise drops the versions the others pin.
@@ -84,23 +122,24 @@ module Dependabot
         params(
           lockfile: Dependabot::DependencyFile,
           manifests: T::Array[Dependabot::DependencyFile],
-          tools: T::Array[String],
+          targets: T::Array[LockTarget],
           files: T::Array[Dependabot::DependencyFile]
         ).returns(T::Hash[String, T.nilable(String)])
       end
-      def lock_changes(lockfile, manifests, tools, files)
+      def lock_changes(lockfile, manifests, targets, files)
         old_sidecars = Dependabot::Mise::FileFetcher.sidecar_dirs(lockfile.name, lockfile.content.to_s)
         sidecar_files = files.select { |file| inside?(file.name, old_sidecars) }
         shared_sidecars = sidecar_dirs_of_other_lockfiles(files, lockfile.name)
 
         Dependabot::SharedHelpers.in_a_temporary_directory do
           write_manifest_files(manifests + [lockfile] + sidecar_files)
-          changes = changes_made_by { run_mise_lock(manifests, tools) }
+          changes = changes_made_by { run_mise_lock(manifests, targets) }
           check_only_lock_files_changed(changes, lockfile, old_sidecars)
+          check_locked_versions(targets)
 
           changes.reject { |path, content| content.nil? && inside?(path, shared_sidecars) }
         end
-      rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+      rescue Dependabot::SharedHelpers::HelperSubprocessFailed, JSON::ParserError => e
         raise Dependabot::DependencyFileNotResolvable, e.message
       rescue TomlRB::Error => e
         raise Dependabot::DependencyFileNotParseable.new(lockfile.name, e.message)
@@ -135,10 +174,27 @@ module Dependabot
         dirs.any? { |dir| path.start_with?("#{dir}/") }
       end
 
-      sig { params(manifests: T::Array[Dependabot::DependencyFile], tools: T::Array[String]).void }
-      def run_mise_lock(manifests, tools)
+      sig { params(targets: T::Array[LockTarget]).void }
+      def check_locked_versions(targets)
+        targets.each do |target|
+          next unless target.version
+
+          entries = T.cast(JSON.parse(mise_ls(target.file, target.tool)), Object)
+          entry = T.let(entries.is_a?(Array) ? entries.first : nil, Object)
+          locked = T.let(entry.is_a?(Hash) ? entry["version"] : nil, Object)
+          next if locked == target.version
+
+          raise Dependabot::DependencyFileNotResolvable,
+                "mise resolves #{target.tool} in #{target.file} to #{locked || 'nothing'}, not #{target.version}"
+        end
+      end
+
+      sig { params(manifests: T::Array[Dependabot::DependencyFile], targets: T::Array[LockTarget]).void }
+      def run_mise_lock(manifests, targets)
+        bump = targets.any?(&:lockfile_only) ? ["--bump"] : []
+        tools = targets.select(&:changed).map(&:tool).uniq
         Dependabot::SharedHelpers.run_shell_command(
-          ["mise", "lock", "--", *tools],
+          ["mise", "lock", *bump, "--", *tools],
           stderr_to_stdout: false,
           env: {
             "MISE_YES" => "1",

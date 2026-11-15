@@ -1,6 +1,7 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "dependabot/mise/file_fetcher"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 
@@ -21,9 +22,10 @@ module Dependabot
         latest_version
       end
 
+      # Lockfile-only updates go through the per-manifest :own path, with the requirement unchanged, so
+      # unlike Cargo the lockfile-only versioning strategy is honoured in planned_update, not by refusing to unlock.
       sig { override.returns(T.nilable(String)) }
       def latest_resolvable_version_with_no_unlock
-        # Lockfile-only updates within a loose pin (mise lock --bump) aren't supported yet.
         dependency.version
       end
 
@@ -31,12 +33,13 @@ module Dependabot
       def updated_requirements
         wrap_requirements(
           dependency.requirements.map do |req|
-            latest = version_updates[req]
-            next req unless latest
+            update = planned_update(req, latest_versions[req])
+            next req unless update
 
+            requirement, version = update
             req.merge(
-              requirement: updated_requirement_string(req, latest),
-              metadata: (req.metadata || {}).transform_keys(&:to_sym).merge(resolved_version: latest.to_s)
+              requirement: requirement,
+              metadata: (req.metadata || {}).transform_keys(&:to_sym).merge(resolved_version: version.to_s)
             )
           end
         )
@@ -61,12 +64,63 @@ module Dependabot
       end
       def version_updates(versions = latest_versions)
         versions.filter_map do |req, latest|
-          current = current_version_for(req)
-          next unless latest && current && latest > current
-          next if updated_requirement_string(req, latest) == req.requirement_string
-
-          [req, latest]
+          update = planned_update(req, latest)
+          [req, update.last] if update
         end.to_h
+      end
+
+      # The requirement a manifest declares after the update, and the version it then resolves to.
+      sig do
+        params(req: Dependabot::DependencyRequirement, latest: T.nilable(Dependabot::Version))
+          .returns(T.nilable([String, Dependabot::Version]))
+      end
+      def planned_update(req, latest)
+        current = current_version_for(req)
+        return unless latest && current && latest > current
+
+        requested = req.requirement_string.to_s
+        if version_class.correct?(requested) && !requirements_update_strategy&.lockfile_only?
+          requirement = updated_requirement_string(req, latest)
+          return [requirement, latest] unless requirement == requested
+        end
+        lockfile_only_update(req, current)
+      end
+
+      # A pin the newer release still satisfies, such as "latest", "lts" or "24", can only move inside the
+      # lockfile, to what mise resolves it to, and only if ignore rules and cooldown allow that version.
+      sig do
+        params(req: Dependabot::DependencyRequirement, current: Dependabot::Version)
+          .returns(T.nilable([String, Dependabot::Version]))
+      end
+      def lockfile_only_update(req, current)
+        lockfile_name = Dependabot::Mise::FileFetcher.lockfile_path_for(T.must(req.file))
+        return unless dependency_files.any? { |file| file.name == lockfile_name }
+
+        requested = req.requirement_string.to_s
+        resolved = finder_for(req).resolved_pin(requested)
+        return unless resolved && version_class.correct?(resolved) && finder_for(req).allowed?(resolved)
+
+        version = version_class.new(resolved)
+        return unless version > current
+        return [requested, version] if bump_keeps_other_requests_allowed?(req, lockfile_name)
+
+        Dependabot.logger.info(
+          "Not relocking #{dependency.name} for #{req.file}: mise lock --bump would also move " \
+          "another request in #{lockfile_name} to a version that isn't allowed"
+        )
+        nil
+      end
+
+      # mise lock --bump re-resolves every request for the tool that shares the lockfile.
+      sig { params(req: Dependabot::DependencyRequirement, lockfile_name: String).returns(T::Boolean) }
+      def bump_keeps_other_requests_allowed?(req, lockfile_name)
+        dependency.requirements.all? do |other|
+          next true if other == req
+          next true unless Dependabot::Mise::FileFetcher.lockfile_path_for(T.must(other.file)) == lockfile_name
+
+          resolved = finder_for(other).resolved_pin(other.requirement_string.to_s)
+          resolved == current_version_for(other)&.to_s || (!resolved.nil? && finder_for(other).allowed?(resolved))
+        end
       end
 
       # A loose pin such as "24" (resolved to 24.22.2) becomes "26" rather than "26.13.1", but only when mise

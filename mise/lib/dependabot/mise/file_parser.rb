@@ -49,27 +49,36 @@ module Dependabot
           # With the lockfile present, mise reports the locked version of loose pins such as "20".
           write_manifest_files([mise_file, lockfile_for(mise_file)].compact)
 
-          listed = T.cast(JSON.parse(run_mise_ls(mise_file)), T::Hash[String, Object])
+          listed = T.cast(JSON.parse(mise_ls(mise_file.name)), T::Hash[String, Object])
           tools.each_key do |tool_name|
             entry = tool_entries(mise_file, listed, tool_name).first
             next unless entry.is_a?(Hash)
 
             requested = entry["requested_version"]
             next unless requested
-            # Skip fuzzy pins like "latest" or "lts"
-            next unless Dependabot::Mise::Version.correct?(requested)
+
+            resolved = entry["version"] || requested
+            next unless trackable?(mise_file, requested, resolved)
 
             (requirements_by_tool[tool_name] ||= []) << Dependabot::DependencyRequirement.create(
               requirement: requested,
               file: mise_file.name,
               groups: [],
               source: nil,
-              metadata: { resolved_version: entry["version"] || requested }
+              metadata: { resolved_version: resolved }
             )
           end
         end
       rescue Dependabot::SharedHelpers::HelperSubprocessFailed, JSON::ParserError => e
         raise Dependabot::DependencyFileNotParseable.new(mise_file.name, e.message)
+      end
+
+      # Fuzzy pins like "latest" or "lts" can only be updated through the version a lockfile records.
+      sig { params(mise_file: Dependabot::DependencyFile, requested: String, resolved: String).returns(T::Boolean) }
+      def trackable?(mise_file, requested, resolved)
+        return true if Dependabot::Mise::Version.correct?(requested)
+
+        !lockfile_for(mise_file).nil? && Dependabot::Mise::Version.correct?(resolved)
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -129,27 +138,11 @@ module Dependabot
         ).returns(T::Array[Object])
       end
       def tool_entries(mise_file, listed, tool_name)
-        entries = listed.fetch(tool_name) { T.cast(JSON.parse(run_mise_ls(mise_file, tool_name)), Object) }
+        entries = listed.fetch(tool_name) { T.cast(JSON.parse(mise_ls(mise_file.name, tool_name)), Object) }
         entries.is_a?(Array) ? entries : []
       rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
         Dependabot.logger.warn("mise ls failed for #{tool_name} in #{mise_file.name}: #{e.message}")
         []
-      end
-
-      sig { params(mise_file: Dependabot::DependencyFile, tool_name: T.nilable(String)).returns(String) }
-      def run_mise_ls(mise_file, tool_name = nil)
-        command = ["mise", "ls", "--current", "--no-global", "--json"]
-        command += ["--", tool_name] if tool_name
-
-        Dependabot::SharedHelpers.run_shell_command(
-          command,
-          stderr_to_stdout: false,
-          env: {
-            "MISE_YES" => "1",
-            "MISE_SAFE" => "1",
-            "MISE_OVERRIDE_CONFIG_FILENAMES" => mise_file.name
-          }
-        )
       end
 
       sig { params(mise_file: Dependabot::DependencyFile).returns(T::Hash[String, Object]) }

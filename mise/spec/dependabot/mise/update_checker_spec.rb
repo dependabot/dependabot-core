@@ -32,6 +32,7 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
 
   let(:dependency_files) { [mise_toml] }
   let(:ignored_versions) { [] }
+  let(:requirements_update_strategy) { nil }
 
   let(:checker) do
     described_class.new(
@@ -39,7 +40,8 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
       dependency_files: dependency_files,
       credentials: [],
       ignored_versions: ignored_versions,
-      raise_on_ignored: false
+      raise_on_ignored: false,
+      requirements_update_strategy: requirements_update_strategy
     )
   end
 
@@ -218,6 +220,92 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
 
         it "pins the selected version exactly, so mise can't install the ignored one" do
           expect(updated).to eq([%w(28.0.0 28.0.0)])
+        end
+      end
+
+      context "when the newest release still matches the pin and there's a lockfile" do
+        let(:remote_versions) { %w(27.3.2 27.4.0) }
+        let(:mise_resolves) { { "erlang@27" => "27.4.0" } }
+        let(:dependency_files) { [mise_toml, Dependabot::DependencyFile.new(name: "mise.lock", content: "")] }
+
+        it "updates the locked version and keeps the pin" do
+          expect(updated).to eq([%w(27 27.4.0)])
+        end
+      end
+
+      context "with a fuzzy pin" do
+        let(:pin) { "latest" }
+        let(:mise_resolves) { { "erlang@latest" => "28.0.1" } }
+        let(:dependency_files) { [mise_toml, Dependabot::DependencyFile.new(name: "mise.lock", content: "")] }
+
+        it "updates the locked version and keeps the pin" do
+          expect(updated).to eq([%w(latest 28.0.1)])
+          expect(checker.latest_version.to_s).to eq("28.0.1")
+        end
+
+        context "when an ignore rule excludes the version mise resolves it to" do
+          let(:ignored_versions) { [">= 28.0.1"] }
+
+          it "reports the dependency as up to date" do
+            expect(checker).to be_up_to_date
+          end
+        end
+
+        context "without a lockfile" do
+          let(:dependency_files) { [mise_toml] }
+
+          it "reports the dependency as up to date" do
+            expect(checker).to be_up_to_date
+          end
+        end
+      end
+
+      context "with the lockfile-only versioning strategy" do
+        let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
+        let(:mise_resolves) { { "erlang@27" => "27.4.0" } }
+        let(:dependency_files) { [mise_toml, Dependabot::DependencyFile.new(name: "mise.lock", content: "")] }
+
+        it "moves only the locked version, even though 28.x exists" do
+          expect(updated).to eq([%w(27 27.4.0)])
+        end
+
+        context "without a lockfile" do
+          let(:dependency_files) { [mise_toml] }
+
+          it "reports the dependency as up to date" do
+            expect(checker).to be_up_to_date
+          end
+        end
+      end
+
+      context "with a fuzzy pin for the same tool in a manifest sharing the lockfile" do
+        let(:requirements) do
+          [
+            { requirement: "27", file: "mise/conf.d/a.toml", groups: [], source: nil,
+              metadata: { resolved_version: current_version } },
+            { requirement: "latest", file: "mise/conf.d/b.toml", groups: [], source: nil,
+              metadata: { resolved_version: current_version } }
+          ]
+        end
+        let(:dependency_files) do
+          [
+            Dependabot::DependencyFile.new(name: "mise/conf.d/a.toml", content: "[tools]\nerlang = '27'\n"),
+            Dependabot::DependencyFile.new(name: "mise/conf.d/b.toml", content: "[tools]\nerlang = 'latest'\n"),
+            Dependabot::DependencyFile.new(name: "mise/mise.lock", content: "")
+          ]
+        end
+        let(:mise_resolves) { { "erlang@27" => "27.4.0", "erlang@28" => "28.0.1", "erlang@latest" => "28.0.1" } }
+
+        it "updates both manifests" do
+          expect(updated).to eq([%w(28 28.0.1), %w(latest 28.0.1)])
+        end
+
+        context "when the fuzzy pin would move to an ignored version" do
+          let(:ignored_versions) { [">= 28"] }
+
+          it "doesn't relock the other manifest either, because --bump would move both" do
+            expect(checker).to be_up_to_date
+          end
         end
       end
 
