@@ -53,6 +53,9 @@ hex:
 maven:
   - *common
   - 'maven/**'
+nimble:
+  - *common
+  - 'nimble/**'
 nix:
   - *common
   - 'nix/**'

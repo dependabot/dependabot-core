@@ -37,6 +37,7 @@ variable "ECOSYSTEMS" {
     { name = "hex", image = "mix", dockerfile = "hex/Dockerfile" },
     { name = "julia", image = "julia", dockerfile = "julia/Dockerfile" },
     { name = "maven", image = "maven", dockerfile = "maven/Dockerfile" },
+    { name = "nimble", image = "nimble", dockerfile = "nimble/Dockerfile" },
     { name = "nix", image = "nix", dockerfile = "nix/Dockerfile" },
     { name = "npm_and_yarn", image = "npm", dockerfile = "npm_and_yarn/Dockerfile" },
     { name = "nuget", image = "nuget", dockerfile = "nuget/Dockerfile" },

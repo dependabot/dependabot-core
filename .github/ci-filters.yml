@@ -80,6 +80,9 @@ julia:
 maven:
   - *shared
   - 'maven/**'
+nimble:
+  - *shared
+  - 'nimble/**'
 nix:
   - *shared
   - 'nix/**'

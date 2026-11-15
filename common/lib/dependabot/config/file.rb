@@ -81,6 +81,7 @@ module Dependabot
           "julia" => "julia",
           "maven" => "maven",
           "mix" => "hex",
+          "nimble" => "nimble",
           "nix" => "nix",
           "npm" => "npm_and_yarn",
           "nuget" => "nuget",

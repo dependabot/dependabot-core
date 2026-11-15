@@ -95,6 +95,11 @@
     "ecosystem": "maven"
   },
   {
+    "core": "nimble",
+    "test": "nimble",
+    "ecosystem": "nimble"
+  },
+  {
     "core": "nix",
     "test": "nix",
     "ecosystem": "nix"

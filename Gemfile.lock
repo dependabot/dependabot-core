@@ -153,6 +153,12 @@ PATH
       rexml (~> 3.4.1)
 
 PATH
+  remote: nimble
+  specs:
+    dependabot-nimble (0.404.0)
+      dependabot-common (= 0.404.0)
+
+PATH
   remote: npm_and_yarn
   specs:
     dependabot-npm_and_yarn (0.404.0)
@@ -504,6 +510,7 @@ DEPENDENCIES
   dependabot-hex!
   dependabot-julia!
   dependabot-maven!
+  dependabot-nimble!
   dependabot-npm_and_yarn!
   dependabot-nuget!
   dependabot-opentofu!
@@ -576,6 +583,7 @@ CHECKSUMS
   dependabot-hex (0.404.0)
   dependabot-julia (0.404.0)
   dependabot-maven (0.404.0)
+  dependabot-nimble (0.404.0)
   dependabot-npm_and_yarn (0.404.0)
   dependabot-nuget (0.404.0)
   dependabot-opentofu (0.404.0)
