@@ -250,6 +250,11 @@ docker run --rm -ti \
   -v "$(pwd)/maven/lib:$CODE_DIR/maven/lib" \
   -v "$(pwd)/maven/script:$CODE_DIR/maven/script" \
   -v "$(pwd)/maven/spec:$CODE_DIR/maven/spec" \
+  -v "$(pwd)/mise/.rubocop.yml:$CODE_DIR/mise/.rubocop.yml" \
+  -v "$(pwd)/mise/dependabot-mise.gemspec:$CODE_DIR/mise/dependabot-mise.gemspec" \
+  -v "$(pwd)/mise/lib:$CODE_DIR/mise/lib" \
+  -v "$(pwd)/mise/script:$CODE_DIR/mise/script" \
+  -v "$(pwd)/mise/spec:$CODE_DIR/mise/spec" \
   -v "$(pwd)/nix/.rubocop.yml:$CODE_DIR/nix/.rubocop.yml" \
   -v "$(pwd)/nix/dependabot-nix.gemspec:$CODE_DIR/nix/dependabot-nix.gemspec" \
   -v "$(pwd)/nix/lib:$CODE_DIR/nix/lib" \
