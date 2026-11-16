@@ -574,12 +574,10 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           )]
         end
 
-        it "does not infer authentication from a qualified fetch failure alone" do
+        it "reports the explicit authentication failure from Hex" do
           expect { latest_resolvable_version }
-            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
-              expect(error.message).to include(
-                "Failed to fetch record for hexpm:dependabot/example_package_a from registry"
-              )
+            .to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+              expect(error.source).to eq("dependabot")
             end
         end
       end
