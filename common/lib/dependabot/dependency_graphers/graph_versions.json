@@ -28,7 +28,7 @@
         "python/lib/dependabot/python/pip_compile_file_matcher.rb",
         "python/lib/dependabot/python/requirement_references.rb"
       ],
-      "sources_sha256": "47da656f744882e8edcb652e62ee058f35133ca89dcd8bafe616e0bd0ffb6633"
+      "sources_sha256": "00f0afa2a92fbb3b93fc7c1b60ed74edc32c0e9de6042f775db46e36346014b8"
     },
     "uv": {
       "graph_version": "1",
