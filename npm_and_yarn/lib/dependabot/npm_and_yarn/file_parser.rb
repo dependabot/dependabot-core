@@ -648,9 +648,9 @@ module Dependabot
 
         # The versions of the declarations are merged into one, the lowest, which may be the one of a support file
         all_versions = T.cast(dep.metadata[:all_versions], T.nilable(T::Array[Dependabot::Dependency])) || []
-        locked_versions = locked.all_versions_for_name(dep.name).map(&:version)
+        locked_copies = locked.all_versions_for_name(dep.name)
         own_versions = all_versions.filter_map do |version|
-          without_support_file_requirements_for_version(version, support_reqs, locked_versions)
+          without_support_file_requirements_for_version(version, support_reqs, locked_copies)
         end
         own_version = DependencySet.new(own_versions).dependency_for_name(dep.name)&.version
 
@@ -668,15 +668,23 @@ module Dependabot
         params(
           version: Dependabot::Dependency,
           support_reqs: T::Array[Dependabot::DependencyRequirement],
-          locked_versions: T::Array[T.nilable(String)]
+          locked_copies: T::Array[Dependabot::Dependency]
         ).returns(T.nilable(Dependabot::Dependency))
       end
-      def without_support_file_requirements_for_version(version, support_reqs, locked_versions)
+      def without_support_file_requirements_for_version(version, support_reqs, locked_copies)
         own_requirements = version.requirements - support_reqs
         return version if own_requirements == version.requirements
-        # The lockfile entries of a version are merged into its declarations, so a version that only support files
-        # declare may still be locked by this project, for example as a transitive dependency. Keep that copy.
-        return if own_requirements.empty? && !locked_versions.include?(version.version)
+
+        subdependency_metadata = version.subdependency_metadata
+        if own_requirements.empty?
+          # The lockfile entries of a version are merged into its declarations, so a version that only support files
+          # declare may still be locked by this project, for example as a transitive dependency. Keep that copy, with
+          # the lockfile's metadata (development-only, bundled), which the merge with a declaration drops.
+          locked_copy = locked_copies.find { |copy| copy.version == version.version }
+          return unless locked_copy
+
+          subdependency_metadata = locked_copy.subdependency_metadata
+        end
 
         Dependency.new(
           name: version.name,
@@ -686,7 +694,7 @@ module Dependabot
           previous_version: version.previous_version,
           previous_requirements: version.previous_requirements,
           directory: version.directory,
-          subdependency_metadata: version.subdependency_metadata,
+          subdependency_metadata: subdependency_metadata,
           removed: version.removed?,
           metadata: version.metadata
         )

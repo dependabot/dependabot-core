@@ -248,6 +248,52 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
             expect(versions).to eq("2.0.0" => [["package.json", "2.0.0"]], "1.0.0" => [])
           end
+
+          context "when that copy is only used in development" do
+            let(:manifest) do
+              {
+                "name" => "root",
+                "dependencies" => { "chalk" => "2.0.0" },
+                "devDependencies" => { "debug" => "2.0.0", "shared" => "file:../shared" }
+              }
+            end
+            let(:files) do
+              [
+                package_file,
+                support_file,
+                Dependabot::DependencyFile.new(
+                  name: "package-lock.json",
+                  content: {
+                    "name" => "root",
+                    "lockfileVersion" => 3,
+                    "packages" => {
+                      "" => {
+                        "name" => "root",
+                        "dependencies" => manifest["dependencies"],
+                        "devDependencies" => manifest["devDependencies"]
+                      },
+                      "../shared" => { "name" => "shared", "dev" => true, "dependencies" => { "chalk" => "1.0.0" } },
+                      "../shared/node_modules/chalk" => { "version" => "1.0.0", "dev" => true },
+                      "node_modules/chalk" => { "version" => "2.0.0" },
+                      "node_modules/debug" => {
+                        "version" => "2.0.0", "dev" => true, "dependencies" => { "chalk" => "1.0.0" }
+                      },
+                      "node_modules/debug/node_modules/chalk" => { "version" => "1.0.0", "dev" => true },
+                      "node_modules/shared" => { "resolved" => "../shared", "link" => true, "dev" => true }
+                    }
+                  }.to_json
+                )
+              ]
+            end
+
+            it "keeps the lockfile's development-only metadata for that copy" do
+              chalk = parser.parse.find { |dep| dep.name == "chalk" }
+              copy = chalk.metadata[:all_versions].find { |version| version.version == "1.0.0" }
+
+              expect(copy.subdependency_metadata).to eq([{ production: false }])
+              expect(copy).not_to be_production
+            end
+          end
         end
       end
     end
