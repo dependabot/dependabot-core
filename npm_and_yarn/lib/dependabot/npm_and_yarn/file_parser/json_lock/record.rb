@@ -42,6 +42,19 @@ module Dependabot
             optional_string("resolution")
           end
 
+          sig { returns(T.nilable(T::Hash[String, String])) }
+          def requires
+            value = object["requires"]
+            return if value.nil?
+
+            context = "#{@context}.requires"
+            object_value(value, context).to_h do |name, requirement|
+              invalid!("#{context}.#{name} must be a string") unless requirement.is_a?(String)
+
+              [name, requirement]
+            end
+          end
+
           sig { returns(T::Boolean) }
           def dev?
             boolean("dev")

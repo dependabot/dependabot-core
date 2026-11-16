@@ -222,6 +222,9 @@ module Dependabot
         ).returns(Dependabot::ErrorDetails)
       end
       def error_details_for(error, dependency: nil, dependency_group: nil)
+        registry_host = unreachable_registry_host(error)
+        return registry_unreachable_details(error, registry_host) if registry_host
+
         error_details = Dependabot.updater_error_details(error)
         return error_details if error_details
 
@@ -247,6 +250,34 @@ module Dependabot
         end
 
         Dependabot::ErrorDetails.new(error_type: "unknown_error", error_detail: nil)
+      end
+
+      # A self-hosted runner runs in the customer's network. When that network blocks or cannot resolve a registry,
+      # the Dependabot proxy closes the connection without a response (EOFError) or the request times out. Ecosystems
+      # raise these as Excon errors for public registries, so they would otherwise be reported as unknown errors.
+      # On GitHub-hosted runners, and when dependabot-api doesn't say where the job runs, they still are.
+      #
+      # Only requests made through RegistryClient count, which records the host on the error it raises. Other requests
+      # (such as fetching a Git repository's refs, which fails the same way for a Git host) are not registry requests,
+      # and an unreachable Git host is not what this error says, so those stay unknown errors.
+      sig { params(error: StandardError).returns(T.nilable(String)) }
+      def unreachable_registry_host(error)
+        return unless error.is_a?(Excon::Error::Socket) || error.is_a?(Excon::Error::Timeout)
+        # A certificate that can't be verified means a server answered: the network path works
+        return if error.is_a?(Excon::Error::Certificate)
+        return unless job.self_hosted_runner?
+
+        host = ErrorReportContext.build(error: error)&.fetch("host", nil)
+        host if host.is_a?(String) && host != ErrorReportContext::REDACTED
+      end
+
+      sig { params(error: StandardError, host: String).returns(Dependabot::ErrorDetails) }
+      def registry_unreachable_details(error, host)
+        Dependabot.logger.warn(
+          "#{host} could not be reached from the self-hosted runner this job runs on " \
+          "(#{error.class}: #{error.message}). Check that the runner's network can reach it."
+        )
+        Dependabot::ErrorDetails.new(error_type: "registry_unreachable", error_detail: { source: host })
       end
 
       sig { params(error: StandardError, dependency: T.nilable(Dependabot::Dependency)).void }

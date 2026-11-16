@@ -75,9 +75,14 @@ RSpec.describe Dependabot::Composer::FileUpdater do
       context "when no files have changed" do
         let(:requirements) { previous_requirements }
 
-        it "raises a helpful error" do
+        it "raises a helpful error with error report context attached" do
           expect { updater.updated_dependency_files }
-            .to raise_error("No files have changed!")
+            .to raise_error(RuntimeError, "No files have changed!") do |error|
+              expect(Dependabot::ErrorReportContext.build(error: error)).to eq(
+                "dependency-names" => ["monolog/monolog"],
+                "dependency-files" => ["composer.json"]
+              )
+            end
         end
       end
 

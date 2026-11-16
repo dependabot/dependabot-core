@@ -89,6 +89,39 @@ RSpec.describe Dependabot::Maven::FileUpdater do
 
     its(:length) { is_expected.to eq(1) }
 
+    context "when the requirements are unchanged" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "org.apache.httpcomponents:httpclient",
+          version: "4.5.3",
+          requirements: [{
+            file: "pom.xml",
+            requirement: "4.5.3",
+            groups: dependency_groups,
+            source: nil,
+            metadata: { packaging_type: "jar" }
+          }],
+          previous_requirements: [{
+            file: "pom.xml",
+            requirement: "4.5.3",
+            groups: dependency_groups,
+            source: nil,
+            metadata: { packaging_type: "jar" }
+          }],
+          package_manager: "maven"
+        )
+      end
+
+      it "raises with error report context attached" do
+        expect { updated_files }.to raise_error(RuntimeError, "No files changed!") do |error|
+          expect(Dependabot::ErrorReportContext.build(error: error)).to eq(
+            "dependency-names" => ["org.apache.httpcomponents:httpclient"],
+            "dependency-files" => ["pom.xml"]
+          )
+        end
+      end
+    end
+
     context "when updating a dependency declared in a .target file" do
       let(:target_body) { fixture("target-files", "example.target") }
       let(:target_file) do
