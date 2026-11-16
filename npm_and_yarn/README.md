@@ -18,12 +18,15 @@ Yarn and npm support for [`dependabot-core`][core-repo].
 ### Subprocess error diagnostics
 
 Failed npm, pnpm, and Yarn commands attach debug-only error context: an allowlisted
-`command-name`, the `package-manager-version`, and the registry `host`. Command
+`command-name`, an optional `package-manager-version`, and the configured registry `host`. Command
 arguments, credentials, full registry URLs, and subprocess output are not included.
 The original exception and its fingerprint are preserved.
 
-Version and registry probes use the same executable, working directory, and
-environment as the failed command, with a ten-second timeout per probe. Unavailable
-diagnostics are omitted and logged; failed version commands are not probed again.
+Error reporting does not run additional commands or fetch registry metadata.
+The version is included only when the failed command's Corepack selector already
+specifies a complete version; bare executables and major-only selectors omit it.
+The registry host comes from existing configuration, falling back to the public
+npm registry when none is configured. It does not necessarily identify the
+registry involved in the failure, particularly for scoped packages.
 
 [core-repo]: https://github.com/dependabot/dependabot-core

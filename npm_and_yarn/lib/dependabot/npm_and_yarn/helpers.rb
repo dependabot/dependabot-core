@@ -736,7 +736,7 @@ module Dependabot
         )
       rescue SharedHelpers::HelperSubprocessFailed => e
         unless npm_version_selector
-          SubprocessErrorContext.new(executable: "npm", env: env, registry: configured_registry).attach(e, command)
+          SubprocessErrorContext.new(executable: "npm", registry: configured_registry).attach(e, command)
         end
         raise
       end
@@ -847,7 +847,7 @@ module Dependabot
         )
       rescue SharedHelpers::HelperSubprocessFailed => e
         unless matching_major
-          SubprocessErrorContext.new(executable: "pnpm", env: env, registry: configured_registry).attach(e, command)
+          SubprocessErrorContext.new(executable: "pnpm", registry: configured_registry).attach(e, command)
         end
         raise
       end
@@ -916,7 +916,7 @@ module Dependabot
           env: env
         )
       rescue SharedHelpers::HelperSubprocessFailed => e
-        SubprocessErrorContext.new(executable: "yarn", env: env, registry: configured_registry).attach(e, command)
+        SubprocessErrorContext.new(executable: "yarn", registry: configured_registry).attach(e, command)
         raise
       end
 
@@ -1074,7 +1074,7 @@ module Dependabot
         )
       rescue SharedHelpers::HelperSubprocessFailed => e
         error_context = SubprocessErrorContext.new(
-          executable: "corepack #{name}", env: env, registry: configured_registry
+          executable: "corepack #{name}", registry: configured_registry
         )
         error_context.attach(e, command)
         raise
