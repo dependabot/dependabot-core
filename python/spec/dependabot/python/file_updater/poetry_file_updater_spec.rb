@@ -1118,6 +1118,32 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
     end
   end
 
+  describe "native content-hash result parsing" do
+    let(:helper_result) { {} }
+
+    before do
+      allow(updater).to receive(:updated_lockfile_content_for).and_return(lockfile.content)
+      allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+        .with(hash_including(function: "get_pyproject_hash")).and_return(helper_result)
+    end
+
+    it "rejects a malformed helper result instead of stringifying it into the lockfile" do
+      expect { updater.updated_dependency_files }.to raise_error(TypeError, /content hash/)
+    end
+
+    context "with the expected string result" do
+      let(:helper_result) { "new-content-hash" }
+
+      it "writes the helper's hash while preserving the original Python constraint" do
+        updated_lock = updater.updated_dependency_files.find { |file| file.name == "poetry.lock" }
+        metadata = TomlRB.parse(updated_lock.content).fetch("metadata")
+
+        expect(metadata.fetch("content-hash")).to eq("new-content-hash")
+        expect(metadata["python-versions"]).to eq(TomlRB.parse(lockfile.content).dig("metadata", "python-versions"))
+      end
+    end
+  end
+
   describe "hybrid Poetry v2 projects" do
     let(:dependency_files) { [pyproject] }
 
