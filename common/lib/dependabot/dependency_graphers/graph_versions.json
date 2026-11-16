@@ -22,12 +22,13 @@
         "python/lib/dependabot/python/dependency_grapher/*.rb",
         "python/lib/dependabot/python/file_parser.rb",
         "python/lib/dependabot/python/file_parser/*.rb",
+        "python/lib/dependabot/python/file_parser/poetry_lock/*.rb",
         "python/lib/dependabot/python/marker_evaluator.rb",
         "python/lib/dependabot/python/name_normaliser.rb",
         "python/lib/dependabot/python/pip_compile_file_matcher.rb",
         "python/lib/dependabot/python/requirement_references.rb"
       ],
-      "sources_sha256": "dbcf1f80556cfc1df1a6d444b858421d5ad93021414ec4305e11a4715bfeb88c"
+      "sources_sha256": "1f62851e5a165ca3fb3ef85322775b64fc5c4634eb5900fa6e4e4f8ff307d968"
     },
     "uv": {
       "graph_version": "1",
@@ -35,6 +36,7 @@
         "common/lib/dependabot/dependency_graphers/base.rb",
         "python/lib/dependabot/python/file_parser/pep_dependency.rb",
         "python/lib/dependabot/python/file_parser/poetry_lock.rb",
+        "python/lib/dependabot/python/file_parser/poetry_lock/*.rb",
         "python/lib/dependabot/python/file_parser/pyproject_document.rb",
         "python/lib/dependabot/python/marker_evaluator.rb",
         "uv/helpers/lib/parser.py",
@@ -48,7 +50,7 @@
         "uv/lib/dependabot/uv/requirements_file_matcher.rb",
         "uv/lib/dependabot/uv/sources_table.rb"
       ],
-      "sources_sha256": "0abcbb0181bec0664f25ceb375566fed60cc9786bf4243ed3d7faa32375845c2"
+      "sources_sha256": "aea4a12a126941c1f0bbee91383258cbd6f7e713952503b53767a5eb1815946d"
     }
   }
 }
