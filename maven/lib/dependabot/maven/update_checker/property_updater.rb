@@ -310,17 +310,31 @@ module Dependabot
           return false if source.nil? || source == property_source
           return false unless dependency_files.any? { |f| f.name == source }
 
-          selected_value = property_value_at(property_requirement.file)
+          selected_value = linkable_selected_value
           return false if selected_value.nil?
-          # A suffixed use in the selected module also writes a suffixed value, so don't link any module then.
-          return false unless plain_property_uses?(selected_property_requirements, selected_value)
 
           # Skip the module if any declaration there adds to the value (e.g.
           # `${prop}-ext`): the property would be written with that version.
           # Only the selected module may block the update; skip a linked module that can't be updated.
-          plain_property_uses?(requirements, selected_value) &&
+          raisable_linked_requirements?(requirements) &&
+            plain_property_uses?(requirements, selected_value) &&
             only_dependency_property_references?(source) &&
             parsed_dependencies.all? { |dep| linked_dependency_updatable?(dep, source) }
+        end
+
+        # A suffixed use in the selected module also writes a suffixed value, so don't link any module then.
+        sig { returns(T.nilable(String)) }
+        def linkable_selected_value
+          selected_value = property_value_at(property_requirement.file)
+          return if selected_value.nil?
+
+          selected_value if plain_property_uses?(selected_property_requirements, selected_value)
+        end
+
+        # Outside a security update, a property that only transitive overrides use is never raised.
+        sig { params(requirements: T::Array[Dependabot::DependencyRequirement]).returns(T::Boolean) }
+        def raisable_linked_requirements?(requirements)
+          @security_update || requirements.any? { |requirement| !TransitiveOverrides.override?(requirement) }
         end
 
         # Every `${prop}` resolved from the source must be a parsed dependency version. Other uses (e.g.
@@ -340,14 +354,17 @@ module Dependabot
         end
 
         # Counts declarations, since identical requirements (e.g. the same dependency in
-        # dependencyManagement and dependencies) are merged when parsed.
+        # dependencyManagement and dependencies) are merged when parsed. Requirements that
+        # differ only in metadata the XML match ignores (e.g. the override tag) find the same
+        # declarations, so they're counted once.
         sig { params(file: Dependabot::DependencyFile).returns(Integer) }
         def property_declaration_count(file)
           parsed_dependencies.sum do |dep|
-            dep.requirements.sum do |requirement|
-              next 0 unless requirement.file == file.name
-              next 0 unless requirement.metadata_string("property_name") == property_name
-
+            requirements = dep.requirements.select do |requirement|
+              requirement.file == file.name && requirement.metadata_string("property_name") == property_name
+            end
+            requirements.uniq { |requirement| Maven::FileUpdater::DeclarationFinder.match_key(requirement) }
+                        .sum do |requirement|
               Maven::FileUpdater::DeclarationFinder.new(
                 dependency: dep,
                 declaring_requirement: requirement,
@@ -365,30 +382,76 @@ module Dependabot
           return true if requirements.empty?
           return false unless property_only_dependency?(dep)
 
-          # Each POM that inherits the property may resolve the dependency from different repositories.
-          requirements.all? { |requirement| linked_release_listed?(dep, requirement) }
+          # Each POM that inherits the property may resolve the dependency from different repositories,
+          # including versionless consumers that take the version from the source's dependencyManagement.
+          new_version = linked_new_version(dep, requirements)
+          return false if new_version.nil?
+
+          (requirements + versionless_consumers(dep, source)).all? do |requirement|
+            linked_release_listed?(dep, requirement, new_version)
+          end
         rescue Dependabot::DependabotError => e
           Dependabot.logger.info("Not updating #{property_name} in #{source}: #{e.message}")
           false
         end
 
-        # Unlike the selected module, a linked module needs its repositories to list the new version.
-        sig { params(dep: Dependabot::Dependency, requirement: Dependabot::DependencyRequirement).returns(T::Boolean) }
-        def linked_release_listed?(dep, requirement)
-          new_version = declared_version_string(dep, requirement)&.gsub("${#{property_name}}", target_version.to_s)
-          return false if new_version.nil? || includes_property_reference?(new_version)
+        sig do
+          params(
+            dep: Dependabot::Dependency,
+            requirements: T::Array[Dependabot::DependencyRequirement]
+          ).returns(T.nilable(String))
+        end
+        def linked_new_version(dep, requirements)
+          new_versions = requirements.map do |requirement|
+            declared_version_string(dep, requirement)&.gsub("${#{property_name}}", target_version.to_s)
+          end
+          return if new_versions.any? { |version| version.nil? || includes_property_reference?(version) }
 
+          new_versions.first
+        end
+
+        sig { params(dep: Dependabot::Dependency, source: String).returns(T::Array[Dependabot::DependencyRequirement]) }
+        def versionless_consumers(dep, source)
+          dep.requirements.select do |requirement|
+            next false unless requirement.requirement.nil? && requirement.file
+
+            property_source_for(T.must(requirement.file)) == source
+          end
+        end
+
+        sig { params(file_name: String).returns(T.nilable(String)) }
+        def property_source_for(file_name)
+          callsite_pom = dependency_files.find { |f| f.name == file_name }
+          return unless callsite_pom
+
+          source = property_value_finder.property_details(property_name: property_name, callsite_pom: callsite_pom)
+                                        &.fetch(:file)
+          source.is_a?(String) ? source : nil
+        end
+
+        # Unlike the selected module, a linked module needs its repositories to list the new version.
+        sig do
+          params(
+            dep: Dependabot::Dependency,
+            requirement: Dependabot::DependencyRequirement,
+            new_version: String
+          ).returns(T::Boolean)
+        end
+        def linked_release_listed?(dep, requirement, new_version)
           module_dependency = Dependabot::Dependency.new(
             name: dep.name, version: dep.version, requirements: [requirement], package_manager: dep.package_manager
           )
           release_versions(module_dependency, cache_key: "#{dep.name}@#{requirement.file}").include?(new_version)
         end
 
-        # A dependency only reached through a linked module must not change declarations that don't use the property.
+        # A dependency only reached through a linked module must not change declarations that don't use the
+        # property. Versionless consumers have nothing to rewrite, so they don't count.
         sig { params(dep: Dependabot::Dependency).returns(T::Boolean) }
         def property_only_dependency?(dep)
           dep.requirements.any? { |req| same_property_source?(req) } ||
-            dep.requirements.all? { |req| req.metadata_string("property_name") == property_name }
+            dep.requirements.all? do |req|
+              req.requirement.nil? || req.metadata_string("property_name") == property_name
+            end
         end
 
         sig { returns(T::Array[Dependabot::DependencyRequirement]) }

@@ -388,9 +388,9 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
 
       context "when another module uses the property for a dependency without the target version" do
         let(:module_b_body) do
-          # Keeps only the first declaration, renamed to an unrelated library
-          super().sub(%r{(</dependency>)\s*<dependency>.*?</dependency>}m, '\\1')
-                 .sub("<artifactId>lib-core</artifactId>", "<artifactId>other</artifactId>")
+          # Keeps only the first managed and consumed dependency, renamed to an unrelated library
+          super().gsub(%r{(</dependency>)\s*<dependency>.*?</dependency>}m, '\\1')
+                 .gsub("<artifactId>lib-core</artifactId>", "<artifactId>other</artifactId>")
         end
 
         before do
@@ -436,9 +436,9 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
 
       context "when the version lookup fails for a dependency in another module" do
         let(:module_b_body) do
-          # Keeps only the first declaration, renamed to an unrelated library from a private repository
-          super().sub(%r{(</dependency>)\s*<dependency>.*?</dependency>}m, '\\1')
-                 .sub("<artifactId>lib-core</artifactId>", "<artifactId>other</artifactId>")
+          # Keeps only the first managed and consumed dependency, renamed to a library from a private repository
+          super().gsub(%r{(</dependency>)\s*<dependency>.*?</dependency>}m, '\\1')
+                 .gsub("<artifactId>lib-core</artifactId>", "<artifactId>other</artifactId>")
                  .sub(
                    "  <dependencyManagement>",
                    "  <repositories>\n    <repository>\n      <id>private</id>\n" \
@@ -555,13 +555,86 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
           expect(updater.update_possible?).to be(true)
           expect(updated_files.map(&:name)).to eq(["a/pom.xml"])
         end
+
+        context "when the child takes the version from the module's dependencyManagement" do
+          let(:module_b_child_body) { super().sub("      <version>${lib.version}</version>\n", "") }
+
+          it "leaves that module unchanged" do
+            expect(updater.update_possible?).to be(true)
+            expect(updated_files.map(&:name)).to eq(["a/pom.xml"])
+          end
+        end
+      end
+
+      context "when another module only manages the dependencies as transitive overrides" do
+        let(:module_b_body) { super().sub(%r{\n  <dependencies>.*?</dependencies>}m, "") }
+
+        it "leaves that module unchanged" do
+          expect(updater.update_possible?).to be(true)
+          expect(updated_files.map(&:name)).to eq(["a/pom.xml"])
+        end
+      end
+
+      context "when a dependency only in another module also has a versionless consumer" do
+        let(:module_b_body) do
+          super().gsub("<artifactId>lib-core</artifactId>", "<artifactId>other</artifactId>")
+        end
+
+        before do
+          stub_request(:get, "https://repo.maven.apache.org/maven2/com/example/other/maven-metadata.xml")
+            .to_return(
+              body: "<metadata><versioning><versions><version>1.0.0</version>" \
+                    "<version>1.0.1</version></versions></versioning></metadata>"
+            )
+        end
+
+        it "updates the property in every module that defines it" do
+          expect(updater.update_possible?).to be(true)
+
+          files = updated_files
+          expect(files.map(&:name)).to contain_exactly("a/pom.xml", "b/pom.xml")
+          files.each { |file| expect(file.content).to include("<lib.version>1.0.1</lib.version>") }
+        end
+      end
+
+      context "when another module uses the property for a dependency it also manages as an override" do
+        let(:tool_dependency) do
+          "<dependency>\n<groupId>com.example</groupId>\n<artifactId>lib-tool</artifactId>\n" \
+            "<version>${lib.version}</version>\n</dependency>\n"
+        end
+        let(:module_b_body) do
+          super()
+            .sub(
+              "  <dependencyManagement>",
+              "  <build>\n<plugins>\n<plugin>\n<groupId>com.example</groupId>\n<artifactId>some-plugin</artifactId>\n" \
+              "<version>1.0</version>\n<dependencies>\n#{tool_dependency}</dependencies>\n</plugin>\n</plugins>\n" \
+              "</build>\n  <dependencyManagement>"
+            )
+            .sub(
+              "    </dependencies>\n  </dependencyManagement>",
+              "#{tool_dependency}    </dependencies>\n  </dependencyManagement>"
+            )
+        end
+
+        before do
+          stub_request(:get, "https://repo.maven.apache.org/maven2/com/example/lib-tool/maven-metadata.xml")
+            .to_return(
+              body: "<metadata><versioning><versions><version>1.0.0</version>" \
+                    "<version>1.0.1</version></versions></versioning></metadata>"
+            )
+        end
+
+        it "updates the property in every module that defines it" do
+          expect(updater.update_possible?).to be(true)
+          expect(updated_files.map(&:name)).to contain_exactly("a/pom.xml", "b/pom.xml")
+        end
       end
 
       context "when no repository of another module lists any version of its dependency" do
         let(:module_b_body) do
-          # Keeps only the first declaration, renamed to an unrelated library
-          super().sub(%r{(</dependency>)\s*<dependency>.*?</dependency>}m, '\\1')
-                 .sub("<artifactId>lib-core</artifactId>", "<artifactId>other</artifactId>")
+          # Keeps only the first managed and consumed dependency, renamed to an unrelated library
+          super().gsub(%r{(</dependency>)\s*<dependency>.*?</dependency>}m, '\\1')
+                 .gsub("<artifactId>lib-core</artifactId>", "<artifactId>other</artifactId>")
         end
 
         before do
@@ -591,16 +664,16 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
 
       context "when a dependency only in another module is also declared with a literal version" do
         let(:module_b_body) do
-          # Keeps only the first declaration, renamed to an unrelated library
-          super().sub(%r{(</dependency>)\s*<dependency>.*?</dependency>}m, '\\1')
-                 .sub("<artifactId>lib-core</artifactId>", "<artifactId>other</artifactId>")
+          # Keeps only the first managed and consumed dependency, renamed to an unrelated library
+          super().gsub(%r{(</dependency>)\s*<dependency>.*?</dependency>}m, '\\1')
+                 .gsub("<artifactId>lib-core</artifactId>", "<artifactId>other</artifactId>")
         end
         let(:module_c_body) do
           fixture("poms", "shared_property_module_pom.xml")
             .sub("<artifactId>module-a</artifactId>", "<artifactId>module-c</artifactId>")
             .sub(%r{\s*<properties>.*?</properties>}m, "")
-            .sub(%r{(</dependency>)\s*<dependency>.*?</dependency>}m, '\\1')
-            .sub("<artifactId>lib-core</artifactId>", "<artifactId>other</artifactId>")
+            .gsub(%r{(</dependency>)\s*<dependency>.*?</dependency>}m, '\\1')
+            .gsub("<artifactId>lib-core</artifactId>", "<artifactId>other</artifactId>")
             .sub("${lib.version}", "2.0.0")
         end
         let(:dependency_files) do
@@ -623,9 +696,9 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
 
       context "when a dependency only in another module is first declared in a module that isn't updated" do
         let(:module_b_body) do
-          # Keeps only the first declaration, renamed to an unrelated library
-          super().sub(%r{(</dependency>)\s*<dependency>.*?</dependency>}m, '\\1')
-                 .sub("<artifactId>lib-core</artifactId>", "<artifactId>other</artifactId>")
+          # Keeps only the first managed and consumed dependency, renamed to an unrelated library
+          super().gsub(%r{(</dependency>)\s*<dependency>.*?</dependency>}m, '\\1')
+                 .gsub("<artifactId>lib-core</artifactId>", "<artifactId>other</artifactId>")
         end
         let(:module_c_body) do
           module_b_body
@@ -666,7 +739,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
           fixture("poms", "shared_property_module_pom.xml")
             .sub("<artifactId>module-a</artifactId>", "<artifactId>module-c</artifactId>")
             .sub(%r{\s*<properties>.*?</properties>}m, "")
-            .sub(%r{(</dependency>)\s*<dependency>.*?</dependency>}m, '\\1')
+            .gsub(%r{(</dependency>)\s*<dependency>.*?</dependency>}m, '\\1')
             .sub("${lib.version}", "0.9.0")
         end
         let(:dependency_files) do
