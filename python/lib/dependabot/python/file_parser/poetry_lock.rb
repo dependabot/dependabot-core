@@ -14,6 +14,8 @@ module Dependabot
       class PoetryLock
         extend T::Sig
 
+        require_relative "poetry_lock/record"
+
         class Package < T::ImmutableStruct
           extend T::Sig
 
@@ -23,23 +25,7 @@ module Dependabot
 
           sig { params(value: Object).returns(Package) }
           def self.from_object(value)
-            hash = PyprojectValueParser.object_hash(value, "Poetry lock package")
-            source = hash["source"]
-            source_hash =
-              if source.nil?
-                nil
-              else
-                PyprojectValueParser.object_hash(source, "Poetry lock package source")
-              end
-
-            new(
-              name: PyprojectValueParser.string(hash["name"], "Poetry lock package name"),
-              version: PyprojectValueParser.string(hash["version"], "Poetry lock package version"),
-              source_type: PyprojectValueParser.optional_string(
-                source_hash&.[]("type"),
-                "Poetry lock package source type"
-              )
-            )
+            Record.new(value).to_package
           end
 
           sig { returns(T::Hash[Symbol, T.nilable(String)]) }
@@ -52,42 +38,90 @@ module Dependabot
           end
         end
 
-        sig { returns(T::Array[Package]) }
-        attr_reader :packages
-
-        sig { params(packages: T::Array[Package]).void }
-        def initialize(packages)
-          @packages = packages
+        sig { params(data: PyprojectValueParser::ObjectHash).void }
+        def initialize(data)
+          @data = data
+          @packages = T.let(nil, T.nilable(T::Array[Package]))
+          @records = T.let(nil, T.nilable(T::Array[Record]))
         end
 
         sig { params(file: Dependabot::DependencyFile).returns(PoetryLock) }
         def self.from_file(file)
-          parsed = T.cast(TomlRB.parse(T.must(file.content)), Object)
-          document = PyprojectValueParser.object_hash(parsed, "poetry.lock")
-          value = document["package"]
-          packages =
-            if value.nil?
-              []
-            else
-              PyprojectValueParser.array(value, "poetry.lock package").map do |package|
-                Package.from_object(package)
-              end
-            end
-          new(packages)
+          document = from_content(T.must(file.content))
+          document.packages
+          document
         rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
           raise Dependabot::DependencyFileNotParseable, file.path
+        end
+
+        sig { params(content: String).returns(PoetryLock) }
+        def self.from_content(content)
+          parsed = T.cast(TomlRB.parse(content), Object)
+          new(PyprojectValueParser.object_hash(parsed, "poetry.lock"))
+        end
+
+        sig { returns(T::Array[Package]) }
+        def packages
+          @packages ||= records.map(&:to_package)
+        end
+
+        sig do
+          params(name: String, _normalizer: T.proc.params(name: String).returns(String)).returns(T.nilable(Record))
+        end
+        def record_for(name, &_normalizer)
+          records.find do |record|
+            record_name = record.name
+            record_name && yield(record_name) == name
+          end
+        end
+
+        sig do
+          params(name: String, _normalizer: T.proc.params(name: String).returns(String)).returns(T::Array[Record])
+        end
+        def records_for(name, &_normalizer)
+          records.select do |record|
+            record_name = record.name
+            record_name && yield(record_name) == name
+          end
         end
 
         sig do
           params(
             name: String,
-            _normalizer: T.proc.params(name: String).returns(String)
+            normalizer: T.proc.params(name: String).returns(String)
           )
             .returns(T.nilable(String))
         end
-        def version_for(name, &_normalizer)
-          normalized_name = yield(name)
-          packages.find { |package| yield(package.name) == normalized_name }&.version
+        def version_for(name, &normalizer)
+          record_for(yield(name), &normalizer)&.version
+        end
+
+        sig { returns(String) }
+        def python_versions
+          PyprojectValueParser.string(metadata["python-versions"], "poetry.lock metadata.python-versions")
+        end
+
+        sig { returns(String) }
+        def content_hash
+          PyprojectValueParser.string(metadata["content-hash"], "poetry.lock metadata.content-hash")
+        end
+
+        private
+
+        sig { returns(T::Array[Record]) }
+        def records
+          @records ||= if @data["package"].nil?
+                         []
+                       else
+                         PyprojectValueParser.array(@data["package"], "poetry.lock package").map do |entry|
+                           Record.new(entry)
+                         end
+                       end
+        end
+
+        sig { returns(PyprojectValueParser::ObjectHash) }
+        def metadata
+          PyprojectValueParser.object_hash(@data["metadata"], "poetry.lock metadata")
         end
       end
     end
