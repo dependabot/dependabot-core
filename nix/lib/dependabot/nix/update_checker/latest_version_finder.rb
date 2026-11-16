@@ -75,7 +75,7 @@ module Dependabot
               releases: Package::PackageDetailsFetcher.new(
                 dependency: dependency,
                 credentials: credentials
-              ).available_versions || []
+              ).available_versions
             ),
             T.nilable(Dependabot::Package::PackageDetails)
           )
