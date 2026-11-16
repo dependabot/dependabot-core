@@ -374,6 +374,27 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       end
     end
 
+    context "when the release dates include a time" do
+      let(:upload_tag_with_detail) do
+        <<~TAGS
+          v1.0.0 2023-01-01 13:11:08 +0000
+          v1.1.0 2023-02-01 16:49:16 -0700
+        TAGS
+      end
+
+      before do
+        allow(checker).to receive(:upload_tag_with_detail).and_return(upload_tag_with_detail)
+      end
+
+      it "keeps the time and the offset, so a cooldown counts from the time of the release" do
+        result = checker.refs_for_tag_with_detail
+
+        expect(result.map(&:tag)).to eq(%w(v1.0.0 v1.1.0))
+        expect(result.map(&:release_date)).to eq(["2023-01-01 13:11:08 +0000", "2023-02-01 16:49:16 -0700"])
+        expect(Time.parse(result.last.release_date)).to eq(Time.utc(2023, 2, 1, 23, 49, 16))
+      end
+    end
+
     context "when upload_tag_with_detail is empty" do
       before do
         allow(checker).to receive(:upload_tag_with_detail).and_return("")
@@ -439,7 +460,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
         let(:url) { "file://#{source_path}" }
         let(:partial_clone_prefix) { "git clone --bare --filter\\=tree:0 " }
         let(:full_clone_prefix) { "git clone --bare file://" }
-        let(:expected_tags) { "v1.0.0 2024-01-02\nv1.1.0 2024-03-04" }
+        let(:expected_tags) { "v1.0.0 2024-01-02 03:04:05 +0000\nv1.1.0 2024-03-04 03:04:05 +0000" }
 
         def git(*args, env: {})
           git_env = {

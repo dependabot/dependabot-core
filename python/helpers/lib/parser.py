@@ -171,20 +171,24 @@ def parse_pep621_pep735_dependencies(pyproject_path):
     return json.dumps({"result": dependencies})
 
 
-def parse_requirements(directory):
-    # Parse the requirements.txt
+def parse_requirements(directory, root_files=None):
+    # Without root_files, every requirements file on disk is parsed as a root.
+    # With them, the remaining files are only read through `-r`/`-c` lines,
+    # as pip would.
     requirement_packages = []
-    requirement_files = glob.glob(os.path.join(directory, '*.txt')) \
-        + glob.glob(os.path.join(directory, '**', '*.txt'))
-
-    pip_compile_files = glob.glob(os.path.join(directory, '*.in')) \
-        + glob.glob(os.path.join(directory, '**', '*.in'))
+    if root_files is None:
+        reqs_files = glob.glob(os.path.join(directory, '*.txt')) \
+            + glob.glob(os.path.join(directory, '**', '*.txt')) \
+            + glob.glob(os.path.join(directory, '*.in')) \
+            + glob.glob(os.path.join(directory, '**', '*.in'))
+    else:
+        reqs_files = [os.path.join(directory, f) for f in root_files]
 
     def version_from_install_req(install_req):
         if install_req.is_pinned:
             return next(iter(install_req.specifier)).version
 
-    for reqs_file in requirement_files + pip_compile_files:
+    for reqs_file in reqs_files:
         try:
             requirements = pip._internal.req.req_file.parse_requirements(
                 reqs_file,
@@ -214,7 +218,8 @@ def parse_requirements(directory):
                     "markers": str(install_req.markers) or None,
                     "file": rel_path,
                     "requirement": str(install_req.specifier) or None,
-                    "extras": sorted(list(install_req.extras))
+                    "extras": sorted(list(install_req.extras)),
+                    "constraint": parsed_req.constraint
                 })
         except Exception as e:
             print(json.dumps({"error": repr(e)}))
