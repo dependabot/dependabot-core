@@ -28,5 +28,7 @@ specifies a complete version; bare executables and major-only selectors omit it.
 The registry host comes from existing configuration, falling back to the public
 npm registry when none is configured. It does not necessarily identify the
 registry involved in the failure, particularly for scoped packages.
+Registry lookup type and YAML parsing failures are logged by exception class
+without replacing the original command error.
 
 [core-repo]: https://github.com/dependabot/dependabot-core

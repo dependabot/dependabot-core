@@ -63,6 +63,20 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).once
   end
 
+  sig { params(lookup_error_class: String).void }
+  def expect_preserved_yarn_error(lookup_error_class)
+    expect { described_class.run_yarn_command(command, env: env) }.to raise_error do |raised|
+      expect(raised).to equal(error)
+      expect(error.sentry_context[:fingerprint]).to eq(["unchanged"])
+      expect(Dependabot::ErrorReportContext.build(error: raised)).to include(
+        "helper-error-class" => "HelperSubprocessFailed", "command-name" => "yarn update"
+      )
+    end
+    expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).once
+    expect(Dependabot.logger).to have_received(:warn)
+      .with("Could not resolve registry for error context (#{lookup_error_class})")
+  end
+
   it "omits the unknown local npm version without running another command" do
     expect_safe_context("npm", "npm")
   end
@@ -148,6 +162,41 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
     expect { described_class.run_npm_command(command, env: env) }.to raise_error do |raised|
       expect(Dependabot::ErrorReportContext.build(error: raised).to_s).not_to include("secret")
+    end
+  end
+
+  context "when Yarn registry configuration is malformed" do
+    sig { returns(String) }
+    let(:content) { "npmScopes: null\n" }
+
+    before do
+      described_class.dependency_files = [Dependabot::DependencyFile.new(name: ".yarnrc.yml", content: content)]
+      allow(described_class).to receive(:setup_yarn_berry)
+      allow(Dependabot.logger).to receive(:warn)
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with("yarn #{command}", any_args).and_raise(error)
+    end
+
+    it "preserves the original Yarn error when npmScopes is null" do
+      expect_preserved_yarn_error("NoMethodError")
+    end
+
+    context "with a non-string registry" do
+      sig { returns(String) }
+      let(:content) { "npmRegistryServer: 123\n" }
+
+      it "preserves the original Yarn error" do
+        expect_preserved_yarn_error("TypeError")
+      end
+    end
+
+    context "with a disallowed YAML type" do
+      sig { returns(String) }
+      let(:content) { "npmScopes: !ruby/object:Object {}\n" }
+
+      it "preserves the original Yarn error" do
+        expect_preserved_yarn_error("Psych::DisallowedClass")
+      end
     end
   end
 

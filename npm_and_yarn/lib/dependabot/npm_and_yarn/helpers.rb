@@ -1163,6 +1163,9 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       def self.configured_registry
         build_registry_helper&.registry_url
+      rescue NoMethodError, TypeError, Psych::Exception => e
+        Dependabot.logger.warn("Could not resolve registry for error context (#{e.class})")
+        nil
       end
 
       sig do
