@@ -31,11 +31,12 @@ module Dependabot
         ErrorReportContext.attach(error, { command_name: command_name(command) })
         return if %w(-v --version).include?(command.strip)
 
+        registry = @registry || (RegistryHelper::DEFAULT_NPM_REGISTRY unless @package_manager == "yarn")
         ErrorReportContext.attach(
           error,
           {
             package_manager_version: precise_known_version,
-            host: ErrorReportContext.host_for(@registry || RegistryHelper::DEFAULT_NPM_REGISTRY)
+            host: registry && ErrorReportContext.host_for(registry)
           }
         )
       end

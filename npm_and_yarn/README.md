@@ -25,8 +25,10 @@ The original exception and its fingerprint are preserved.
 Error reporting does not run additional commands or fetch registry metadata.
 The version is included only when the failed command's Corepack selector already
 specifies a complete version; bare executables and major-only selectors omit it.
-The registry host comes from existing configuration, falling back to the public
-npm registry when none is configured. It does not necessarily identify the
+For npm and pnpm, the host comes from existing configuration, falling back to
+the public npm registry. For a known Yarn Berry selection, it comes from the
+Yarn registry environment override or `.yarnrc.yml`; it is omitted when these
+cannot be determined. A configured host does not necessarily identify the
 registry involved in the failure, particularly for scoped packages.
 Registry lookup type and YAML parsing failures are logged by exception class
 without replacing the original command error.
