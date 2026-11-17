@@ -122,7 +122,7 @@ module Dependabot
       sig { returns(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]) }
       def lockfiles
         {
-          npm: package_lock || shrinkwrap,
+          npm: shrinkwrap || package_lock,
           yarn: yarn_lock,
           pnpm: pnpm_lock
         }
@@ -153,12 +153,11 @@ module Dependabot
         )
       end
 
+      # Only the source-root shrinkwrap shadows the root package-lock.json; nested (e.g. Lerna package) ones don't
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def shrinkwrap
         @shrinkwrap ||= T.let(
-          dependency_files.find do |f|
-            f.name.end_with?(NpmPackageManager::SHRINKWRAP_LOCKFILE_NAME)
-          end,
+          dependency_files.find { |f| f.name == NpmPackageManager::SHRINKWRAP_LOCKFILE_NAME },
           T.nilable(Dependabot::DependencyFile)
         )
       end
@@ -327,7 +326,7 @@ module Dependabot
 
         return if lockfile_details && !version
         return if ignore_requirement?(requirement)
-        return if workspace_package_names.include?(name)
+        return if workspace_package_name?(name, file)
 
         # TODO: Handle aliased packages:
         # https://github.com/dependabot/dependabot-core/pull/1115
@@ -459,14 +458,33 @@ module Dependabot
         match[1]
       end
 
-      sig { returns(T::Array[String]) }
-      def workspace_package_names
-        @workspace_package_names ||= T.let(
-          package_files.filter_map do |f|
-            Dependabot::Package::NpmPackageJson.from_file(f).name
+      sig { returns(T::Hash[String, String]) }
+      def workspace_package_names_by_file
+        @workspace_package_names_by_file ||= T.let(
+          package_files.each_with_object({}) do |f, names|
+            name = Dependabot::Package::NpmPackageJson.from_file(f).name
+            names[f.name] = name if name
           end,
-          T.nilable(T::Array[String])
+          T.nilable(T::Hash[String, String])
         )
+      end
+
+      # A dependency named like a package in the workspace refers to that package, which is not on the registry.
+      # A package with the name of one of its own dependencies cannot be referring to itself: npm installs that
+      # dependency from the registry like any other.
+      sig { params(name: String, file: Dependabot::DependencyFile).returns(T::Boolean) }
+      def workspace_package_name?(name, file)
+        workspace_package_names_by_file.any? do |file_name, package_name|
+          next false unless package_name == name
+          next true unless file_name == file.name
+
+          !npm_project?
+        end
+      end
+
+      sig { returns(T::Boolean) }
+      def npm_project?
+        package_manager_helper.package_manager.name == NpmPackageManager::NAME
       end
 
       sig do

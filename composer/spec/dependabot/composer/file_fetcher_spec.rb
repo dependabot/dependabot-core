@@ -1,24 +1,35 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/composer/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Composer::FileFetcher do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(T::Array[Dependabot::Credential]) }
   let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
+  sig { returns(String) }
   let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+  sig { returns(String) }
   let(:directory) { "/" }
+  sig { returns(Dependabot::Composer::FileFetcher) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:file_fetcher_instance) do
     described_class.new(source: source, credentials: credentials)
   end
+  sig { returns(Dependabot::Source) }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -26,6 +37,7 @@ RSpec.describe Dependabot::Composer::FileFetcher do
       directory: directory
     )
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
@@ -411,11 +423,16 @@ RSpec.describe Dependabot::Composer::FileFetcher do
     end
 
     context "with a directory" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(String) }
       let(:directory) { "my/app/" }
+      sig { returns(String) }
       let(:base_url) do
         "https://api.github.com/repos/gocardless/bump/contents/"
       end
+      sig { returns(String) }
       let(:url) { base_url + "my/app/" }
+      # rubocop:enable RSpec/ScatteredLet
 
       before do
         stub_request(:get, base_url + "my/app?ref=sha")

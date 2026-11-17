@@ -163,6 +163,29 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       end
     end
 
+    context "when the file updater needs the home host" do
+      let(:change_source) { lead_dependency_change_source }
+      let(:source) do
+        Dependabot::Source.new(
+          provider: "github",
+          repo: "gocardless/bump",
+          directory: "/.",
+          hostname: "tenant.ghe.com",
+          api_endpoint: "https://api.tenant.ghe.com/"
+        )
+      end
+
+      before { stub_file_updater(updated_dependency_files: dependency_files.reject(&:support_file?)) }
+
+      it "passes the source hostname in options" do
+        create_change
+
+        expect(file_updater_class).to have_received(:new).with(
+          hash_including(options: hash_including(source_hostname: "tenant.ghe.com"))
+        )
+      end
+    end
+
     context "when the source is a lead dependency" do
       let(:change_source) { lead_dependency_change_source }
 

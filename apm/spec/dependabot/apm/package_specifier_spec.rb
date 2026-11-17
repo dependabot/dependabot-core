@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only raw fixture or class-scope generated examples.
+
 require "spec_helper"
 require "dependabot/apm/package_specifier"
 
@@ -107,16 +109,15 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
     end
 
     context "with an explicit URL whose host is mixed case" do
-      let(:raw) { "https://GitHub.com/org/repo/skills/review#v1.0.0" }
+      let(:raw) { "https://GitHub.com/org/repo#v1.0.0" }
 
-      it "canonicalises the host to lowercase and treats it as a GitHub virtual package" do
+      it "canonicalises the host to lowercase" do
         expect(spec.host).to eq("github.com")
         expect(spec.owner).to eq("org")
         expect(spec.repo).to eq("repo")
-        expect(spec.sub_path).to eq("skills/review")
         expect(spec.ref).to eq("v1.0.0")
         expect(spec.git_url).to eq("https://github.com/org/repo")
-        expect(spec.name).to eq("org/repo/skills/review")
+        expect(spec.name).to eq("org/repo")
       end
     end
 
@@ -240,20 +241,27 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
       end
     end
 
-    context "with a virtual sub-path on a custom-port GitHub host" do
-      let(:raw) { "https://github.com:8443/org/repo/skills/review#v1.0.0" }
+    context "with a virtual sub-path embedded in an explicit GitHub URL" do
+      # APM only infers virtual packages from shorthand (or the object form's
+      # `path:`), rejecting a primitive path embedded in a clone URL.
+      %w(
+        https://github.com/org/repo/skills/review#v1.0.0
+        https://github.com:8443/org/repo/skills/review#v1.0.0
+        git@github.com:org/repo/skills/review.git#v1.0.0
+        ssh://git@github.com/org/repo/skills/review#v1.0.0
+      ).each do |url|
+        context "when declared as #{url}" do
+          let(:raw) { url }
 
-      it "classifies GitHub by hostname, splitting the virtual path and keeping the port" do
-        expect(spec.host).to eq("github.com:8443")
-        expect(spec.owner).to eq("org")
-        expect(spec.repo).to eq("repo")
-        expect(spec.sub_path).to eq("skills/review")
-        expect(spec.git_url).to eq("https://github.com:8443/org/repo")
-        # A non-default port is part of APM's identity, so even on the default
-        # host the authority is prefixed (with the virtual path appended),
-        # keeping `:8443` and `:9443` declarations as distinct dependencies.
-        expect(spec.name).to eq("github.com:8443/org/repo/skills/review")
+          it { is_expected.to be_nil }
+        end
       end
+    end
+
+    context "with a path after a .git segment in an explicit URL" do
+      let(:raw) { "https://gitlab.com/group/repo.git/skills/review#v1.0.0" }
+
+      it { is_expected.to be_nil }
     end
 
     context "with an HTTP URL" do
@@ -441,6 +449,27 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
       expect(described_class.shorthand?("./local")).to be(false)
       expect(described_class.shorthand?("   ")).to be(false)
       expect(described_class.shorthand?({ "git" => "x" })).to be(false)
+    end
+  end
+
+  describe "#lockfile_key" do
+    def lockfile_key(raw, default_host: "github.com")
+      T.must(described_class.parse(raw, default_host: default_host)).lockfile_key
+    end
+
+    it "uses the lowercased owner/repo for GitHub packages" do
+      expect(lockfile_key("Microsoft/Edge-AI#main")).to eq("microsoft/edge-ai")
+    end
+
+    it "prefixes other hosts and keeps their casing, ignoring the default host and port" do
+      expect(lockfile_key("Acme/Prompts#main", default_host: "git.corp.example"))
+        .to eq("git.corp.example/Acme/Prompts")
+      expect(lockfile_key("https://git.corp.example:8443/Acme/Prompts.git#main"))
+        .to eq("git.corp.example/Acme/Prompts")
+    end
+
+    it "appends the virtual path, separated from the repository" do
+      expect(lockfile_key("org/mono/skills/review#main")).to eq("org/mono//skills/review")
     end
   end
 end

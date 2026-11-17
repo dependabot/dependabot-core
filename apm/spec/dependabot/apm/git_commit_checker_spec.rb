@@ -1,14 +1,23 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/apm/git_commit_checker"
 require "dependabot/apm/version"
 
 RSpec.describe Dependabot::Apm::GitCommitChecker do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(T::Array[Dependabot::Credential]) }
+  let(:credentials) { github_credentials.map { |credential| Dependabot::Credential.new(credential) } }
+  sig { returns(String) }
   let(:dependency_name) { "microsoft/edge-ai" }
+  sig { returns(String) }
   let(:reference) { "v1.0.0" }
+  sig { returns(Dependabot::Dependency) }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -27,19 +36,23 @@ RSpec.describe Dependabot::Apm::GitCommitChecker do
       package_manager: "apm"
     )
   end
+  sig { returns(Dependabot::Apm::GitCommitChecker) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:checker) do
     described_class.new(
       dependency: dependency,
-      credentials: github_credentials,
+      credentials: credentials,
       ignored_versions: [],
       raise_on_ignored: false,
       consider_version_branches_pinned: false
     )
   end
+  sig { returns(String) }
   let(:service_pack_url) do
     "https://github.com/#{dependency_name}.git/info/refs?service=git-upload-pack"
   end
+  sig { returns(String) }
   let(:upload_pack_fixture) { "apm-package-edge-tags" }
+  # rubocop:enable RSpec/ScatteredLet
 
   before do
     stub_request(:get, service_pack_url)
@@ -51,21 +64,25 @@ RSpec.describe Dependabot::Apm::GitCommitChecker do
   end
 
   describe "#pinned_ref_looks_like_version?" do
+    sig { returns(T::Boolean) }
     subject { checker.pinned_ref_looks_like_version? }
 
     context "when pinned to a plain SemVer tag" do
+      sig { returns(String) }
       let(:reference) { "v1.2.0" }
 
       it { is_expected.to be(true) }
     end
 
     context "when pinned to a SemVer tag carrying build metadata" do
+      sig { returns(String) }
       let(:reference) { "v1.2.0+build.5" }
 
       it { is_expected.to be(true) }
     end
 
     context "when pinned to a non-SemVer four-segment tag" do
+      sig { returns(String) }
       let(:reference) { "v1.2.3.4" }
 
       # The shared VERSION_REGEX would accept this, after which building an
@@ -74,27 +91,32 @@ RSpec.describe Dependabot::Apm::GitCommitChecker do
     end
 
     context "with a virtual package that uses package-scoped tags" do
+      sig { returns(String) }
       let(:dependency_name) { "org/mono/skills/review" }
 
       context "when pinned to a `{name}--v{version}` tag" do
+        sig { returns(String) }
         let(:reference) { "review--v1.0.0" }
 
         it { is_expected.to be(true) }
       end
 
       context "when pinned to a `{name}-v{version}` tag" do
+        sig { returns(String) }
         let(:reference) { "review-v1.0.0" }
 
         it { is_expected.to be(true) }
       end
 
       context "when pinned to a `{name}_v{version}` tag" do
+        sig { returns(String) }
         let(:reference) { "review_v1.0.0" }
 
         it { is_expected.to be(true) }
       end
 
       context "when pinned to another package's scoped tag" do
+        sig { returns(String) }
         let(:reference) { "security--v1.0.0" }
 
         # The scoped prefix is scoped to this dependency's package name, so a
@@ -103,6 +125,7 @@ RSpec.describe Dependabot::Apm::GitCommitChecker do
       end
 
       context "when pinned to a scoped but non-SemVer tag" do
+        sig { returns(String) }
         let(:reference) { "review--v1.2.3.4" }
 
         it { is_expected.to be(false) }
@@ -111,6 +134,7 @@ RSpec.describe Dependabot::Apm::GitCommitChecker do
   end
 
   describe "#local_tag_for_latest_version" do
+    sig { returns(T.nilable(Dependabot::GitTagDetails)) }
     subject(:latest_tag) { checker.local_tag_for_latest_version }
 
     it "keeps build-metadata releases and ignores non-SemVer tags" do
@@ -119,8 +143,12 @@ RSpec.describe Dependabot::Apm::GitCommitChecker do
     end
 
     context "when two tags share a version but differ in build metadata" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(String) }
       let(:upload_pack_fixture) { "apm-package-build-metadata-ties" }
+      sig { returns(String) }
       let(:reference) { "v1.0.0" }
+      # rubocop:enable RSpec/ScatteredLet
 
       # Build metadata is not part of SemVer precedence, so both v1.3.0 tags
       # compare equal. The tie must break deterministically on the highest full
@@ -131,9 +159,14 @@ RSpec.describe Dependabot::Apm::GitCommitChecker do
     end
 
     context "with a virtual package that publishes package-scoped tags" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(String) }
       let(:upload_pack_fixture) { "apm-package-scoped-tags" }
+      sig { returns(String) }
       let(:dependency_name) { "org/mono/skills/review" }
+      sig { returns(String) }
       let(:reference) { "review--v1.0.0" }
+      # rubocop:enable RSpec/ScatteredLet
 
       # Only this package's `review--v*` tags share the pinned prefix, so the
       # latest is `review--v1.5.0`; sibling `security--v9.0.0` and the other

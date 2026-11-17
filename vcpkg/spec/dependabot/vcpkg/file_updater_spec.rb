@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve child-only configuration fixtures or matchers in generated malformed-input examples.
+
 require "spec_helper"
 
 require "dependabot/vcpkg/file_updater"

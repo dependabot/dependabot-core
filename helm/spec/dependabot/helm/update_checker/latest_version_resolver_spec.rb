@@ -1,10 +1,16 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
+require "spec_helper"
 require "dependabot/helm/update_checker/latest_version_resolver"
 require "dependabot/helm/package/package_details_fetcher"
+require "dependabot/git_tag_with_detail"
 # rubocop:disable-next RSpec/SpecFilePathFormat
 RSpec.describe Dependabot::Helm::LatestVersionResolver do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Dependabot::Dependency) }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "test-dependency",
@@ -14,6 +20,7 @@ RSpec.describe Dependabot::Helm::LatestVersionResolver do
     )
   end
 
+  sig { returns(Dependabot::Package::ReleaseCooldownOptions) }
   let(:cooldown_options) do
     Dependabot::Package::ReleaseCooldownOptions.new(
       default_days: 30,
@@ -23,8 +30,10 @@ RSpec.describe Dependabot::Helm::LatestVersionResolver do
     )
   end
 
-  let(:credentials) { [Dependabot::Credential.new(type: "git_source", token: "test-token")] }
+  sig { returns(T::Array[Dependabot::Credential]) }
+  let(:credentials) { [Dependabot::Credential.new("type" => "git_source", "token" => "test-token")] }
 
+  sig { returns(Dependabot::Helm::LatestVersionResolver) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:resolver) do
     described_class.new(
       dependency: dependency,
@@ -32,11 +41,17 @@ RSpec.describe Dependabot::Helm::LatestVersionResolver do
       cooldown_options: cooldown_options
     )
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#fetch_tag_and_release_date_helm_chart" do
+    # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+    sig { returns(T::Array[T::Hash[String, Object]]) }
     let(:versions) { [{ "version" => "1.0.0" }, { "version" => "1.1.0" }, { "version" => "2.0.0" }] }
+    sig { returns(String) }
     let(:repo_name) { "myrepo" }
+    sig { returns(String) }
     let(:chart_name) { "mychart" }
+    # rubocop:enable RSpec/ScatteredLet
 
     before do
       allow(resolver).to receive(:select_tags_which_in_cooldown_from_chart).with(repo_name).and_return(["1.0.0"])
@@ -49,10 +64,15 @@ RSpec.describe Dependabot::Helm::LatestVersionResolver do
   end
 
   describe "#filter_versions_in_cooldown_period_using_oci" do
+    # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+    sig { returns(T::Array[String]) }
     let(:tags) { ["1.0.0", "1.1.0", "2.0.0", "2.1.0", "3.0.0"] }
+    sig { returns(String) }
     let(:recent_date) { (Time.now - (5 * 24 * 60 * 60)).iso8601 } # 5 days ago
+    sig { returns(String) }
     let(:old_date) { (Time.now - (90 * 24 * 60 * 60)).iso8601 } # 90 days ago
 
+    sig { returns(T::Array[Dependabot::GitTagWithDetail]) }
     let(:tags_with_release_date) do
       [
         Dependabot::GitTagWithDetail.new(tag: "1.0.0", release_date: old_date),
@@ -62,6 +82,7 @@ RSpec.describe Dependabot::Helm::LatestVersionResolver do
         Dependabot::GitTagWithDetail.new(tag: "3.0.0", release_date: old_date)
       ]
     end
+    # rubocop:enable RSpec/ScatteredLet
 
     context "when there are tags in cooldown period" do
       before do
@@ -109,6 +130,7 @@ RSpec.describe Dependabot::Helm::LatestVersionResolver do
     end
 
     context "when tags array is empty" do
+      sig { returns(T::Array[String]) }
       let(:empty_tags) { [] }
 
       it "returns empty array" do
@@ -118,6 +140,7 @@ RSpec.describe Dependabot::Helm::LatestVersionResolver do
     end
 
     context "when tags_with_release_date is empty" do
+      sig { returns(T::Array[Dependabot::GitTagWithDetail]) }
       let(:empty_tags_with_release) { [] }
 
       before do
@@ -150,13 +173,25 @@ RSpec.describe Dependabot::Helm::LatestVersionResolver do
   end
 
   describe "#select_tags_which_in_cooldown_from_chart" do
+    # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+    sig { returns(String) }
     let(:repo_name) { "prometheus-community/helm-charts" }
+    sig { returns(T::Array[Dependabot::GitTagWithDetail]) }
     let(:git_tag_with_details) do
       [
-        instance_double("GitTagWithDetail", tag: "v1.0.0", release_date: (Time.now - (10 * 24 * 60 * 60)).iso8601), # rubocop:disable RSpec/VerifiedDoubleReference
-        instance_double("GitTagWithDetail", tag: "v1.1.0", release_date: (Time.now - (40 * 24 * 60 * 60)).iso8601) # rubocop:disable RSpec/VerifiedDoubleReference
+        instance_double(
+          Dependabot::GitTagWithDetail,
+          tag: "v1.0.0",
+          release_date: (Time.now - (10 * 24 * 60 * 60)).iso8601
+        ),
+        instance_double(
+          Dependabot::GitTagWithDetail,
+          tag: "v1.1.0",
+          release_date: (Time.now - (40 * 24 * 60 * 60)).iso8601
+        )
       ]
     end
+    # rubocop:enable RSpec/ScatteredLet
 
     before do
       allow(resolver.package_details_fetcher).to receive(:fetch_tag_and_release_date_from_chart)

@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -9,6 +9,10 @@ require "dependabot/git_commit_checker"
 require "dependabot/git_tag_with_detail"
 require "excon"
 RSpec.describe Dependabot::Opentofu::Package::PackageDetailsFetcher do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Dependabot::Dependency) }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "github.com/integrations/terraform-provider-github",
@@ -28,6 +32,7 @@ RSpec.describe Dependabot::Opentofu::Package::PackageDetailsFetcher do
     )
   end
 
+  sig { returns(T::Array[Dependabot::Credential]) }
   let(:credentials) do
     [
       Dependabot::Credential.new(
@@ -38,6 +43,7 @@ RSpec.describe Dependabot::Opentofu::Package::PackageDetailsFetcher do
       )
     ]
   end
+  sig { returns(Dependabot::GitCommitChecker) }
   let(:git_commit_checker) do
     Dependabot::GitCommitChecker.new(
       dependency: dependency,
@@ -47,9 +53,11 @@ RSpec.describe Dependabot::Opentofu::Package::PackageDetailsFetcher do
       consider_version_branches_pinned: true
     )
   end
+  sig { returns(Dependabot::Opentofu::Package::PackageDetailsFetcher) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:fetcher) do
     described_class.new(dependency: dependency, credentials: credentials, git_commit_checker: git_commit_checker)
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#fetch_tag_and_release_date" do
     it "fetches and parses release tags and dates", :vcr do
@@ -72,6 +80,7 @@ RSpec.describe Dependabot::Opentofu::Package::PackageDetailsFetcher do
   describe "#fetch_tag_and_release_date_from_module" do
     # Create a new dependency for the module test since the dependency
     # on the class is not a module
+    sig { returns(Dependabot::Dependency) }
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "github.com/integrations/terraform-provider-github",

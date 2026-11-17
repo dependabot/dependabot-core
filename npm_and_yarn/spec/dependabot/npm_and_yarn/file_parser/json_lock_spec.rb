@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet resolves instance fixtures and matchers in loop-generated examples as class methods.
+
 require "spec_helper"
 require "dependabot/npm_and_yarn/file_parser/json_lock"
 
@@ -176,6 +178,36 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::JsonLock do
 
         it "preserves URI filtering without applying the missing-key default" do
           expect(reader.legacy_dependencies.fetch("example").registry_uri("https://registry.example")).to be_nil
+        end
+      end
+    end
+
+    describe "requirement maps" do
+      subject(:requires) { reader.legacy_dependencies.fetch("example").requires }
+
+      it "leaves absent requirements unspecified" do
+        expect(requires).to be_nil
+      end
+
+      [nil, {}, { "child" => "npm:other@^2", "@scope/local" => "file:../local" }].each do |value|
+        context "with requires set to #{value.inspect}" do
+          let(:entry) { super().merge("requires" => value) }
+
+          it "preserves the requirement map" do
+            expect(requires).to eq(value)
+          end
+        end
+      end
+
+      [[], { "child" => false }].each do |value|
+        context "with malformed requires #{value.inspect}" do
+          let(:entry) { super().merge("requires" => value) }
+
+          it "reports the consumed field and file" do
+            expect { requires }.to raise_error(Dependabot::DependencyFileNotParseable, /requires/) do |error|
+              expect(error.file_name).to eq("package-lock.json")
+            end
+          end
         end
       end
     end

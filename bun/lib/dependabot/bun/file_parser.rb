@@ -30,6 +30,7 @@ module Dependabot
       require_relative "file_parser/lockfile_parser"
 
       DEPENDENCY_TYPES = %w(dependencies devDependencies optionalDependencies).freeze
+      DEFAULT_CATALOG = "default"
       ALIAS_PROTOCOL = "npm:"
       GIT_URL_REGEX = %r{
         (?<git_prefix>^|^git.*?|^github:|^bitbucket:|^gitlab:|github\.com/)
@@ -63,6 +64,7 @@ module Dependabot
         dependency_set = DependencySet.new
         dependency_set += manifest_dependencies
         dependency_set += lockfile_dependencies
+        dependency_set += catalog_dependencies
 
         dependencies = Helpers.dependencies_with_all_versions_metadata(dependency_set)
 
@@ -202,11 +204,34 @@ module Dependabot
         lockfile_parser.parse_set
       end
 
+      sig { returns(Dependabot::FileParsers::Base::DependencySet) }
+      def catalog_dependencies
+        dependency_set = DependencySet.new
+        document = package_json_document
+        catalogs = [[DEFAULT_CATALOG, document.catalog], *document.catalogs.to_a]
+
+        catalogs.each do |catalog_name, entries|
+          entries.each do |name, requirement|
+            # Catalog entries are production dependencies, as pnpm catalogs are in npm_and_yarn.
+            dep = build_dependency(
+              file: package_json,
+              type: "dependencies",
+              name: name,
+              requirement: requirement,
+              catalog: catalog_name
+            )
+            dependency_set << dep if dep
+          end
+        end
+
+        dependency_set
+      end
+
       sig do
-        params(file: DependencyFile, type: String, name: String, requirement: String)
+        params(file: DependencyFile, type: String, name: String, requirement: String, catalog: T.nilable(String))
           .returns(T.nilable(Dependency))
       end
-      def build_dependency(file:, type:, name:, requirement:)
+      def build_dependency(file:, type:, name:, requirement:, catalog: nil)
         lockfile_details = lockfile_parser.lockfile_details(
           dependency_name: name,
           requirement: requirement,
@@ -243,9 +268,15 @@ module Dependabot
             requirement: requirement_for(requirement),
             file: file.name,
             groups: [type],
-            source: source_for(name, requirement, lockfile_details)
+            source: source_for(name, requirement, lockfile_details),
+            **catalog_metadata(catalog)
           }]
         )
+      end
+
+      sig { params(catalog: T.nilable(String)).returns(T::Hash[Symbol, T::Hash[Symbol, String]]) }
+      def catalog_metadata(catalog)
+        catalog ? { metadata: { catalog: catalog } } : {}
       end
 
       sig { override.void }

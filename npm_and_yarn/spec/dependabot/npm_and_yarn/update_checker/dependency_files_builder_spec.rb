@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the example helper defined only inside an around callback.
+
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/npm_and_yarn/update_checker/dependency_files_builder"

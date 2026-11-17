@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -6,8 +6,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/elm/update_checker/latest_version_finder"
 
-namespace = Dependabot::Elm::UpdateChecker
-RSpec.describe namespace::Elm19LatestVersionFinder do
+RSpec.describe Dependabot::Elm::UpdateChecker::Elm19LatestVersionFinder do
   def elm_version(version_string)
     Dependabot::Elm::Version.new(version_string)
   end

@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only ignored_versions fixture.
+
 require "spec_helper"
 require "dependabot/nix/ignore_filter"
 

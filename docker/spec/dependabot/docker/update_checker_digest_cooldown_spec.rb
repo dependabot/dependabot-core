@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve fixture calls inside generated example blocks. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"

@@ -213,4 +213,103 @@ RSpec.describe Dependabot::Package::NpmPackageJson do
       expect(reader.package_manager_config).to have_attributes(package_manager: nil, engines: nil)
     end
   end
+
+  describe "catalogs" do
+    context "without catalogs" do
+      let(:payload) { { "workspaces" => ["packages/*"] } }
+
+      it "returns empty catalogs" do
+        expect(reader.catalog_container).to be_nil
+        expect(reader.catalog).to eq({})
+        expect(reader.catalogs).to eq({})
+      end
+    end
+
+    context "with root catalogs and array workspaces" do
+      let(:payload) do
+        {
+          "workspaces" => ["packages/*"],
+          "catalog" => { "react" => "^19.0.0", "ignored" => 1 },
+          "catalogs" => { "testing" => { "jest" => "30.0.0" } }
+        }
+      end
+
+      it "reads the root fields" do
+        expect(reader.catalog_container).to be_nil
+        expect(reader.catalog).to eq("react" => "^19.0.0")
+        expect(reader.catalogs).to eq("testing" => { "jest" => "30.0.0" })
+      end
+    end
+
+    context "with catalogs under object workspaces" do
+      let(:payload) do
+        {
+          "workspaces" => {
+            "packages" => ["packages/*"],
+            "catalog" => { "react" => "^19.0.0" },
+            "catalogs" => { "default" => { "zod" => "^4.0.0" }, "testing" => { "jest" => "30.0.0" } }
+          }
+        }
+      end
+
+      it "reads the workspaces fields" do
+        expect(reader.catalog_container).to eq("workspaces")
+        expect(reader.catalog).to eq("react" => "^19.0.0")
+        expect(reader.catalogs).to eq(
+          "default" => { "zod" => "^4.0.0" },
+          "testing" => { "jest" => "30.0.0" }
+        )
+      end
+    end
+
+    context "with catalog fields in both places" do
+      let(:payload) do
+        {
+          "workspaces" => { "packages" => ["packages/*"], "catalog" => { "react" => "^19.0.0" } },
+          "catalog" => { "react" => "^18.0.0" },
+          "catalogs" => { "testing" => { "jest" => "30.0.0" } }
+        }
+      end
+
+      it "reads only the workspaces fields, as Bun does" do
+        expect(reader.catalog_container).to eq("workspaces")
+        expect(reader.catalog).to eq("react" => "^19.0.0")
+        expect(reader.catalogs).to eq({})
+      end
+    end
+
+    context "with object workspaces that declare no catalog fields" do
+      let(:payload) do
+        {
+          "workspaces" => { "packages" => ["packages/*"] },
+          "catalog" => { "react" => "^19.0.0" }
+        }
+      end
+
+      it "reads the root fields" do
+        expect(reader.catalog_container).to be_nil
+        expect(reader.catalog).to eq("react" => "^19.0.0")
+      end
+    end
+
+    [[], "invalid", 123].each do |value|
+      context "with workspaces.catalog set to #{value.inspect}" do
+        let(:payload) { { "workspaces" => { "catalog" => value } } }
+
+        it "rejects the malformed map with file and field context" do
+          expect { reader.catalog }
+            .to raise_error(TypeError, "#{file.path}: workspaces.catalog must be an object")
+        end
+      end
+
+      context "with a named catalog set to #{value.inspect}" do
+        let(:payload) { { "catalogs" => { "testing" => value } } }
+
+        it "rejects the malformed map with file and field context" do
+          expect { reader.catalogs }
+            .to raise_error(TypeError, "#{file.path}: catalogs.testing must be an object")
+        end
+      end
+    end
+  end
 end

@@ -286,7 +286,7 @@ function update_manifest(project_path::String, updates::Dict, manifest_file::Uni
                 continue
             end
 
-            push!(pkg_specs, Pkg.PackageSpec(name=package_name, uuid=Base.UUID(uuid_str), version=target_version))
+            push!(pkg_specs, Pkg.PackageSpec(name=package_name, uuid=Base.UUID(uuid_str), version=VersionNumber(target_version)))
         end
 
         isempty(pkg_specs) || add_packages(project_path, manifest_file, pkg_specs)
@@ -316,11 +316,17 @@ function update_manifest(project_path::String, updates::Dict, manifest_file::Uni
             "updated_manifest" => updated_manifest
         )
     catch ex
-        @error "update_manifest: Failed to update manifest" exception=(ex, catch_backtrace())
+        if ex isa NewerJuliaManifest
+            @warn "update_manifest: $(sprint(showerror, ex))"
+        else
+            @error "update_manifest: Failed to update manifest" exception=(ex, catch_backtrace())
+        end
 
         # Check if this is a Pkg resolver error - these indicate version conflicts
         error_prefix = if ex isa Pkg.Resolve.ResolverError
             "Pkg resolver error: "
+        elseif ex isa NewerJuliaManifest
+            "Manifest written by a newer Julia: "
         else
             "Failed to update manifest: "
         end
@@ -332,109 +338,62 @@ end
 """
     add_packages(project_path, manifest_file, pkg_specs)
 
-`Pkg.add` the packages to the project, under the Julia version that wrote the manifest.
+`Pkg.add` the packages to the project, resolving for the Julia version that wrote the manifest.
 
-A resolve under another Julia version rewrites `julia_version` and the stdlib entries,
-leaving a manifest the project's own Julia may not load. When the manifest names a
-different version, juliaup installs and launches it. Without juliaup, or when it
-cannot provide that version, the packages are added with the running Julia.
+A resolve for another Julia version rewrites `julia_version` and the stdlib entries,
+leaving a manifest the project's own Julia may not load. Pkg can resolve for that
+version instead, given its `julia_version` and the stdlib versions it shipped from
+HistoricalStdlibVersions.jl, as BinaryBuilder does. Pkg also writes the manifest in
+that version's format and with its project hash. A manifest without a
+`julia_version` is resolved for the running Julia, and one written by a newer Julia
+is not updated.
 """
 function add_packages(project_path::String, manifest_file::String, pkg_specs::Vector{Pkg.PackageSpec})
-    julia_version = manifest_julia_version(manifest_file)
-    launcher = julia_version === nothing ? nothing : juliaup_launcher(julia_version)
-    if launcher === nothing
-        _, used_manifest_file = find_environment_files(project_path)
-        if !(isfile(used_manifest_file) && samefile(used_manifest_file, manifest_file))
-            error("Julia $VERSION does not use $(basename(manifest_file)), and no Julia that does could be launched")
+    julia_version = resolve_julia_version(manifest_file)
+    project_file, _ = find_environment_files(project_path)
+    env = Pkg.Types.EnvCache(project_file)
+    if !(isfile(env.manifest_file) && samefile(env.manifest_file, manifest_file))
+        # Pkg only finds a manifest by the name the running Julia reads, which a
+        # version-specific manifest such as `Manifest-v1.12.toml` may not have
+        env.manifest_file = manifest_file
+        env.manifest = Pkg.Types.read_manifest(manifest_file)
+        env.original_manifest = deepcopy(env.manifest)
+    end
+    ctx = Pkg.Types.Context(; env)
+    with_autoprecompilation_disabled() do
+        # Versions loaded in the running Julia say nothing about another release
+        Pkg.respect_sysimage_versions(false)
+        try
+            Pkg.add(ctx, pkg_specs; julia_version)
+        finally
+            Pkg.respect_sysimage_versions(true)
         end
-        Pkg.activate(project_path) do
-            with_autoprecompilation_disabled() do
-                Pkg.add(pkg_specs)
-            end
-        end
-    else
-        add_packages_with(launcher, julia_version, project_path, manifest_file, pkg_specs)
     end
 end
 
-"""
-    manifest_julia_version(manifest_file) -> Union{VersionNumber,Nothing}
+# Pkg only knows how the releases up to its own write a manifest. A newer one may use
+# a newer format or project hash, so its manifest is left alone.
+struct NewerJuliaManifest <: Exception
+    julia_version::VersionNumber
+end
 
-The `julia_version` recorded in the manifest, or `nothing` when it is missing or
-matches the running Julia.
+Base.showerror(io::IO, ex::NewerJuliaManifest) =
+    print(io, "Julia $(ex.julia_version) wrote the manifest, and Julia $VERSION cannot write a manifest for it")
+
 """
-function manifest_julia_version(manifest_file::String)
+    resolve_julia_version(manifest_file) -> VersionNumber
+
+The Julia version to resolve the manifest for: the `julia_version` it records, or the
+running Julia's when it records none. Throws `NewerJuliaManifest` for a manifest
+written by a newer Julia than the running one.
+"""
+function resolve_julia_version(manifest_file::String)
     raw = get(TOML.parsefile(manifest_file), "julia_version", nothing)
-    raw isa String || return nothing
-    julia_version = tryparse(VersionNumber, raw)
-    julia_version === nothing && return nothing
-    running = VersionNumber(VERSION.major, VERSION.minor, VERSION.patch, VERSION.prerelease)
-    return julia_version == running ? nothing : julia_version
-end
-
-"""
-    juliaup_launcher(julia_version) -> Union{String,Nothing}
-
-The path of juliaup's `julia` launcher after installing `julia_version` with juliaup,
-or `nothing` when that is not possible.
-"""
-function juliaup_launcher(julia_version::VersionNumber)
-    # Pkg writes prerelease builds' versions (e.g. `1.14.0-DEV.123`), which juliaup
-    # can only map to a nightly channel, not the build that wrote the manifest.
-    if !isempty(julia_version.prerelease)
-        @warn "update_manifest: the manifest was written by prerelease Julia $julia_version; resolving with Julia $VERSION"
-        return nothing
-    end
-    juliaup = Sys.which("juliaup")
-    if juliaup === nothing
-        @warn "update_manifest: juliaup is not available to launch Julia $julia_version; resolving with Julia $VERSION"
-        return nothing
-    end
-    # Use the launcher installed beside juliaup, since the `julia` on PATH may not be it.
-    launcher = joinpath(dirname(juliaup), Sys.iswindows() ? "julia.exe" : "julia")
-    # Output goes to stderr because stdout carries the helper's JSON result.
-    if !isfile(launcher) || !success(pipeline(`$juliaup add $julia_version`; stdout=stderr, stderr=stderr))
-        @warn "update_manifest: juliaup cannot install Julia $julia_version; resolving with Julia $VERSION"
-        return nothing
-    end
-    return launcher
-end
-
-# Runs in the manifest's Julia, which may be much older than the helper's, so it
-# only uses Pkg APIs that have been stable since Julia 1.0.
-const ADD_PACKAGES_SCRIPT = """
-import Pkg
-specs = [Pkg.PackageSpec(name=ARGS[i], uuid=Base.UUID(ARGS[i + 1]), version=ARGS[i + 2]) for i in 3:3:length(ARGS)]
-try
-    Pkg.activate(ARGS[1])
-    used = Pkg.Types.Context().env.manifest_file
-    if !(isfile(used) && samefile(used, ARGS[2]))
-        print("Julia \$VERSION uses \$(basename(used)), not \$(basename(ARGS[2]))")
-        exit(1)
-    end
-    Pkg.add(specs)
-catch ex
-    print(sprint(showerror, ex))
-    exit(nameof(typeof(ex)) == :ResolverError ? 2 : 1)
-end
-"""
-
-function add_packages_with(launcher::String, julia_version::VersionNumber, project_path::String, manifest_file::String, pkg_specs::Vector{Pkg.PackageSpec})
-    spec_args = String[]
-    for spec in pkg_specs
-        push!(spec_args, spec.name, string(spec.uuid), string(spec.version))
-    end
-    cmd = `$launcher +$julia_version --startup-file=no --history-file=no -e $ADD_PACKAGES_SCRIPT $project_path $manifest_file $spec_args`
-    cmd = addenv(cmd, "JULIA_PKG_PRECOMPILE_AUTO" => "0")
-
-    @info "update_manifest: resolving with Julia $julia_version, the version that wrote the manifest"
-    output = IOBuffer()
-    proc = Base.run(pipeline(ignorestatus(cmd); stdout=output, stderr=stderr))
-    success(proc) && return
-    message = String(take!(output))
-    isempty(message) && (message = "Julia $julia_version exited with code $(proc.exitcode)")
-    proc.exitcode == 2 && throw(Pkg.Resolve.ResolverError(message))
-    error("Julia $julia_version could not update the manifest: $message")
+    julia_version = raw isa String ? tryparse(VersionNumber, raw) : nothing
+    (julia_version === nothing || julia_version == VERSION) && return VERSION
+    julia_version > VERSION && throw(NewerJuliaManifest(julia_version))
+    isempty(Pkg.Types.STDLIBS_BY_VERSION) && HistoricalStdlibVersions.register!()
+    return julia_version
 end
 
 """

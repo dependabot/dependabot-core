@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -6,6 +6,8 @@ require "dependabot/update_checkers/cooldown_calculation"
 require "dependabot/package/release_cooldown_options"
 
 RSpec.describe Dependabot::UpdateCheckers::CooldownCalculation do
+  extend T::Sig
+
   describe ".within_cooldown_window?" do
     it "returns true when release is within the cooldown window" do
       release_date = Time.now - (12 * 60 * 60) # 12 hours ago
@@ -29,6 +31,8 @@ RSpec.describe Dependabot::UpdateCheckers::CooldownCalculation do
   end
 
   describe ".cooldown_days_for" do
+    # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+    sig { returns(Dependabot::Package::ReleaseCooldownOptions) }
     let(:cooldown) do
       Dependabot::Package::ReleaseCooldownOptions.new(
         default_days: 5,
@@ -38,13 +42,9 @@ RSpec.describe Dependabot::UpdateCheckers::CooldownCalculation do
       )
     end
 
-    let(:version_class) do
-      Class.new(Dependabot::Version) do
-        def self.correct?(version)
-          !version.nil? && version.match?(/^\d+(\.\d+)*$/)
-        end
-      end
-    end
+    sig { returns(T.class_of(Dependabot::Version)) }
+    let(:version_class) { TestVersion }
+    # rubocop:enable RSpec/ScatteredLet
 
     it "returns major days for a major bump" do
       current = version_class.new("1.0.0")
@@ -71,6 +71,7 @@ RSpec.describe Dependabot::UpdateCheckers::CooldownCalculation do
   end
 
   describe ".skip_cooldown?" do
+    sig { returns(Dependabot::Package::ReleaseCooldownOptions) }
     let(:cooldown) do
       Dependabot::Package::ReleaseCooldownOptions.new(default_days: 1)
     end
@@ -97,6 +98,7 @@ RSpec.describe Dependabot::UpdateCheckers::CooldownCalculation do
   end
 
   describe ".mark_cooldown_date_unavailable" do
+    sig { returns(Dependabot::Dependency) }
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "my-dep",

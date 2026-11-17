@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve child-context manifest and lockfile fixtures. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -462,6 +463,51 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         it "does not include tool.poetry in the manifest" do
           parsed = TomlRB.parse(fixture("pyproject_files", pyproject_fixture_name))
           expect(parsed.dig("tool", "poetry")).to be_nil
+        end
+      end
+
+      context "with a locked PEP 621 only project declaring a dependency with a `<` marker" do
+        let(:pyproject_fixture_name) { "poetry_v2_pep621_only.toml" }
+        let(:poetry_lock_fixture_name) { "poetry_v2_pep621_only.lock" }
+        let(:pyproject_body) do
+          fixture("pyproject_files", pyproject_fixture_name)
+            .sub('"urllib3>=1.26.0"', %q("urllib3>=1.26.0; python_version < '3.12'"))
+        end
+
+        it "keeps it as a direct dependency rather than a requirement-less sub-dependency" do
+          urllib3 = dependencies.find { |d| d.name == "urllib3" }
+          expect(urllib3.requirements.map { |r| r[:requirement] }).to eq([">=1.26.0"])
+        end
+      end
+
+      context "with a locked hybrid project declaring a PEP 621 dependency with a `<` marker" do
+        let(:pyproject_fixture_name) { "poetry_v2_hybrid.toml" }
+        let(:poetry_lock_fixture_name) { "poetry_v2_hybrid.lock" }
+        let(:pyproject_body) do
+          fixture("pyproject_files", pyproject_fixture_name)
+            .sub('"flask>=2.3.0",', %("flask>=2.3.0",\n    "urllib3>=1.26.0; python_version < '3.12'",))
+        end
+
+        it "still skips the marker dependency" do
+          urllib3 = dependencies.find { |d| d.name == "urllib3" }
+          expect(urllib3&.requirements.to_a.map { |r| r[:requirement] }).not_to include(">=1.26.0")
+        end
+      end
+
+      context "with a PEP 621 only project that declares the Poetry build backend but has no committed lockfile" do
+        let(:pyproject_fixture_name) { "poetry_v2_pep621_only.toml" }
+        let(:files) { [pyproject] }
+
+        it "does not skip the build-system.requires dependency" do
+          # Without a lockfile, a declared Poetry build backend alone isn't evidence the project
+          # is actively Poetry-managed, so its build dependency should still be tracked.
+          names = dependencies.map(&:name)
+          expect(names).to include("poetry-core")
+        end
+
+        it "still parses the top-level PEP 621 dependencies" do
+          names = dependencies.map(&:name)
+          expect(names).to include("requests", "urllib3")
         end
       end
 

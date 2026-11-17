@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve the child-context filenames fixture. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -594,7 +595,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
         expect(file_fetcher_instance.ecosystem_versions).to eq(
           {
             # When there is no version specified, we assume the max supported
-            languages: { python: { "max" => "3.14", "raw" => "unknown" } }
+            languages: { python: { "max" => "3.15", "raw" => "unknown" } }
           }
         )
       end

@@ -26,6 +26,7 @@ module Dependabot
             credentials: T::Array[Dependabot::Credential],
             ignored_versions: T::Array[String],
             security_advisories: T::Array[Dependabot::SecurityAdvisory],
+            security_updates_only: T::Boolean,
             raise_on_ignored: T::Boolean,
             cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
@@ -36,11 +37,26 @@ module Dependabot
           credentials:,
           ignored_versions:,
           security_advisories:,
+          security_updates_only: false,
           raise_on_ignored: false,
           cooldown_options: nil
         )
           @package_fetcher = T.let(nil, T.nilable(Package::PackageDetailsFetcher))
-          super
+          @security_updates_only = T.let(security_updates_only || security_advisories.any?, T::Boolean)
+          @pnpm_release_age_policies = T.let(
+            @security_updates_only ? [] : Helpers.pnpm_release_age_policies(dependency_files),
+            T::Array[Helpers::PnpmReleaseAgePolicy]
+          )
+          cooldown_options ||= Dependabot::Package::ReleaseCooldownOptions.new unless @pnpm_release_age_policies.empty?
+          super(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            security_advisories: security_advisories,
+            raise_on_ignored: raise_on_ignored,
+            cooldown_options: cooldown_options
+          )
         end
 
         sig { returns(Package::PackageDetailsFetcher) }
@@ -63,9 +79,7 @@ module Dependabot
           @package_details
         end
 
-        sig do
-          returns(T.nilable(Dependabot::Version))
-        end
+        sig { returns(T.nilable(Dependabot::Version)) }
         def latest_version_from_registry
           fetch_latest_version(language_version: nil)
         end
@@ -100,7 +114,7 @@ module Dependabot
 
             return if specified_dist_tag_requirement?
 
-            filtered_releases = filter_by_cooldown(possible_releases)
+            filtered_releases = releases_outside_cooldown
             filtered_releases.find { |r| !yanked_version?(r.version) }&.version
           end
         end
@@ -115,7 +129,7 @@ module Dependabot
             return unless valid_npm_details?
             return version_from_dist_tags(cooldown: true)&.version if specified_dist_tag_requirement?
 
-            filtered_releases = filter_by_cooldown(possible_releases)
+            filtered_releases = releases_outside_cooldown
 
             in_range_versions = filter_out_of_range_versions(filtered_releases)
             in_range_versions.find { |r| !yanked_version?(r.version) }&.version
@@ -226,6 +240,11 @@ module Dependabot
         end
 
         sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
+        def releases_outside_cooldown
+          filter_by_cooldown(possible_releases)
+        end
+
+        sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
         def possible_previous_releases
           (package_details&.releases || [])
             .reject do |r|
@@ -236,7 +255,22 @@ module Dependabot
 
         sig { override.returns(T::Boolean) }
         def cooldown_enabled?
-          true
+          !@security_updates_only
+        end
+
+        sig do
+          override.params(
+            current_version: T.nilable(Dependabot::Version),
+            new_version: Dependabot::Version
+          ).returns(Integer)
+        end
+        def cooldown_days_for(current_version, new_version)
+          dependabot_days = super
+          native_minutes = @pnpm_release_age_policies
+                           .reject { |policy| policy.excluded?(dependency.name, version: new_version) }
+                           .map(&:minutes).max
+          native_days = native_minutes ? (native_minutes.to_f / Helpers::MINUTES_PER_DAY).ceil : 0
+          [dependabot_days, native_days].max
         end
 
         private

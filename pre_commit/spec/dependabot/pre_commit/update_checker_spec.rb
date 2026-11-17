@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -8,11 +8,12 @@ require "dependabot/pre_commit/metadata_finder"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::PreCommit::UpdateChecker do
+  let(:credentials) { github_credentials.map { |credential| Dependabot::Credential.new(credential) } }
   let(:upload_pack_fixture) { "pre-commit-hooks" }
   let(:git_commit_checker) do
     Dependabot::GitCommitChecker.new(
       dependency: dependency,
-      credentials: github_credentials,
+      credentials: credentials,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored
     )
@@ -56,7 +57,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
     described_class.new(
       dependency: dependency,
       dependency_files: [],
-      credentials: github_credentials,
+      credentials: credentials,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
       update_cooldown: update_cooldown
@@ -177,11 +178,11 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
 
         recent_date = Time.now.utc.strftime("%Y-%m-%d %H:%M:%S %z")
 
-        v6_tag = {
+        v6_tag = Dependabot::GitTagDetails.new(
           tag: "v6.0.0",
           version: Dependabot::PreCommit::Version.new("6.0.0"),
           commit_sha: "3e8a8703264a2f4a69428a0aa4dcb512790b2c8c"
-        }
+        )
 
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:local_tags_for_allowed_versions)

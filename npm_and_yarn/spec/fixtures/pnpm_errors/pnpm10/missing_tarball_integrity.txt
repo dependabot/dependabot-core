@@ -1,0 +1,5 @@
+Scope: all 28 workspace projects
+Progress: resolved 1, reused 0, downloaded 0, added 0
+ ERR_PNPM_MISSING_TARBALL_INTEGRITY  Cannot install package "xlsx@https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz": its lockfile entry has no "integrity" field, so pnpm cannot verify the downloaded tarball.
+
+The lockfile may be corrupted or have been tampered with. Restore it from a trusted source, or delete it and re-run installation without --frozen-lockfile to regenerate.

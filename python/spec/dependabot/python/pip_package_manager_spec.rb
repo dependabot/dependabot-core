@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/python/package_manager"
@@ -6,6 +6,9 @@ require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::Python::PipPackageManager do
+  extend T::Sig
+
+  sig { returns(Dependabot::Python::PipPackageManager) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:package_manager) { described_class.new("24.0") }
 
   describe "#initialize" do
@@ -22,6 +25,7 @@ RSpec.describe Dependabot::Python::PipPackageManager do
     context "when pip version extracted from pyenv is well formed" do
       # If this test starts failing, you need to adjust the "detect_pip_version" function
       # to return a valid version in format x.x, x.x.x etc. examples: 3.12.5, 3.12
+      sig { returns(String) }
       let(:version) do
         Dependabot::SharedHelpers.run_shell_command("pyenv exec pip --version")
                                  .split("from").first&.split("pip")&.last&.strip.to_s

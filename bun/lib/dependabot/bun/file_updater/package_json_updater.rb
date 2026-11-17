@@ -3,7 +3,10 @@
 
 require "sorbet-runtime"
 
+require "dependabot/bun/file_parser"
 require "dependabot/bun/file_updater"
+require "dependabot/bun/file_updater/json_object_members"
+require "dependabot/package/npm_package_json"
 
 module Dependabot
   module Bun
@@ -93,7 +96,10 @@ module Dependabot
         def old_requirement(dependency, new_requirement)
           T.must(dependency.previous_requirements)
            .select { |r| r.file == package_json.name }
-           .find { |r| r.groups == new_requirement.groups }
+           .find do |r|
+             r.groups == new_requirement.groups &&
+               r.metadata_string("catalog") == new_requirement.metadata_string("catalog")
+           end
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(T::Array[Dependabot::DependencyRequirement]) }
@@ -131,6 +137,17 @@ module Dependabot
             .returns(String)
         end
         def update_package_json_declaration(package_json_content:, new_req:, dependency_name:, old_req:)
+          catalog = new_req.metadata_string("catalog")
+          if catalog
+            return update_catalog_declaration(
+              catalog: catalog,
+              content: package_json_content,
+              dependency_name: dependency_name,
+              old_req: old_req,
+              new_req: new_req
+            )
+          end
+
           original_line = declaration_line(
             dependency_name: dependency_name,
             dependency_req: old_req,
@@ -321,6 +338,72 @@ module Dependabot
             updated_block = block.sub(old_line, new_line)
             new_content.sub(block, updated_block)
           end
+        end
+
+        # Bun reads catalogs only from `NpmPackageJson#catalog_container`, so
+        # the entry is looked up and replaced among those catalogs' members.
+        sig do
+          params(
+            catalog: String,
+            content: String,
+            dependency_name: String,
+            old_req: T.nilable(Dependabot::DependencyRequirement),
+            new_req: Dependabot::DependencyRequirement
+          )
+            .returns(String)
+        end
+        def update_catalog_declaration(catalog:, content:, dependency_name:, old_req:, new_req:)
+          value_ranges = catalog_ranges(catalog, content).filter_map do |range|
+            JsonObjectMembers.strings(content, range.begin)[dependency_name]
+          end
+
+          # Replacing from the end keeps the earlier ranges valid.
+          value_ranges.sort_by(&:begin).reverse.each_with_object(content.dup) do |range, updated|
+            value = updated_catalog_value(dependency_name, T.must(updated[range]), old_req, new_req)
+            updated[range] = value if value
+          end
+        end
+
+        # The default catalog is `catalog` together with `catalogs.default`.
+        sig { params(catalog: String, content: String).returns(T::Array[T::Range[Integer]]) }
+        def catalog_ranges(catalog, content)
+          root_start = content.index("{")
+          return [] unless root_start
+
+          fields = JsonObjectMembers.objects(content, root_start)
+          document = Dependabot::Package::NpmPackageJson.new(JSON.parse(content), package_json.path)
+          container = document.catalog_container
+          if container
+            container_range = fields[container]
+            return [] unless container_range
+
+            fields = JsonObjectMembers.objects(content, container_range.begin)
+          end
+
+          catalogs_range = fields["catalogs"]
+          [
+            (fields["catalog"] if catalog == FileParser::DEFAULT_CATALOG),
+            (JsonObjectMembers.objects(content, catalogs_range.begin)[catalog] if catalogs_range)
+          ].compact
+        end
+
+        # The value is matched and rewritten as a normalized declaration, so
+        # its source formatting never affects the match.
+        sig do
+          params(
+            dependency_name: String,
+            value: String,
+            old_req: T.nilable(Dependabot::DependencyRequirement),
+            new_req: Dependabot::DependencyRequirement
+          )
+            .returns(T.nilable(String))
+        end
+        def updated_catalog_value(dependency_name, value, old_req, new_req)
+          prefix = %("#{dependency_name}": )
+          line = prefix + JSON.generate(JSON.parse(value))
+          return if declaration_line(dependency_name: dependency_name, dependency_req: old_req, content: line).empty?
+
+          replacement_declaration_line(original_line: line, old_req: old_req, new_req: new_req).delete_prefix(prefix)
         end
 
         sig { params(string: String).returns(Integer) }

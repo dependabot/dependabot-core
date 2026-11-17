@@ -1,10 +1,13 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/nix/package_manager"
 
 RSpec.describe Dependabot::Nix::PackageManager do
+  extend T::Sig
+
+  sig { returns(Dependabot::Nix::PackageManager) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   subject(:package_manager) { described_class.new("2.28.3") }
 
   describe "#name" do

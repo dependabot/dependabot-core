@@ -24,6 +24,122 @@ public class JobTests
         Assert.Equal(expectedResult, actualResult);
     }
 
+    [Theory]
+    [InlineData(null, true)]
+    [InlineData("1.0.0", true)]
+    [InlineData("1.1.0", false)]
+    [InlineData("1.2.0", false)]
+    public void IsUpdatePermitted_ExistingGroupPullRequestVersion(string? existingVersion, bool expectedResult)
+    {
+        var job = CreateJob(
+            allowedUpdates: [new AllowedUpdate() { UpdateType = UpdateType.Security }],
+            dependencies: [],
+            existingPrs: [],
+            securityAdvisories: [
+                new Advisory() { DependencyName = "Some.Package", AffectedVersions = [Requirement.Parse("1.1.0")] }
+            ],
+            securityUpdatesOnly: true,
+            updatingAPullRequest: false) with
+        {
+            ExistingGroupPullRequests = [
+                new GroupPullRequest()
+                {
+                    DependencyGroupName = "Some-Group-Name",
+                    Dependencies = [
+                        new PullRequestDependency() { DependencyName = "Some.Package", DependencyVersion = existingVersion is null ? null : NuGetVersion.Parse(existingVersion) }
+                    ],
+                }
+            ],
+        };
+
+        var dependency = new Dependency("Some.Package", "1.1.0", DependencyType.PackageReference);
+
+        Assert.Equal(expectedResult, job.IsUpdatePermitted(dependency));
+    }
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public void GetExistingGroupPullRequestForDependencies_UnknownVersion(bool considerVersions, bool expectedMatch)
+    {
+        var job = new Job()
+        {
+            Source = new JobSource() { Provider = "github", Repo = "some/repo" },
+            ExistingGroupPullRequests = [
+                new GroupPullRequest()
+                {
+                    DependencyGroupName = "Some-Group-Name",
+                    Dependencies = [
+                        new PullRequestDependency() { DependencyName = "Some.Package", DependencyVersion = null }
+                    ],
+                }
+            ],
+        };
+        var dependencies = new[]
+        {
+            new ReportedDependencyWithDirectory() { Name = "Some.Package", Version = "1.1.0", Requirements = [], Directory = "/" },
+        };
+
+        var pullRequest = job.GetExistingGroupPullRequestForDependencies(dependencies, considerVersions, "Some-Group-Name");
+
+        Assert.Equal(expectedMatch, pullRequest is not null);
+    }
+
+    [Theory]
+    [InlineData(null, "/src/Project", true)]
+    [InlineData("", "/src/Project", true)]
+    [InlineData("/", "/src/Project", false)]
+    [InlineData("/src/Project", "/src/Project", true)]
+    [InlineData("/src/Other", "/src/Project", false)]
+    public void GetExistingPullRequestForDependencies_DirectoryMatching_Refresh(string? existingDirectory, string desiredDirectory, bool expectedMatch)
+    {
+        var job = new Job()
+        {
+            Source = new JobSource() { Provider = "github", Repo = "some/repo" },
+            ExistingPullRequests = [
+                new PullRequest()
+                {
+                    Dependencies = [
+                        new PullRequestDependency() { DependencyName = "Some.Package", DependencyVersion = NuGetVersion.Parse("1.1.0"), Directory = existingDirectory }
+                    ],
+                }
+            ],
+        };
+        var dependencies = new[]
+        {
+            new ReportedDependencyWithDirectory() { Name = "Some.Package", Version = "1.1.0", Requirements = [], Directory = desiredDirectory },
+        };
+
+        var pullRequest = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: true, treatEmptyDirectoryAsWildcard: true);
+
+        Assert.Equal(expectedMatch, pullRequest is not null);
+    }
+
+    [Fact]
+    public void GetExistingPullRequestForDependencies_RootDirectoryIsLiteral()
+    {
+        var job = new Job()
+        {
+            Source = new JobSource() { Provider = "github", Repo = "some/repo" },
+            ExistingPullRequests = [
+                new PullRequest()
+                {
+                    Dependencies = [
+                        new PullRequestDependency() { DependencyName = "Some.Package", DependencyVersion = NuGetVersion.Parse("1.1.0"), Directory = "/" }
+                    ],
+                }
+            ],
+        };
+        var dependencies = new[]
+        {
+            new ReportedDependencyWithDirectory() { Name = "Some.Package", Version = "1.1.0", Requirements = [], Directory = "/src/Project" },
+        };
+
+        var pullRequest = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: true, treatEmptyDirectoryAsWildcard: true);
+
+        Assert.Null(pullRequest);
+    }
+
     public static IEnumerable<object?[]> IsUpdatePermittedTestData()
     {
         // with default allowed updates on a transitive dependency

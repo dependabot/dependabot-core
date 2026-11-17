@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -6,15 +6,19 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/elm/update_checker/cli_parser"
 
-namespace = Dependabot::Elm::UpdateChecker
-RSpec.describe namespace::CliParser do
+RSpec.describe Dependabot::Elm::UpdateChecker::CliParser do
+  extend T::Sig
+
+  sig { params(version_string: String).returns(Dependabot::Version) }
   def elm_version(version_string)
     Dependabot::Elm::Version.new(version_string)
   end
   describe "#decode_install_preview" do
+    sig { returns(T::Hash[String, Dependabot::Elm::Version]) }
     subject(:decode_install_preview) { described_class.decode_install_preview(output) }
 
     context "when a first install is needed" do
+      sig { returns(String) }
       let(:output) do
         %(
 Some new packages are needed. Here is the upgrade plan.
@@ -37,6 +41,7 @@ Do you approve of this plan? [Y/n]
     end
 
     context "when an upgrade is needed" do
+      sig { returns(String) }
       let(:output) do
         %{
 Some new packages are needed. Here is the upgrade plan.

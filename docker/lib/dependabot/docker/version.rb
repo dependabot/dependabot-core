@@ -30,9 +30,16 @@ module Dependabot
         release_part = Tag.new(T.must(release_part).chomp(".").chomp("-").chomp("_")).numeric_version
 
         @release_part = T.let(Dependabot::Version.new(T.must(release_part).tr("-", ".")), Dependabot::Version)
-        @update_part = T.let(
-          Dependabot::Version.new(update_part&.start_with?(/[0-9]/) ? update_part : 0),
-          Dependabot::Version
+        # Everything after the first underscore is the "update" part. It can itself contain further
+        # underscore-separated groups (for example 17.0.4_1.7.1_3.2.0), and each group is compared in order.
+        # A negative limit is used so that a trailing underscore (for example "17.0.4_8_") is preserved as an
+        # explicit empty group instead of being silently dropped by String#split, which would otherwise make
+        # "17.0.4_8" and "17.0.4_8_" compare as equal.
+        update_groups = update_part.to_s.split("_", -1)
+        @update_part = T.let(update_group_version(update_groups.first), Dependabot::Version)
+        @extra_update_parts = T.let(
+          update_groups.drop(1).map { |group| update_group_version(group) },
+          T::Array[Dependabot::Version]
         )
 
         super(@release_part)
@@ -77,7 +84,17 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::Version]) }
       def sort_criteria
-        [@release_part, @update_part]
+        [@release_part, @update_part, *@extra_update_parts]
+      end
+
+      private
+
+      # Groups that are not valid versions (for example a commit hash, or an empty group from a trailing
+      # underscore) count as 0.
+      sig { params(group: T.nilable(String)).returns(Dependabot::Version) }
+      def update_group_version(group)
+        valid = group&.start_with?(/[0-9]/) && Dependabot::Version.correct?(group)
+        Dependabot::Version.new(valid ? group : 0)
       end
     end
   end

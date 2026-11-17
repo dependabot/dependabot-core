@@ -1,0 +1,15 @@
+{
+  "name": "catalog-workspace",
+  "private": true,
+  "workspaces": {
+    "packages": ["packages/*"],
+    "catalog": {
+      "is-number": "^6.0.0"
+    },
+    "catalogs": {
+      "testing": {
+        "etag": "1.0.1"
+      }
+    }
+  }
+}

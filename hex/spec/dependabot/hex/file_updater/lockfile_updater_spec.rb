@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only target_version and error_message fixtures.
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
@@ -71,6 +73,25 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
       expect(updated_lockfile_content).to include(
         "236d77ce7bf3e3a2668dc0d32a9b6f1f9b1f05361019946aae49874904be4aed"
       )
+    end
+
+    context "with a deps.update alias" do
+      let(:mixfile_fixture_name) { "deps_update_alias" }
+      let(:lockfile_fixture_name) { "minor_version" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "plug",
+          version: "1.3.6",
+          requirements: [{ file: "mix.exs", requirement: "~> 1.3.0", groups: [], source: nil }],
+          previous_version: "1.3.5",
+          previous_requirements: [{ file: "mix.exs", requirement: "~> 1.3.0", groups: [], source: nil }],
+          package_manager: "hex"
+        )
+      end
+
+      it "updates without invoking the project alias" do
+        expect(updated_lockfile_content).to include %({:hex, :plug, "1.3.6")
+      end
     end
 
     context "with no requirement" do

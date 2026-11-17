@@ -1,0 +1,4 @@
+npm error code EALLOWREMOTE
+npm error Fetching packages of type "remote" have been disabled
+npm error Refusing to fetch "etag@https://registry.npmjs.org/etag/-/etag-1.8.1.tgz"
+npm error A complete log of this run can be found in: /home/dependabot/.npm/_logs/2026-10-14T20_24_35_827Z-debug-0.log

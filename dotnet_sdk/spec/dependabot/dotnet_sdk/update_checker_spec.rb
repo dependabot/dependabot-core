@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve child-context fixtures and shared-context methods. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -29,7 +30,7 @@ RSpec.describe Dependabot::DotnetSdk::UpdateChecker do
       dependency: dependency,
       dependency_files: dependency_files,
       repo_contents_path: repo_contents_path,
-      credentials: github_credentials,
+      credentials: github_credentials.map { |credential| Dependabot::Credential.new(credential) },
       security_advisories: security_advisories,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored

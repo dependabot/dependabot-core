@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -355,6 +355,12 @@ RSpec.describe Dependabot::Hex::FileParser do
     context "with a bad specification" do
       let(:mixfile_fixture_name) { "bad_spec" }
       let(:lockfile_fixture_name) { "exact_version" }
+
+      its(:length) { is_expected.to eq(2) }
+    end
+
+    context "with a mix.exs that generates warnings" do
+      let(:mixfile_fixture_name) { "deps_warning" }
 
       its(:length) { is_expected.to eq(2) }
     end

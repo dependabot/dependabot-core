@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve constants defined on the anonymous test subclass. https://srb.help/5001
 # frozen_string_literal: true
 
 require "spec_helper"

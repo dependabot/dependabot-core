@@ -1,0 +1,7 @@
+{
+  "name": "shrinkwrap_and_package_lock",
+  "version": "1.0.0",
+  "dependencies": {
+    "etag": "^1.0.0"
+  }
+}

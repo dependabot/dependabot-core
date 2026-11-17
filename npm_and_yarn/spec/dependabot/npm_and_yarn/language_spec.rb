@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/npm_and_yarn/package_manager"
@@ -6,14 +6,21 @@ require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::NpmAndYarn::Language do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Dependabot::NpmAndYarn::Language) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:language) do
     described_class.new(
       raw_version: raw_version,
       requirement: requirement
     )
   end
+  sig { returns(String) }
   let(:raw_version) { "16.13.1" }
+  sig { returns(T.nilable(Dependabot::NpmAndYarn::Requirement)) }
   let(:requirement) { nil }
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#initialize" do
     it "sets the version correctly" do
@@ -33,6 +40,7 @@ RSpec.describe Dependabot::NpmAndYarn::Language do
     end
 
     context "when a requirement is provided" do
+      sig { returns(T.nilable(Dependabot::NpmAndYarn::Requirement)) }
       let(:requirement) { Dependabot::NpmAndYarn::Requirement.new([">= 16.0.0", "< 17.0.0"]) }
 
       it "sets the requirement correctly" do

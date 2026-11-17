@@ -1,12 +1,14 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "pathname"
 require "sorbet-runtime"
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/experiments"
 require "dependabot/github_actions/constants"
+require "dependabot/github_actions/workflow_file"
 
 module Dependabot
   module GithubActions
@@ -50,7 +52,7 @@ module Dependabot
           # and never activates the ecosystem on its own. Relocking also requires
           # every workflow to be materialized, so retain the workflow-only path if
           # an invalidly encoded workflow had to be omitted.
-          fetched_files += [actions_lockfile].compact if incorrectly_encoded_workflow_files.empty?
+          fetched_files += relock_files if incorrectly_encoded_workflow_files.empty?
           return fetched_files
         end
 
@@ -76,15 +78,84 @@ module Dependabot
 
       private
 
-      # Fetches the canonical `.github/workflows/actions.lock` when the update covers
-      # repository workflows. Composite-action directories cannot own a lockfile.
+      # The lockfile plus everything the engine needs to relock it, or nothing when
+      # a workflow it would read is invalidly encoded.
+      sig { returns(T::Array[DependencyFile]) }
+      def relock_files
+        lockfile = actions_lockfile
+        return [] unless lockfile && repository_workflow_files.all? { |f| f.content&.valid_encoding? }
+
+        [lockfile] + repository_workflow_files + self_repository_action_files
+      end
+
+      # Fetches the canonical `.github/workflows/actions.lock`. Composite-action
+      # directories cannot own a lockfile, but `$/` workflows reaching them do.
       sig { returns(T.nilable(DependencyFile)) }
       def actions_lockfile
         return unless Dependabot::Experiments.enabled?(:github_actions_lockfile)
-        return unless source.hostname == GITHUB_COM
-        return fetch_file_if_present(LOCKFILE_PATH) if directory == "/"
+        return unless source.hostname == GITHUB_COM || source.hostname.end_with?(".ghe.com")
 
-        fetch_file_if_present(LOCKFILE_NAME) if directory.delete_prefix("/") == WORKFLOW_DIRECTORY
+        fetch_file_if_present(relative_to_directory(LOCKFILE_PATH))
+      end
+
+      # Repository workflows a composite-action job needs to relock the lock. Support
+      # files only: the composite job must never bump the workflows' own refs.
+      sig { returns(T::Array[DependencyFile]) }
+      def repository_workflow_files
+        return [] if ["/", "/#{WORKFLOW_DIRECTORY}"].include?(File.join("/", directory))
+
+        @repository_workflow_files ||= T.let(
+          begin
+            dir = relative_to_directory(WORKFLOW_DIRECTORY)
+            repo_contents(dir: dir, raise_errors: false)
+              .select { |f| f.type == "file" && f.name.match?(MANIFEST_FILE_PATTERN) }
+              .map { |f| fetch_file_from_host(File.join(dir, f.name)) }
+              .each { |f| f.support_file = true }
+          end,
+          T.nilable(T::Array[DependencyFile])
+        )
+      end
+
+      sig { params(repo_path: String).returns(String) }
+      def relative_to_directory(repo_path)
+        Pathname.new(File.join("/", repo_path)).relative_path_from(File.join("/", directory)).to_s
+      end
+
+      # `$/` composites can live anywhere in the repo and can call each other, so
+      # relocking needs every action definition, at its repo-relative path.
+      sig { returns(T::Array[DependencyFile]) }
+      def self_repository_action_files
+        fetched = correctly_encoded_workflow_files + repository_workflow_files
+        return [] unless fetched.any? { |f| self_repository_uses?(f) }
+
+        # One recursive tree call. A truncated tree (>100k entries) may miss composites,
+        # which the engine then reports as an EngineError.
+        repo_action_paths
+          .reject { |path| fetched.any? { |f| f.path == path } }
+          .map do |path|
+            file = fetch_file_from_host(relative_to_directory(path))
+            file.support_file = true
+            file
+          end
+      end
+
+      sig { params(file: DependencyFile).returns(T::Boolean) }
+      def self_repository_uses?(file)
+        content = file.content.to_s
+        return false unless content.include?("$/")
+
+        WorkflowFile.new(content).uses_declarations.any? { |declaration| declaration.value.start_with?("$/") }
+      rescue Psych::SyntaxError, Psych::DisallowedClass, Psych::BadAlias
+        false
+      end
+
+      sig { returns(T::Array[String]) }
+      def repo_action_paths
+        tree = github_client.tree(repo, T.must(commit), recursive: true)
+        T.let(tree[:tree], T::Array[Sawyer::Resource])
+         .select { |entry| T.let(entry[:type], String) == "blob" }
+         .map { |entry| T.let("/#{entry[:path]}", String) }
+         .select { |path| ACTION_FILE_NAMES.include?(File.basename(path)) }
       end
 
       sig { returns(T::Array[DependencyFile]) }

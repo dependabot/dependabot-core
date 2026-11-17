@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -56,7 +56,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
 
   def stub_no_plugin_source_files(*project_dirs)
     project_dirs.each do |project_dir|
-      described_class::PLUGIN_SOURCE_SET_DIRS.each do |source_dir|
+      Dependabot::Gradle::FileFetcher::PLUGIN_SOURCE_SET_DIRS.each do |source_dir|
         path = project_dir == "." ? source_dir : File.join(project_dir, source_dir)
         stub_no_content_request("#{path}?ref=sha")
       end
@@ -115,6 +115,52 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
         expect(file_fetcher_instance.files.count).to eq(2)
         expect(file_fetcher_instance.files.map(&:name))
           .to match_array(%w(build.gradle gradle/libs.versions.toml))
+      end
+    end
+
+    context "with multiple version catalogs defined in settings.gradle.kts" do
+      before do
+        stub_content_request("?ref=sha", "contents_root_with_gradle_dir.json")
+        stub_content_request("build.gradle.kts?ref=sha", "contents_kotlin_basic_buildfile.json")
+        stub_content_request("settings.gradle.kts?ref=sha", "contents_multi_catalog_settings.json")
+        stub_content_request("gradle?ref=sha", "contents_gradle_dir_with_catalogs.json")
+        stub_content_request("gradle/libs.versions.toml?ref=sha", "libs_versions_toml.json")
+        stub_content_request("gradle/tools.versions.toml?ref=sha", "tools_versions_toml.json")
+        stub_content_request("gradle/plugins.versions.toml?ref=sha", "plugins_versions_toml.json")
+        stub_no_content_request("gradle.lockfile?ref=sha")
+      end
+
+      it "fetches the buildfile, settings file, and all declared version catalog files" do
+        fetched_files = file_fetcher_instance.files
+
+        expect(fetched_files.map(&:name)).to match_array(
+          %w(
+            build.gradle.kts
+            settings.gradle.kts
+            gradle/libs.versions.toml
+            gradle/tools.versions.toml
+            gradle/plugins.versions.toml
+          )
+        )
+      end
+
+      context "when a catalog path escapes the repository" do
+        before do
+          stub_content_request("settings.gradle.kts?ref=sha", "contents_escaping_catalog_settings.json")
+          stub_content_request("shared?ref=sha", "content_gradle_toml.json")
+          stub_content_request("shared/libs.versions.toml?ref=sha", "libs_versions_toml.json")
+          allow(Dependabot.logger).to receive(:warn)
+        end
+
+        it "skips it with a warning" do
+          expect(file_fetcher_instance.files.map(&:name)).to match_array(
+            %w(build.gradle.kts settings.gradle.kts gradle/libs.versions.toml)
+          )
+          expect(Dependabot.logger).to have_received(:warn)
+            .with("Ignoring version catalog path outside the repository: ../shared/libs.versions.toml")
+          expect(Dependabot.logger).to have_received(:warn)
+            .with("Ignoring version catalog path outside the repository: /shared/libs.versions.toml")
+        end
       end
     end
 
@@ -345,6 +391,80 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
                 included/included/app/build.gradle
                 included/included/included/build.gradle
                 included/included/included/buildSrc/build.gradle
+              )
+            )
+        end
+      end
+
+      context "when the root build includes itself" do
+        before do
+          stub_content_request("?ref=sha", "contents_java_with_settings.json")
+          stub_content_request("settings.gradle?ref=sha", "contents_java_settings_self_included_build.json")
+          stub_content_request("build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("gradle.lockfile?ref=sha")
+          stub_content_request("app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("app/gradle.lockfile?ref=sha")
+          stub_content_request("included?ref=sha", "contents_java_with_settings.json")
+          stub_content_request("included/settings.gradle?ref=sha", "contents_java_simple_settings.json")
+          stub_content_request("included/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("included/gradle.lockfile?ref=sha")
+          stub_content_request("included/app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("included/app/gradle.lockfile?ref=sha")
+          stub_no_wrapper_files("included/")
+          stub_no_plugin_source_files("included", "included/app")
+        end
+
+        it "fetches each build only once" do
+          expect(file_fetcher_instance.files.map(&:name))
+            .to match_array(
+              %w(
+                build.gradle settings.gradle
+                app/build.gradle
+                included/build.gradle included/settings.gradle
+                included/app/build.gradle
+              )
+            )
+        end
+      end
+
+      context "when included builds form a cycle" do
+        before do
+          stub_content_request("?ref=sha", "contents_java_with_settings.json")
+          stub_content_request("settings.gradle?ref=sha", "contents_java_settings_1_included_build.json")
+          stub_content_request("build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("gradle.lockfile?ref=sha")
+          stub_content_request("app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("app/gradle.lockfile?ref=sha")
+          stub_content_request("included?ref=sha", "contents_java_with_settings.json")
+          stub_content_request("included/settings.gradle?ref=sha", "contents_java_settings_nested_included_build.json")
+          stub_content_request("included/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("included/gradle.lockfile?ref=sha")
+          stub_content_request("included/app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("included/app/gradle.lockfile?ref=sha")
+          stub_content_request("included/nested?ref=sha", "contents_java_with_settings.json")
+          stub_content_request(
+            "included/nested/settings.gradle?ref=sha",
+            "contents_java_settings_parent_included_build.json"
+          )
+          stub_content_request("included/nested/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("included/nested/gradle.lockfile?ref=sha")
+          stub_content_request("included/nested/app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("included/nested/app/gradle.lockfile?ref=sha")
+          stub_no_wrapper_files("included/")
+          stub_no_wrapper_files("included/nested/")
+          stub_no_plugin_source_files("included", "included/app", "included/nested", "included/nested/app")
+        end
+
+        it "fetches each build only once" do
+          expect(file_fetcher_instance.files.map(&:name))
+            .to match_array(
+              %w(
+                build.gradle settings.gradle
+                app/build.gradle
+                included/build.gradle included/settings.gradle
+                included/app/build.gradle
+                included/nested/build.gradle included/nested/settings.gradle
+                included/nested/app/build.gradle
               )
             )
         end

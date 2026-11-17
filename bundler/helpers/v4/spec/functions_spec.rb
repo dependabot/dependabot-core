@@ -1,13 +1,16 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "native_spec_helper"
 require "shared_contexts"
 
 RSpec.describe Functions do
+  extend T::Sig
+
   include_context "when in a temporary bundler directory"
 
   describe "#jfrog_source" do
+    sig { returns(String) }
     let(:project_name) { "jfrog_source" }
 
     it "returns the jfrog source" do
@@ -24,6 +27,7 @@ RSpec.describe Functions do
   end
 
   describe "#git_specs" do
+    sig { returns(T::Array[T::Hash[Symbol, String]]) }
     subject(:git_specs) do
       in_tmp_folder do
         described_class.git_specs(
@@ -34,12 +38,14 @@ RSpec.describe Functions do
       end
     end
 
+    sig { returns(String) }
     let(:project_name) { "git_source" }
 
+    sig { params(count: Integer).void }
     def expect_specs(count)
       expect(git_specs.size).to eq(count)
       git_specs.each do |gs|
-        uri = URI.parse(gs[:auth_uri])
+        uri = URI.parse(gs.fetch(:auth_uri))
         expect(uri.scheme).to(satisfy { |s| s.match?(/https?/o) })
       end
     end
@@ -49,6 +55,7 @@ RSpec.describe Functions do
     end
 
     context "with github shorthand" do
+      sig { returns(String) }
       let(:project_name) { "github_source" }
 
       it "returns git specs" do

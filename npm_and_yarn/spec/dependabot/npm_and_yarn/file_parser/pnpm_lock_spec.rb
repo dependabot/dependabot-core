@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve nested exception constants or instance fixtures in loop-generated examples.
+
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/npm_and_yarn/file_parser"

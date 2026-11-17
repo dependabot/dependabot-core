@@ -1,22 +1,31 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/julia/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Julia::FileFetcher do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(T::Array[Dependabot::Credential]) }
   let(:credentials) do
     # Basic git credentials for testing - the file fetcher uses these for repository access
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
   # let(:github_url) { "https://api.github.com/" } # Not used in simplified spec
+  sig { returns(String) }
   let(:directory) { "/" }
+  sig { returns(Dependabot::Julia::FileFetcher) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:file_fetcher_instance) do
     described_class.new(
       source: source,
@@ -24,6 +33,7 @@ RSpec.describe Dependabot::Julia::FileFetcher do
       repo_contents_path: nil # repo_contents_path is optional for testing
     )
   end
+  sig { returns(Dependabot::Source) }
   let(:source) do
     # Standard test source configuration for Julia repository
     Dependabot::Source.new(
@@ -33,15 +43,20 @@ RSpec.describe Dependabot::Julia::FileFetcher do
       branch: "main"
     )
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   # Test that the FileFetcher implements the required interface from the base class
   # If this fails, it indicates missing or incorrectly implemented methods
   it_behaves_like "a dependency file fetcher"
 
   describe "#fetch_files" do
+    sig { returns(T::Array[Dependabot::DependencyFile]) }
     subject(:fetched_files) { file_fetcher_instance.fetch_files }
 
+    # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+    sig { returns(Dependabot::Julia::RegistryClient) }
     let(:registry_client) { instance_double(Dependabot::Julia::RegistryClient) }
+    sig { returns(Dependabot::DependencyFile) }
     let(:project_file) do
       Dependabot::DependencyFile.new(
         name: "Project.toml",
@@ -49,12 +64,15 @@ RSpec.describe Dependabot::Julia::FileFetcher do
       )
     end
 
+    sig { returns(Dependabot::DependencyFile) }
     let(:manifest_file) do
       Dependabot::DependencyFile.new(
         name: "Manifest.toml",
         content: fixture("projects", "basic", "Manifest.toml")
       )
     end
+
+    # rubocop:enable RSpec/ScatteredLet
 
     before do
       # Mock the registry client
@@ -115,6 +133,8 @@ RSpec.describe Dependabot::Julia::FileFetcher do
     end
 
     context "when Julia helper finds workspace with multiple Project.toml files" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(Dependabot::DependencyFile) }
       let(:docs_project_file) do
         Dependabot::DependencyFile.new(
           name: "docs/Project.toml",
@@ -122,12 +142,15 @@ RSpec.describe Dependabot::Julia::FileFetcher do
         )
       end
 
+      sig { returns(Dependabot::DependencyFile) }
       let(:test_project_file) do
         Dependabot::DependencyFile.new(
           name: "test/Project.toml",
           content: "name = \"TestProject\""
         )
       end
+
+      # rubocop:enable RSpec/ScatteredLet
 
       before do
         allow(registry_client).to receive(:find_workspace_project_files)
@@ -174,6 +197,7 @@ RSpec.describe Dependabot::Julia::FileFetcher do
     end
 
     context "when Julia helper finds versioned manifest" do
+      sig { returns(Dependabot::DependencyFile) }
       let(:versioned_manifest_file) do
         Dependabot::DependencyFile.new(
           name: "Manifest-v1.12.toml",
@@ -209,6 +233,7 @@ RSpec.describe Dependabot::Julia::FileFetcher do
     end
 
     context "when Julia helper finds a manifest per Julia release" do
+      sig { returns(Dependabot::DependencyFile) }
       let(:versioned_manifest_file) do
         Dependabot::DependencyFile.new(
           name: "Manifest-v1.12.toml",
@@ -337,11 +362,5 @@ RSpec.describe Dependabot::Julia::FileFetcher do
       expect(message).to be_a(String)
       expect(message.length).to be > 10
     end
-  end
-
-  private
-
-  def fixture(type, *names)
-    File.read(File.join("spec", "fixtures", type, *names))
   end
 end

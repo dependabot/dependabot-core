@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve dependency and URL fixtures defined only in child contexts.
+
 require "spec_helper"
 require "dependabot/credential"
 require "dependabot/dependency"

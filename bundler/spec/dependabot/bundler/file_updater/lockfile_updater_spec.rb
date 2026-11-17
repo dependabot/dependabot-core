@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve child-only fixtures and dynamic described_class constant references.
+
 require "spec_helper"
 require "shared_contexts"
 require "dependabot/dependency"
@@ -19,6 +21,60 @@ RSpec.describe Dependabot::Bundler::FileUpdater::LockfileUpdater do
   end
 
   let(:updated_lockfile_content) { updater.updated_lockfile_content }
+
+  describe "with a checksum mismatch on an unrelated gem" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "business",
+        version: "1.5.0",
+        previous_version: "1.4.0",
+        requirements: [{ file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil }],
+        previous_requirements: [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }],
+        package_manager: "bundler"
+      )
+    end
+
+    %w(2 4).each do |bundler_major|
+      context "with Bundler #{bundler_major}" do
+        let(:files) { bundler_project_dependency_files("checksum_mismatch_unrelated_gem_#{bundler_major}") }
+
+        it "raises an error naming the gem" do
+          expect { updated_lockfile_content }.to raise_error(Dependabot::DependencyChecksumMismatch) do |error|
+            expect(error.dependency_name).to eq("statesman (1.2.1)")
+          end
+        end
+      end
+    end
+  end
+
+  describe "with lockfile metadata" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "business",
+        version: "1.5.0",
+        previous_version: "1.4.0",
+        requirements: [],
+        previous_requirements: [],
+        package_manager: "bundler"
+      )
+    end
+    let(:files) { bundler_project_dependency_files("explicit_ruby_in_lockfile") }
+    let(:lockfile) { files.find { |file| file.name == "Gemfile.lock" } }
+    let(:temporary_lockfile_contents) { [] }
+
+    before do
+      allow(Dependabot::Bundler::NativeHelpers).to receive(:run_bundler_subprocess) do
+        temporary_lockfile_contents << File.read("Gemfile.lock")
+
+        lockfile.content.sub("business (1.4.0)", "business (1.5.0)")
+      end
+    end
+
+    it "passes the complete lockfile to the native helper" do
+      expect(updated_lockfile_content).to include("business (1.5.0)")
+      expect(temporary_lockfile_contents).to eq([lockfile.content])
+    end
+  end
 
   describe "with lockfiles that include checksums" do
     let(:dependency) do

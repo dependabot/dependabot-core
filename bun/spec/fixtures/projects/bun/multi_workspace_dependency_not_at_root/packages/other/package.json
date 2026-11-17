@@ -1,0 +1,7 @@
+{
+  "name": "other",
+  "version": "0.0.1",
+  "dependencies": {
+    "is-number": "^2.0.0"
+  }
+}

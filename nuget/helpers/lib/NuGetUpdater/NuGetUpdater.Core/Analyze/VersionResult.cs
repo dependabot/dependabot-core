@@ -44,6 +44,11 @@ internal class VersionResult
         return [.. _versions[version]];
     }
 
+    public void SetPackageSources(NuGetVersion version, ImmutableArray<PackageSource> sources)
+    {
+        _versions[version] = [.. sources];
+    }
+
     public ImmutableArray<NuGetVersion> GetVersions()
     {
         return [.. _versions.Keys];

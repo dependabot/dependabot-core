@@ -1,13 +1,19 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/vcpkg/package/versions_database"
 
 RSpec.describe Dependabot::Vcpkg::Package::VersionsDatabase do
+  extend T::Sig
+
+  sig { returns(Dependabot::Vcpkg::Package::VersionsDatabase) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   subject(:database) { described_class.new(repository_path: repository_path) }
 
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(String) }
   let(:repository_path) { "/opt/vcpkg" }
+  sig { returns(String) }
   let(:zlib_versions) do
     {
       "versions" => [
@@ -19,6 +25,7 @@ RSpec.describe Dependabot::Vcpkg::Package::VersionsDatabase do
       ]
     }.to_json
   end
+  sig { returns(String) }
   let(:baseline) do
     {
       "default" => {
@@ -28,6 +35,7 @@ RSpec.describe Dependabot::Vcpkg::Package::VersionsDatabase do
       }
     }.to_json
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   before do
     allow(File).to receive(:directory?).with("/opt/vcpkg/.git").and_return(true)
@@ -89,6 +97,7 @@ RSpec.describe Dependabot::Vcpkg::Package::VersionsDatabase do
   end
 
   describe "#versions_for" do
+    sig { returns(T::Array[Dependabot::Vcpkg::Package::VersionsDatabase::PortVersion]) }
     subject(:versions) { database.versions_for("zlib") }
 
     it "returns every published version, newest first" do
@@ -100,7 +109,7 @@ RSpec.describe Dependabot::Vcpkg::Package::VersionsDatabase do
     end
 
     it "records the git tree so release dates can be looked up" do
-      expect(versions.first.git_tree).to eq("a" * 40)
+      expect(T.must(versions.first).git_tree).to eq("a" * 40)
     end
 
     it "skips entries with no version" do
@@ -169,6 +178,7 @@ RSpec.describe Dependabot::Vcpkg::Package::VersionsDatabase do
   end
 
   describe "#release_dates_for" do
+    sig { returns(String) }
     let(:git_log) do
       <<~LOG
         #{'1' * 40}\t2024-01-30T12:58:10-08:00

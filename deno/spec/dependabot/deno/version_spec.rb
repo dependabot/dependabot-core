@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the version_string fixture defined only in child contexts.
+
 require "spec_helper"
 require "dependabot/deno/version"
 

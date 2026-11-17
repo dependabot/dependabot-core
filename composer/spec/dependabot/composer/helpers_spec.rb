@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve fixtures and matchers in class-scope generated examples.
+
 require "spec_helper"
 require "dependabot/composer/package_manager"
 require "dependabot/composer/language"
@@ -282,6 +284,29 @@ RSpec.describe Dependabot::Composer::Helpers do
 
     it "returns nil if the dependency is not specified" do
       expect(described_class.dependency_constraint(manifest_document(parsed_composer_json), "ext-mbstring")).to be_nil
+    end
+  end
+
+  describe ".out_of_memory_error?" do
+    it "detects PHP's memory limit error" do
+      message = "Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes)"
+      expect(described_class.out_of_memory_error?(message)).to be(true)
+    end
+
+    it "detects PHP's out of memory error" do
+      message = "Out of memory (allocated 2097152) (tried to allocate 34359738392 bytes)"
+      expect(described_class.out_of_memory_error?(message)).to be(true)
+    end
+
+    it "detects an out of memory error that follows mmap() failures" do
+      message = "mmap() failed: [12] Cannot allocate memory\n\n" \
+                "mmap() failed: [12] Cannot allocate memory\nOut of memory"
+      expect(described_class.out_of_memory_error?(message)).to be(true)
+    end
+
+    it "ignores messages that only mention memory mid-line" do
+      message = "Your requirements could not be resolved. Out of memory notes: none"
+      expect(described_class.out_of_memory_error?(message)).to be(false)
     end
   end
 

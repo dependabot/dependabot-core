@@ -22,6 +22,16 @@ module Dependabot
 
         SCOPED_REGISTRY = /^\s*@(?<scope>\S+):registry\s*=\s*(?<registry>\S+)/
 
+        # npm 12 settings that decide whether git and remote tarball dependencies may be installed.
+        # Helpers.npm_allow_flags only adds its permissive defaults when these are unset, so a .npmrc generated from
+        # credentials must keep them from the committed .npmrc for the written config and the CLI flags to agree.
+        POLICY_KEY = /^\s*["']?(?:allow-git|allow-remote)["']?\s*=/
+
+        sig { params(content: T.nilable(String)).returns(T::Array[String]) }
+        def self.policy_lines(content)
+          content.to_s.lines.map(&:strip).grep(POLICY_KEY)
+        end
+
         sig do
           params(
             dependency_files: T::Array[Dependabot::DependencyFile],
@@ -146,6 +156,7 @@ module Dependabot
 
           replaces_base_cred = registry_credentials.find(&:replaces_base?)
           lines << "always-auth = true" if replaces_base_cred
+          lines.concat(NpmrcBuilder.policy_lines(npmrc_file&.content))
 
           lines.reject(&:empty?).join("\n")
         end
@@ -292,7 +303,8 @@ module Dependabot
           # removes attribute timeout to allow for job update,
           # having a timeout=xxxxx value is causing some jobs to fail
           initial_content = T.must(T.must(npmrc_file).content)
-                             .gsub(/^.*\$\{.*\}.*/, "").strip.gsub(/^timeout.*/, "").strip + "\n"
+                             .gsub(/^.*\$\{.*\}.*/) { |line| line.match?(POLICY_KEY) ? line : "" }
+                             .strip.gsub(/^timeout.*/, "").strip + "\n"
 
           return initial_content unless yarn_lock || package_lock
           return initial_content unless global_registry

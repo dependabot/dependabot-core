@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve registry stubs and instance matchers in loop-generated metadata examples.
+
 require "spec_helper"
 require "dependabot/credential"
 require "dependabot/dependency"

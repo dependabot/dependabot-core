@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -6,6 +6,8 @@ require "dependabot/dependency_file"
 require "dependabot/swift/file_parser/xcode_spm_resolver"
 
 RSpec.describe Dependabot::Swift::FileParser::XcodeSpmResolver do
+  extend T::Sig
+
   subject(:resolver) do
     described_class.new(
       xcode_resolved_files: xcode_resolved_files,
@@ -13,8 +15,12 @@ RSpec.describe Dependabot::Swift::FileParser::XcodeSpmResolver do
     )
   end
 
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(T::Array[Dependabot::DependencyFile]) }
   let(:xcode_resolved_files) { [] }
+  sig { returns(T::Array[Dependabot::DependencyFile]) }
   let(:pbxproj_files) { [] }
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#parse" do
     context "with a single Xcode project (v2 Package.resolved)" do

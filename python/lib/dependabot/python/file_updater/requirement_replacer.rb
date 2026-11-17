@@ -150,7 +150,10 @@ module Dependabot
           after_escaped = Regexp.escape(after_name_extras)
           # Match the dependency name with any extras (or none), followed by the requirement.
           # This ensures a single gsub handles all extras variants of the same dependency.
-          /(?<![\-\w\.\[])#{name_escaped}\s*\\?\s*(?:\[[^\]]*\])?\s*\\?\s*#{after_escaped}(?![\-\w\.])/
+          # The requirement must end where the declaration's own specifiers end: ">=2.7.0" is the start of
+          # ">=2.7.0,<3.0.0" and ">=2.7.0,!=2.9.0; sys_platform == 'win32'", which are other declarations.
+          /(?<![\-\w\.\[])#{name_escaped}\s*\\?\s*(?:\[[^\]]*\])?\s*\\?\s*
+           #{after_escaped}(?![\-\w\.]|\s*,\s*\\?\s*[<>=!~])/x
         end
 
         sig { params(requirement: T.nilable(String)).returns(T::Boolean) }

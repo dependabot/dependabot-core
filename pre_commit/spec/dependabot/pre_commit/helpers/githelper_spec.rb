@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -6,6 +6,9 @@ require "dependabot/dependency"
 require "dependabot/pre_commit/helpers"
 
 RSpec.describe Dependabot::PreCommit::Helpers::Githelper do
+  extend T::Sig
+
+  sig { returns(Dependabot::PreCommit::Helpers::Githelper) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   subject(:git_helper) do
     described_class.new(
       dependency: dependency,
@@ -15,6 +18,8 @@ RSpec.describe Dependabot::PreCommit::Helpers::Githelper do
     )
   end
 
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(T::Hash[Symbol, Object]) }
   let(:source) do
     {
       type: "git",
@@ -23,6 +28,7 @@ RSpec.describe Dependabot::PreCommit::Helpers::Githelper do
       branch: nil
     }
   end
+  sig { returns(T::Hash[Symbol, Object]) }
   let(:fallback_source) do
     {
       type: "git",
@@ -31,6 +37,7 @@ RSpec.describe Dependabot::PreCommit::Helpers::Githelper do
       branch: "main"
     }
   end
+  sig { returns(Dependabot::Dependency) }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "https://github.com/pre-commit/pre-commit-hooks",
@@ -44,6 +51,7 @@ RSpec.describe Dependabot::PreCommit::Helpers::Githelper do
       package_manager: "pre_commit"
     )
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#git_commit_checker_for" do
     it "parses source details" do

@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -6,6 +6,9 @@ require "dependabot/bun/dependency_grapher"
 require "dependabot/bun/dependency_grapher/lockfile_generator"
 
 RSpec.describe Dependabot::Bun::DependencyGrapher::LockfileGenerator do
+  extend T::Sig
+
+  sig { returns(Dependabot::Bun::DependencyGrapher::LockfileGenerator) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   subject(:generator) do
     described_class.new(
       dependency_files: dependency_files,
@@ -13,6 +16,8 @@ RSpec.describe Dependabot::Bun::DependencyGrapher::LockfileGenerator do
     )
   end
 
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(T::Array[Dependabot::Credential]) }
   let(:credentials) do
     [
       Dependabot::Credential.new(
@@ -26,10 +31,13 @@ RSpec.describe Dependabot::Bun::DependencyGrapher::LockfileGenerator do
     ]
   end
 
+  sig { returns(T::Array[Dependabot::DependencyFile]) }
   let(:dependency_files) { project_dependency_files("javascript/exact_version_requirements_no_lockfile") }
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#generate" do
     context "when lockfile generation succeeds" do
+      sig { returns(String) }
       let(:lockfile_content) do
         fixture("projects", "bun", "grapher_with_lockfile", "bun.lock")
       end
