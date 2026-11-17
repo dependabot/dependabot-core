@@ -81,6 +81,20 @@ RSpec.describe Dependabot::Helm::FileUpdater do
 
     its(:length) { is_expected.to eq(1) }
 
+    context "when no dependency file has a changed requirement" do
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      let(:files) { [Dependabot::DependencyFile.new(content: helmfile_body, name: "charts/other/Chart.yaml")] }
+
+      it "raises with error report context attached" do
+        expect { updated_files }.to raise_error(RuntimeError, "No files changed!") do |error|
+          expect(Dependabot::ErrorReportContext.build(error: error)).to eq(
+            "dependency-names" => ["redis"],
+            "dependency-files" => ["charts/other/Chart.yaml"]
+          )
+        end
+      end
+    end
+
     describe "the updated Chart.yaml" do
       sig { returns(Dependabot::DependencyFile) }
       subject(:updated_helmfile) do

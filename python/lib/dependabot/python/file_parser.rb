@@ -16,6 +16,7 @@ require "dependabot/python/pip_compile_file_matcher"
 require "dependabot/python/language_version_manager"
 require "dependabot/python/package_manager"
 require "dependabot/python/marker_evaluator"
+require "dependabot/python/requirement_references"
 
 module Dependabot
   module Python
@@ -293,14 +294,16 @@ module Dependabot
       sig { returns(DependencySet) }
       def requirement_dependencies
         dependencies = DependencySet.new
-        parsed_requirement_files.each do |dep|
-          # If a requirement has a `<`, `<=` or '==' marker then updating it is
-          # probably blocked. Ignore it.
-          next if blocking_marker?(dep)
+        # If a requirement has a `<`, `<=` or '==' marker then updating it is
+        # probably blocked. Ignore it.
+        unblocked = parsed_requirement_files.reject { |dep| blocking_marker?(dep) }
+        entries, constraints = split_constraints(unblocked)
+        pins = constraint_pins(constraints)
 
+        entries.each do |dep|
           name = dep.name
           file = dep.file
-          version = dep.version
+          version = dep.version || pins[NameNormaliser.normalise(name)]
           original_file = get_original_file(file)
 
           requirements =
@@ -327,6 +330,51 @@ module Dependabot
             )
         end
         dependencies
+      end
+
+      # Without roots every requirements file is parsed as its own manifest, so `-c` entries are kept as
+      # requirements of the constraints file. From roots, they follow pip and only pin versions.
+      sig do
+        params(parsed: T::Array[PepDependency])
+          .returns([T::Array[PepDependency], T::Array[PepDependency]])
+      end
+      def split_constraints(parsed)
+        return [parsed, []] unless requirement_roots
+
+        parsed.partition { |dep| !dep.constraint }
+      end
+
+      sig { params(constraints: T::Array[PepDependency]).returns(T::Hash[String, String]) }
+      def constraint_pins(constraints)
+        constraints.each_with_object({}) do |dep, pins|
+          version = dep.version
+          pins[NameNormaliser.normalise(dep.name)] ||= version if version
+        end
+      end
+
+      # Updates need every file parsed as a manifest so they can update pins in constraints files, so parsing
+      # from roots is opt-in. A root is any requirements file not pulled in by another via `-r`/`-c`, as pip
+      # would only read those through the reference. A reference loop leaves files no root reaches; parse
+      # everything so pip reports it.
+      sig { returns(T.nilable(T::Array[String])) }
+      def requirement_roots
+        return unless options[:requirement_roots]
+
+        references = requirement_files.to_h do |file|
+          [Pathname.new(file.name).cleanpath.to_path, RequirementReferences.paths(file)]
+        end
+        roots = references.keys - references.values.flatten
+        # A root pip-compile input may constrain itself to its own output, which is still installed directly.
+        roots |= roots.filter_map { |name| name.sub(/\.in\z/, ".txt") if name.end_with?(".in") } & references.keys
+        roots if reaches_every_file?(roots, references)
+      end
+
+      sig { params(roots: T::Array[String], references: T::Hash[String, T::Array[String]]).returns(T::Boolean) }
+      def reaches_every_file?(roots, references)
+        reached = T.let(Set.new(roots), T::Set[String])
+        queue = roots.dup
+        references.fetch(T.must(queue.shift), []).each { |path| queue << path if reached.add?(path) } until queue.empty?
+        references.keys.all? { |name| reached.include?(name) }
       end
 
       sig { params(name: T.nilable(String), version: T.nilable(String)).returns(T::Boolean) }
@@ -387,7 +435,7 @@ module Dependabot
           result = SharedHelpers.run_helper_subprocess(
             command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
             function: "parse_requirements",
-            args: [Dir.pwd]
+            args: [Dir.pwd, requirement_roots].compact
           )
 
           requirements = PepDependency.from_requirements_helper_result(result)

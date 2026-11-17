@@ -342,6 +342,65 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
 
         perform
       end
+
+      context "when the job's advisories do not cover the installed version" do
+        before do
+          allow(stub_update_checker).to receive(:vulnerable?).and_return(false)
+        end
+
+        it "reports that no security update is needed when no update is possible" do
+          expect(mock_error_handler).not_to receive(:handle_dependency_error)
+          expect(mock_service).to receive(:record_update_job_error)
+            .with(error_type: "security_update_not_needed", error_details: { "dependency-name": dependency.name })
+
+          perform
+        end
+
+        it "keeps the unknown error when the job has no advisory for the dependency" do
+          # Without an advisory the job cannot tell whether the version is affected, so "not needed" would hide it.
+          allow(job).to receive(:security_advisories_for).and_return([])
+          expect(mock_error_handler).to receive(:handle_dependency_error)
+            .with(error: kind_of(Dependabot::DependabotError), dependency: dependency, dependency_group: anything)
+          expect(mock_service).not_to receive(:record_update_job_error)
+
+          perform
+        end
+
+        context "when the installed version is a git SHA" do
+          let(:dependency) do
+            dependency_snapshot.all_dependencies.find { |candidate| candidate.name == "dummy-git-dependency" }
+          end
+
+          it "keeps the unknown error, since the version cannot be checked against the advisories" do
+            expect(dependency.version).to eq("20151f9b67c8a04461fa0ee28385b6187b86587b")
+            expect(mock_error_handler).to receive(:handle_dependency_error)
+              .with(error: kind_of(Dependabot::DependabotError), dependency: dependency, dependency_group: anything)
+            expect(mock_service).not_to receive(:record_update_job_error)
+
+            perform
+          end
+        end
+
+        it "reports that no security update is needed when the dependency is up to date" do
+          allow(stub_update_checker).to receive(:up_to_date?).and_return(true)
+          expect(mock_error_handler).not_to receive(:handle_dependency_error)
+          expect(mock_service).to receive(:record_update_job_error)
+            .with(error_type: "security_update_not_needed", error_details: { "dependency-name": dependency.name })
+
+          perform
+        end
+      end
+    end
+
+    it "reports that no security update is needed when all versions are ignored and none is vulnerable" do
+      allow(stub_update_checker).to receive(:vulnerable?).and_return(false)
+      allow(stub_update_checker).to receive(:lowest_security_fix_version).and_raise(Dependabot::AllVersionsIgnored)
+      expect(mock_error_handler).not_to receive(:handle_dependency_error)
+      expect(mock_service).to receive(:record_update_job_error)
+        .with(error_type: "security_update_not_needed", error_details: { "dependency-name": dependency.name })
+      expect(mock_service).to receive(:create_pull_request)
+
+      perform
     end
 
     it "still creates a PR when resolving another dependency's error details fails" do
