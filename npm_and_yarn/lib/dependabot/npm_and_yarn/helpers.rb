@@ -511,7 +511,7 @@ module Dependabot
 
         inherited_path = (env || {}).fetch("PATH", ENV.fetch("PATH"))
         path = [NodeVersionManager::TOOLS_DIRECTORY, directory, inherited_path].join(":")
-        (env || {}).merge("PATH" => path)
+        (env || {}).merge("PATH" => path, "DEPENDABOT_PROJECT_NODE" => File.join(directory, "node"))
       end
 
       sig { returns(T.nilable(NodeVersionManager)) }

@@ -30,7 +30,10 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
     it "passes the selected runtime and existing environment to every package-manager command" do
       env = { "CUSTOM_VAR" => "preserved", "PATH" => "/custom/bin" }
-      selected_env = env.merge("PATH" => "/opt/node-tools:/home/dependabot/.nvm/versions/node/v26.0.0/bin:/custom/bin")
+      selected_env = env.merge(
+        "PATH" => "/opt/node-tools:/home/dependabot/.nvm/versions/node/v26.0.0/bin:/custom/bin",
+        "DEPENDABOT_PROJECT_NODE" => "/home/dependabot/.nvm/versions/node/v26.0.0/bin/node"
+      )
 
       described_class.run_npm_command("-v", env: env)
       described_class.run_pnpm_command("-v", env: env)
@@ -59,7 +62,10 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
         "/home/dependabot/.nvm/versions/node/v26.0.0/bin/node -v",
         fingerprint: "node -v",
-        env: { "PATH" => "/opt/node-tools:/home/dependabot/.nvm/versions/node/v26.0.0/bin:#{inherited_path}" }
+        env: {
+          "PATH" => "/opt/node-tools:/home/dependabot/.nvm/versions/node/v26.0.0/bin:#{inherited_path}",
+          "DEPENDABOT_PROJECT_NODE" => "/home/dependabot/.nvm/versions/node/v26.0.0/bin/node"
+        }
       )
       expect(ENV.fetch("PATH")).to eq(inherited_path)
     end
@@ -2160,6 +2166,57 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
           expect(Dependabot::SharedHelpers.run_shell_command("node -v").strip).to eq(default_node)
         end
       end
+    end
+  end
+
+  describe "Corepack with a selected Node runtime" do
+    include NodeRuntimeSpecHelper
+
+    it "downloads an uncached pinned pnpm through the proxy and runs it with Node 18" do
+      previous_files = described_class.dependency_files
+      previous_selector = described_class.npm_version_selector
+      registry = CorepackRegistry.new(proxy_only: true)
+      manifest = Dependabot::DependencyFile.new(
+        name: "package.json",
+        content: '{"engines":{"node":"18.x"},"packageManager":"pnpm@10.0.0"}'
+      )
+      stub_node_runtime(18)
+      described_class.dependency_files = [manifest]
+      described_class.npm_version_selector = nil
+
+      Dependabot::SharedHelpers.in_a_temporary_directory do
+        File.write("package.json", manifest.content)
+        env = {
+          "COREPACK_HOME" => File.join(Dir.pwd, "empty-corepack-cache"),
+          "COREPACK_NPM_REGISTRY" => registry.url,
+          "COREPACK_INTEGRITY_KEYS" => registry.integrity_keys,
+          "COREPACK_DEFAULT_TO_LATEST" => "0",
+          "COREPACK_ENABLE_AUTO_PIN" => "0",
+          "COREPACK_ENABLE_DOWNLOAD_PROMPT" => "0",
+          "COREPACK_ENABLE_NETWORK" => "1",
+          "COREPACK_ENABLE_PROJECT_SPEC" => "1",
+          "COREPACK_ENABLE_STRICT" => "1",
+          "COREPACK_ENV_FILE" => "0",
+          "NODE_USE_ENV_PROXY" => "1",
+          "HTTP_PROXY" => registry.proxy_url,
+          "HTTPS_PROXY" => registry.proxy_url,
+          "http_proxy" => registry.proxy_url,
+          "https_proxy" => registry.proxy_url,
+          "NO_PROXY" => "",
+          "no_proxy" => ""
+        }
+
+        expect(described_class.run_pnpm_command("--node-version", env: env).strip).to start_with("v18.")
+        expect(registry.proxy.requests).to include("corepack-registry.invalid:80")
+        expect(registry.requests).to include("/pnpm/10.0.0", "/pnpm", "/pnpm/-/pnpm-10.0.0.tgz")
+        expect(described_class.package_manager_run_command("pnpm@10.1.0", "--node-version", env: env))
+          .to start_with("v18.")
+        expect(registry.requests).to include("/pnpm/10.1.0", "/pnpm/-/pnpm-10.1.0.tgz")
+      end
+    ensure
+      registry&.close
+      described_class.dependency_files = previous_files
+      described_class.npm_version_selector = previous_selector
     end
   end
 

@@ -17,8 +17,9 @@ The image's default Node is retained when compatible; otherwise nvm downloads th
 highest matching stable release. Ranges use npm semver; version files also support
 `node`, `stable`, `lts/*`, and `lts/<codename>`.
 
-Package-manager versions and native-helper Node are unchanged. Package managers
-still enforce their own engine checks, so incompatible tooling can fail an update.
+Package-manager versions and native-helper Node are unchanged. Corepack downloads
+use the image's Node for proxy support; package managers use the selected Node and
+still enforce their own engine checks.
 Runtime selection requires the image's nvm installation and `NVM_DIR`.
 
 `NVM_NODEJS_ORG_MIRROR` defaults to `https://nodejs.org/dist` and can be set as a
