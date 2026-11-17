@@ -2191,6 +2191,49 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
+    context "when the registry publishes a numeric -386 architecture tag" do
+      let(:dependency_name) { "otel/opentelemetry-collector-contrib" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/otel/opentelemetry-collector-contrib/" }
+      let(:registry_tags) do
+        {
+          "name" => dependency_name,
+          "tags" => %w(0.155.0-386 0.156.0 0.156.0-386 0.157.0 0.157.0-386)
+        }.to_json
+      end
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+
+      before do
+        stub_request(:get, repo_url + "tags/list")
+          .and_return(status: 200, body: registry_tags)
+        %w(0.156.0 0.156.0-386 0.157.0 0.157.0-386).each_with_index do |tag, i|
+          stub_request(:head, repo_url + "manifests/#{tag}")
+            .and_return(
+              status: 200,
+              body: "",
+              headers: JSON.parse(headers_response.gsub(/"sha256:(.*)"/, "\"sha256:#{i.to_s * 64}\""))
+            )
+        end
+      end
+
+      context "when on the multi-arch tag" do
+        let(:version) { "0.156.0" }
+
+        it "does not offer the -386 tag" do
+          expect(checker.latest_version).to eq("0.157.0")
+        end
+      end
+
+      context "when pinned to the -386 tag" do
+        let(:version) { "0.155.0-386" }
+
+        it "updates within the -386 tags" do
+          expect(checker.latest_version).to eq("0.157.0-386")
+        end
+      end
+    end
+
     context "when node has alpine suffix with version" do
       let(:dependency_name) { "node" }
       let(:version) { "18.0.0-alpine3.18" }

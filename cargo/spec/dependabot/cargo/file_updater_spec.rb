@@ -73,9 +73,14 @@ RSpec.describe Dependabot::Cargo::FileUpdater do
       let(:files) { [manifest] }
 
       context "when no files have changed" do
-        it "raises a helpful error" do
+        it "raises a helpful error with error report context attached" do
           expect { updater.updated_dependency_files }
-            .to raise_error("No files changed!")
+            .to raise_error(RuntimeError, "No files changed!") do |error|
+              expect(Dependabot::ErrorReportContext.build(error: error)).to eq(
+                "dependency-names" => ["time"],
+                "dependency-files" => ["Cargo.toml"]
+              )
+            end
         end
       end
 

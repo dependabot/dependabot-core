@@ -345,8 +345,95 @@ RSpec.describe Dependabot::Uv::FileParser do
 
         let(:requirements_fixture_name) { "malformed_markers.txt" }
 
-        it "does not return any dependencies" do
-          expect(dependencies).to be_empty
+        # An unparseable python_version clause can't be evaluated, so it's treated as
+        # satisfied rather than silently dropping the dependency.
+        it "keeps the dependency" do
+          expect(dependencies.length).to eq(1)
+
+          dependency = dependencies.first
+
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("arrow")
+          expect(dependency.version).to eq("1.3.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "==1.3.0",
+              file: "requirements.txt",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+      end
+
+      context "when the marker combines python_version with other environment markers" do
+        let(:requirements_body) { "arrow==1.3.0 ; #{marker}\n" }
+
+        before do
+          allow(parser).to receive(:python_raw_version).and_return(python_version)
+        end
+
+        context "when a satisfied python_version is joined to a non-numeric marker using 'and'" do
+          let(:marker) { 'python_version >= "3.9" and platform_machine == "x86_64"' }
+          let(:python_version) { "3.11" }
+
+          it "keeps the dependency" do
+            expect(dependencies.map(&:name)).to eq(["arrow"])
+          end
+        end
+
+        context "when an unsatisfied python_version is joined to a non-numeric marker using 'and'" do
+          let(:marker) { 'python_version >= "3.9" and platform_machine == "x86_64"' }
+          let(:python_version) { "3.8" }
+
+          it "discards the dependency" do
+            expect(dependencies).to be_empty
+          end
+        end
+
+        context "when a satisfied python_version is joined to a non-numeric marker using 'or'" do
+          let(:marker) { 'python_version >= "3.9" or platform_machine == "x86_64"' }
+          let(:python_version) { "3.11" }
+
+          it "keeps the dependency" do
+            expect(dependencies.map(&:name)).to eq(["arrow"])
+          end
+        end
+
+        context "when an unsatisfied python_version is joined to a non-numeric marker using 'or'" do
+          let(:marker) { 'python_version >= "3.9" or platform_machine == "x86_64"' }
+          let(:python_version) { "3.8" }
+
+          it "keeps the dependency, since the other marker is assumed satisfied" do
+            expect(dependencies.map(&:name)).to eq(["arrow"])
+          end
+        end
+
+        context "when an unsatisfied python_version is joined to another numeric marker using 'or'" do
+          let(:marker) { 'python_version < "3.0" or implementation_version >= "3.0"' }
+          let(:python_version) { "3.11" }
+
+          it "keeps the dependency, since the other marker is assumed satisfied" do
+            expect(dependencies.map(&:name)).to eq(["arrow"])
+          end
+        end
+
+        context "with a satisfied python_full_version" do
+          let(:marker) { 'python_full_version >= "3.9.0"' }
+          let(:python_version) { "3.11.2" }
+
+          it "keeps the dependency" do
+            expect(dependencies.map(&:name)).to eq(["arrow"])
+          end
+        end
+
+        context "with an unsatisfied python_full_version" do
+          let(:marker) { 'python_full_version >= "3.9.0"' }
+          let(:python_version) { "3.8.5" }
+
+          it "discards the dependency" do
+            expect(dependencies).to be_empty
+          end
         end
       end
     end

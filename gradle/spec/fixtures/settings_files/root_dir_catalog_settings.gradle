@@ -1,0 +1,13 @@
+dependencyResolutionManagement {
+    versionCatalogs {
+        libs {
+            from files("$rootDir/gradle/libs.versions.toml")
+        }
+        tools {
+            from files("${rootDir}/gradle/tools.versions.toml")
+        }
+        plugins {
+            from files(layout.rootDirectory.file("gradle/plugins.versions.toml"))
+        }
+    }
+}

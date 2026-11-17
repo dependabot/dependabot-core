@@ -207,7 +207,19 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         def using_poetry?
-          pyproject_document.poetry?
+          pyproject_document.poetry? || locked_poetry_build_backend?
+        end
+
+        # A declared Poetry build backend alone isn't proof the project is actively Poetry-managed;
+        # require a committed lockfile as evidence it's really locked by Poetry.
+        sig { returns(T::Boolean) }
+        def locked_poetry_build_backend?
+          pyproject_document.poetry_build_backend? && !lockfile.nil?
+        end
+
+        sig { returns(T::Boolean) }
+        def locked_pep621_only_poetry?
+          !pyproject_document.poetry? && locked_poetry_build_backend?
         end
 
         sig { returns(T::Boolean) }
@@ -233,8 +245,9 @@ module Dependabot
         sig { params(dep: PepDependency).returns(T::Boolean) }
         def skip_pep621_dep?(dep)
           # If a requirement has a `<` or `<=` marker then updating it is
-          # probably blocked. Ignore it.
-          return true if dep.markers&.include?("<")
+          # probably blocked. Ignore it, unless Poetry has locked it: skipping would
+          # re-surface it from the lockfile as a requirement-less sub-dependency.
+          return true if dep.markers&.include?("<") && !locked_pep621_only_poetry?
 
           # If no requirement, don't add it
           requirement = dep.requirement

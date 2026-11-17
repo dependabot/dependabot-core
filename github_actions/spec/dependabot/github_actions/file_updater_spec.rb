@@ -98,6 +98,19 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
 
     its(:length) { is_expected.to eq(1) }
 
+    context "when no dependency file has a changed requirement" do
+      let(:files) { [Dependabot::DependencyFile.new(content: workflow_file_body, name: ".github/workflows/other.yml")] }
+
+      it "raises with error report context attached" do
+        expect { updated_files }.to raise_error(RuntimeError, "No files changed!") do |error|
+          expect(Dependabot::ErrorReportContext.build(error: error)).to eq(
+            "dependency-names" => ["actions/setup-node"],
+            "dependency-files" => [".github/workflows/other.yml"]
+          )
+        end
+      end
+    end
+
     describe "the updated workflow file" do
       subject(:updated_workflow_file) do
         updated_files.find { |f| f.name == ".github/workflows/workflow.yml" }
