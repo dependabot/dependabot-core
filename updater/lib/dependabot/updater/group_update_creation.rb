@@ -105,7 +105,8 @@ module Dependabot
       sig { params(dependency_name: String, reason: String).void }
       def record_skipped_dependency(dependency_name, reason)
         entry = @compiling_directory ? "#{@compiling_directory}: #{reason}" : reason
-        (skipped_dependency_reasons[dependency_name.downcase] ||= []) << entry
+        reasons = skipped_dependency_reasons[dependency_name.downcase] ||= []
+        reasons << entry unless reasons.include?(entry)
       end
 
       # Returns a Dependabot::DependencyChange object that encapsulates the
