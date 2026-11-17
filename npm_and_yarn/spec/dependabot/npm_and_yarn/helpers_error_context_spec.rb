@@ -42,6 +42,138 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
   after { described_class.npm_version_selector = nil }
 
+  it "reports configured npm scoped registries as possible hosts, not a confirmed failing host" do
+    described_class.dependency_files = [
+      Dependabot::DependencyFile.new(
+        name: ".npmrc",
+        content: "registry=https://public.example.com/\n" \
+                 "@private:registry=https://user:secret@private.example.com/token-secret\n"
+      )
+    ]
+    described_class.credentials = [
+      Dependabot::Credential.new(
+        { "type" => "npm_registry", "registry" => "credential.example.com", "scope" => "@other", "token" => "secret" }
+      )
+    ]
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+      .with("npm #{command}", any_args).and_raise(error)
+
+    expect { described_class.run_npm_command(command, env: env) }.to raise_error do |raised|
+      context = Dependabot::ErrorReportContext.build(error: raised)
+      expect(context).not_to have_key("host")
+      expect(context).to include(
+        "configured-registry-hosts" => contain_exactly(
+          "public.example.com", "private.example.com", "credential.example.com"
+        )
+      )
+      expect(context.to_s).not_to include("secret", "@private", "@other")
+      expect(raised).to equal(error)
+      expect(error.sentry_context[:fingerprint]).to eq(["unchanged"])
+    end
+    expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).once
+  end
+
+  it "reports Yarn Berry's global and scoped registries as possible hosts" do
+    described_class.dependency_files = [
+      npmrc,
+      Dependabot::DependencyFile.new(
+        name: ".yarnrc.yml",
+        content: "npmRegistryServer: https://berry.example.com\n" \
+                 "npmScopes:\n  private:\n    npmRegistryServer: https://private.example.com/secret\n"
+      )
+    ]
+    allow(ENV).to receive(:fetch).and_call_original
+    allow(ENV).to receive(:fetch).with("YARN_NPM_REGISTRY_SERVER", nil).and_return(nil)
+    allow(ENV).to receive(:fetch).with("YARN_RC_FILENAME", nil).and_return(nil)
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+      .with("corepack yarn@4.9.2 #{command}", any_args).and_raise(error)
+
+    expect { described_class.package_manager_run_command("yarn@4.9.2", command, env: env) }
+      .to raise_error do |raised|
+        context = Dependabot::ErrorReportContext.build(error: raised)
+        expect(context).not_to have_key("host")
+        expect(context).to include(
+          "configured-registry-hosts" => contain_exactly("berry.example.com", "private.example.com")
+        )
+        expect(context.to_s).not_to include("secret", "registry.example.com")
+        expect(raised).to equal(error)
+      end
+    expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).once
+  end
+
+  it "reports pnpm's overridden and scoped registries without claiming which one failed" do
+    described_class.dependency_files = [
+      Dependabot::DependencyFile.new(
+        name: ".npmrc",
+        content: "registry=https://unused.example.com\n@private:registry=https://private.example.com/a\n"
+      )
+    ]
+    env["npm_config_registry"] = "https://override.example.com"
+    env["npm_config_@other:registry"] = "https://other.example.com/secret"
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+      .with("pnpm #{command}", any_args).and_raise(error)
+
+    expect { described_class.run_pnpm_command(command, env: env) }.to raise_error do |raised|
+      context = Dependabot::ErrorReportContext.build(error: raised)
+      expect(context).not_to have_key("host")
+      expect(context).to include(
+        "configured-registry-hosts" => contain_exactly(
+          "private.example.com", "other.example.com", "override.example.com"
+        )
+      )
+      expect(context.to_s).not_to include("secret", "unused.example.com")
+    end
+  end
+
+  it "deduplicates and limits configured registry hosts" do
+    entries = (1..55).map { |i| "@scope#{i}:registry=https://registry#{i}.example.com/private" }
+    entries << "@duplicate:registry=https://registry1.example.com/another"
+    described_class.dependency_files = [Dependabot::DependencyFile.new(name: ".npmrc", content: entries.join("\n"))]
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+      .with("npm #{command}", any_args).and_raise(error)
+
+    expect { described_class.run_npm_command(command, env: env) }.to raise_error do |raised|
+      context = T.must(Dependabot::ErrorReportContext.build(error: raised))
+      hosts = context["configured-registry-hosts"]
+      expect(hosts).to eq((1..50).map { |i| "registry#{i}.example.com" })
+      expect(context).not_to have_key("host")
+    end
+  end
+
+  it "includes both explicit and inherited npm registry overrides" do
+    env["NPM_CONFIG_REGISTRY"] = "https://explicit.example.com"
+    allow(ENV).to receive(:fetch).and_call_original
+    allow(ENV).to receive(:fetch).with("npm_config_registry", nil).and_return("https://inherited.example.com")
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+      .with("npm #{command}", any_args).and_raise(error)
+
+    expect { described_class.run_npm_command(command, env: env) }.to raise_error do |raised|
+      expect(Dependabot::ErrorReportContext.build(error: raised)).to include(
+        "configured-registry-hosts" => contain_exactly("explicit.example.com", "inherited.example.com")
+      )
+    end
+  end
+
+  it "includes Yarn Classic scoped configuration without treating it as the failing host" do
+    described_class.dependency_files = [
+      npmrc,
+      Dependabot::DependencyFile.new(
+        name: ".yarnrc", content: %("@private:registry" "https://classic.example.com/private"\n)
+      )
+    ]
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+      .with("corepack yarn@1.22.22 #{command}", any_args).and_raise(error)
+
+    expect { described_class.package_manager_run_command("yarn@1.22.22", command, env: env) }
+      .to raise_error do |raised|
+        context = Dependabot::ErrorReportContext.build(error: raised)
+        expect(context).not_to have_key("host")
+        expect(context).to include(
+          "configured-registry-hosts" => contain_exactly("registry.example.com", "classic.example.com")
+        )
+      end
+  end
+
   sig { params(manager: String, executable: String, version: T.nilable(String), host: T.nilable(String)).void }
   def expect_safe_context(manager, executable, version: nil, host: "registry.example.com")
     allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
@@ -50,7 +182,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     expected_context = {
       "helper-error-class" => "HelperSubprocessFailed",
       "command-name" => "#{manager} update",
-      "host" => host,
+      "configured-registry-hosts" => host && [host],
       "package-manager-version" => version
     }.compact
 
@@ -133,7 +265,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       expect { described_class.package_manager_run_command("yarn@4.9.2", command, env: env) }
         .to raise_error do |raised|
           expect(raised).to equal(error)
-          expect(Dependabot::ErrorReportContext.build(error: raised)).to include("host" => "berry.example.com")
+          expect(Dependabot::ErrorReportContext.build(error: raised))
+            .to include("configured-registry-hosts" => ["berry.example.com"])
           expect(error.sentry_context[:fingerprint]).to eq(["unchanged"])
         end
       expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).once
@@ -145,10 +278,30 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       expect { described_class.package_manager_run_command("yarn@4.9.2", command, env: env) }
         .to raise_error do |raised|
           context = Dependabot::ErrorReportContext.build(error: raised)
-          expect(context).to include("host" => "override.example.com")
+          expect(context).to include("configured-registry-hosts" => ["override.example.com"])
           expect(context.to_s).not_to include("secret")
         end
       expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).once
+    end
+
+    it "retains scoped registries when the global Yarn registry is overridden" do
+      described_class.dependency_files = [
+        npmrc, Dependabot::DependencyFile.new(
+          name: ".yarnrc.yml",
+          content: "npmRegistryServer: https://unused.example.com\n" \
+                   "npmScopes:\n  private:\n    npmRegistryServer: https://private.example.com\n"
+        )
+      ]
+      env["YARN_NPM_REGISTRY_SERVER"] = "https://override.example.com"
+
+      expect { described_class.package_manager_run_command("yarn@4.9.2", command, env: env) }
+        .to raise_error do |raised|
+          context = Dependabot::ErrorReportContext.build(error: raised)
+          expect(context).to include(
+            "configured-registry-hosts" => contain_exactly("override.example.com", "private.example.com")
+          )
+          expect(context.to_s).not_to include("unused.example.com", "registry.example.com")
+        end
     end
 
     it "uses an inherited Yarn registry environment override" do
@@ -156,7 +309,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
       expect { described_class.package_manager_run_command("yarn@4.9.2", command, env: env) }
         .to raise_error do |raised|
-          expect(Dependabot::ErrorReportContext.build(error: raised)).to include("host" => "inherited.example.com")
+          expect(Dependabot::ErrorReportContext.build(error: raised))
+            .to include("configured-registry-hosts" => ["inherited.example.com"])
         end
     end
 
@@ -165,7 +319,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
       expect { described_class.package_manager_run_command("yarn@4.9.2", command, env: env) }
         .to raise_error do |raised|
-          expect(Dependabot::ErrorReportContext.build(error: raised)).not_to have_key("host")
+          expect(Dependabot::ErrorReportContext.build(error: raised)).not_to have_key("configured-registry-hosts")
         end
     end
 
@@ -178,7 +332,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         .with("yarn #{command}", any_args).and_raise(error)
 
       expect { described_class.run_yarn_command(command, env: env) }.to raise_error do |raised|
-        expect(Dependabot::ErrorReportContext.build(error: raised)).to include("host" => "berry.example.com")
+        expect(Dependabot::ErrorReportContext.build(error: raised))
+          .to include("configured-registry-hosts" => ["berry.example.com"])
       end
       expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).once
     end
@@ -190,7 +345,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
       expect { described_class.package_manager_run_command("yarn@4.9.2", command, env: env) }
         .to raise_error do |raised|
-          expect(Dependabot::ErrorReportContext.build(error: raised)).not_to have_key("host")
+          expect(Dependabot::ErrorReportContext.build(error: raised)).not_to have_key("configured-registry-hosts")
         end
     end
 
@@ -199,7 +354,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
       expect { described_class.package_manager_run_command("yarn@4.9.2", command, env: env) }
         .to raise_error do |raised|
-          expect(Dependabot::ErrorReportContext.build(error: raised)).not_to have_key("host")
+          expect(Dependabot::ErrorReportContext.build(error: raised)).not_to have_key("configured-registry-hosts")
         end
     end
 
@@ -212,7 +367,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
       expect { described_class.package_manager_run_command("yarn@4.9.2", command, env: env) }
         .to raise_error do |raised|
-          expect(Dependabot::ErrorReportContext.build(error: raised)).not_to have_key("host")
+          expect(Dependabot::ErrorReportContext.build(error: raised)).not_to have_key("configured-registry-hosts")
         end
     end
   end
@@ -229,14 +384,14 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     expect_safe_context("npm", "corepack npm@invalid-secret")
   end
 
-  it "falls back to the default public registry when none is configured" do
+  it "omits registry hosts when none are configured" do
     described_class.dependency_files = []
 
     allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
       .with("npm #{command}", any_args).and_raise(error)
 
     expect { described_class.run_npm_command(command, env: env) }.to raise_error do |raised|
-      expect(Dependabot::ErrorReportContext.build(error: raised)).to include("host" => "registry.npmjs.org")
+      expect(Dependabot::ErrorReportContext.build(error: raised)).not_to have_key("configured-registry-hosts")
     end
   end
 
@@ -257,7 +412,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       .with("npm #{command}", any_args).and_raise(error)
 
     expect { described_class.run_npm_command(command, env: env) }.to raise_error do |raised|
-      expect(Dependabot::ErrorReportContext.build(error: raised)).to include("host" => "registry.example.com")
+      expect(Dependabot::ErrorReportContext.build(error: raised))
+        .to include("configured-registry-hosts" => ["registry.example.com"])
     end
     expect(Dependabot::NpmAndYarn::RegistryHelper).not_to have_received(:corepack_integrity_keys)
   end
@@ -321,7 +477,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     end
   end
 
-  it "preserves the original npm error when YAML registry lookup raises ArgumentError" do
+  it "preserves the original npm error without parsing unrelated Yarn configuration" do
     described_class.dependency_files = [
       Dependabot::DependencyFile.new(name: ".yarnrc.yml", content: "npmRegistryServer: !!float not-a-number\n")
     ]
@@ -333,8 +489,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       expect(raised).to equal(error)
       expect(error.sentry_context[:fingerprint]).to eq(["unchanged"])
     end
-    expect(Dependabot.logger).to have_received(:warn)
-      .with("Could not resolve registry for error context (ArgumentError)")
+    expect(Dependabot.logger).not_to have_received(:warn)
   end
 
   it "does not run diagnostic commands after successful commands" do

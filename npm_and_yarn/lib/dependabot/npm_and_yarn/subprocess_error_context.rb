@@ -3,7 +3,6 @@
 
 require "sorbet-runtime"
 require "dependabot/error_report_context"
-require "dependabot/npm_and_yarn/registry_helper"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -16,9 +15,9 @@ module Dependabot
       COMMANDS = %w(add audit config dedupe dlx info install list outdated remove update up upgrade why).freeze
       VERSION = /\A\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?\z/
 
-      sig { params(executable: String, registry: T.nilable(String)).void }
-      def initialize(executable:, registry:)
-        @registry = registry
+      sig { params(executable: String, registry_hosts: T::Array[String]).void }
+      def initialize(executable:, registry_hosts:)
+        @registry_hosts = registry_hosts
         parts = executable.delete_prefix("corepack ").split("@", 2)
         @package_manager = T.let(parts.fetch(0), String)
         @known_version = T.let(parts[1], T.nilable(String))
@@ -31,12 +30,11 @@ module Dependabot
         ErrorReportContext.attach(error, { command_name: command_name(command) })
         return if %w(-v --version).include?(command.strip)
 
-        registry = @registry || (RegistryHelper::DEFAULT_NPM_REGISTRY unless @package_manager == "yarn")
         ErrorReportContext.attach(
           error,
           {
             package_manager_version: precise_known_version,
-            host: registry && ErrorReportContext.host_for(registry)
+            configured_registry_hosts: @registry_hosts
           }
         )
       end

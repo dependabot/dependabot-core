@@ -188,17 +188,83 @@ module Dependabot
         env_variables
       end
 
-      # Returns just the configured registry URL (from dependabot.yml, .npmrc, .yarnrc or
-      # .yarnrc.yml), with no auth token and no Corepack integrity-key network fetch. Unlike
-      # find_corepack_env_variables, this never performs network I/O, so it's safe to call from
-      # error-handling paths that haven't already paid that cost for the real command.
-      sig { returns(T.nilable(String)) }
-      def registry_url
-        raw_registry = find_registry_and_token[:registry]
-        raw_registry && RegistryHelper.normalize_registry_url(raw_registry)
+      sig do
+        params(manager: Symbol, include_global: T::Boolean, include_yarn_config: T::Boolean)
+          .returns(T::Array[String])
+      end
+      def diagnostic_registry_urls(manager:, include_global:, include_yarn_config:)
+        urls = credential_diagnostic_registry_urls
+        case manager
+        when :yarn_berry
+          urls.concat(yarn_diagnostic_registry_urls(include_global: include_global)) if include_yarn_config
+        when :npm, :yarn_classic
+          urls.concat(rc_diagnostic_registry_urls(@registry_config_files[:npmrc], "=", include_global))
+          if manager == :yarn_classic
+            urls.concat(rc_diagnostic_registry_urls(@registry_config_files[:yarnrc], " ", include_global))
+          end
+        end
+        urls
       end
 
       private
+
+      sig { returns(T::Array[String]) }
+      def credential_diagnostic_registry_urls
+        urls = T.let([], T::Array[String])
+        @credentials&.each do |credential|
+          next unless credential["type"] == "npm_registry" && credential["registry"]
+
+          urls << RegistryHelper.normalize_registry_url(T.must(credential["registry"]))
+        end
+        urls
+      end
+
+      sig do
+        params(file: T.nilable(DependencyFile), separator: String, include_global: T::Boolean)
+          .returns(T::Array[String])
+      end
+      def rc_diagnostic_registry_urls(file, separator, include_global)
+        file&.content.to_s.lines.filter_map do |line|
+          key, value = line.strip.split(separator, 2)
+          next unless key && value
+
+          key = key.strip.gsub(/\A["']|["']\z/, "")
+          next unless (include_global && key == "registry") || key.match?(/\A@[^:\s]+:registry\z/)
+
+          value.strip.gsub(/\A["']|["']\z/, "")
+        end
+      end
+
+      sig { params(include_global: T::Boolean).returns(T::Array[String]) }
+      def yarn_diagnostic_registry_urls(include_global:)
+        content = @registry_config_files[:yarnrc_yml]&.content
+        return [] unless content
+
+        config = YAML.safe_load(content)
+        return [] if config.nil?
+        raise TypeError, "Yarn registry configuration is not a mapping" unless config.is_a?(Hash)
+
+        urls = T.let([], T::Array[String])
+        append_diagnostic_registry_url(urls, config[NPM_REGISTER_KEY_FOR_YARN]) if include_global
+        scopes = config[NPM_SCOPE_KEY_FOR_YARN]
+        return urls if scopes.nil?
+        raise TypeError, "Yarn scopes configuration is not a mapping" unless scopes.is_a?(Hash)
+
+        scopes.each_value do |scope|
+          raise TypeError, "Yarn scope configuration is not a mapping" unless scope.is_a?(Hash)
+
+          append_diagnostic_registry_url(urls, scope[NPM_REGISTER_KEY_FOR_YARN])
+        end
+        urls
+      end
+
+      sig { params(urls: T::Array[String], value: T.nilable(Object)).void }
+      def append_diagnostic_registry_url(urls, value)
+        return if value.nil?
+        raise TypeError, "Yarn registry is not a string" unless value.is_a?(String)
+
+        urls << value
+      end
 
       sig { returns(T::Hash[Symbol, T.nilable(String)]) }
       def find_registry_and_token
