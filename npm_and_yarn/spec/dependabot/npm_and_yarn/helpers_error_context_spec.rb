@@ -35,12 +35,51 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
   # rubocop:enable RSpec/ScatteredLet
 
   before do
+    probe = instance_double(Dependabot::NpmAndYarn::SubprocessDiagnosticProbe, context: {})
+    allow(Dependabot::NpmAndYarn::SubprocessDiagnosticProbe).to receive(:new).and_return(probe)
     described_class.npm_version_selector = nil
     described_class.dependency_files = [npmrc]
     described_class.credentials = []
   end
 
   after { described_class.npm_version_selector = nil }
+
+  it "attaches post-failure observations using the failed command's launcher and environment" do
+    probe = instance_double(
+      Dependabot::NpmAndYarn::SubprocessDiagnosticProbe,
+      context: { "post-failure-package-manager-version" => "10.9.0",
+                 "post-failure-global-registry-hosts" => ["probe.example.com"] }
+    )
+    env["npm_config_registry"] = "https://probe.example.com"
+    allow(Dependabot::NpmAndYarn::SubprocessDiagnosticProbe).to receive(:new)
+      .with(executable: "npm", env: env).and_return(probe)
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_raise(error)
+
+    expect { described_class.run_npm_command(command, env: env) }.to raise_error do |raised|
+      expect(raised).to equal(error)
+      expect(Dependabot::ErrorReportContext.build(error: raised)).to include(
+        "post-failure-package-manager-version" => "10.9.0",
+        "post-failure-global-registry-hosts" => ["probe.example.com"]
+      )
+      expect(error.sentry_context[:fingerprint]).to eq(["unchanged"])
+    end
+  end
+
+  it "preserves the original error and fingerprint when the probe executable cannot be started" do
+    allow(Dependabot::NpmAndYarn::SubprocessDiagnosticProbe).to receive(:new).and_call_original
+    allow(Dependabot.logger).to receive(:warn)
+    env["PATH"] = "/missing-diagnostic-executable"
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_raise(error)
+
+    expect { described_class.run_npm_command(command, env: env) }.to raise_error do |raised|
+      expect(raised).to equal(error)
+      expect(error.sentry_context[:fingerprint]).to eq(["unchanged"])
+      expect(Dependabot::ErrorReportContext.build(error: raised))
+        .not_to have_key("post-failure-package-manager-version")
+    end
+    expect(Dependabot.logger).to have_received(:warn)
+      .with("Could not collect post-failure package manager context (Errno::ENOENT)")
+  end
 
   it "reports configured npm scoped registries as possible hosts, not a confirmed failing host" do
     described_class.dependency_files = [
@@ -211,11 +250,11 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       .with("Could not resolve registry for error context (#{lookup_error_class})")
   end
 
-  it "omits the unknown local npm version without running another command" do
+  it "omits the selected version for the local npm executable" do
     expect_safe_context("npm", "npm")
   end
 
-  it "uses the exact version Corepack selected without running another command" do
+  it "reports the exact version Corepack selected separately from probe observations" do
     described_class.npm_version_selector = "10.9.0"
 
     expect_safe_context("npm", "corepack npm@10.9.0", version: "10.9.0")
@@ -245,7 +284,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     expect_safe_context("npm", "corepack npm@10")
   end
 
-  it "omits the unknown default pnpm version without running another command" do
+  it "omits the selected version for the default pnpm executable" do
     expect_safe_context("pnpm", "pnpm")
   end
 
@@ -257,7 +296,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     expect_safe_context("pnpm", "corepack pnpm@8")
   end
 
-  it "omits the unknown Yarn version without running another command" do
+  it "omits the selected version for the bare Yarn executable" do
     allow(described_class).to receive(:setup_yarn_berry)
 
     expect_safe_context("yarn", "yarn", host: nil)
@@ -396,7 +435,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     expect_safe_context("npm", "corepack npm@11.0.0-rc.1+build.2", version: "11.0.0-rc.1+build.2")
   end
 
-  it "omits a malformed version selector without running another command" do
+  it "omits a malformed selected version" do
     described_class.npm_version_selector = "invalid-secret"
 
     expect_safe_context("npm", "corepack npm@invalid-secret")
@@ -414,9 +453,6 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
   end
 
   it "never fetches Corepack integrity keys while resolving the registry for error context" do
-    # A replaces-base registry would otherwise trigger a network fetch for signing keys (see
-    # RegistryHelper#corepack_integrity_keys); error-context resolution must never do that, since it
-    # would reintroduce the exact "could hang while reporting a failure" risk this class exists to avoid.
     allow(Dependabot::NpmAndYarn::RegistryHelper).to receive(:corepack_integrity_keys)
       .and_raise("must not fetch integrity keys while reporting an error")
     allow(described_class).to receive(:credentials).and_return(
@@ -515,6 +551,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
     expect(described_class.run_npm_command("update", env: env)).to eq("updated")
     expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).once
+    expect(Dependabot::NpmAndYarn::SubprocessDiagnosticProbe).not_to have_received(:new)
   end
 
   context "when the failed command is a version check" do
@@ -531,6 +568,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         )
       end
       expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).once
+      expect(Dependabot::NpmAndYarn::SubprocessDiagnosticProbe).not_to have_received(:new)
     end
   end
 

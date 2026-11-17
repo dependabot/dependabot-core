@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 require "dependabot/error_report_context"
 require "dependabot/shared_helpers"
+require "dependabot/npm_and_yarn/subprocess_diagnostic_probe"
 
 module Dependabot
   module NpmAndYarn
@@ -13,10 +14,14 @@ module Dependabot
       # Only allowlisted operation names are reported; fingerprints and command arguments may contain secrets.
       PACKAGE_MANAGERS = %w(npm pnpm yarn).freeze
       COMMANDS = %w(add audit config dedupe dlx info install list outdated remove update up upgrade why).freeze
-      VERSION = /\A\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?\z/
+      VERSION = SubprocessDiagnosticProbe::VERSION
 
-      sig { params(executable: String, registry_hosts: T::Array[String]).void }
-      def initialize(executable:, registry_hosts:)
+      sig do
+        params(executable: String, registry_hosts: T::Array[String], env: T.nilable(T::Hash[String, String])).void
+      end
+      def initialize(executable:, registry_hosts:, env: nil)
+        @executable = executable
+        @env = env
         @registry_hosts = registry_hosts
         parts = executable.delete_prefix("corepack ").split("@", 2)
         @package_manager = T.let(parts.fetch(0), String)
@@ -37,6 +42,7 @@ module Dependabot
             configured_registry_hosts: @registry_hosts
           }
         )
+        ErrorReportContext.attach(error, SubprocessDiagnosticProbe.new(executable: @executable, env: @env).context)
       end
 
       private
