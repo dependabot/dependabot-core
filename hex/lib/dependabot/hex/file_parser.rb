@@ -33,12 +33,10 @@ module Dependabot
         dependency_set = DependencySet.new
 
         dependency_details.each do |dep|
-          git_dependency = dep["source"]&.fetch("type") == "git"
-
           dependency_set <<
             Dependency.new(
               name: dep["name"],
-              version: git_dependency ? dep["checksum"] : dep["version"],
+              version: dep["version"],
               requirements: [{
                 requirement: dep["requirement"],
                 groups: dep["groups"],
