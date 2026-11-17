@@ -168,6 +168,26 @@ RSpec.describe Dependabot::Updater::BlockedVersionDetector do
       end
     end
 
+    context "when policy-range semantics differ from manifest semantics" do
+      let(:previous_dependencies) { [] }
+      let(:current_dependencies) { [transitive_dependency(name: "left-pad", version: "2.0.0.pre")] }
+      let(:blocked_versions) do
+        [blocked_version(name: "left-pad", requirement: "> 1.0.0")]
+      end
+      let(:range_requirement) do
+        instance_double(DummyPackageManager::Requirement, satisfied_by_range?: true)
+      end
+
+      before do
+        allow(DummyPackageManager::Requirement)
+          .to receive(:requirements_array).with("> 1.0.0").and_return([range_requirement])
+      end
+
+      it "uses policy-range matching" do
+        expect(detector.blocked_changes.map(&:name)).to eq(["left-pad"])
+      end
+    end
+
     context "when the new version does not match the blocked requirement" do
       let(:blocked_versions) do
         [blocked_version(name: "left-pad", requirement: "= 2.0.0")]

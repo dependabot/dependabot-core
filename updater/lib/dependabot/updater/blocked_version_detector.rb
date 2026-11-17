@@ -175,7 +175,7 @@ module Dependabot
       sig { params(requirement: String, version: Dependabot::Version).returns(T::Boolean) }
       def requirement_satisfied?(requirement, version)
         requirement_class.requirements_array(requirement).any? do |req|
-          req.satisfied_by?(version)
+          req.satisfied_by_range?(version)
         end
       rescue Gem::Requirement::BadRequirementError
         false

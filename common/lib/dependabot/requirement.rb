@@ -28,6 +28,11 @@ module Dependabot
       requirements.map { |op, version| "#{op} #{version}" }
     end
 
+    sig { params(version: Gem::Version).returns(T::Boolean) }
+    def satisfied_by_range?(version)
+      satisfied_by?(version)
+    end
+
     # Returns the highest lower limit among all minimum constraints.
     sig { returns(T.nilable(Dependabot::Version)) }
     def min_version

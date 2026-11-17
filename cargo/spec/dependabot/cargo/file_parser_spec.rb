@@ -633,6 +633,46 @@ RSpec.describe Dependabot::Cargo::FileParser do
         expect(dependencies.map(&:name)).not_to include("dependabot")
       end
 
+      context "with stable and prerelease versions matching the numeric range" do
+        let(:manifest) do
+          Dependabot::DependencyFile.new(
+            name: "Cargo.toml",
+            content: <<~TOML
+              [package]
+              name = "example"
+              version = "1.0.0"
+
+              [dependencies]
+              dependency = "=0.1"
+            TOML
+          )
+        end
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "Cargo.lock",
+            content: <<~TOML
+              version = 3
+
+              [[package]]
+              name = "dependency"
+              version = "0.1.9"
+              source = "registry+https://github.com/rust-lang/crates.io-index"
+
+              [[package]]
+              name = "dependency"
+              version = "0.2.0-beta"
+              source = "registry+https://github.com/rust-lang/crates.io-index"
+            TOML
+          )
+        end
+
+        it "selects the stable version allowed by Cargo" do
+          dependency = dependencies.find { |candidate| candidate.name == "dependency" }
+
+          expect(dependency.version).to eq("0.1.9")
+        end
+      end
+
       describe "top level dependencies" do
         subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
 
