@@ -70,8 +70,12 @@ RUN <<EOF
 EOF
 
 # Keep the image's package managers ahead of nvm's bundled npm when selecting Node.
+COPY --chown=dependabot:dependabot npm_and_yarn/helpers/corepack-runtime.js /opt/corepack-runtime.js
 RUN mkdir -p /opt/node-tools \
-  && for tool in npm corepack yarn pnpm; do ln -s "$(command -v "$tool")" "/opt/node-tools/$tool"; done
+  && chmod +x /opt/corepack-runtime.js \
+  && ln -s "$(command -v npm)" /opt/node-tools/npm \
+  && for tool in corepack yarn pnpm; do ln -s /opt/corepack-runtime.js "/opt/node-tools/$tool"; done
+ENV PATH="/opt/node-tools:${PATH}"
 
 # Configure Node to use our custom CA bundle
 ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
