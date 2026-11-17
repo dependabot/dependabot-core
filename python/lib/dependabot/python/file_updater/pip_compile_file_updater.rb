@@ -218,7 +218,8 @@ module Dependabot
               removed: dep.removed?
             )],
             dependency_files: files,
-            credentials: credentials
+            credentials: credentials,
+            index_urls: @index_urls
           ).updated_dependency_files
         end
 
