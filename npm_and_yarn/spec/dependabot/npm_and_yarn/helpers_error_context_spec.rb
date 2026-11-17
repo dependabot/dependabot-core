@@ -183,7 +183,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       "helper-error-class" => "HelperSubprocessFailed",
       "command-name" => "#{manager} update",
       "configured-registry-hosts" => host && [host],
-      "package-manager-version" => version
+      "selected-package-manager-version" => version
     }.compact
 
     expect { described_class.public_send("run_#{manager}_command", command, env: env) }.to raise_error do |raised|
@@ -219,6 +219,24 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     described_class.npm_version_selector = "10.9.0"
 
     expect_safe_context("npm", "corepack npm@10.9.0", version: "10.9.0")
+  end
+
+  it "does not claim the selected Yarn version was observed when yarnPath can delegate to another binary" do
+    described_class.dependency_files = [
+      Dependabot::DependencyFile.new(name: ".yarnrc.yml", content: "yarnPath: .yarn/releases/yarn-4.8.0.cjs\n")
+    ]
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+      .with("corepack yarn@4.9.2 #{command}", any_args).and_raise(error)
+
+    expect { described_class.package_manager_run_command("yarn@4.9.2", command, env: env) }
+      .to raise_error do |raised|
+        context = Dependabot::ErrorReportContext.build(error: raised)
+        expect(context).to include("selected-package-manager-version" => "4.9.2")
+        expect(context).not_to have_key("package-manager-version")
+        expect(context).not_to have_key("observed-package-manager-version")
+        expect(raised).to equal(error)
+      end
+    expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).once
   end
 
   it "omits the version when Corepack only has a cached major selected" do

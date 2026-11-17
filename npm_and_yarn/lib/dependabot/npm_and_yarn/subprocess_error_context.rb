@@ -20,7 +20,7 @@ module Dependabot
         @registry_hosts = registry_hosts
         parts = executable.delete_prefix("corepack ").split("@", 2)
         @package_manager = T.let(parts.fetch(0), String)
-        @known_version = T.let(parts[1], T.nilable(String))
+        @selected_version = T.let(parts[1], T.nilable(String))
       end
 
       sig { params(error: SharedHelpers::HelperSubprocessFailed, command: String).void }
@@ -33,7 +33,7 @@ module Dependabot
         ErrorReportContext.attach(
           error,
           {
-            package_manager_version: precise_known_version,
+            selected_package_manager_version: precise_selected_version,
             configured_registry_hosts: @registry_hosts
           }
         )
@@ -49,8 +49,8 @@ module Dependabot
 
       # A cached-major selector does not identify an exact version.
       sig { returns(T.nilable(String)) }
-      def precise_known_version
-        @known_version if @known_version && VERSION.match?(@known_version)
+      def precise_selected_version
+        @selected_version if @selected_version && VERSION.match?(@selected_version)
       end
     end
   end
