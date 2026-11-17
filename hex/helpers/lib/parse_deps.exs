@@ -30,13 +30,12 @@ defmodule Parser do
       package_name: dep.opts[:hex] || dep.app,
       from: Path.relative_to_cwd(dep.from),
       groups: [],
-      requirement: normalise_requirement(dep.requirement),
-      top_level: dep.top_level || umbrella_top_level_dep?(dep)
+      requirement: normalise_requirement(dep.requirement)
     }
   end
 
   defp build_dependency(lock, dep) do
-    {version, checksum, source} = parse_lock(lock)
+    {version, source} = parse_lock(lock)
     groups = parse_groups(dep.opts[:only])
 
     %{
@@ -45,10 +44,8 @@ defmodule Parser do
       from: Path.relative_to_cwd(dep.from),
       version: version,
       groups: groups,
-      checksum: checksum,
       requirement: normalise_requirement(dep.requirement),
-      source: source,
-      top_level: dep.top_level || umbrella_top_level_dep?(dep)
+      source: source
     }
   end
 
@@ -75,23 +72,14 @@ defmodule Parser do
   # hex, git dependency
   defp expand_deps(%{scm: scm} = dep) when scm in [Hex.SCM, Mix.SCM.Git], do: [dep]
 
-  defp umbrella_top_level_dep?(dep) do
-    if Mix.Project.umbrella?() do
-      apps_paths = Path.expand(Mix.Project.config()[:apps_path], File.cwd!())
-      String.contains?(Path.dirname(Path.dirname(dep.from)), apps_paths)
-    else
-      false
-    end
-  end
-
   defp parse_lock({:git, repo_url, checksum, opts}),
-    do: {nil, checksum, git_source(repo_url, opts)}
+    do: {checksum, git_source(repo_url, opts)}
 
   defp parse_lock(tuple) when elem(tuple, 0) == :hex do
     destructure [:hex, _app, version, _old_checksum, _managers, _deps, _repo, checksum],
                 Tuple.to_list(tuple)
 
-    {version, checksum, nil}
+    {version, nil}
   end
 
   defp normalise_requirement(req) do
