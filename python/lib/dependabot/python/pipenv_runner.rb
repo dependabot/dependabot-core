@@ -156,17 +156,25 @@ module Dependabot
         if current_dependency.requirements.any?
           T.must(T.must(current_dependency.requirements.first).groups).first&.to_s
         else
-          parsed_lockfile = JSON.parse(T.must(T.must(lockfile).content))
-          Python::FileParser::DEPENDENCY_GROUP_KEYS.each do |keys|
-            section = keys.fetch(:lockfile)
-            section_data = parsed_lockfile_section(parsed_lockfile, section)
-            next unless section_data
-
-            return section if section_data.key?(dependency_name)
-          end
-
-          nil
+          transitive_lockfile_section
         end
+      end
+
+      sig { returns(T.nilable(String)) }
+      def transitive_lockfile_section
+        parsed_lockfile = JSON.parse(T.must(T.must(lockfile).content))
+        sections = Python::FileParser::DEPENDENCY_GROUP_KEYS.filter_map do |keys|
+          section = keys.fetch(:lockfile)
+          section_data = parsed_lockfile_section(parsed_lockfile, section)
+          next unless section_data
+
+          section if section_data.key?(dependency_name)
+        end
+
+        original_version = current_dependency.previous_version || current_dependency.version
+        sections.find do |section|
+          parsed_lockfile.dig(section, dependency_name, "version")&.gsub(/^===?/, "") == original_version
+        end || sections.first
       end
 
       sig do
