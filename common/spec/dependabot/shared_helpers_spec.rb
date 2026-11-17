@@ -384,6 +384,39 @@ RSpec.describe Dependabot::SharedHelpers do
       end
     end
 
+    context "with a fingerprint" do
+      let(:arguments) { [RbConfig.ruby, "-e", "exit 1", "secret-argument"] }
+      let(:environment) { { "HEX_API_KEY" => "secret-key" } }
+      let(:fingerprint) { "mix hex.repo add <credentials>" }
+
+      it "uses the fingerprint for debug output" do
+        debug_command = lambda do
+          described_class.run_shell_command(
+            [RbConfig.ruby, "-e", "exit", "secret-argument"],
+            env: environment,
+            fingerprint: fingerprint
+          )
+        end
+
+        allow(ENV).to receive(:[]).and_call_original
+        allow(ENV).to receive(:[]).with("DEBUG_HELPERS").and_return("true")
+
+        expect(&debug_command).to output("#{fingerprint}\n").to_stdout
+      end
+
+      it "uses the fingerprint instead of command arguments or environment in error context" do
+        run_command = lambda do
+          described_class.run_shell_command(arguments, env: environment, fingerprint: fingerprint)
+        end
+
+        expect(&run_command).to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
+          expect(error.error_context[:command]).to eq(fingerprint)
+          expect(error.error_context.to_s).not_to include("secret-argument")
+          expect(error.error_context.to_s).not_to include("secret-key")
+        end
+      end
+    end
+
     context "when the subprocess exits" do
       let(:command) { File.join(spec_root, "helpers/test/error_bash") }
 
