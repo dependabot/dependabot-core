@@ -1,4 +1,4 @@
-# typed: true
+# typed: false
 # frozen_string_literal: true
 
 require "base64"
@@ -7,6 +7,7 @@ require "openssl"
 require "rubygems/package"
 require "stringio"
 require "webrick"
+require "webrick/httpproxy"
 require "zlib"
 
 # Serve signed, minimal pnpm packages to real Corepack subprocesses. Ruby HTTP
@@ -14,10 +15,32 @@ require "zlib"
 class CorepackRegistry
   VERSIONS = %w(10.0.0 10.1.0 11.0.0).freeze
 
+  # Sorbet's WEBrick RBI does not include HTTPProxyServer.
+  Proxy = Class.new(WEBrick.const_get(:HTTPProxyServer)) do # rubocop:disable Sorbet/ConstantsFromStrings
+    attr_reader :requests
+
+    def initialize(registry_port)
+      @registry_port = registry_port
+      @requests = []
+      super(BindAddress: "127.0.0.1", Port: 0, AccessLog: [], Logger: WEBrick::Log.new(File::NULL, 7))
+    end
+
+    def do_CONNECT(request, response) # rubocop:disable Naming/MethodName
+      raise "Unexpected proxy destination: #{request.unparsed_uri}" unless
+        request.unparsed_uri == "corepack-registry.invalid:80"
+
+      @requests << request.unparsed_uri
+      request.instance_variable_set(:@unparsed_uri, "127.0.0.1:#{@registry_port}")
+      super
+    end
+  end
+
   attr_reader :url
   attr_reader :requests
+  attr_reader :proxy_url
+  attr_reader :proxy
 
-  def initialize(signatures: :root)
+  def initialize(signatures: :root, proxy_only: false)
     @signatures = signatures
     @key = OpenSSL::PKey::EC.generate("prime256v1")
     @archives = VERSIONS.to_h { |version| [version, package_archive(version)] }
@@ -26,6 +49,12 @@ class CorepackRegistry
       BindAddress: "127.0.0.1", Port: 0, AccessLog: [], Logger: WEBrick::Log.new(File::NULL, 7)
     )
     @url = "http://127.0.0.1:#{@server[:Port]}"
+    if proxy_only
+      @proxy = Proxy.new(@server[:Port])
+      @proxy_url = "http://127.0.0.1:#{@proxy[:Port]}"
+      @url = "http://corepack-registry.invalid"
+      @proxy_thread = Thread.new { @proxy.start }
+    end
     @server.mount_proc "/pnpm" do |request, response|
       @requests << request.path
       status, content_type, body = registry_response(request.path)
@@ -41,6 +70,8 @@ class CorepackRegistry
   end
 
   def close
+    @proxy&.shutdown
+    @proxy_thread&.join
     @server.shutdown
     @thread.join
   end
@@ -51,7 +82,8 @@ class CorepackRegistry
     extension = version.start_with?("11.") ? "mjs" : "cjs"
     contents = {
       "package/package.json" => JSON.generate("name" => "pnpm", "version" => version),
-      "package/bin/pnpm.#{extension}" => "console.log(#{version.to_json});\n"
+      "package/bin/pnpm.#{extension}" =>
+        "console.log(process.argv.includes('--node-version') ? process.version : #{version.to_json});\n"
     }
     tar = StringIO.new
     Gem::Package::TarWriter.new(tar) do |writer|
