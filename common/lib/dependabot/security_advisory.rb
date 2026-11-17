@@ -51,13 +51,13 @@ module Dependabot
     sig { params(version: Gem::Version).returns(T::Boolean) }
     def vulnerable?(version)
       in_safe_range = safe_versions
-                      .any? { |r| r.satisfied_by?(version) }
+                      .any? { |requirement| requirement_satisfied_by?(requirement, version) }
 
       # If version is known safe for this advisory, it's not vulnerable
       return false if in_safe_range
 
       in_vulnerable_range = vulnerable_versions
-                            .any? { |r| r.satisfied_by?(version) }
+                            .any? { |requirement| requirement_satisfied_by?(requirement, version) }
 
       # If in the vulnerable range and not known safe, it's vulnerable
       return true if in_vulnerable_range
@@ -107,10 +107,10 @@ module Dependabot
       version = version_class.new(version)
 
       # If version is known safe for this advisory, it's not vulnerable
-      return false if safe_versions.any? { |r| r.satisfied_by?(version) }
+      return false if safe_versions.any? { |requirement| requirement_satisfied_by?(requirement, version) }
 
       # If in the vulnerable range and not known safe, it's vulnerable
-      return true if vulnerable_versions.any? { |r| r.satisfied_by?(version) }
+      return true if vulnerable_versions.any? { |requirement| requirement_satisfied_by?(requirement, version) }
 
       # If a vulnerable range present but not met, it's not vulnerable
       return false if vulnerable_versions.any?
@@ -121,6 +121,13 @@ module Dependabot
     end
 
     private
+
+    sig { params(requirement: Gem::Requirement, version: Gem::Version).returns(T::Boolean) }
+    def requirement_satisfied_by?(requirement, version)
+      return requirement.satisfied_by_range?(version) if requirement.is_a?(Dependabot::Requirement)
+
+      T.cast(requirement.satisfied_by?(version), T::Boolean)
+    end
 
     sig do
       params(

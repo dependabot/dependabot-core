@@ -267,7 +267,7 @@ module Dependabot
         filtered = releases
                    .reject do |release|
           ignore_requirements.any? do |r|
-            r.satisfied_by?(release.version)
+            r.satisfied_by_range?(release.version)
           end
         end
         if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(releases).any?

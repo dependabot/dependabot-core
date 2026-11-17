@@ -121,6 +121,18 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
           let(:dependency_version) { "2.0.0-pre4" }
 
           it { is_expected.to eq(Gem::Version.new("3.0.0-pre1")) }
+
+          context "when later versions are ignored by a numeric range" do
+            let(:ignored_versions) { [">1.0.0"] }
+
+            it { is_expected.to eq(Gem::Version.new("1.0.0")) }
+          end
+
+          context "when versions are ignored by an internally generated update-type range" do
+            let(:ignored_versions) { [">=2.a"] }
+
+            it { is_expected.to eq(Gem::Version.new("1.0.0")) }
+          end
         end
 
         context "when their requirements indicate a preference for pre-releases" do
