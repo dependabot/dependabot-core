@@ -380,10 +380,8 @@ RSpec.describe Dependabot::Hex::FileParser do
                   from: "mix.exs",
                   version: "1.3.5",
                   groups: [],
-                  checksum: "checksum",
                   requirement: "~> 1.3.0",
-                  source: nil,
-                  top_level: true
+                  source: nil
                 }]
               )
             )
