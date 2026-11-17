@@ -66,6 +66,23 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
     expect(response).to contain_exactly(Gem::Version.new("3.42.0"), Gem::Version.new("3.41.0"))
   end
 
+  it "attaches only the registry host when provider versions cannot be parsed" do
+    hostname = "registry.example.org"
+    stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(
+      status: 200,
+      body: { "providers.v1": "/v1/providers/" }.to_json
+    )
+    stub_request(:get, "https://#{hostname}/v1/providers/hashicorp/aws/versions")
+      .and_return(status: 200, body: "<html>Maintenance</html>")
+    client = described_class.new(hostname: hostname)
+
+    expect { client.all_provider_versions(identifier: "hashicorp/aws") }.to raise_error(JSON::ParserError) do |error|
+      context = T.must(Dependabot::ErrorReportContext.build(error: error))
+      expect(context).to include("host" => hostname, "http-status" => 200)
+      expect(context.values.join).not_to include("/v1/providers")
+    end
+  end
+
   it "raises an error when the registry does not support the provider API" do
     hostname = "registry.example.org"
     stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(
