@@ -309,7 +309,7 @@ RSpec.describe Dependabot::Hex::CredentialHelpers do
     let(:error_context) { {} }
     let(:error_message) { "unclassified error" }
 
-    context "with an exact source context" do
+    context "with an exact source context regardless of message wording" do
       let(:error_context) { { source: "second_repo" } }
 
       it { is_expected.to eq("second_repo") }
@@ -355,73 +355,6 @@ RSpec.describe Dependabot::Hex::CredentialHelpers do
 
     context "with an unrelated error" do
       it { is_expected.to be_nil }
-    end
-  end
-
-  describe ".organization_credentials" do
-    subject(:organization_credentials) { described_class.organization_credentials(credentials) }
-
-    sig { returns(T::Array[Dependabot::Credential]) }
-    let(:credentials) do
-      [
-        Dependabot::Credential.new(
-          { "type" => "hex_organization", "organization" => "organization",
-            "token" => "token" }
-        )
-      ]
-    end
-
-    it "populates the credentials with default properties" do
-      expect(organization_credentials).to eq(%w(hex_organization organization token))
-    end
-  end
-
-  describe ".repo_credentials" do
-    subject(:repo_credentials) { described_class.repo_credentials(credentials) }
-
-    sig { returns(T::Array[Dependabot::Credential]) }
-    let(:credentials) do
-      [
-        Dependabot::Credential.new(
-          { "type" => "hex_repository", "url" => "url", "auth_key" => "auth_key",
-            "public_key_fingerprint" => "public_key_fingerprint" }
-        )
-      ]
-    end
-
-    it "populates the credentials with default properties" do
-      expect(repo_credentials).to eq(["hex_repository", "url", "auth_key", "public_key_fingerprint", ""])
-    end
-
-    context "with a public key" do
-      sig { returns(T::Array[Dependabot::Credential]) }
-      let(:credentials) do
-        [
-          Dependabot::Credential.new(
-            { "type" => "hex_repository", "repo" => "repo", "url" => "url", "public_key" => "public_key" }
-          )
-        ]
-      end
-
-      it "includes the public key" do
-        expect(repo_credentials).to eq(%w(hex_repository repo url) + ["", "", "public_key"])
-      end
-    end
-
-    context "with keys spelled as in dependabot.yml" do
-      sig { returns(T::Array[Dependabot::Credential]) }
-      let(:credentials) do
-        [
-          Dependabot::Credential.new(
-            { "type" => "hex_repository", "repo" => "repo", "url" => "url", "auth-key" => "auth_key",
-              "public-key-fingerprint" => "public_key_fingerprint", "public-key" => "public_key" }
-          )
-        ]
-      end
-
-      it "reads them" do
-        expect(repo_credentials).to eq(%w(hex_repository repo url auth_key public_key_fingerprint public_key))
-      end
     end
   end
 end

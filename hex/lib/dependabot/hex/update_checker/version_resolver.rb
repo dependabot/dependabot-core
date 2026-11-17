@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -17,28 +17,50 @@ module Dependabot
       class VersionResolver
         extend T::Sig
 
+        RESULT_FILE = ".dependabot-result"
+        RESOLUTION_TIMEOUT = 30
+        AMBIGUOUS_PACKAGE_ACCESS =
+          "This could be because the package does not exist, it was spelled incorrectly " \
+          "or you don't have permissions to it"
+        ACCESS_EXPLANATION = "It may not exist, may be misspelled, or access may be unavailable."
+        EXPLICIT_AUTHENTICATION_ERRORS = [
+          "No authenticated user found. Run `mix hex.user auth` to authenticate",
+          "Authentication failed (401)",
+          "Forbidden (403)"
+        ].freeze
+        TIMEOUT_ERRORS = [
+          ":timeout",
+          "Request failed (:timeout)"
+        ].freeze
+        CONNECTION_ERRORS = %w(:closed :econnrefused :econnreset :ehostunreach :enetunreach :nxdomain).freeze
+        HTTP_ERROR = /\A(?:HTTP status code: 5\d\d|Request failed \(5\d\d\))\z/
+        QUALIFIED_FETCH_ERROR = Regexp.new(
+          "\\AFailed to fetch record for " \
+          "(?<source>[A-Za-z0-9_.:-]+)/(?<package>[A-Za-z0-9_.-]+) " \
+          "from registry(?: \\(using cache instead\\))?\\z"
+        )
+        FETCH_ERROR =
+          /\AFailed to fetch record for (?<package>[A-Za-z0-9_.-]+) from registry(?: \(using cache instead\))?\z/
+
         sig do
           params(
             dependency: Dependabot::Dependency,
             credentials: T::Array[Dependabot::Credential],
-            original_dependency_files: T::Array[Dependabot::DependencyFile],
             prepared_dependency_files: T::Array[Dependabot::DependencyFile]
           ).void
         end
         def initialize(
           dependency:,
           credentials:,
-          original_dependency_files:,
           prepared_dependency_files:
         )
           @dependency = dependency
-          @original_dependency_files = original_dependency_files
           @prepared_dependency_files = prepared_dependency_files
           @credentials = credentials
-          @latest_resolvable_version = T.let(nil, T.nilable(T.any(Dependabot::Version, String, T::Boolean)))
+          @latest_resolvable_version = T.let(nil, T.nilable(T.any(Dependabot::Version, String)))
         end
 
-        sig { returns(T.nilable(T.any(Dependabot::Version, String, T::Boolean))) }
+        sig { returns(T.nilable(T.any(Dependabot::Version, String))) }
         def latest_resolvable_version
           @latest_resolvable_version ||= fetch_latest_resolvable_version
         end
@@ -52,22 +74,11 @@ module Dependabot
         attr_reader :credentials
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
-        attr_reader :original_dependency_files
-
-        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :prepared_dependency_files
 
-        sig { returns(T.nilable(T.any(Dependabot::Version, String, T::Boolean))) }
+        sig { returns(T.nilable(T.any(Dependabot::Version, String))) }
         def fetch_latest_resolvable_version
-          latest_resolvable_version =
-            SharedHelpers.in_a_temporary_directory do
-              write_temporary_sanitized_dependency_files
-              FileUtils.cp(elixir_helper_check_update_path, "check_update.exs")
-
-              SharedHelpers.with_git_configured(credentials: credentials) do
-                run_elixir_update_checker
-              end
-            end
+          latest_resolvable_version = resolve
 
           return if latest_resolvable_version.nil?
           return latest_resolvable_version if latest_resolvable_version.match?(/^[0-9a-f]{40}$/)
@@ -78,126 +89,65 @@ module Dependabot
         end
 
         sig { returns(String) }
+        def resolve
+          SharedHelpers.in_a_temporary_directory do
+            write_temporary_dependency_files
+
+            SharedHelpers.with_git_configured(credentials: credentials) do
+              CredentialHelpers.configure(credentials: credentials, env: mix_env)
+              run_elixir_update_checker
+            end
+          end
+        end
+
+        sig { returns(String) }
         def run_elixir_update_checker
-          T.cast(
-            SharedHelpers.run_helper_subprocess(
-              env: mix_env,
-              command: "mix run #{elixir_helper_path}",
-              function: "get_latest_resolvable_version",
-              args: [Dir.pwd, dependency.name, CredentialHelpers.hex_credentials(credentials)],
-              stderr_to_stdout: true
-            ),
-            String
+          SharedHelpers.run_shell_command(
+            mix_run_command(elixir_helper_check_update_path, dependency.name),
+            env: mix_env,
+            fingerprint: "mix run check_update.exs #{dependency.name}",
+            timeout: RESOLUTION_TIMEOUT
           )
+          File.read(RESULT_FILE)
         end
 
         sig do
           params(error: Dependabot::SharedHelpers::HelperSubprocessFailed)
-            .returns(T.nilable(T.any(Dependabot::Version, String, T::Boolean)))
+            .returns(T.nilable(T.any(Dependabot::Version, String)))
         end
         def handle_hex_errors(error)
-          if (match = error.message.match(/No authenticated organization found for (?<repo>[a-z_]+)\./))
-            raise Dependabot::PrivateSourceAuthenticationFailure, match[:repo]
-          end
+          source = CredentialHelpers.authentication_source(error)
+          raise Dependabot::PrivateSourceAuthenticationFailure, source if source
 
-          if (match = error.message.match(/Public key fingerprint mismatch for repo "(?<repo>[a-z_]+)"/))
-            raise Dependabot::PrivateSourceAuthenticationFailure, match[:repo]
-          end
+          lines = error.message.lines.map(&:strip)
+          qualified_fetch = lines.filter_map { |line| line.match(QUALIFIED_FETCH_ERROR) }.first
 
-          if (match = error.message.match(/Missing credentials for "(?<repo>[a-z_]+)"/))
-            raise Dependabot::PrivateSourceAuthenticationFailure, match[:repo]
-          end
+          handle_private_source_error(lines, qualified_fetch) if qualified_fetch
+          handle_ambiguous_access_error(lines, qualified_fetch)
 
-          if (match = error.message.match(/Downloading public key for repo "(?<repo>[a-z_]+)"/))
-            raise Dependabot::PrivateSourceAuthenticationFailure, match[:repo]
-          end
-
-          if (match = error.message.match(/Failed to decode public key for repo "(?<repo>[a-z_]+)"/))
-            raise Dependabot::PrivateSourceAuthenticationFailure, match[:repo]
-          end
-
-          if (match = error.message.match(/Failed to fetch record for (?<repo>[a-z_]+)(?::(?<org>[a-z_]+))?/))
-            name = match[:org] || match[:repo]
-            raise Dependabot::PrivateSourceAuthenticationFailure, name
-          end
-
-          # TODO: Catch the warnings as part of the Elixir module. This happens
-          # when elixir throws warnings from the manifest files that end up in
-          # stdout and cause run_helper_subprocess to fail parsing the result as
-          # JSON.
-          return error_result(error) if includes_result?(error)
+          raise error if source_less_network_failure?(lines)
 
           # Ignore dependencies which don't resolve due to mis-matching
           # environment specifications.
           # TODO: Update the environment specifications instead
-          return if error.message.include?("Dependencies have diverged")
+          return if lines.any? { |line| line.include?("Dependencies have diverged") }
 
-          check_original_requirements_resolvable
+          handle_project_error(error, lines)
+
           raise error
         end
 
-        sig do
-          params(error: Dependabot::SharedHelpers::HelperSubprocessFailed).returns(
-            T.any(
-              Dependabot::Version,
-              String,
-              T::Boolean
-            )
-          )
-        end
-        def error_result(error)
-          return false unless includes_result?(error)
-
-          result_json = error.message.split("\n").last
-          result = JSON.parse(T.must(result_json))["result"]
-          return version_class.new(result) if version_class.correct?(result)
-
-          result
+        sig { params(script: String, args: String).returns(T::Array[String]) }
+        def mix_run_command(script, *args)
+          [
+            "mix", "run", "--no-deps-check", "--no-start", "--no-compile",
+            "--no-elixir-version-check", script, "--", *args
+          ]
         end
 
-        sig { params(error: Dependabot::SharedHelpers::HelperSubprocessFailed).returns(T::Boolean) }
-        def includes_result?(error)
-          result = error.message.split("\n").last
-          return false unless result
-
-          JSON.parse(result).key?("result")
-        rescue JSON::ParserError
-          false
-        end
-
-        sig { returns(T.any(T::Boolean, Dependabot::Version, String)) }
-        def check_original_requirements_resolvable
-          SharedHelpers.in_a_temporary_directory do
-            write_temporary_sanitized_dependency_files(prepared: false)
-            FileUtils.cp(
-              elixir_helper_check_update_path,
-              "check_update.exs"
-            )
-
-            SharedHelpers.with_git_configured(credentials: credentials) do
-              run_elixir_update_checker
-            end
-          end
-
-          true
-        rescue SharedHelpers::HelperSubprocessFailed => e
-          # TODO: Catch the warnings as part of the Elixir module. This happens
-          # when elixir throws warnings from the manifest files that end up in
-          # stdout and cause run_helper_subprocess to fail parsing the result as
-          # JSON.
-          return error_result(e) if includes_result?(e)
-
-          raise Dependabot::DependencyFileNotResolvable, e.message
-        end
-
-        sig { params(prepared: T::Boolean).void }
-        def write_temporary_sanitized_dependency_files(prepared: true)
-          files = if prepared then prepared_dependency_files
-                  else
-                    original_dependency_files
-                  end
-
-          files.each do |file|
+        sig { void }
+        def write_temporary_dependency_files
+          prepared_dependency_files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(path, sanitize_mixfile(T.must(file.content)))
@@ -219,19 +169,89 @@ module Dependabot
         sig { returns(T::Hash[String, String]) }
         def mix_env
           {
-            "MIX_EXS" => File.join(NativeHelpers.hex_helpers_dir, "mix.exs"),
+            "HEX_HOME" => File.join(Dir.pwd, ".hex"),
             "MIX_QUIET" => "1"
           }
         end
 
         sig { returns(String) }
-        def elixir_helper_path
-          File.join(NativeHelpers.hex_helpers_dir, "lib/run.exs")
-        end
-
-        sig { returns(String) }
         def elixir_helper_check_update_path
           File.join(NativeHelpers.hex_helpers_dir, "lib/check_update.exs")
+        end
+
+        sig { params(lines: T::Array[String]).returns(T.nilable(String)) }
+        def bad_response_diagnostic(lines)
+          lines.find do |line|
+            CONNECTION_ERRORS.include?(line) || line.match?(HTTP_ERROR)
+          end
+        end
+
+        sig { params(lines: T::Array[String]).returns(T::Boolean) }
+        def source_less_network_failure?(lines)
+          return true if lines.any? { |line| line.match?(FETCH_ERROR) }
+
+          lines.include?("Failed to exchange API key for OAuth token")
+        end
+
+        sig { params(fetch: T.nilable(MatchData)).returns(String) }
+        def ambiguous_access_message(fetch)
+          return "Hex could not access the requested package. #{ACCESS_EXPLANATION}" unless fetch
+
+          package = fetch[:package]
+          source = fetch.names.include?("source") ? fetch[:source] : nil
+          return "Hex could not access package \"#{package}\". #{ACCESS_EXPLANATION}" unless source
+
+          "Hex could not access package \"#{package}\" from source \"#{private_source_name(source)}\". " \
+            "#{ACCESS_EXPLANATION}"
+        end
+
+        sig { params(lines: T::Array[String], fetch: MatchData).void }
+        def handle_private_source_error(lines, fetch)
+          source = private_source_name(T.must(fetch[:source]))
+          authentication_error = lines.intersect?(EXPLICIT_AUTHENTICATION_ERRORS)
+          raise Dependabot::PrivateSourceAuthenticationFailure, source if authentication_error
+          raise Dependabot::PrivateSourceTimedOut, source if lines.any? { |line| TIMEOUT_ERRORS.include?(line) }
+
+          diagnostic = bad_response_diagnostic(lines)
+          return unless diagnostic
+
+          message = "Hex could not reach source \"#{source}\": #{diagnostic}"
+          raise Dependabot::PrivateSourceBadResponse.new(source, message)
+        end
+
+        sig { params(lines: T::Array[String], qualified_fetch: T.nilable(MatchData)).void }
+        def handle_ambiguous_access_error(lines, qualified_fetch)
+          return unless lines.include?(AMBIGUOUS_PACKAGE_ACCESS)
+
+          fetch = qualified_fetch || lines.filter_map { |line| line.match(FETCH_ERROR) }.first
+          raise Dependabot::DependencyFileNotResolvable, ambiguous_access_message(fetch)
+        end
+
+        sig do
+          params(
+            error: Dependabot::SharedHelpers::HelperSubprocessFailed,
+            lines: T::Array[String]
+          ).void
+        end
+        def handle_project_error(error, lines)
+          invalid_requirement = lines.any? do |line|
+            line.start_with?("** (Version.InvalidRequirementError) invalid requirement:")
+          end
+          raise Dependabot::DependencyFileNotResolvable, error.message if invalid_requirement
+
+          if lines.include?("** (Mix) Hex dependency resolution failed")
+            raise Dependabot::DependencyFileNotResolvable, error.message
+          end
+
+          unknown_dependency = /\A\*\* \(Mix\) Unknown dependency #{Regexp.escape(dependency.name)} for environment\b/
+          return unless lines.any? { |line| line.match?(unknown_dependency) }
+
+          raise Dependabot::DependencyFileNotResolvable, error.message
+        end
+
+        sig { params(source: String).returns(String) }
+        def private_source_name(source)
+          source.delete_prefix("hexpm:")
         end
       end
     end
