@@ -1,7 +1,3 @@
-# Log to stderr instead of stdout
-:logger.remove_handler(:default)
-:logger.add_handler(:to_stderr, :logger_std_h, %{config: %{type: :standard_error}})
-
 defmodule Parser do
   @allowed_scms [Hex.SCM, Mix.SCM.Git, Mix.SCM.Path]
 
@@ -11,7 +7,8 @@ defmodule Parser do
 
     with {:ok, deps} <- converge_deps() do
       result =
-        for %Mix.Dep{scm: scm} = dep <- deps, scm in @allowed_scms,
+        for %Mix.Dep{scm: scm} = dep <- deps,
+            scm in @allowed_scms,
             expanded_dep <- expand_deps(dep) do
           build_dependency(expanded_dep.opts[:lock], expanded_dep)
         end
@@ -22,8 +19,9 @@ defmodule Parser do
 
   defp converge_deps do
     {:ok, Mix.Dep.Converger.converge()}
-  rescue e ->
-    {:error, Exception.format_banner(:error, e, __STACKTRACE__)}
+  rescue
+    e ->
+      {:error, Exception.format_banner(:error, e, __STACKTRACE__)}
   end
 
   defp build_dependency(nil, dep) do
@@ -121,7 +119,12 @@ defmodule Parser do
   end
 end
 
-Parser.run()
-|> :erlang.term_to_binary()
-|> Base.encode64()
-|> IO.write()
+case Parser.run() do
+  {:ok, dependencies} ->
+    dependencies
+    |> JSON.encode!()
+    |> then(&File.write!(".dependabot-result.json", &1))
+
+  {:error, error} ->
+    Mix.raise(error)
+end
