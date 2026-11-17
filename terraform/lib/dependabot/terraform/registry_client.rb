@@ -76,9 +76,10 @@ module Dependabot
       sig { params(identifier: String).returns(T::Array[Dependabot::Terraform::Version]) }
       def all_provider_versions(identifier:)
         base_url = service_url_for("providers.v1")
-        response = http_get!(URI.join(base_url, "#{identifier}/versions"))
+        url = URI.join(base_url, "#{identifier}/versions")
+        response = http_get!(url)
 
-        with_parse_error_context(response) do
+        with_parse_error_context(response, url) do
           JSON.parse(response.body)
               .fetch("versions")
               .map { |release| version_class.new(release.fetch("version")) }
@@ -97,9 +98,10 @@ module Dependabot
       sig { params(identifier: String).returns(T::Array[Dependabot::Terraform::Version]) }
       def all_module_versions(identifier:)
         base_url = service_url_for("modules.v1")
-        response = http_get!(URI.join(base_url, "#{identifier}/versions"))
+        url = URI.join(base_url, "#{identifier}/versions")
+        response = http_get!(url)
 
-        with_parse_error_context(response) do
+        with_parse_error_context(response, url) do
           JSON.parse(response.body)
               .fetch("modules").first.fetch("versions")
               .map { |release| version_class.new(release.fetch("version")) }
@@ -224,13 +226,16 @@ module Dependabot
 
       sig do
         type_parameters(:R)
-          .params(response: Excon::Response, blk: T.proc.returns(T.type_parameter(:R)))
+          .params(response: Excon::Response, url: URI::Generic, blk: T.proc.returns(T.type_parameter(:R)))
           .returns(T.type_parameter(:R))
       end
-      def with_parse_error_context(response, &blk)
+      def with_parse_error_context(response, url, &blk)
         yield
       rescue JSON::ParserError => e
-        ErrorReportContext.attach(e, { http_method: "GET", host: hostname, http_status: response.status })
+        ErrorReportContext.attach(
+          e,
+          { http_method: "GET", host: ErrorReportContext.host_for(url.to_s), http_status: response.status }
+        )
         raise
       end
 
