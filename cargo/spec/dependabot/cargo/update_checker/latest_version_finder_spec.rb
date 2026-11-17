@@ -7,8 +7,28 @@ require "dependabot/dependency_file"
 require "dependabot/cargo/update_checker/latest_version_finder"
 
 RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
+  let(:crates_index_url) do
+    name = dependency_name.downcase
+    path = case name.length
+           when 1, 2 then "#{name.length}/#{name}"
+           when 3 then "3/#{name[0]}/#{name}"
+           else "#{name[0..1]}/#{name[2..3]}/#{name}"
+           end
+    "https://index.crates.io/#{path}"
+  end
   let(:crates_url) { "https://crates.io/api/v1/crates/#{dependency_name}" }
   let(:crates_response) { fixture("crates_io_responses", crates_fixture_name) }
+  let(:crates_index_response) do
+    releases = T.cast(JSON.parse(crates_response).fetch("versions"), T::Array[T::Hash[String, T.anything]])
+    releases.map do |release|
+      {
+        "name" => dependency_name,
+        "vers" => release.fetch("num"),
+        "yanked" => release.fetch("yanked"),
+        "pubtime" => release.fetch("created_at")
+      }.to_json
+    end.join("\n")
+  end
   let(:crates_fixture_name) { "#{dependency_name}.json" }
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
@@ -65,7 +85,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
     subject(:latest_version) { finder.latest_version }
 
     before do
-      stub_request(:get, crates_url).to_return(status: 200, body: crates_response)
+      stub_request(:get, crates_index_url).to_return(status: 200, body: crates_index_response)
     end
 
     it { is_expected.to eq(Gem::Version.new("0.1.40")) }
@@ -77,13 +97,13 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
     end
 
     context "when the crates.io link resolves to a redirect" do
-      let(:redirect_url) { "https://crates.io/api/v1/crates/Time" }
+      let(:redirect_url) { "https://index.crates.io/ti/me/Time" }
 
       before do
-        stub_request(:get, crates_url)
+        stub_request(:get, crates_index_url)
           .to_return(status: 302, headers: { "Location" => redirect_url })
         stub_request(:get, redirect_url)
-          .to_return(status: 200, body: crates_response)
+          .to_return(status: 200, body: crates_index_response)
       end
 
       it { is_expected.to eq(Gem::Version.new("0.1.40")) }
@@ -91,9 +111,9 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
 
     context "when the crates.io link fails at first" do
       before do
-        stub_request(:get, crates_url)
+        stub_request(:get, crates_index_url)
           .to_raise(Excon::Error::Timeout).then
-          .to_return(status: 200, body: crates_response)
+          .to_return(status: 200, body: crates_index_response)
       end
 
       it { is_expected.to eq(Gem::Version.new("0.1.40")) }
@@ -101,13 +121,28 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
 
     context "when the crates link resolves to a 'Not Found' page" do
       before do
-        stub_request(:get, crates_url)
-          .to_return(status: 404, body: crates_response)
+        stub_request(:get, crates_index_url).to_return(status: 404)
+        stub_request(:get, crates_url).to_return(status: 404)
       end
 
-      let(:crates_fixture_name) { "not_found.json" }
-
       it { is_expected.to be_nil }
+    end
+
+    context "with cooldown options" do
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+      end
+      let(:crates_index_response) do
+        <<~RESPONSE
+          {"name":"time","vers":"0.1.38","yanked":false,"pubtime":"2016-04-11T00:00:00Z"}
+          {"name":"time","vers":"0.1.40","yanked":false,"pubtime":"#{Time.now.utc.iso8601}"}
+        RESPONSE
+      end
+
+      it "uses index pubtime to filter a recent release" do
+        expect(latest_version).to eq(Gem::Version.new("0.1.38"))
+        expect(a_request(:get, crates_url)).not_to have_been_made
+      end
     end
 
     context "when the latest version is a pre-release" do
@@ -191,7 +226,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
     subject(:lowest_security_fix_version) { finder.lowest_security_fix_version }
 
     before do
-      stub_request(:get, crates_url).to_return(status: 200, body: crates_response)
+      stub_request(:get, crates_index_url).to_return(status: 200, body: crates_index_response)
     end
 
     let(:dependency_name) { "time" }
