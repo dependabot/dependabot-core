@@ -1,0 +1,5 @@
+Resolving Hex dependencies...
+Because "your app" depends on "policy_package ~> 2.0" which doesn't match any versions, version solving failed.
+Note: active policy hides 1 version of "policy_package":
+  policy_package 2.0.0 - advisory >= HIGH
+Active policy: enforceorg/strict-prod
