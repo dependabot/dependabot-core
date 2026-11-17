@@ -1,0 +1,3 @@
+Resolving Hex dependencies...
+Because "your app" depends on "ecto" which depends on "postgrex 0.2.0", "postgrex 0.2.0" is required.
+So, because "your app" depends on "postgrex 0.2.1", version solving failed.

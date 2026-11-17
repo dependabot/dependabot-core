@@ -116,9 +116,9 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
     context "with an unresolvable mixfile" do
       let(:mixfile_fixture_name) { "unresolvable" }
 
-      it "raises a Dependabot::DependencyFileNotResolvable error" do
+      it "raises a file error with the solver explanation" do
         expect { resolver.latest_resolvable_version }
-          .to raise_error(Dependabot::DependencyFileNotResolvable)
+          .to raise_error(Dependabot::DependencyFileNotResolvable, /version solving failed/)
       end
     end
 
@@ -132,25 +132,20 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
     end
 
     context "when the update helper writes a result alongside stdout output" do
-      before do
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .and_call_original
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(array_including("mix", "run", end_with("/check_update.exs"), "plug"), anything) do
-            File.write(".dependabot-result", "1.3.6")
-            "warning from mix.exs"
-          end
-      end
+      before { stub_resolution_success(result: "1.3.6", stdout: "warning from mix.exs") }
 
       it "reads the version from the filesystem using an isolated Hex home" do
         expect(latest_resolvable_version).to eq(Dependabot::Hex::Version.new("1.3.6"))
-        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
-          array_including("mix", "run", end_with("/check_update.exs"), "--", "plug"),
-          hash_including(
-            env: hash_including("HEX_HOME" => end_with("/.hex")),
-            fingerprint: "mix run check_update.exs plug",
-            timeout: 30
-          )
+        expect(Dependabot::CommandHelpers).to have_received(:capture3_with_timeout).with(
+          array_including(
+            hash_including("HEX_HOME" => end_with("/.hex")),
+            %w(mix mix),
+            "run",
+            end_with("/check_update.exs"),
+            "--",
+            "plug"
+          ),
+          timeout: 30
         )
       end
     end
@@ -158,14 +153,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
     context "when the update helper returns a git SHA" do
       let(:git_sha) { "a" * 40 }
 
-      before do
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(array_including(end_with("/check_update.exs"), "plug"), anything) do
-            File.write(".dependabot-result", git_sha)
-            ""
-          end
-      end
+      before { stub_resolution_success(result: git_sha) }
 
       it "returns the SHA without parsing it as a version" do
         expect(latest_resolvable_version).to eq(git_sha)
@@ -173,12 +161,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
     end
 
     context "when the update helper does not write a result" do
-      before do
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(array_including(end_with("/check_update.exs"), "plug"), anything)
-          .and_return("")
-      end
+      before { stub_resolution_success }
 
       it "preserves the missing result as an internal error" do
         expect { latest_resolvable_version }.to raise_error(Errno::ENOENT, /\.dependabot-result/)
@@ -186,14 +169,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
     end
 
     context "when the update helper writes an invalid result" do
-      before do
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(array_including(end_with("/check_update.exs"), "plug"), anything) do
-            File.write(".dependabot-result", "not a version")
-            ""
-          end
-      end
+      before { stub_resolution_success(result: "not a version") }
 
       it "preserves the invalid result as an internal error" do
         expect { latest_resolvable_version }.to raise_error(ArgumentError, /Malformed version number string/)
@@ -471,6 +447,60 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       end
     end
 
+    context "with a PubGrub conflict explanation" do
+      before do
+        stub_resolution_output(
+          stdout: "#{fixture('resolver_errors/pubgrub_conflict_stdout')}\nunrelated warning",
+          stderr: fixture("resolver_errors/pubgrub_conflict_stderr")
+        )
+      end
+
+      it "surfaces the sanitized solver explanation after classifying stderr" do
+        expect { latest_resolvable_version }
+          .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).to include("Because \"your app\" depends on \"ecto\"")
+            expect(error.message).to include("version solving failed")
+            expect(error.message).not_to include("unrelated warning")
+          end
+        expect(mix_attempts).to contain_exactly(:resolution)
+      end
+    end
+
+    context "with a dependency-policy rejection" do
+      before do
+        stub_resolution_output(
+          stdout: fixture("resolver_errors/policy_rejection_stdout"),
+          stderr: fixture("resolver_errors/policy_rejection_stderr")
+        )
+      end
+
+      it "surfaces policy details without recommending a policy bypass" do
+        expect { latest_resolvable_version }
+          .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).to include("Note: active policy hides 1 version")
+            expect(error.message).to include("Active policy: enforceorg/strict-prod")
+            expect(error.message).not_to include("HEX_POLICY")
+            expect(error.message).not_to include("run without the policy")
+          end
+        expect(mix_attempts).to contain_exactly(:resolution)
+      end
+    end
+
+    context "when stdout resembles a solver conflict but stderr is unexpected" do
+      before do
+        stub_resolution_output(
+          stdout: fixture("resolver_errors/pubgrub_conflict_stdout"),
+          stderr: "** (RuntimeError) unexpected helper failure"
+        )
+      end
+
+      it "keeps the failure internal because stdout is not a classifier" do
+        expect { latest_resolvable_version }
+          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, /unexpected helper failure/)
+        expect(mix_attempts).to contain_exactly(:resolution)
+      end
+    end
+
     context "with the target missing from the active environment" do
       let(:unknown_dependency_error) do
         helper_failure("** (Mix) Unknown dependency plug for environment prod")
@@ -493,12 +523,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .with(array_including("lib/configure_credentials.exs", "organization", "dependabot"), anything)
           .and_return("")
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(array_including(end_with("/check_update.exs"), "plug"), anything)
-          .and_wrap_original do
-            mix_attempts << :resolution
-            raise oauth_error
-          end
+        stub_resolution_failure(oauth_error)
       end
 
       it "does not guess the organization from the available credential" do
@@ -592,12 +617,26 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
     end
 
     def stub_resolution_failure(error)
-      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
-      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-        .with(array_including(end_with("/check_update.exs"), dependency_name), anything)
-        .and_wrap_original do
+      exit_status = error.error_context[:process_exit_value].to_s.include?("exit 124") ? 124 : 1
+      stub_resolution_output(stdout: "", stderr: error.message, exit_status: exit_status)
+    end
+
+    def stub_resolution_success(result: nil, stdout: "")
+      stub_resolution_output(stdout: stdout, stderr: "", exit_status: 0) do
+        File.write(".dependabot-result", result) if result
+      end
+    end
+
+    def stub_resolution_output(stdout:, stderr:, exit_status: 1, &block)
+      allow(Dependabot::CommandHelpers).to receive(:capture3_with_timeout).and_call_original
+      allow(Dependabot::CommandHelpers).to receive(:capture3_with_timeout)
+        .with(
+          array_including(end_with("/check_update.exs"), dependency_name),
+          timeout: 30
+        ) do
           mix_attempts << :resolution
-          raise error
+          block&.call
+          [stdout, stderr, Dependabot::CommandHelpers::ProcessStatus.new(nil, exit_status), 0.1]
         end
     end
   end

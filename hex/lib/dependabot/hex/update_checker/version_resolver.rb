@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 
+require "dependabot/command_helpers"
 require "dependabot/hex/version"
 require "dependabot/hex/update_checker"
 require "dependabot/hex/credential_helpers"
@@ -19,6 +20,8 @@ module Dependabot
 
         RESULT_FILE = ".dependabot-result"
         RESOLUTION_TIMEOUT = 30
+        RESOLUTION_FAILURE_PREFIX = "** (Mix) Hex dependency resolution failed"
+        MAX_RESOLUTION_EXPLANATION_LENGTH = 4_000
         AMBIGUOUS_PACKAGE_ACCESS =
           "This could be because the package does not exist, it was spelled incorrectly " \
           "or you don't have permissions to it"
@@ -41,6 +44,19 @@ module Dependabot
         )
         FETCH_ERROR =
           /\AFailed to fetch record for (?<package>[A-Za-z0-9_.-]+) from registry(?: \(using cache instead\))?\z/
+
+        class ResolutionSubprocessFailed < SharedHelpers::HelperSubprocessFailed
+          extend T::Sig
+
+          sig { returns(String) }
+          attr_reader :stdout
+
+          sig { params(stdout: String, stderr: String, error_context: SharedHelpers::ErrorContext).void }
+          def initialize(stdout:, stderr:, error_context:)
+            @stdout = stdout
+            super(message: stderr, error_context: error_context)
+          end
+        end
 
         sig do
           params(
@@ -102,12 +118,28 @@ module Dependabot
 
         sig { returns(String) }
         def run_elixir_update_checker
-          SharedHelpers.run_shell_command(
-            mix_run_command(elixir_helper_check_update_path, dependency.name),
-            env: mix_env,
-            fingerprint: "mix run check_update.exs #{dependency.name}",
+          command = mix_run_command(elixir_helper_check_update_path, dependency.name)
+          stdout, stderr, process, time_taken = CommandHelpers.capture3_with_timeout(
+            [mix_env, *command_arguments(command)],
             timeout: RESOLUTION_TIMEOUT
           )
+          stdout ||= ""
+          stderr ||= ""
+
+          unless process&.success?
+            fingerprint = "mix run check_update.exs #{dependency.name}"
+            error_context = {
+              command: fingerprint,
+              fingerprint: fingerprint,
+              time_taken: time_taken,
+              process_exit_value: process.to_s,
+              stderr_output: stderr
+            }
+
+            SharedHelpers.check_out_of_disk_memory_error(stderr, error_context)
+            raise ResolutionSubprocessFailed.new(stdout: stdout, stderr: stderr, error_context: error_context)
+          end
+
           File.read(RESULT_FILE)
         end
 
@@ -145,6 +177,12 @@ module Dependabot
           ]
         end
 
+        sig { params(command: T::Array[String]).returns(T::Array[CommandHelpers::EnvCmdItem]) }
+        def command_arguments(command)
+          executable = T.must(command.first)
+          [[executable, executable], *command.drop(1)]
+        end
+
         sig { void }
         def write_temporary_dependency_files
           prepared_dependency_files.each do |file|
@@ -169,8 +207,7 @@ module Dependabot
         sig { returns(T::Hash[String, String]) }
         def mix_env
           {
-            "HEX_HOME" => File.join(Dir.pwd, ".hex"),
-            "MIX_QUIET" => "1"
+            "HEX_HOME" => File.join(Dir.pwd, ".hex")
           }
         end
 
@@ -239,14 +276,67 @@ module Dependabot
           end
           raise Dependabot::DependencyFileNotResolvable, error.message if invalid_requirement
 
-          if lines.include?("** (Mix) Hex dependency resolution failed")
-            raise Dependabot::DependencyFileNotResolvable, error.message
+          if lines.any? { |line| resolution_failure_line?(line) }
+            explanation = resolution_explanation(error)
+            message = "#{RESOLUTION_FAILURE_PREFIX.delete_prefix('** (Mix) ')}:\n#{explanation}" if explanation
+            raise Dependabot::DependencyFileNotResolvable, message || error.message
           end
 
           unknown_dependency = /\A\*\* \(Mix\) Unknown dependency #{Regexp.escape(dependency.name)} for environment\b/
           return unless lines.any? { |line| line.match?(unknown_dependency) }
 
           raise Dependabot::DependencyFileNotResolvable, error.message
+        end
+
+        sig { params(line: String).returns(T::Boolean) }
+        def resolution_failure_line?(line)
+          line == RESOLUTION_FAILURE_PREFIX || line.start_with?("#{RESOLUTION_FAILURE_PREFIX}. ")
+        end
+
+        sig { params(error: Dependabot::SharedHelpers::HelperSubprocessFailed).returns(T.nilable(String)) }
+        def resolution_explanation(error)
+          return unless error.is_a?(ResolutionSubprocessFailed)
+
+          lines =
+            error
+            .stdout
+            .encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
+            .gsub(%r{\e\[[0-?]*[ -/]*[@-~]}, "")
+            .gsub(/[^\P{C}\n\t]/, "")
+            .lines
+            .map(&:rstrip)
+
+          start = lines.index do |line|
+            line.start_with?("Because ", "Note: active policy", "Active policy:", "Policy hid ")
+          end
+          return unless start
+
+          candidate_lines = lines.drop(start)
+          solver_end = candidate_lines.index { |line| line.include?("version solving failed") }
+          solver_lines = solver_end ? candidate_lines.take(solver_end + 1) : []
+          policy_lines = candidate_lines.drop(solver_end ? solver_end + 1 : 0).select do |line|
+            policy_explanation_line?(line)
+          end
+          explanation = (solver_lines + policy_lines).join.strip
+          return if explanation.empty?
+
+          explanation.each_char.take(MAX_RESOLUTION_EXPLANATION_LENGTH).join
+        end
+
+        sig { params(line: String).returns(T::Boolean) }
+        def policy_explanation_line?(line)
+          return false if line.include?("HEX_POLICY") || line.include?("run without the policy") ||
+                          line.include?("To install anyway")
+
+          line.empty? ||
+            line.start_with?(
+              "Note: active policy",
+              "Active policy:",
+              "Effective cooldown:",
+              "Policy hid ",
+              "Versions filtered by cooldown:",
+              "  "
+            )
         end
 
         sig { params(source: String).returns(String) }

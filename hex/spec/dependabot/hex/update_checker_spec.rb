@@ -65,6 +65,15 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
     fixture("registry_api", "#{dependency_name}_response.json")
   end
 
+  def stub_update_resolution(version)
+    allow(Dependabot::CommandHelpers).to receive(:capture3_with_timeout).and_call_original
+    allow(Dependabot::CommandHelpers).to receive(:capture3_with_timeout)
+      .with(array_including(end_with("/check_update.exs")), timeout: 30) do
+        File.write(".dependabot-result", version)
+        ["", "", Dependabot::CommandHelpers::ProcessStatus.new(nil, 0), 0.1]
+      end
+  end
+
   it_behaves_like "an update checker"
 
   describe "#latest_version" do
@@ -615,11 +624,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
             .with(array_including("lib/configure_credentials.exs"), anything)
             .and_return("")
-          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-            .with(array_including(end_with("/check_update.exs")), anything) do
-              File.write(".dependabot-result", "1.1.0")
-              ""
-            end
+          stub_update_resolution("1.1.0")
         end
 
         it "returns the expected version" do
@@ -681,11 +686,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
             .with(array_including("lib/configure_credentials.exs"), anything)
             .and_return("")
-          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-            .with(array_including(end_with("/check_update.exs")), anything) do
-              File.write(".dependabot-result", "1.1.0")
-              ""
-            end
+          stub_update_resolution("1.1.0")
         end
 
         it "returns the expected version" do
@@ -786,11 +787,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
             .with(array_including("lib/configure_credentials.exs"), anything)
             .and_return("")
-          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-            .with(array_including(end_with("/check_update.exs")), anything) do
-              File.write(".dependabot-result", "1.1.0")
-              ""
-            end
+          stub_update_resolution("1.1.0")
         end
 
         it "returns the expected version" do
