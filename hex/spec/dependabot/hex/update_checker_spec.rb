@@ -552,12 +552,12 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           )]
         end
 
-        # This needs to changes to the Elixir helper
-        it "raises a helpful error" do
+        it "uses proxy-compatible metadata authentication without an OAuth exchange" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
           expect { latest_resolvable_version }
             .to raise_error(error_class) do |error|
               expect(error.source).to eq("dependabot")
+              expect(error.cause.message).not_to include("Failed to exchange API key for OAuth token")
             end
         end
       end
