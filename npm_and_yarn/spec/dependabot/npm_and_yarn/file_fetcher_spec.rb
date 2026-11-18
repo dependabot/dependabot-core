@@ -100,6 +100,43 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
   end
 
+  context "with a yarn berry project in a subdirectory with a custom cacheFolder" do
+    let(:directory) { "/frontend" }
+    let(:source) do
+      Dependabot::Source.new(
+        provider: "github",
+        repo: "gocardless/bump",
+        directory: directory
+      )
+    end
+    let(:file_fetcher_instance) do
+      described_class.new(source: source, credentials: credentials, repo_contents_path: repo_contents_path)
+    end
+    let(:repo_contents_path) { build_tmp_repo("yarn_berry/simple_node_modules") }
+    let(:project_path) { File.join(repo_contents_path, "frontend") }
+
+    before do
+      FileUtils.mkdir_p(project_path)
+      %w(package.json yarn.lock .yarnrc.yml .yarn).each do |name|
+        FileUtils.mv(File.join(repo_contents_path, name), project_path)
+      end
+      File.write(
+        File.join(project_path, ".yarnrc.yml"),
+        "nodeLinker: node-modules\ncacheFolder: .custom-cache\n"
+      )
+    end
+
+    after { FileUtils.rm_rf(repo_contents_path) }
+
+    it "creates the configured cache folder in the job directory" do
+      expect(file_fetcher_instance.files.map(&:name)).to include(".yarnrc.yml")
+
+      expect(Dir.exist?(File.join(project_path, ".custom-cache"))).to be true
+      expect(Dir.exist?(File.join(repo_contents_path, ".custom-cache"))).to be false
+      expect(Dir.exist?(File.join(repo_contents_path, ".yarn", "cache"))).to be false
+    end
+  end
+
   context "when the repo has a blank file: in the package-lock" do
     before do
       stub_request(:get, File.join(url, "package.json?ref=sha"))

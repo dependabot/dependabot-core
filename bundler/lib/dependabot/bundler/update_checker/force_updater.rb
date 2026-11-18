@@ -121,6 +121,8 @@ module Dependabot
             )
             dependencies_from(updated_deps, specs)
           rescue SharedHelpers::HelperSubprocessFailed => e
+            raise_if_checksum_mismatch(e)
+
             msg = e.error_class + " with message: " + e.message
             raise Dependabot::DependencyFileNotResolvable, msg
           end
@@ -165,9 +167,14 @@ module Dependabot
           updated_deps.filter_map do |dep|
             original_dep =
               original_dependencies.find { |d| d.name == dep.fetch("name") }
+            # Bundler also reports top-level gems that the file parser skips, such as
+            # path gems and gems only used on other platforms. Dependabot does not
+            # update those, so leave them out.
+            next unless original_dep
+
             spec = specs.find { |d| d.fetch("name") == dep.fetch("name") }
 
-            next if T.must(spec).fetch("version") == T.must(original_dep).version
+            next if T.must(spec).fetch("version") == original_dep.version
 
             build_dependency(original_dep, spec)
           end
@@ -211,12 +218,6 @@ module Dependabot
             dependency_files.find { |f| f.name == "gems.locked" }
         end
 
-        sig { returns(String) }
-        def sanitized_lockfile_body
-          re = FileUpdater::LockfileUpdater::LOCKFILE_ENDING
-          T.must(T.must(lockfile).content).gsub(re, "")
-        end
-
         sig { void }
         def write_temporary_dependency_files
           dependency_files.each do |file|
@@ -224,8 +225,6 @@ module Dependabot
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(path, file.content)
           end
-
-          File.write(T.must(lockfile).name, sanitized_lockfile_body) if lockfile
         end
 
         sig { override.returns(String) }

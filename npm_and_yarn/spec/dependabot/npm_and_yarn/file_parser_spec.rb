@@ -131,6 +131,210 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
       end
     end
 
+    context "when a dependency is declared in a support file as well" do
+      let(:manifest) { { "name" => "root", "dependencies" => { "chalk" => "1.0.0", "debug" => "2.0.0" } } }
+      let(:support_file) do
+        Dependabot::DependencyFile.new(
+          name: "../shared/package.json",
+          content: JSON.dump(
+            "name" => "shared",
+            "dependencies" => { "chalk" => "2.0.0", "lodash" => "4.0.0" }
+          ),
+          support_file: true
+        )
+      end
+      let(:files) { [package_file, support_file] }
+
+      it "keeps the dependency with only the requirement of the file that is updated" do
+        chalk = parser.parse.find { |dep| dep.name == "chalk" }
+
+        expect(chalk.requirements.map { |req| [req.file, req.requirement_string] })
+          .to eq([["package.json", "1.0.0"]])
+      end
+
+      it "removes support-file declarations from all versions" do
+        chalk = parser.parse.find { |dep| dep.name == "chalk" }
+        version_requirements = chalk.metadata[:all_versions].map(&:requirements).map do |requirements|
+          requirements.map { |req| [req.file, req.requirement_string] }
+        end
+
+        expect(version_requirements).to eq([[["package.json", "1.0.0"]]])
+      end
+
+      it "leaves out a dependency that is only declared in the support file" do
+        expect(parser.parse.map(&:name)).to contain_exactly("chalk", "debug")
+      end
+
+      context "with a lockfile-only version" do
+        let(:files) do
+          [
+            package_file,
+            support_file,
+            Dependabot::DependencyFile.new(
+              name: "package-lock.json",
+              content: {
+                "lockfileVersion" => 1,
+                "dependencies" => {
+                  "chalk" => {
+                    "version" => "1.0.0",
+                    "dependencies" => { "chalk" => { "version" => "0.5.0" } }
+                  }
+                }
+              }.to_json
+            )
+          ]
+        end
+
+        it "preserves lockfile-only versions in all versions metadata" do
+          chalk = parser.parse.find { |dep| dep.name == "chalk" }
+          versions = chalk.metadata[:all_versions].to_h { |version| [version.version, version.requirements] }
+
+          expect(versions.keys).to contain_exactly("0.5.0", "1.0.0")
+          expect(versions["0.5.0"]).to be_empty
+          expect(versions["1.0.0"].map(&:file)).to eq(["package.json"])
+        end
+      end
+
+      context "when the support file has the lower version" do
+        let(:manifest) { { "name" => "root", "dependencies" => { "chalk" => "2.0.0" } } }
+        let(:support_file) do
+          Dependabot::DependencyFile.new(
+            name: "../shared/package.json",
+            content: JSON.dump("name" => "shared", "dependencies" => { "chalk" => "1.0.0" }),
+            support_file: true
+          )
+        end
+
+        it "keeps the version of the file that is updated" do
+          expect(parser.parse.find { |dep| dep.name == "chalk" }.version).to eq("2.0.0")
+        end
+
+        context "when the lockfile also has its own copy of that version" do
+          # chalk 1.0.0 is installed for the support package and, independently, under debug
+          let(:manifest) do
+            {
+              "name" => "root",
+              "dependencies" => { "chalk" => "2.0.0", "debug" => "2.0.0", "shared" => "file:../shared" }
+            }
+          end
+          let(:files) do
+            [
+              package_file,
+              support_file,
+              Dependabot::DependencyFile.new(
+                name: "package-lock.json",
+                content: {
+                  "name" => "root",
+                  "lockfileVersion" => 3,
+                  "packages" => {
+                    "" => { "name" => "root", "dependencies" => manifest["dependencies"] },
+                    "../shared" => { "name" => "shared", "dependencies" => { "chalk" => "1.0.0" } },
+                    "../shared/node_modules/chalk" => { "version" => "1.0.0" },
+                    "node_modules/chalk" => { "version" => "2.0.0" },
+                    "node_modules/debug" => { "version" => "2.0.0", "dependencies" => { "chalk" => "1.0.0" } },
+                    "node_modules/debug/node_modules/chalk" => { "version" => "1.0.0" },
+                    "node_modules/shared" => { "resolved" => "../shared", "link" => true }
+                  }
+                }.to_json
+              )
+            ]
+          end
+
+          it "keeps that version in all versions, without the support file's requirement" do
+            chalk = parser.parse.find { |dep| dep.name == "chalk" }
+            versions = chalk.metadata[:all_versions].to_h do |version|
+              [version.version, version.requirements.map { |req| [req.file, req.requirement_string] }]
+            end
+
+            expect(versions).to eq("2.0.0" => [["package.json", "2.0.0"]], "1.0.0" => [])
+          end
+
+          context "when that copy is only used in development" do
+            let(:manifest) do
+              {
+                "name" => "root",
+                "dependencies" => { "chalk" => "2.0.0" },
+                "devDependencies" => { "debug" => "2.0.0", "shared" => "file:../shared" }
+              }
+            end
+            let(:files) do
+              [
+                package_file,
+                support_file,
+                Dependabot::DependencyFile.new(
+                  name: "package-lock.json",
+                  content: {
+                    "name" => "root",
+                    "lockfileVersion" => 3,
+                    "packages" => {
+                      "" => {
+                        "name" => "root",
+                        "dependencies" => manifest["dependencies"],
+                        "devDependencies" => manifest["devDependencies"]
+                      },
+                      "../shared" => { "name" => "shared", "dev" => true, "dependencies" => { "chalk" => "1.0.0" } },
+                      "../shared/node_modules/chalk" => { "version" => "1.0.0", "dev" => true },
+                      "node_modules/chalk" => { "version" => "2.0.0" },
+                      "node_modules/debug" => {
+                        "version" => "2.0.0", "dev" => true, "dependencies" => { "chalk" => "1.0.0" }
+                      },
+                      "node_modules/debug/node_modules/chalk" => { "version" => "1.0.0", "dev" => true },
+                      "node_modules/shared" => { "resolved" => "../shared", "link" => true, "dev" => true }
+                    }
+                  }.to_json
+                )
+              ]
+            end
+
+            it "keeps the lockfile's development-only metadata for that copy" do
+              chalk = parser.parse.find { |dep| dep.name == "chalk" }
+              copy = chalk.metadata[:all_versions].find { |version| version.version == "1.0.0" }
+
+              expect(copy.subdependency_metadata).to eq([{ production: false }])
+              expect(copy).not_to be_production
+            end
+          end
+        end
+      end
+    end
+
+    context "when the project is named like one of its own dependencies" do
+      let(:manifest) { { "name" => "next", "dependencies" => { "next" => "13.3.0", "chalk" => "0.3.0" } } }
+
+      it "parses it as a dependency from the registry, which npm installs like any other" do
+        expect(parser.parse.map(&:name)).to contain_exactly("next", "chalk")
+        expect(parser.parse.find { |dep| dep.name == "next" }.requirements.map(&:requirement_string))
+          .to eq(["13.3.0"])
+      end
+
+      context "with a yarn lockfile" do
+        let(:files) do
+          [
+            package_file,
+            Dependabot::DependencyFile.new(name: "yarn.lock", content: "# yarn lockfile v1\n")
+          ]
+        end
+
+        it "still leaves it out" do
+          expect(parser.parse.map(&:name)).to eq(["chalk"])
+        end
+      end
+
+      context "when another package in the workspace has that name" do
+        let(:manifest) { { "name" => "root", "dependencies" => { "next" => "13.3.0", "chalk" => "0.3.0" } } }
+        let(:files) do
+          [
+            package_file,
+            Dependabot::DependencyFile.new(name: "packages/next/package.json", content: JSON.dump("name" => "next"))
+          ]
+        end
+
+        it "still leaves it out, as it refers to that package" do
+          expect(parser.parse.map(&:name)).to eq(["chalk"])
+        end
+      end
+    end
+
     context "with a flat manifest and malformed dependencies" do
       let(:manifest) { { "flat" => true, "dependencies" => [] } }
 

@@ -86,6 +86,13 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
       end
     end
 
+    context "when the npm registry returns a bare JSON string body" do
+      let(:npm_latest_version_response) { '"Not Found"' }
+      let(:npm_all_versions_response) { '"Not Found"' }
+
+      it { is_expected.to be_nil }
+    end
+
     context "when there is a github link in the npm response" do
       let(:npm_latest_version_response) do
         fixture("npm_responses", "etag-1.0.0.json")
@@ -484,6 +491,16 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
         expect(homepage_url).to eq("https://example.come/jshttp/etag")
       end
     end
+
+    context "when the npm registry returns a bare JSON string body" do
+      let(:npm_latest_version_response) { '"Not Found"' }
+      let(:npm_all_versions_response) { '"Not Found"' }
+
+      it "falls back to the source instead of failing" do
+        expect { homepage_url }.not_to raise_error
+        expect(homepage_url).to be_nil
+      end
+    end
   end
 
   describe "#maintainer_changes" do
@@ -497,6 +514,12 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
     before do
       stub_request(:get, npm_url)
         .to_return(status: 200, body: npm_all_versions_response)
+    end
+
+    context "when the npm registry returns a bare JSON string body" do
+      let(:npm_all_versions_response) { '"Not Found"' }
+
+      it { is_expected.to be_nil }
     end
 
     context "when the user that pushed this version has pushed before" do

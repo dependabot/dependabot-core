@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -244,16 +244,16 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
         recent_date = Time.now.utc.strftime("%Y-%m-%d %H:%M:%S %z")
         old_date = (Time.now - (30 * 24 * 60 * 60)).utc.strftime("%Y-%m-%d %H:%M:%S %z")
 
-        latest_tag = {
+        latest_tag = Dependabot::GitTagDetails.new(
           tag: "v6.0.0",
           version: Gem::Version.new("6.0.0"),
           commit_sha: "latest_sha"
-        }
-        older_tag = {
+        )
+        older_tag = Dependabot::GitTagDetails.new(
           tag: "v5.0.0",
-          version: "5.0.0",
+          version: Gem::Version.new("5.0.0"),
           commit_sha: "older_sha"
-        }
+        )
 
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:local_tags_for_allowed_versions_matching_existing_precision)
@@ -286,11 +286,11 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
       it "returns nil from latest_version_tag when all versions are in cooldown" do
         recent_date = Time.now.utc.strftime("%Y-%m-%d %H:%M:%S %z")
 
-        latest_tag = {
+        latest_tag = Dependabot::GitTagDetails.new(
           tag: "v6.0.0",
           version: Dependabot::PreCommit::Version.new("6.0.0"),
           commit_sha: "latest_sha"
-        }
+        )
 
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:local_tags_for_allowed_versions_matching_existing_precision)
@@ -318,16 +318,16 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
         recent_date = Time.now.utc.strftime("%Y-%m-%d %H:%M:%S %z")
         old_date = (Time.now - (30 * 24 * 60 * 60)).utc.strftime("%Y-%m-%d %H:%M:%S %z")
 
-        latest_tag = {
+        latest_tag = Dependabot::GitTagDetails.new(
           tag: "v6.0.0",
           version: Dependabot::PreCommit::Version.new("6.0.0"),
           commit_sha: "latest_sha"
-        }
-        older_tag = {
+        )
+        older_tag = Dependabot::GitTagDetails.new(
           tag: "v5.0.0",
           version: Dependabot::PreCommit::Version.new("5.0.0"),
           commit_sha: "older_sha"
-        }
+        )
 
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:local_tags_for_allowed_versions_matching_existing_precision)
@@ -367,16 +367,16 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
 
         it "does not select versions older than the current pinned ref" do
           # v3.0.0 is older than v4.4.0 — must not be selected even if not in cooldown
-          old_tag = {
+          old_tag = Dependabot::GitTagDetails.new(
             tag: "v3.0.0",
             version: Dependabot::PreCommit::Version.new("3.0.0"),
             commit_sha: "old_sha"
-          }
-          latest_tag = {
+          )
+          latest_tag = Dependabot::GitTagDetails.new(
             tag: "v6.0.0",
             version: Dependabot::PreCommit::Version.new("6.0.0"),
             commit_sha: "latest_sha"
-          }
+          )
 
           recent_date = Time.now.utc.strftime("%Y-%m-%d %H:%M:%S %z")
 
@@ -440,21 +440,21 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
       it "uses the frozen comment version for cooldown comparison" do
         old_date = (Time.now - (30 * 24 * 60 * 60)).utc.strftime("%Y-%m-%d %H:%M:%S %z")
 
-        v6_tag = {
+        v6_tag = Dependabot::GitTagDetails.new(
           tag: "v6.0.0",
           version: Dependabot::PreCommit::Version.new("6.0.0"),
           commit_sha: "3e8a8703264a2f4a69428a0aa4dcb512790b2c8c"
-        }
-        v5_tag = {
+        )
+        v5_tag = Dependabot::GitTagDetails.new(
           tag: "v5.0.0",
           version: Dependabot::PreCommit::Version.new("5.0.0"),
           commit_sha: "cef0300fd0fc4d2a87a85fa2093c6b283ea36f4b"
-        }
-        v4_tag = {
+        )
+        v4_tag = Dependabot::GitTagDetails.new(
           tag: "v4.4.0",
           version: Dependabot::PreCommit::Version.new("4.4.0"),
           commit_sha: "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e"
-        }
+        )
 
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:local_tags_for_allowed_versions)
@@ -485,21 +485,21 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
         recent_date = Time.now.utc.strftime("%Y-%m-%d %H:%M:%S %z")
         old_date = (Time.now - (30 * 24 * 60 * 60)).utc.strftime("%Y-%m-%d %H:%M:%S %z")
 
-        v6_tag = {
+        v6_tag = Dependabot::GitTagDetails.new(
           tag: "v6.0.0",
           version: Dependabot::PreCommit::Version.new("6.0.0"),
           commit_sha: "3e8a8703264a2f4a69428a0aa4dcb512790b2c8c"
-        }
-        v5_1_tag = {
+        )
+        v5_1_tag = Dependabot::GitTagDetails.new(
           tag: "v5.1.0",
           version: Dependabot::PreCommit::Version.new("5.1.0"),
           commit_sha: "abc123"
-        }
-        v5_tag = {
+        )
+        v5_tag = Dependabot::GitTagDetails.new(
           tag: "v5.0.0",
           version: Dependabot::PreCommit::Version.new("5.0.0"),
           commit_sha: "cef0300fd0fc4d2a87a85fa2093c6b283ea36f4b"
-        }
+        )
 
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:local_tags_for_allowed_versions)
@@ -540,11 +540,11 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
         # the version would incorrectly bypass cooldown.
         tag_creation_date = Time.now.utc.strftime("%Y-%m-%d %H:%M:%S %z")
 
-        latest_tag = {
+        latest_tag = Dependabot::GitTagDetails.new(
           tag: "v6.0.0",
           version: Dependabot::PreCommit::Version.new("6.0.0"),
           commit_sha: "latest_sha"
-        }
+        )
 
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:local_tags_for_allowed_versions_matching_existing_precision)
@@ -571,11 +571,11 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
         # Should fall back to git show %cd
         old_commit_date = (Time.now - (30 * 24 * 60 * 60)).utc.strftime("%Y-%m-%d %H:%M:%S %z")
 
-        latest_tag = {
+        latest_tag = Dependabot::GitTagDetails.new(
           tag: "v6.0.0",
           version: Dependabot::PreCommit::Version.new("6.0.0"),
           commit_sha: "latest_sha"
-        }
+        )
 
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:local_tags_for_allowed_versions_matching_existing_precision)
@@ -607,16 +607,16 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
         tag_creation_date = (Time.now - (2 * 24 * 60 * 60)).utc.strftime("%Y-%m-%d %H:%M:%S %z")
         old_tag_date = (Time.now - (30 * 24 * 60 * 60)).utc.strftime("%Y-%m-%d %H:%M:%S %z")
 
-        latest_tag = {
+        latest_tag = Dependabot::GitTagDetails.new(
           tag: "v6.0.0",
           version: Dependabot::PreCommit::Version.new("6.0.0"),
           commit_sha: "latest_sha"
-        }
-        older_tag = {
+        )
+        older_tag = Dependabot::GitTagDetails.new(
           tag: "v5.0.0",
           version: Dependabot::PreCommit::Version.new("5.0.0"),
           commit_sha: "older_sha"
-        }
+        )
 
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:local_tags_for_allowed_versions_matching_existing_precision)
@@ -649,11 +649,11 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
       it "uses GitHub Release published_at for cooldown (bypasses git clone)" do
         recent_published_at = Time.now - (2 * 24 * 60 * 60) # 2 days ago
 
-        latest_tag = {
+        latest_tag = Dependabot::GitTagDetails.new(
           tag: "v6.0.0",
           version: Dependabot::PreCommit::Version.new("6.0.0"),
           commit_sha: "latest_sha"
-        }
+        )
 
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:local_tags_for_allowed_versions_matching_existing_precision)
@@ -683,11 +683,11 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
       it "falls back to git when no GitHub Release exists for the tag" do
         old_date = (Time.now - (30 * 24 * 60 * 60)).utc.strftime("%Y-%m-%d %H:%M:%S %z")
 
-        latest_tag = {
+        latest_tag = Dependabot::GitTagDetails.new(
           tag: "v6.0.0",
           version: Dependabot::PreCommit::Version.new("6.0.0"),
           commit_sha: "latest_sha"
-        }
+        )
 
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:local_tags_for_allowed_versions_matching_existing_precision)

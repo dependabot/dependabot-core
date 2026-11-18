@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve filenames and project_name fixtures defined only in child contexts.
+
 require "spec_helper"
 require "dependabot/bazel/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"

@@ -78,6 +78,31 @@ RSpec.describe Dependabot::Package::NpmPackageManagerConfig do
       end
     end
 
+    # Apache Cordova plugins declare the plugin's Cordova requirements as an object under
+    # engines.cordovaDependencies; npm accepts any value under engines.
+    context "with a non-string value for an engine Dependabot does not read" do
+      let(:package_json) do
+        {
+          "engines" => {
+            "cordovaDependencies" => { "4.0.0" => { "cordova" => ">100" } },
+            "node" => ">=20"
+          }
+        }
+      end
+
+      it "skips that entry and keeps the others" do
+        expect(config.engines).to eq("node" => ">=20")
+      end
+    end
+
+    context "with only non-string values for engines Dependabot does not read" do
+      let(:package_json) { { "engines" => { "cordovaDependencies" => {}, "custom" => 1, "other" => [">=1"] } } }
+
+      it "returns an empty engines object" do
+        expect(config.engines).to eq({})
+      end
+    end
+
     [
       [[], "package.json must be an object"],
       [{ packageManager: "npm@11" }, "package.json keys must be strings"],
@@ -85,7 +110,9 @@ RSpec.describe Dependabot::Package::NpmPackageManagerConfig do
       [{ "engines" => [] }, "engines must be an object"],
       [{ "engines" => { npm: ">=11" } }, "engines keys must be strings"],
       [{ "engines" => { "npm" => 11 } }, "engines.npm must be a string"],
-      [{ "engines" => { "npm" => true } }, "engines.npm must be a string"]
+      [{ "engines" => { "npm" => true } }, "engines.npm must be a string"],
+      [{ "engines" => { "node" => { "version" => ">=20" } } }, "engines.node must be a string"],
+      [{ "engines" => { "bun" => [">=1"] } }, "engines.bun must be a string"]
     ].each do |invalid_package_json, message|
       context "with #{message}" do
         let(:package_json) { invalid_package_json }

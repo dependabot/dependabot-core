@@ -1,0 +1,6 @@
+? Verifying lockfile against supply-chain policies (1 entry)...
+Progress: resolved 1, reused 0, downloaded 0, added 0
+✓ Lockfile passes supply-chain policies (1 entry in 1s)
+[ERR_PNPM_UNUSED_PATCH] The following patches were not used: is-odd@3.0.0
+
+Either remove them from "patchedDependencies" or update them to match packages in your dependencies.

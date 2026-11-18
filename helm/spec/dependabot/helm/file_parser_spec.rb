@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only values_content fixture.
+
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/source"
@@ -274,7 +276,7 @@ RSpec.describe Dependabot::Helm::FileParser do
         dependencies = parser.parse
 
         # Should find the dependency with correct name (no doubling)
-        app_dep = dependencies.find { |d| d.name == "quay.io/myorg/myapp" }
+        app_dep = T.must(dependencies.find { |d| d.name == "quay.io/myorg/myapp" })
         expect(app_dep).to be_a(Dependabot::Dependency)
         expect(app_dep.name).to eq("quay.io/myorg/myapp")
         expect(app_dep.version).to eq("v1.0.0")

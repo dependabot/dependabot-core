@@ -58,20 +58,17 @@ module Dependabot
       end
 
       sig { override.returns(T::Array[Dependency]) }
-      def parse # rubocop:disable Metrics/PerceivedComplexity
+      def parse
+        locked = lockfile_dependencies
         dependency_set = DependencySet.new
         dependency_set += manifest_dependencies
-        dependency_set += lockfile_dependencies
+        dependency_set += locked
         dependency_set += workspace_catalog_dependencies if pnpm_workspace_yml
 
         dependencies = Helpers.dependencies_with_all_versions_metadata(dependency_set)
 
-        dependencies.reject do |dep|
+        dependencies.filter_map { |dep| without_support_file_requirements(dep, locked) }.reject do |dep|
           reqs = dep.requirements
-
-          # Ignore dependencies defined in support files, since we don't want PRs for those
-          support_reqs = reqs.select { |r| support_package_files.any? { |f| f.name == r.file } }
-          next true if support_reqs.any?
 
           # TODO: Currently, Dependabot can't handle dependencies that have both
           # a git source *and* a non-git source. Fix that!
@@ -326,7 +323,7 @@ module Dependabot
 
         return if lockfile_details && !version
         return if ignore_requirement?(requirement)
-        return if workspace_package_names.include?(name)
+        return if workspace_package_name?(name, file)
 
         # TODO: Handle aliased packages:
         # https://github.com/dependabot/dependabot-core/pull/1115
@@ -458,14 +455,33 @@ module Dependabot
         match[1]
       end
 
-      sig { returns(T::Array[String]) }
-      def workspace_package_names
-        @workspace_package_names ||= T.let(
-          package_files.filter_map do |f|
-            Dependabot::Package::NpmPackageJson.from_file(f).name
+      sig { returns(T::Hash[String, String]) }
+      def workspace_package_names_by_file
+        @workspace_package_names_by_file ||= T.let(
+          package_files.each_with_object({}) do |f, names|
+            name = Dependabot::Package::NpmPackageJson.from_file(f).name
+            names[f.name] = name if name
           end,
-          T.nilable(T::Array[String])
+          T.nilable(T::Hash[String, String])
         )
+      end
+
+      # A dependency named like a package in the workspace refers to that package, which is not on the registry.
+      # A package with the name of one of its own dependencies cannot be referring to itself: npm installs that
+      # dependency from the registry like any other.
+      sig { params(name: String, file: Dependabot::DependencyFile).returns(T::Boolean) }
+      def workspace_package_name?(name, file)
+        workspace_package_names_by_file.any? do |file_name, package_name|
+          next false unless package_name == name
+          next true unless file_name == file.name
+
+          !npm_project?
+        end
+      end
+
+      sig { returns(T::Boolean) }
+      def npm_project?
+        package_manager_helper.package_manager.name == NpmPackageManager::NAME
       end
 
       sig do
@@ -615,6 +631,73 @@ module Dependabot
       sig { returns(T::Hash[Symbol, T.untyped]) }
       def jsr_registry_source
         { type: "registry", url: NpmAndYarn::Requirement::JSR_REGISTRY }
+      end
+
+      # Ignore dependencies defined in support files, since we don't want PRs for those. A dependency that is also
+      # defined in a file of this directory is kept, with the requirements of the files that are updated.
+      sig do
+        params(dep: Dependabot::Dependency, locked: Dependabot::FileParsers::Base::DependencySet)
+          .returns(T.nilable(Dependabot::Dependency))
+      end
+      def without_support_file_requirements(dep, locked)
+        support_reqs = dep.requirements.select { |r| support_package_files.any? { |f| f.name == r.file } }
+        return dep if support_reqs.none?
+
+        own_reqs = dep.requirements - support_reqs
+        return if own_reqs.empty?
+
+        # The versions of the declarations are merged into one, the lowest, which may be the one of a support file
+        all_versions = T.cast(dep.metadata[:all_versions], T.nilable(T::Array[Dependabot::Dependency])) || []
+        locked_copies = locked.all_versions_for_name(dep.name)
+        own_versions = all_versions.filter_map do |version|
+          without_support_file_requirements_for_version(version, support_reqs, locked_copies)
+        end
+        own_version = DependencySet.new(own_versions).dependency_for_name(dep.name)&.version
+
+        Dependency.new(
+          name: dep.name,
+          version: own_version,
+          requirements: own_reqs,
+          package_manager: dep.package_manager,
+          subdependency_metadata: dep.subdependency_metadata,
+          metadata: dep.metadata.merge(all_versions: own_versions)
+        )
+      end
+
+      sig do
+        params(
+          version: Dependabot::Dependency,
+          support_reqs: T::Array[Dependabot::DependencyRequirement],
+          locked_copies: T::Array[Dependabot::Dependency]
+        ).returns(T.nilable(Dependabot::Dependency))
+      end
+      def without_support_file_requirements_for_version(version, support_reqs, locked_copies)
+        own_requirements = version.requirements - support_reqs
+        return version if own_requirements == version.requirements
+
+        subdependency_metadata = version.subdependency_metadata
+        if own_requirements.empty?
+          # The lockfile entries of a version are merged into its declarations, so a version that only support files
+          # declare may still be locked by this project, for example as a transitive dependency. Keep that copy, with
+          # the lockfile's metadata (development-only, bundled), which the merge with a declaration drops.
+          locked_copy = locked_copies.find { |copy| copy.version == version.version }
+          return unless locked_copy
+
+          subdependency_metadata = locked_copy.subdependency_metadata
+        end
+
+        Dependency.new(
+          name: version.name,
+          version: version.version,
+          requirements: own_requirements,
+          package_manager: version.package_manager,
+          previous_version: version.previous_version,
+          previous_requirements: version.previous_requirements,
+          directory: version.directory,
+          subdependency_metadata: subdependency_metadata,
+          removed: version.removed?,
+          metadata: version.metadata
+        )
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }

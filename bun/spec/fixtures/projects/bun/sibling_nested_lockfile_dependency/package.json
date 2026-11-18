@@ -1,0 +1,7 @@
+{
+  "name": "root-app",
+  "private": true,
+  "devDependencies": {
+    "typescript": "4.9.5"
+  }
+}

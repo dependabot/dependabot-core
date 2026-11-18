@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve child-context project_name fixtures or class-scope generated examples.
+
 require "spec_helper"
 require "dependabot/credential"
 require "dependabot/dependency_file"

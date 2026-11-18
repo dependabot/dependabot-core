@@ -178,6 +178,43 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       end
     end
 
+    context "when the lockfile sits above the job's directory" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(name: "package.json", content: manifest_content),
+          Dependabot::DependencyFile.new(
+            name: "../../pnpm-lock.yaml",
+            content: "lockfileVersion: '#{lockfile_version}'\n"
+          )
+        ]
+      end
+
+      # A `packageManager` pin in that ancestor's package.json is honored by Corepack but is not fetched, so
+      # choosing a pnpm for its lockfile could override a pin that cannot be seen.
+      it "runs the default pnpm and leaves the choice to Corepack" do
+        described_class.run_pnpm_command("install", env: env)
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with("pnpm install", fingerprint: "pnpm install", env: env)
+      end
+    end
+
+    context "when the only old lockfile is in a sub-directory" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(name: "package.json", content: manifest_content),
+          Dependabot::DependencyFile.new(name: "packages/a/pnpm-lock.yaml", content: "lockfileVersion: '6.0'\n")
+        ]
+      end
+
+      it "runs the default pnpm, since a command run from here does not use that lockfile" do
+        described_class.run_pnpm_command("install", env: env)
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with("pnpm install", fingerprint: "pnpm install", env: env)
+      end
+    end
+
     ["9.0", "5.3"].each do |version|
       context "when the lockfile is version #{version}" do
         let(:lockfile_version) { version }
@@ -491,11 +528,52 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       expect(described_class.pnpm_version).to eq(Dependabot::NpmAndYarn::Version.new("12.10.1"))
     end
 
+    it "tries again when the first attempt fails" do
+      described_class.dependency_files = []
+      calls = 0
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do
+        calls += 1
+        raise "pnpm is not ready yet" if calls == 1
+
+        "12.10.1\n"
+      end
+
+      expect(described_class.pnpm_version).to eq(Dependabot::NpmAndYarn::Version.new("12.10.1"))
+      expect(calls).to eq(2)
+    end
+
+    it "raises the error of the last attempt from pnpm_version!" do
+      described_class.dependency_files = []
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_raise(StandardError, "download failed")
+
+      expect { described_class.pnpm_version! }.to raise_error(StandardError, "download failed")
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).twice
+    end
+
+    ["", " \n\t"].each do |output|
+      it "retries blank output #{output.inspect} before accepting a version" do
+        described_class.dependency_files = []
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return(output, "12.10.1\n")
+
+        expect(described_class.pnpm_version!).to eq(Dependabot::NpmAndYarn::Version.new("12.10.1"))
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).twice
+      end
+    end
+
+    it "rejects persistently blank output rather than treating it as version zero" do
+      described_class.dependency_files = []
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return(" \n")
+
+      expect { described_class.pnpm_version! }.to raise_error(ArgumentError, /empty version/)
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).twice
+    end
+
     it "returns nil when the pnpm version cannot be determined" do
       described_class.dependency_files = []
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_raise(StandardError, "missing pnpm")
 
       expect(described_class.pnpm_version).to be_nil
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).twice
     end
   end
 
@@ -1602,9 +1680,105 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       expect(described_class.max_configured_release_age(files, pnpm_settings)).to eq(20_160)
     end
 
+    [
+      ["{ minimumReleaseAge: 10080 }", 10_080],
+      ["{ minimumReleaseAge: 0 }", 0],
+      ["minimumReleaseAge: >-\n  1440\n", 1440],
+      ["window: &window 4320\nminimumReleaseAge: *window\n", 4320],
+      ["other:\n  minimumReleaseAge: 10080\n", nil],
+      ["minimumReleaseAge: null\n", Float::INFINITY],
+      ["minimumReleaseAge: false\n", Float::INFINITY]
+    ].each do |content, expected|
+      it "reads the top-level YAML setting from #{content.inspect}" do
+        files = [file("pnpm-workspace.yaml", content)]
+
+        expect(described_class.max_configured_release_age(files, pnpm_settings)).to eq(expected)
+      end
+    end
+
+    it "surfaces malformed workspace YAML" do
+      files = [file("pnpm-workspace.yaml", "{ minimumReleaseAge: [")]
+
+      expect { described_class.max_configured_release_age(files, pnpm_settings) }.to raise_error(Psych::SyntaxError)
+    end
+
+    it "also reads Yarn's native gate from a flow-style YAML mapping" do
+      setting = described_class::ReleaseAgeGateSetting.new(
+        filename: ".yarnrc.yml", key: "npmMinimalAgeGate", separator: ":"
+      )
+      files = [file(".yarnrc.yml", "{ npmMinimalAgeGate: 4320 }")]
+
+      expect(described_class.max_configured_release_age(files, [setting])).to eq(4320)
+    end
+
     it "parses an npmrc value with a trailing semicolon comment" do
       files = [file(".npmrc", "min-release-age=3 ; temporary\n")]
       expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(3)
+    end
+  end
+
+  describe "::pnpm_project?" do
+    [
+      [{ "engines" => { "pnpm" => ">=10" } }, nil, true],
+      [{ "engines" => { "pnpm" => ">=10" } }, "package-lock.json", false],
+      [{ "packageManager" => "npm@12.2.0", "engines" => { "pnpm" => ">=10" } }, nil, false],
+      [{ "packageManager" => "npm@12.2.0" }, "pnpm-lock.yaml", true],
+      [{ "packageManager" => "pnpm@12.10.1" }, "yarn.lock", false],
+      [{ "engines" => { "npm" => ">=12", "pnpm" => ">=10" } }, nil, false],
+      [{}, nil, false]
+    ].each do |manifest, lockfile, expected|
+      it "uses detector precedence for #{manifest.inspect} and #{lockfile.inspect}" do
+        files = [Dependabot::DependencyFile.new(name: "package.json", content: manifest.to_json)]
+        files << Dependabot::DependencyFile.new(name: lockfile, content: "") if lockfile
+
+        expect(described_class.pnpm_project?(files)).to be(expected)
+      end
+    end
+  end
+
+  describe "::pnpm_release_age_policies" do
+    let(:pnpm_manifest) do
+      Dependabot::DependencyFile.new(name: "package.json", content: '{"packageManager":"pnpm@12.10.1"}')
+    end
+
+    [
+      ["@org/*", "@org/pkg", "1.7.0", true],
+      ["@org/pkg@1.7.0", "@org/pkg", "1.7.0", true],
+      ["@org/pkg@1.7.0", "@org/pkg", "1.6.0", false],
+      ["pkg@1.7.0-beta.1", "pkg", "1.7.0-beta.1", true],
+      ["pkg@1.7.0-beta.1", "pkg", "1.7.0", false],
+      ["pkg@1.6.0 || 1.7.0", "pkg", "1.7.0", true],
+      ["pkg", "other-pkg", "1.7.0", false],
+      ["my.pkg", "my-pkg", "1.7.0", false]
+    ].each do |selector, name, version, expected|
+      it "matches #{selector} against #{name}@#{version}" do
+        files = [pnpm_manifest, Dependabot::DependencyFile.new(
+          name: "../pnpm-workspace.yaml",
+          content: { "minimumReleaseAge" => 1440, "minimumReleaseAgeExclude" => [selector] }.to_yaml
+        )]
+        policy = described_class.pnpm_release_age_policies(files).first
+
+        expect(policy.excluded?(name, version: Dependabot::NpmAndYarn::Version.new(version))).to be(expected)
+      end
+    end
+
+    it "rejects malformed native exemption configuration" do
+      files = [pnpm_manifest, Dependabot::DependencyFile.new(
+        name: "pnpm-workspace.yaml", content: "minimumReleaseAge: 1440\nminimumReleaseAgeExclude: etag\n"
+      )]
+
+      expect { described_class.pnpm_release_age_policies(files) }
+        .to raise_error(Dependabot::MisconfiguredTooling, /minimumReleaseAgeExclude must be an array/)
+    end
+
+    it "rejects a non-mapping workspace configuration" do
+      files = [
+        pnpm_manifest,
+        Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: "- minimumReleaseAge\n")
+      ]
+
+      expect { described_class.pnpm_release_age_policies(files) }
+        .to raise_error(Dependabot::DependencyFileNotParseable, /Expected a YAML mapping/)
     end
   end
 

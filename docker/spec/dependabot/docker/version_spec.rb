@@ -43,6 +43,41 @@ RSpec.describe Dependabot::Docker::Version do
     it "sorts properly for <prefix>_<year><month><day>.<version>" do
       expect(described_class.new("img_20230915.3")).to be < described_class.new("img_20231011.1")
     end
+
+    it "does not raise for versions with more than one underscore-separated group" do
+      expect { described_class.new("24_2_0") }.not_to raise_error
+      expect { described_class.new("13_1.10.1_3.4.2") }.not_to raise_error
+      expect { described_class.new("09_15_05_30") }.not_to raise_error
+    end
+
+    it "treats the first group as the release part for versions with several underscore groups" do
+      expect(described_class.new("13_1.10.1_3.4.2").to_semver).to eq("13")
+      expect(described_class.new("24_2_0").to_semver).to eq("24")
+    end
+
+    it "sorts properly for <version>_<version>_<version> (for example java, sbt and scala)" do
+      expect(described_class.new("17.0.4_1.7.1_3.2.0")).to be < described_class.new("17.0.4_1.8.0_3.2.0")
+      expect(described_class.new("17.0.4_1.8.0_3.2.0")).to be < described_class.new("17.0.4_1.8.0_3.3.1")
+      expect(described_class.new("17.0.4_1.8.0_3.3.1")).to be < described_class.new("17.0.5_1.7.1_3.2.0")
+    end
+
+    it "sorts a version with extra groups after the same version without them" do
+      expect(described_class.new("17.0.4_8")).to be < described_class.new("17.0.4_8_1")
+    end
+
+    it "treats a trailing underscore as an extra zero group" do
+      expect(described_class.new("24_2")).to be < described_class.new("24_2_")
+      expect(described_class.new("17.0.4_8")).to be < described_class.new("17.0.4_8_")
+    end
+
+    it "ignores groups that are not numeric" do
+      expect(described_class.new("2_1_d088644")).to eq(described_class.new("2_1_0"))
+    end
+
+    it "agrees with .correct? for versions with several underscore groups" do
+      expect(described_class.correct?("24_2_0")).to be true
+      expect(described_class.new("24_2_0")).to be_a(described_class)
+    end
   end
 
   describe ".correct?" do

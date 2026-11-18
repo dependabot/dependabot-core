@@ -1,14 +1,23 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot type the variadic Open3 call or rewrite this shared context's around hook.
+
+require "sorbet-runtime"
+
+extend T::Sig # rubocop:disable Style/MixinUsage
+
+sig { returns(String) }
 def common_dir
-  @common_dir ||= Gem::Specification.find_by_name("dependabot-common").gem_dir
+  @common_dir ||= T.let(Gem::Specification.find_by_name("dependabot-common").gem_dir, T.nilable(String))
 end
 
+sig { params(path: String).returns(T::Boolean) }
 def require_common_spec(path)
   require "#{common_dir}/spec/dependabot/#{path}"
 end
 
+sig { params(args: T::Array[String], dir: String).returns(String) }
 def run_git(args, dir)
   stdout, stderr, status = Open3.capture3(
     {
@@ -29,7 +38,7 @@ def run_git(args, dir)
   stdout
 end
 
-shared_context "with temp dir" do
+RSpec.shared_context "with temp dir" do
   around do |example|
     Dir.mktmpdir("rspec-") do |dir|
       @temp_dir = dir

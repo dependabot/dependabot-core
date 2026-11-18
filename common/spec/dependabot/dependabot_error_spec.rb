@@ -260,4 +260,33 @@ RSpec.describe Dependabot::DependabotError do
       expect(details.error_detail[:"tool-name"]).to eq("Maven Wrapper")
     end
   end
+
+  describe Dependabot::DependencyChecksumMismatch do
+    let(:error) do
+      described_class.new(
+        "Checksum mismatch for rack (2.2.3) from https://user:s3cr3t@gems.example.com/",
+        dependency_name: "rack (2.2.3)"
+      )
+    end
+
+    it "keeps the dependency name and redacts credentials from the message" do
+      expect(error.dependency_name).to eq("rack (2.2.3)")
+      expect(error.message).to eq("Checksum mismatch for rack (2.2.3) from https://gems.example.com/")
+    end
+
+    it "is not a DependencyFileNotResolvable, so 'not resolvable' rescues don't swallow it" do
+      expect(error).not_to be_a(Dependabot::DependencyFileNotResolvable)
+    end
+
+    it "is reported as a user-facing dependency_file_not_resolvable error with its message" do
+      details = Dependabot.updater_error_details(error)
+
+      expect(details.error_type).to eq("dependency_file_not_resolvable")
+      expect(details.error_detail).to eq(message: error.message)
+    end
+
+    it "allows the dependency name to be unknown" do
+      expect(described_class.new("Checksum mismatch").dependency_name).to be_nil
+    end
+  end
 end

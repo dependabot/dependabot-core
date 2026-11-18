@@ -37,7 +37,9 @@ module Dependabot
     # path is treated as the repository so nested subgroups resolve to the
     # correct remote; virtual packages there are out of scope for v1, as is
     # self-hosted GHES on an arbitrary hostname that cannot be recognised from
-    # the host alone.
+    # the host alone. As in APM, explicit clone URLs never carry a virtual path,
+    # so a URL with segments beyond `owner/repo` on a GitHub-family host
+    # resolves to `nil`.
     #
     # Azure DevOps hosts (`dev.azure.com`, `ssh.dev.azure.com` and legacy
     # `*.visualstudio.com`) expose repositories at `org/project/_git/repo`, a
@@ -51,6 +53,12 @@ module Dependabot
       extend T::Sig
 
       DEFAULT_HOST = "github.com"
+
+      # APM only moves refs that are full commit SHAs (matched
+      # case-insensitively). Abbreviated SHAs are left alone, since they cannot
+      # be told apart from a branch name reliably.
+      FULL_SHA_REGEX = /\A[0-9a-f]{40}\z/i
+      ABBREVIATED_SHA_REGEX = /\A[0-9a-f]{7,39}\z/i
 
       # Azure DevOps Services hosts. Their repositories live at
       # `org/project/_git/repo`, a structure this generic owner/repo builder
@@ -98,6 +106,7 @@ module Dependabot
         spec, _, ref = entry.partition("#")
         host, path = split_host_and_path(spec, default_host)
         return nil unless path
+        return nil if explicit_git_form?(spec) && embedded_sub_path?(host, path)
 
         build(host: host, path: path, ref: ref, default_host: default_host)
       end
@@ -233,6 +242,24 @@ module Dependabot
         T.must(match[:port]).to_i == 443 ? T.must(match[:hostname]) : host
       end
 
+      sig { params(spec: String).returns(T::Boolean) }
+      def self.explicit_git_form?(spec)
+        spec.match?(SCP_STYLE) || spec.match?(URL_STYLE)
+      end
+
+      # APM never infers a virtual package from an explicit clone URL: virtual
+      # packages must use the shorthand or the object form's `path:` key. A
+      # GitHub-family URL with segments beyond `owner/repo`, or any URL with a
+      # path after a `.git` segment, is rejected by `apm` (or names a repository
+      # that cannot exist), so such entries are skipped rather than updated.
+      sig { params(host: String, path: String).returns(T::Boolean) }
+      def self.embedded_sub_path?(host, path)
+        segments = path.split("/").reject(&:empty?)
+        return true if segments[0...-1]&.any? { |segment| segment.end_with?(".git") }
+
+        github_family?(host.downcase) && segments.length > 2
+      end
+
       sig { params(entry: String).returns(T::Boolean) }
       def self.local_path?(entry)
         entry.start_with?("./", "../", "/", "~/", ".\\", "..\\", "~\\") ||
@@ -341,6 +368,35 @@ module Dependabot
         repo_name = on_default_host ? "#{owner}/#{repo}" : "#{host}/#{owner}/#{repo}"
         virtual_path = sub_path
         virtual_path ? "#{repo_name}/#{virtual_path}" : repo_name
+      end
+
+      # The key APM uses to identify this package in `apm.lock.yaml`. Unlike
+      # `name`, it ignores the manifest's `default_host` and any port: APM keys
+      # entries by `repo_url`, prefixed by the host for anything other than
+      # github.com, plus the virtual path for virtual packages. The virtual path
+      # is joined with `//`, which never appears in a repository path, so a
+      # virtual package only matches a lock entry with the same repository: a
+      # GitLab `acme/prompts/skills/review` repository doesn't match the
+      # `acme/prompts` repository's `skills/review` package.
+      sig { returns(String) }
+      def lockfile_key
+        self.class.lockfile_key(
+          host: self.class.hostname_without_port(host),
+          repo_url: "#{owner}/#{repo}",
+          virtual_path: sub_path
+        )
+      end
+
+      # Builds a lockfile key from a lock entry's coordinates (or a manifest
+      # entry's, via #lockfile_key). GitHub-family identifiers are
+      # case-insensitive, so they are lowercased; other hosts keep their casing,
+      # as APM does.
+      sig { params(host: String, repo_url: String, virtual_path: T.nilable(String)).returns(String) }
+      def self.lockfile_key(host:, repo_url:, virtual_path: nil)
+        hostname = host.downcase
+        repo_url = repo_url.downcase if github_family?(hostname)
+        key = hostname == DEFAULT_HOST ? repo_url : "#{hostname}/#{repo_url}"
+        virtual_path ? "#{key}//#{virtual_path}" : key
       end
     end
   end

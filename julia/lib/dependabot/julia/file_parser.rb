@@ -74,7 +74,7 @@ module Dependabot
       sig { returns(Ecosystem::VersionManager) }
       def language
         @language ||= T.let(
-          Language.new(PackageManager::CURRENT_VERSION),
+          Language.new(package_manager.version.to_s),
           T.nilable(Ecosystem::VersionManager)
         )
       end

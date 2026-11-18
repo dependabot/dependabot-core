@@ -258,6 +258,25 @@ RSpec.describe Dependabot::Bun::Package::RegistryFinder do
 
     it { is_expected.to eq({}) }
 
+    context "with a commented-out _authToken in the .npmrc" do
+      let(:dependency_name) { "@nci-ccr-oit/some_dep" }
+      let(:npmrc_file) do
+        Dependabot::DependencyFile.new(
+          name: ".npmrc",
+          content: <<~NPMRC
+            @nci-ccr-oit:registry=https://npm.pkg.github.com
+            # //npm.pkg.github.com/:_authToken=${NPM_TOKEN_NCI_CCR_OIT}
+            ; //npm.pkg.github.com/:_authToken=${NPM_TOKEN_NCI_CCR_OIT}
+          NPMRC
+        )
+      end
+
+      it "does not use the commented-out token" do
+        expect(finder.registry).to eq("npm.pkg.github.com")
+        expect(finder.auth_headers).to eq({})
+      end
+    end
+
     context "with credentials for a private registry" do
       before do
         credentials << Dependabot::Credential.new(

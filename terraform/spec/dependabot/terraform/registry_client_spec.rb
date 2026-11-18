@@ -1,12 +1,16 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/terraform/registry_client"
 
 RSpec.describe Dependabot::Terraform::RegistryClient do
+  extend T::Sig
+
+  sig { returns(Dependabot::Terraform::RegistryClient) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   subject(:client) { described_class.new }
 
+  sig { returns(Dependabot::Dependency) }
   let(:module_dependency) do
     Dependabot::Dependency.new(
       name: "hashicorp/consul/aws",
@@ -88,7 +92,7 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
   it "fetches provider versions form a custom registry secured by a token" do
     hostname = "registry.example.org"
     token = SecureRandom.hex(16)
-    credentials = [{ "type" => "terraform_registry", "host" => hostname, "token" => token }]
+    credentials = [Dependabot::Credential.new({ "type" => "terraform_registry", "host" => hostname, "token" => token })]
 
     stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(
       body: {
@@ -148,7 +152,7 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
     source = client.source(dependency: module_dependency)
 
     expect(source).to be_a Dependabot::Source
-    expect(source.url).to eq("https://github.com/hashicorp/terraform-aws-consul")
+    expect(T.must(source).url).to eq("https://github.com/hashicorp/terraform-aws-consul")
   end
 
   it "handles a relative X-Terraform-Get header without a type error" do
@@ -185,7 +189,7 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
     source = client.source(dependency: module_dependency)
 
     expect(source).to be_a Dependabot::Source
-    expect(source.url).to eq("https://github.com/hashicorp/terraform-aws-consul")
+    expect(T.must(source).url).to eq("https://github.com/hashicorp/terraform-aws-consul")
   end
 
   it "handles sources that can't be found", :vcr do
@@ -242,12 +246,14 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
     )
 
     expect(source).to be_a Dependabot::Source
-    expect(source.url).to eq("https://github.com/hashicorp/terraform-provider-ciscoasa")
+    expect(T.must(source).url).to eq("https://github.com/hashicorp/terraform-provider-ciscoasa")
   end
 
   context "with a custom hostname" do
+    sig { returns(Dependabot::Terraform::RegistryClient) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
     subject(:client) { described_class.new(hostname: hostname) }
 
+    sig { returns(String) }
     let(:hostname) { "registry.example.org" }
 
     it "raises helpful error when request is not authenticated", :vcr do
@@ -260,6 +266,7 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
   end
 
   describe "#service_url_for" do
+    sig { returns(String) }
     let(:metadata) { "https://registry.terraform.io/.well-known/terraform.json" }
 
     context "when the metadata endpoint is not reachable" do
@@ -375,8 +382,10 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
   end
 
   context "with a hostname that includes a port" do
+    sig { returns(Dependabot::Terraform::RegistryClient) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
     subject(:client) { described_class.new(hostname: "registry.example.org:8443") }
 
+    sig { returns(String) }
     let(:metadata) { "https://registry.example.org:8443/.well-known/terraform.json" }
 
     it "fetches module versions using the correct port" do

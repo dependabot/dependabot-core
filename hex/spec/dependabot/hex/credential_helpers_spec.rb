@@ -1,13 +1,16 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/hex/credential_helpers"
 
 RSpec.describe Dependabot::Hex::CredentialHelpers do
+  extend T::Sig
+
   describe ".organization_credentials" do
     subject(:organization_credentials) { described_class.organization_credentials(credentials) }
 
+    sig { returns(T::Array[Dependabot::Credential]) }
     let(:credentials) do
       [
         Dependabot::Credential.new(
@@ -25,6 +28,7 @@ RSpec.describe Dependabot::Hex::CredentialHelpers do
   describe ".repo_credentials" do
     subject(:repo_credentials) { described_class.repo_credentials(credentials) }
 
+    sig { returns(T::Array[Dependabot::Credential]) }
     let(:credentials) do
       [
         Dependabot::Credential.new(
@@ -39,6 +43,7 @@ RSpec.describe Dependabot::Hex::CredentialHelpers do
     end
 
     context "with a public key" do
+      sig { returns(T::Array[Dependabot::Credential]) }
       let(:credentials) do
         [
           Dependabot::Credential.new(
@@ -53,6 +58,7 @@ RSpec.describe Dependabot::Hex::CredentialHelpers do
     end
 
     context "with keys spelled as in dependabot.yml" do
+      sig { returns(T::Array[Dependabot::Credential]) }
       let(:credentials) do
         [
           Dependabot::Credential.new(

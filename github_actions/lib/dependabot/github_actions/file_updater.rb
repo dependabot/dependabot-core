@@ -25,7 +25,7 @@ module Dependabot
         end
         updated_files.concat(relocked_files(updated_files))
         updated_files.reject! { |f| dependency_files.include?(f) }
-        raise "No files changed!" if updated_files.none?
+        raise no_files_changed_error("No files changed!") if updated_files.none?
 
         updated_files
       end
@@ -108,8 +108,8 @@ module Dependabot
       end
 
       # Repository workflows whose step-level `$/` chain (through nested composites)
-      # reaches a changed action. Only `$/` matters: gh-actions-lock refuses
-      # `./` refs in locked workflows.
+      # reaches a changed action. Only `$/` matters: gh-actions-lock never follows
+      # `./` actions.
       sig do
         params(changed_actions: T::Array[Dependabot::DependencyFile])
           .returns(T::Array[Dependabot::DependencyFile])

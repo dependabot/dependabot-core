@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/github_actions/package_manager"
@@ -6,6 +6,9 @@ require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::GithubActions::PackageManager do
+  extend T::Sig
+
+  sig { returns(Dependabot::GithubActions::PackageManager) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:package_manager) { described_class.new }
 
   describe "#version_to_s" do

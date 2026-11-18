@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only dependency fixture.
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/swift/metadata_finder"

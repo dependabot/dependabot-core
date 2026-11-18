@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-only version_string fixture and dynamic predicate matchers.
+
 require "spec_helper"
 require "dependabot/julia/version"
 

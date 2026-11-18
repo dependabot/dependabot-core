@@ -30,13 +30,16 @@ internal static class DependencyFinder
                 framework,
                 packages,
                 logger);
-            var updatedDependencies = new List<Dependency>();
-            foreach (var dependency in dependencies)
-            {
-                var infoUrl = await nugetContext.GetPackageInfoUrlAsync(dependency.Name, dependency.Version!, cancellationToken);
-                var updatedDependency = dependency with { IsTopLevel = true, InfoUrl = infoUrl };
-                updatedDependencies.Add(updatedDependency);
-            }
+            var updatedDependencies = new Dependency[dependencies.Length];
+            await Parallel.ForEachAsync(
+                Enumerable.Range(0, dependencies.Length),
+                new ParallelOptions { MaxDegreeOfParallelism = 4, CancellationToken = cancellationToken },
+                async (index, token) =>
+                {
+                    var dependency = dependencies[index];
+                    var infoUrl = await nugetContext.GetPackageInfoUrlAsync(dependency.Name, dependency.Version!, token);
+                    updatedDependencies[index] = dependency with { IsTopLevel = true, InfoUrl = infoUrl };
+                });
 
             result.Add(framework, updatedDependencies.ToImmutableArray());
         }

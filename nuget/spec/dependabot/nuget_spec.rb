@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -8,6 +8,9 @@ require "dependabot/pull_request_creator/labeler"
 require "dependabot/dependency"
 
 RSpec.describe Dependabot::Nuget do
+  extend T::Sig
+
+  sig { returns(String) }
   let(:package_manager) { "nuget" }
 
   describe "registration" do

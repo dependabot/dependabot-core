@@ -1,7 +1,8 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/apm/update_checker"
 require "dependabot/apm/version"
@@ -11,6 +12,11 @@ require "dependabot/package/release_cooldown_options"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Apm::UpdateChecker do
+  extend T::Sig
+
+  sig { returns(T::Array[Dependabot::Credential]) }
+  let(:credentials) { github_credentials.map { |credential| Dependabot::Credential.new(credential) } }
+
   let(:dependency_name) { "microsoft/edge-ai" }
   let(:reference) { "v1.0.0" }
   let(:dependency_version) do
@@ -51,7 +57,7 @@ RSpec.describe Dependabot::Apm::UpdateChecker do
     described_class.new(
       dependency: dependency,
       dependency_files: [],
-      credentials: github_credentials,
+      credentials: credentials,
       security_advisories: security_advisories,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
@@ -241,7 +247,7 @@ RSpec.describe Dependabot::Apm::UpdateChecker do
       let(:shared_metadata_fetcher) do
         Dependabot::GitMetadataFetcher.new(
           url: "https://github.com/#{dependency_name}",
-          credentials: github_credentials
+          credentials: credentials
         )
       end
 
@@ -437,6 +443,184 @@ RSpec.describe Dependabot::Apm::UpdateChecker do
     # contract rather than carrying unreachable resolution logic.
     it "returns nil because APM has no security updates" do
       expect(checker.lowest_security_fix_version).to be_nil
+    end
+  end
+
+  context "with a full SHA pin" do
+    let(:reference) { "a" * 40 }
+    let(:dependency_version) { reference }
+
+    before do
+      stub_request(:get, service_pack_url)
+        .to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", "apm-package-annotated-tags"),
+          headers: { "content-type" => "application/x-git-upload-pack-advertisement" }
+        )
+    end
+
+    it "moves to the commit of the latest annotated, non-prerelease release" do
+      expect(checker.latest_version).to eq("c" * 40)
+      expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+    end
+
+    it "rewrites the SHA and records the release tag" do
+      expect(checker.updated_requirements.first.source_string("ref")).to eq("c" * 40)
+      expect(checker.updated_requirements.first.metadata_string("release_tag")).to eq("v1.2.0")
+    end
+
+    it "reports the release commit as the new version" do
+      updated = checker.updated_dependencies(requirements_to_unlock: :own).first
+      expect(updated.version).to eq("c" * 40)
+      expect(updated.previous_version).to eq("a" * 40)
+    end
+
+    context "when the SHA is pinned in upper case" do
+      let(:reference) { "C" * 40 }
+      let(:dependency_version) { reference.downcase }
+
+      it "treats the release commit as already pinned" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+        expect(checker.updated_requirements).to eq(dependency.requirements)
+      end
+    end
+
+    context "when the pinned commit is a newer tagged release" do
+      let(:reference) { "e" * 40 }
+
+      it "does not downgrade to the latest annotated release" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+        expect(checker.updated_requirements).to eq(dependency.requirements)
+      end
+    end
+
+    context "when the pinned commit is untagged" do
+      let(:reference) { "9" * 40 }
+
+      it "moves to the latest annotated release, as apm update does" do
+        expect(checker.latest_version).to eq("c" * 40)
+      end
+    end
+
+    context "when the pinned commit is a tagged release under SemVer cooldown" do
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 1,
+          semver_minor_days: 90,
+          include: [dependency_name]
+        )
+      end
+      let(:shared_metadata_fetcher) do
+        Dependabot::GitMetadataFetcher.new(
+          url: "https://github.com/#{dependency_name}",
+          credentials: credentials
+        )
+      end
+
+      before do
+        ten_days_ago = (Time.now - (10 * 86_400)).strftime("%Y-%m-%d")
+        allow(Dependabot::GitMetadataFetcher).to receive(:new).and_return(shared_metadata_fetcher)
+        allow(shared_metadata_fetcher).to receive(:refs_for_tag_with_detail).and_return(
+          [
+            Dependabot::GitTagWithDetail.new(tag: "v1.0.0", release_date: "2020-01-01"),
+            Dependabot::GitTagWithDetail.new(tag: "v1.2.0", release_date: ten_days_ago)
+          ]
+        )
+      end
+
+      # The pin's own tag (v1.0.0) makes v1.2.0 a minor bump, so the 90-day
+      # minor cooldown holds it back rather than the 1-day default.
+      it "classifies cooldown from the pinned commit's version" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+      end
+    end
+
+    context "when a merged dependency declares the latest release before an older SHA" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "c" * 40,
+          requirements: ["c" * 40, "a" * 40].map do |sha|
+            {
+              requirement: nil,
+              groups: [],
+              file: "apm.yml",
+              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: sha, branch: nil },
+              metadata: { declaration_string: "#{dependency_name}##{sha}" }
+            }
+          end,
+          package_manager: "apm"
+        )
+      end
+
+      it "updates the outdated declaration and reports the resulting version" do
+        expect(checker.up_to_date?).to be(false)
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+
+        updated = checker.updated_dependencies(requirements_to_unlock: :own).first
+        expect(updated.requirements.map { |req| req[:source][:ref] }).to eq(["c" * 40, "c" * 40])
+        expect(updated.version).to eq("c" * 40)
+      end
+    end
+
+    context "when a merged dependency declares a newer release before an older SHA" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "e" * 40,
+          requirements: ["e" * 40, "a" * 40].map do |sha|
+            {
+              requirement: nil,
+              groups: [],
+              file: "apm.yml",
+              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: sha, branch: nil },
+              metadata: { declaration_string: "#{dependency_name}##{sha}" }
+            }
+          end,
+          package_manager: "apm"
+        )
+      end
+
+      # Reparsing keeps the first declaration's SHA as the merged version, so
+      # the unchanged newer pin must not be reported as moving to the release.
+      it "reports the version the updated manifest parses to" do
+        updated = checker.updated_dependencies(requirements_to_unlock: :own).first
+        expect(updated.requirements.map { |req| req[:source][:ref] }).to eq(["e" * 40, "c" * 40])
+        expect(updated.version).to eq("e" * 40)
+      end
+    end
+  end
+
+  context "with a branch pin" do
+    let(:reference) { "main" }
+    let(:dependency_version) { "0" * 40 }
+    let(:dependency_source) do
+      { type: "git", url: "https://github.com/#{dependency_name}", ref: "main", branch: "main" }
+    end
+
+    it "moves to the branch's head commit without changing the manifest requirement" do
+      expect(checker.latest_version).to eq("1" * 40)
+      expect(checker.latest_resolvable_version_with_no_unlock).to eq("1" * 40)
+      expect(checker.updated_requirements).to eq(dependency.requirements)
+      expect(checker.can_update?(requirements_to_unlock: :none)).to be(true)
+    end
+
+    context "when the branch is already at its head commit" do
+      let(:dependency_version) { "1" * 40 }
+
+      it "is up to date" do
+        expect(checker.can_update?(requirements_to_unlock: :none)).to be(false)
+      end
+    end
+
+    context "when the branch no longer exists" do
+      let(:dependency_source) do
+        { type: "git", url: "https://github.com/#{dependency_name}", ref: "gone", branch: "gone" }
+      end
+
+      it "raises a GitDependencyReferenceNotFound error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::GitDependencyReferenceNotFound)
+      end
     end
   end
 end

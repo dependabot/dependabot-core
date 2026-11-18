@@ -66,6 +66,49 @@ module Dependabot
         @security_update_failures ||= T.let({}, T.nilable(T::Hash[String, Dependabot::Service::ErrorRecord]))
       end
 
+      # Names of dependencies the group's update-types rules rejected. Outside group-by-name
+      # groups they are left for individual updates, so the group must not report them as failed.
+      sig { returns(T::Set[String]) }
+      def semver_rejected_dependency_names
+        @semver_rejected_dependency_names ||= T.let(Set.new, T.nilable(T::Set[String]))
+      end
+
+      # Names of dependencies that vanished from the files because an earlier update in the
+      # group removed them, which resolves any advisory against them.
+      sig { returns(T::Set[String]) }
+      def removed_dependency_names
+        @removed_dependency_names ||= T.let(Set.new, T.nilable(T::Set[String]))
+      end
+
+      # Names of dependencies that have advisories in the job, none of which cover the installed version, so a
+      # security update was not needed for them. Only names that end up neither updated, diagnosed nor handled are
+      # reported, which in practice means those from the all-versions-ignored and update-types branches of
+      # #compile_updates_for: the other branches mark the dependency handled first.
+      sig { returns(T::Set[String]) }
+      def not_vulnerable_dependency_names
+        @not_vulnerable_dependency_names ||= T.let(Set.new, T.nilable(T::Set[String]))
+      end
+
+      # Why each group dependency was skipped without being marked handled, per directory and keyed by
+      # lower-cased name. Reported with a security update that failed without a diagnosis.
+      sig { returns(T::Hash[String, T::Array[String]]) }
+      def skipped_dependency_reasons
+        @skipped_dependency_reasons ||= T.let({}, T.nilable(T::Hash[String, T::Array[String]]))
+      end
+
+      # The update checker's lowest security fix version for each dependency it checked, keyed by lower-cased name.
+      sig { returns(T::Hash[String, T.nilable(String)]) }
+      def lowest_security_fix_versions
+        @lowest_security_fix_versions ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))
+      end
+
+      sig { params(dependency_name: String, reason: String).void }
+      def record_skipped_dependency(dependency_name, reason)
+        entry = @compiling_directory ? "#{@compiling_directory}: #{reason}" : reason
+        reasons = skipped_dependency_reasons[dependency_name.downcase] ||= []
+        reasons << entry unless reasons.include?(entry)
+      end
+
       # Returns a Dependabot::DependencyChange object that encapsulates the
       # outcome of attempting to update every dependency iteratively which
       # can be used for PR creation.
@@ -103,6 +146,9 @@ module Dependabot
         notices = dependency_snapshot.notices
 
         Dependabot.logger.info("Updating the #{job.source.directory} directory.")
+        @compiling_directory = T.let(job.source.directory || "/", T.nilable(String))
+        # Kept local until the aggregate change passes validation, since a rejected change is never submitted.
+        removed_names = T.let(Set.new, T::Set[String])
         group.dependencies.each do |dependency|
           # We still want to update a dependency if it's been updated in another manifest files,
           # but we should skip it if it's been updated in _the same_ manifest file
@@ -113,10 +159,12 @@ module Dependabot
 
           # Reparse the current files
           reparsed_dependencies = dependency_file_parser(dependency_files).parse
-          dependency = reparsed_dependencies.find { |d| d.name == dependency.name }
+          group_dependency_name = dependency.name
+          dependency = reparsed_dependencies.find { |d| d.name == group_dependency_name }
 
           # If the dependency can not be found in the reparsed files then it was likely removed by a previous
           # dependency update
+          removed_names << group_dependency_name.downcase if dependency.nil?
           next if dependency.nil?
 
           # If the dependency version changed, then we can deduce that the dependency was updated already.
@@ -159,6 +207,9 @@ module Dependabot
           store_changes(dependency)
         end
 
+        removed_names.each { |name| record_skipped_dependency(name, "not-in-dependency-files") }
+        confirm_removals_in_final_files(group_changes.current_dependency_files(job), removed_names)
+
         group_notices = notices + group_changes.notices
         add_cooldown_date_unavailable_notice(group_notices, original_dependencies)
 
@@ -177,12 +228,16 @@ module Dependabot
           return nil
         end
 
+        log_resolved_by_removal(removed_names, original_dependencies)
+        removed_dependency_names.merge(removed_names)
+
         # Send warning alerts to the API if any warning notices are present.
         # Note that only notices with notice.show_alert set to true will be sent.
         record_warning_notices(notices) if notices.any?
 
         dependency_change
       ensure
+        @compiling_directory = nil
         cleanup_created_workspace_files(workspace_files) if workspace_files
         cleanup_workspace
       end
@@ -234,9 +289,13 @@ module Dependabot
         ).void
       end
       def apply_file_change(file, working_files_by_path, changed_files_by_path, initial_paths, created_paths)
+        # Fetched manifests omit tracked artifacts such as vendored files.
+        unless file.operation == Dependabot::DependencyFile::Operation::CREATE || created_paths.include?(file.path)
+          initial_paths.add(file.path)
+        end
+
         if file.deleted?
           working_files_by_path.delete(file.path)
-          created_paths.delete(file.path)
           if initial_paths.include?(file.path)
             changed_files_by_path[file.path] =
               file
@@ -331,7 +390,10 @@ module Dependabot
         if dependency.directory
           dep_dir = Pathname.new(dependency.directory).cleanpath.to_s
           source_dir = Pathname.new(job.source.directory || "/").cleanpath.to_s
-          return true if dep_dir != source_dir
+          if dep_dir != source_dir
+            record_skipped_dependency(dependency.name, "belongs-to-another-directory")
+            return true
+          end
         end
 
         # Check if dependency has already been handled
@@ -449,11 +511,14 @@ module Dependabot
         )
 
         if all_versions_ignored?(dependency, checker)
+          record_skipped_dependency(dependency.name, "all-versions-ignored")
           note_security_update_ignored(dependency, checker, group)
           mark_handled_for_group_by_name(dependency, group, "all versions ignored")
           return []
         end
         unless semver_rules_allow_grouping?(group, dependency, checker)
+          record_skipped_dependency(dependency.name, "update-types-rejected")
+          note_semver_rejected(dependency, checker, group)
           mark_handled_for_group_by_name(dependency, group, "semver rules reject grouping")
           return []
         end
@@ -570,7 +635,9 @@ module Dependabot
       sig { params(dependency: Dependabot::Dependency, checker: Dependabot::UpdateCheckers::Base).returns(T::Boolean) }
       def all_versions_ignored?(dependency, checker)
         if job.security_updates_only?
-          Dependabot.logger.info("Lowest security fix version is #{checker.lowest_security_fix_version}")
+          lowest_security_fix_version = checker.lowest_security_fix_version
+          lowest_security_fix_versions[dependency.name.downcase] ||= lowest_security_fix_version&.to_s
+          Dependabot.logger.info("Lowest security fix version is #{lowest_security_fix_version}")
         else
           Dependabot.logger.info("Latest version is #{checker.latest_version}")
         end
@@ -798,7 +865,7 @@ module Dependabot
         ).void
       end
       def note_security_update_not_possible(dependency, checker, group)
-        return unless security_update_required?(dependency, checker)
+        return note_security_update_not_needed(dependency) unless security_update_required?(dependency, checker)
 
         log_security_dependency_details(dependency)
         conflicting_dependencies = checker.conflicting_dependencies
@@ -821,6 +888,15 @@ module Dependabot
             dependency: nil
           )
         )
+      end
+
+      # Reported once per job, with the other security update failures noted here.
+      sig { params(dependency: Dependabot::Dependency).void }
+      def note_security_update_not_needed(dependency)
+        # With no advisory at all the job cannot tell whether the version is affected.
+        return if job.security_advisories_for(dependency).none?
+
+        not_vulnerable_dependency_names << dependency.name.downcase
       end
 
       sig do
@@ -871,7 +947,7 @@ module Dependabot
         ).void
       end
       def note_security_update_not_found(dependency, checker, group)
-        return unless security_update_required?(dependency, checker)
+        return note_security_update_not_needed(dependency) unless security_update_required?(dependency, checker)
 
         Dependabot.logger.info(
           "Security update not found for #{dependency.name} in group #{group.name} - " \
@@ -898,7 +974,7 @@ module Dependabot
         ).void
       end
       def note_security_update_ignored(dependency, checker, group)
-        return unless security_update_required?(dependency, checker)
+        return note_security_update_not_needed(dependency) unless security_update_required?(dependency, checker)
 
         Dependabot.logger.info(
           "All versions ignored for #{dependency.name} in group #{group.name} but security advisories exist"
@@ -955,6 +1031,72 @@ module Dependabot
         group.dependencies
              .uniq { |dependency| dependency.name.downcase }
              .reject { |dependency| updated_names.include?(dependency.name.downcase) }
+             .reject { |dependency| resolved_by_removal?(dependency) }
+             .reject { |dependency| deferred_to_individual_update?(dependency) }
+      end
+
+      # A later update can reintroduce a dependency an earlier one removed, so only names still
+      # absent from the final files count as resolved.
+      sig { params(final_files: T::Array[Dependabot::DependencyFile], removed_names: T::Set[String]).void }
+      def confirm_removals_in_final_files(final_files, removed_names)
+        return if removed_names.empty?
+
+        present = dependency_file_parser(final_files).parse.to_set { |dependency| dependency.name.downcase }
+        removed_names.delete_if { |name| present.include?(name) }
+      end
+
+      sig { params(removed_names: T::Set[String], original_dependencies: T::Array[Dependabot::Dependency]).void }
+      def log_resolved_by_removal(removed_names, original_dependencies)
+        removed_names.each do |name|
+          version = original_dependencies.find { |dependency| dependency.name.casecmp?(name) }&.version
+          Dependabot.logger.info(
+            "Security update for #{name} #{version} resolved: removed from the dependency files " \
+            "by another update in group '#{group.name}'"
+          )
+        end
+      end
+
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          checker: Dependabot::UpdateCheckers::Base,
+          group: Dependabot::DependencyGroup
+        ).void
+      end
+      def note_semver_rejected(dependency, checker, group)
+        return if group.group_by_dependency_name?
+        return unless job.security_updates_only?
+
+        # Nothing newer exists, so no individual update will run to report the still-vulnerable dependency.
+        return note_security_update_not_found(dependency, checker, group) if checker.up_to_date?
+
+        # An individual update that cannot be resolved only logs, so diagnose it here.
+        if requirements_to_unlock(checker) == :update_not_possible
+          Dependabot.logger.info("No update possible for #{dependency.name} #{dependency.version}")
+          return note_security_update_not_possible(dependency, checker, group)
+        end
+
+        semver_rejected_dependency_names << dependency.name.downcase
+        Dependabot.logger.info(
+          "Security update for #{dependency.name} #{dependency.version} not grouped: latest version " \
+          "#{checker.latest_version} is outside the update-types #{group.update_types.inspect} " \
+          "of group '#{group.name}'; leaving it to an individual update"
+        )
+      end
+
+      # A dependency rejected by the group's update-types rules is updated individually, so only
+      # that update can fail it, unless a directory already diagnosed a concrete failure.
+      sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+      def deferred_to_individual_update?(dependency)
+        name = dependency.name.downcase
+        semver_rejected_dependency_names.include?(name) && !security_update_failures.key?(name)
+      end
+
+      # A removed dependency is resolved unless a directory diagnosed a concrete failure for it.
+      sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+      def resolved_by_removal?(dependency)
+        name = dependency.name.downcase
+        removed_dependency_names.include?(name) && !security_update_failures.key?(name)
       end
 
       sig { params(dependency_change: T.nilable(Dependabot::DependencyChange)).void }

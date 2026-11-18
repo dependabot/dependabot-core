@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve matcher and memoized helper calls in class-scope generated examples.
+
 require "spec_helper"
 require "dependabot/cargo/version"
 

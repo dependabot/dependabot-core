@@ -28,12 +28,17 @@ module Dependabot
         UNRESOLVABLE_CATEGORIES = %w(
           unreachable-pin repo-replaced repo-unavailable repo-renamed not-pinned
           local-action invalid-self-repository-ref misleading-sha
+          tag-commit-mismatch incomplete-lockfile ref-missing invalid-workflow
         ).freeze
 
         # Host-identity failures from the engine: the lock is bound to a host it can't
         # be verified on. User-actionable (restore/regenerate), never retryable. The
         # engine wraps every lookup error, so only a 404 counts; 5xx/429/403/timeouts stay EngineError.
         HOST_IDENTITY_ERROR = /verifying repository identity .*: HTTP 404\b|repository IDs|not the selected host/
+
+        # Write-time refusals (an incomplete lock graph, or a `uses:` cycle the lock
+        # can't record). Deterministic and user-actionable, so retrying never helps.
+        WRITE_REFUSED_ERROR = /refusing to write /
 
         # `hostname` is the repository's home host. The engine binds every pin with an
         # omitted lockfile `hostname` to it, so it must never be guessed.
@@ -52,7 +57,10 @@ module Dependabot
 
         # Re-pins workflows already tracked in the lockfile. `--no-onboard` refuses new
         # workflows/actions (surfaced as onboarding-required skips); `--no-narrow`
-        # keeps the exact ref Dependabot wrote.
+        # keeps the exact ref Dependabot wrote. `--ignore-local-actions` keeps `./`
+        # actions a warning: the lock can't record them, Dependabot never rewrites
+        # them, and whether their action.yml is readable here depends on whether the
+        # repo also uses `$/`.
         sig do
           params(
             workflow_files: T::Array[Dependabot::DependencyFile],
@@ -68,15 +76,16 @@ module Dependabot
           action_files: []
         )
           in_repo(workflow_files + action_files, lockfile) do |dir|
-            args = %w(--no-onboard --no-narrow --no-interactive --json=findings) +
+            args = %w(--no-onboard --no-narrow --ignore-local-actions --no-interactive --json=findings) +
                    ["--hostname", hostname] + workflow_paths
             json, exit_status = run(dir, args)
 
             skipped = onboarding_skips(json, lockfile)
             log_skips(skipped)
 
-            # `findings` is the PRE-fix diagnosis; at exit 0 fix-mode already resolved
-            # them. Writes are all-or-nothing, so exit 1 means nothing was written.
+            # At exit 1 `findings` is the pre-fix diagnosis of what blocked the fix;
+            # at exit 0 it reports the post-fix state. Writes are all-or-nothing, so
+            # exit 1 means nothing was written.
             raise_on_findings(json) if exit_status == 1
 
             File.read(File.join(dir, LOCKFILE_PATH))
@@ -120,12 +129,16 @@ module Dependabot
 
         # Invokes the binary and returns [parsed JSON, exit code]. Exit is tri-state:
         # 0 = valid, 1 = blocking findings (still well-formed JSON on stdout, parse it),
-        # 2+ = tool failure (no usable JSON). JSON and exit are not interchangeable in
-        # fix-mode: findings/valid are PRE-fix, exit is POST-fix, so callers gate on exit.
+        # 2+ = tool failure (no usable JSON). In fix-mode, findings/valid describe the
+        # post-fix state after a successful fix but the pre-fix state at exit 1, so
+        # callers gate on exit.
         sig { params(dir: String, args: T::Array[String]).returns([JsonObject, Integer]) }
         def run(dir, args)
           stdout, stderr, exit_status = invoke(dir, args)
-          raise DependencyFileNotResolvable, stderr.strip if exit_status > 1 && stderr.match?(HOST_IDENTITY_ERROR)
+          if exit_status > 1 && stderr.match?(Regexp.union(HOST_IDENTITY_ERROR, WRITE_REFUSED_ERROR))
+            raise DependencyFileNotResolvable, stderr.strip
+          end
+
           raise EngineError, "gh-actions-lock failed (exit #{exit_status}): #{stderr.strip}" if exit_status > 1
 
           json = case (parsed = JSON.parse(stdout))
@@ -165,7 +178,7 @@ module Dependabot
           unresolvable = errors.find { |finding| UNRESOLVABLE_CATEGORIES.include?(finding["category"].to_s) }
           if unresolvable
             raise UnresolvableDependency.new(
-              (unresolvable["dependency"] || "unknown").to_s,
+              (unresolvable["dependency"] || unresolvable["workflow"] || "unknown").to_s,
               (unresolvable["detail"] || unresolvable["category"]).to_s
             )
           end

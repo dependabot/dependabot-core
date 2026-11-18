@@ -115,6 +115,23 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       expect(a_request(:get, project_url)).to have_been_made.once
     end
 
+    context "with a replaces-base python index" do
+      let(:credentials) do
+        [Dependabot::Credential.new(
+          {
+            "type" => "python_index",
+            "index-url" => "https://example.com/pypi/",
+            "replaces-base" => true
+          }
+        )]
+      end
+
+      it "does not query public PyPI and falls back to local metadata" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::WidenRanges)
+        expect(a_request(:get, project_url)).not_to have_been_made
+      end
+    end
+
     context "with a different summary" do
       let(:project_response) { { info: { summary: "Another project" } }.to_json }
 
@@ -742,6 +759,27 @@ RSpec.describe Dependabot::Python::UpdateChecker do
             .and_return(Gem::Version.new("2.5.0"))
           expect(checker.latest_resolvable_version)
             .to eq(Gem::Version.new("2.5.0"))
+        end
+      end
+
+      context "when including PEP 621 only dependencies with a Poetry build backend and lockfile" do
+        let(:pyproject_fixture_name) { "poetry_v2_pep621_only.toml" }
+        let(:poetry_lock) do
+          Dependabot::DependencyFile.new(
+            name: "poetry.lock",
+            content: fixture("poetry_locks", "poetry_v2_pep621_only.lock")
+          )
+        end
+        let(:dependency_files) { [pyproject, poetry_lock] }
+
+        it "delegates to PoetryVersionResolver" do
+          dummy_resolver = instance_double(described_class::PoetryVersionResolver)
+          allow(described_class::PoetryVersionResolver).to receive(:new).and_return(dummy_resolver)
+          expect(dummy_resolver)
+            .to receive(:latest_resolvable_version)
+            .with(requirement: anything)
+            .and_return(Gem::Version.new("2.5.0"))
+          expect(checker.latest_resolvable_version).to eq(Gem::Version.new("2.5.0"))
         end
       end
 
@@ -1952,6 +1990,29 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           ).and_call_original
         expect(checker.latest_resolvable_version_with_no_unlock)
           .to eq(Gem::Version.new("2.6.0"))
+      end
+    end
+
+    context "with a Poetry resolver" do
+      let(:version) { "2.18.0" }
+      let(:requirements) do
+        [
+          { file: "pyproject.toml", requirement: ">=1.26,<3", groups: [], source: nil },
+          { file: "pyproject.toml", requirement: "<2", groups: ["extra"], source: nil }
+        ]
+      end
+
+      # Every declaration is rewritten to the requirement it is given, so a single declaration's
+      # constraint would overwrite the others.
+      it "leaves each declaration's own constraint in place" do
+        dummy_resolver = instance_double(described_class::PoetryVersionResolver)
+        allow(checker).to receive_messages(resolver_type: :poetry, poetry_version_resolver: dummy_resolver)
+        expect(dummy_resolver)
+          .to receive(:latest_resolvable_version)
+          .with(requirement: nil)
+          .and_return(Gem::Version.new("2.18.0"))
+        expect(checker.latest_resolvable_version_with_no_unlock)
+          .to eq(Gem::Version.new("2.18.0"))
       end
     end
 

@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -164,12 +164,14 @@ module Dependabot
         # latest version is the tag itself.
         if git_commit_checker.pinned_ref_looks_like_version?
           # Filter version tags that are in cooldown period
-          latest_tag =  latest_version_resolver.latest_version_tag&.fetch(:tag)
-          version_rgx = GitCommitChecker::VERSION_REGEX
-          return unless latest_tag.match(version_rgx)
+          latest_tag = latest_version_resolver.latest_version_tag&.tag
+          return unless latest_tag
 
-          version = latest_tag.match(version_rgx)
-                              .named_captures.fetch("version")
+          version_rgx = GitCommitChecker::VERSION_REGEX
+          version_match = latest_tag.match(version_rgx)
+          return unless version_match
+
+          version = version_match.named_captures.fetch("version")
           return version_class.new(version)
         end
 
