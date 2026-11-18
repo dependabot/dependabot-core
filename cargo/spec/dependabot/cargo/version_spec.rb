@@ -87,6 +87,38 @@ RSpec.describe Dependabot::Cargo::Version do
     end
   end
 
+  describe "#<=>" do
+    it "compares release components numerically" do
+      expect(described_class.new("1.10.0"))
+        .to be > described_class.new("1.2.0")
+    end
+
+    it "uses SemVer prerelease ordering" do
+      ordered_versions = %w(
+        1.0.0-alpha
+        1.0.0-alpha.1
+        1.0.0-alpha.beta
+        1.0.0-beta
+        1.0.0-beta.2
+        1.0.0-beta.11
+        1.0.0-rc.1
+        1.0.0
+      ).map { |value| described_class.new(value) }
+
+      expect(ordered_versions.shuffle.sort).to eq(ordered_versions)
+    end
+
+    it "distinguishes dot-separated prerelease identifiers" do
+      expect(described_class.new("1.2.3-beta1"))
+        .to be > described_class.new("1.2.3-beta.1")
+    end
+
+    it "ignores build metadata" do
+      expect(described_class.new("1.2.3+linux"))
+        .to eq(described_class.new("1.2.3+darwin"))
+    end
+  end
+
   describe "#correct?" do
     subject { described_class.correct?(version_string) }
 

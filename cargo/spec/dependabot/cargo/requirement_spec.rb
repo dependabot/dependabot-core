@@ -42,6 +42,13 @@ RSpec.describe Dependabot::Cargo::Requirement do
           )
         end
       end
+
+      it "uses SemVer ordering for prerelease identifiers" do
+        prerelease_requirement = described_class.new(">=1.2.3-beta.1")
+
+        expect(prerelease_requirement)
+          .to be_satisfied_by(Dependabot::Cargo::Version.new("1.2.3-beta1"))
+      end
     end
 
     context "with a build-version" do
@@ -272,6 +279,18 @@ RSpec.describe Dependabot::Cargo::Requirement do
         expect(internal_range.satisfied_by_range?(prerelease_version)).to be(true)
         expect { internal_range.satisfied_by?(prerelease_version) }
           .to raise_error(Gem::Requirement::BadRequirementError)
+      end
+
+      it "retains Gem prerelease ordering" do
+        policy_range = described_class.new(">1.2.3-beta.1")
+
+        expect(policy_range.satisfied_by_range?(Dependabot::Cargo::Version.new("1.2.3-beta1"))).to be(false)
+      end
+
+      it "ignores build metadata" do
+        policy_range = described_class.new(">=1.2.3")
+
+        expect(policy_range.satisfied_by_range?(Dependabot::Cargo::Version.new("1.2.3+linux"))).to be(true)
       end
     end
   end

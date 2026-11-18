@@ -150,7 +150,7 @@ module Dependabot
 
       sig { override.params(version: Gem::Version).returns(T::Boolean) }
       def satisfied_by_range?(version)
-        requirements_satisfied_by?(Cargo::Version.new(version.to_s))
+        requirements_satisfied_by?(gem_version(version))
       end
 
       protected
@@ -184,7 +184,15 @@ module Dependabot
 
       sig { params(version: Gem::Version).returns(T::Boolean) }
       def requirements_satisfied_by?(version)
-        requirements.all? { |operator, requirement| (OPS[operator] || OPS["="]).call(version, requirement) }
+        requirements.all? do |operator, requirement|
+          policy_requirement = gem_version(requirement)
+          (OPS[operator] || OPS["="]).call(version, policy_requirement)
+        end
+      end
+
+      sig { params(version: Gem::Version).returns(Gem::Version) }
+      def gem_version(version)
+        Gem::Version.new(version.to_s.split("+", 2).first)
       end
 
       sig { params(comparator: Comparator, version: Gem::Version).returns(T::Boolean) }
