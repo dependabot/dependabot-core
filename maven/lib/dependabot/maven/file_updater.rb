@@ -338,10 +338,11 @@ module Dependabot
       def updated_file_declaration(old_declaration, previous_req, requirement)
         original_req_string = T.must(previous_req.requirement_string)
 
+        filler = /(?:\s|<!--(?:(?!-->).)*-->|<\?(?:(?!\?>).)*\?>)*/m
         own_version = %r{
-          (<(?:[\w.-]+:)?version(?:\s(?:"[^"]*"|'[^']*'|[^>"'])*)?>(?:\s|<!--(?:(?!-->).)*-->)*(?:<!\[CDATA\[\s*)?)
+          (<(?:[\w.-]+:)?version(?:\s(?:"[^"]*"|'[^']*'|[^>"'])*)?>#{filler}(?:<!\[CDATA\[\s*)?)
           #{Regexp.quote(original_req_string)}
-          ((?:\s*\]\]>)?(?:\s|<!--(?:(?!-->).)*-->)*</(?:[\w.-]+:)?version\s*>)
+          ((?:\s*\]\]>)?#{filler}</(?:[\w.-]+:)?version\s*>)
         }mx
 
         # Only rewrite the declaration's own <version> child; nested elements
