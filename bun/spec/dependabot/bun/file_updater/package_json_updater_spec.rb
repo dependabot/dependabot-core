@@ -41,6 +41,35 @@ RSpec.describe Dependabot::Bun::FileUpdater::PackageJsonUpdater do
         metadata: { catalog: catalog } }
     end
 
+    context "with a regular dependency whose section has a value with backslashes" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "is-number",
+          version: "7.0.0",
+          previous_version: "6.0.0",
+          package_manager: "bun",
+          requirements: [{ file: "package.json", requirement: "^7.0.0", groups: ["dependencies"], source: nil }],
+          previous_requirements: [{ file: "package.json", requirement: "^6.0.0", groups: ["dependencies"],
+                                    source: nil }]
+        )
+      end
+      let(:content) do
+        <<~JSON
+          {
+            "dependencies": {
+              "is-number": "^6.0.0",
+              "shared": "file:..\\\\packages\\\\shared"
+            }
+          }
+        JSON
+      end
+
+      it "updates the dependency and keeps the backslashes escaped" do
+        expect(updated_content).to eq(content.sub('"is-number": "^6.0.0"', '"is-number": "^7.0.0"'))
+        expect(JSON.parse(updated_content)["dependencies"]["shared"]).to eq("file:..\\packages\\shared")
+      end
+    end
+
     context "when a compact ignored root catalog precedes the workspaces catalog" do
       let(:content) do
         <<~JSON
