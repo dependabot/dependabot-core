@@ -339,9 +339,9 @@ module Dependabot
         original_req_string = T.must(previous_req.requirement_string)
 
         own_version = %r{
-          (<version(?:\s[^>]*)?>(?:\s|<!--(?:(?!-->).)*-->)*)
+          (<(?:[\w.-]+:)?version(?:\s[^>]*)?>(?:\s|<!--(?:(?!-->).)*-->)*(?:<!\[CDATA\[)?)
           #{Regexp.quote(original_req_string)}
-          ((?:\s|<!--(?:(?!-->).)*-->)*</version\s*>)
+          ((?:\]\]>)?(?:\s|<!--(?:(?!-->).)*-->)*</(?:[\w.-]+:)?version\s*>)
         }mx
 
         # Only rewrite the declaration's own <version> child; nested elements

@@ -458,6 +458,63 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         end
       end
 
+      context "with a CDATA-wrapped plugin version" do
+        let(:pom_body) do
+          fixture("poms", "plugin_config_same_version.xml")
+            .sub(
+              "<version>3.6.3</version>\n        <executions>",
+              "<version><![CDATA[3.6.3]]></version>\n        <executions>"
+            )
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.apache.maven.plugins:maven-enforcer-plugin",
+            version: "3.7.0",
+            requirements: [{
+              file: "pom.xml", requirement: "3.7.0", groups: ["plugin"], source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            previous_requirements: [{
+              file: "pom.xml", requirement: "3.6.3", groups: ["plugin"], source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            package_manager: "maven"
+          )
+        end
+
+        its(:content) do
+          is_expected.to include("<version><![CDATA[3.7.0]]></version>")
+          is_expected.to include("<requireMavenVersion><version>3.6.3</version></requireMavenVersion>")
+        end
+      end
+
+      context "with a namespace-prefixed plugin version" do
+        let(:pom_body) do
+          fixture("poms", "plugin_config_same_version.xml")
+            .sub("<version>3.6.3</version>\n        <executions>", "<m:version>3.6.3</m:version>\n        <executions>")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.apache.maven.plugins:maven-enforcer-plugin",
+            version: "3.7.0",
+            requirements: [{
+              file: "pom.xml", requirement: "3.7.0", groups: ["plugin"], source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            previous_requirements: [{
+              file: "pom.xml", requirement: "3.6.3", groups: ["plugin"], source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            package_manager: "maven"
+          )
+        end
+
+        its(:content) do
+          is_expected.to include("<m:version>3.7.0</m:version>")
+          is_expected.to include("<requireMavenVersion><version>3.6.3</version></requireMavenVersion>")
+        end
+      end
+
       context "with a comment on the version" do
         let(:pom_body) { fixture("poms", "version_with_comment.xml") }
 
