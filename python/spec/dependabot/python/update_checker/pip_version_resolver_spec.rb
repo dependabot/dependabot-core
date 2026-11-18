@@ -947,6 +947,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
       let(:dependency_requirements) do
         [{ file: "constraints.txt", requirement: "==1.2.4", groups: [], source: nil }]
       end
+      let(:development_constraint_reference) { "-cconstraints.txt" }
       let(:requirements_file) do
         Dependabot::DependencyFile.new(name: "requirements.txt", content: "-c constraints.txt\nrequests==2.32.4\n")
       end
@@ -955,7 +956,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
           requirements_file,
           Dependabot::DependencyFile.new(
             name: "requirements-dev.txt",
-            content: "-cconstraints.txt\npytest==8.4.1\n"
+            content: "#{development_constraint_reference}\npytest==8.4.1\n"
           ),
           Dependabot::DependencyFile.new(name: "constraints.txt", content: "django==1.2.4\n")
         ]
@@ -975,16 +976,28 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
           .not_to have_received(:run_shell_command)
           .with(a_string_matching(/pip install/), any_args)
       end
+
+      context "when a constraint reference uses a continuation line" do
+        let(:development_constraint_reference) { "-c \\\n  constraints.txt" }
+
+        it "does not choose one root over the other" do
+          expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+          expect(Dependabot::SharedHelpers)
+            .not_to have_received(:run_shell_command)
+            .with(a_string_matching(/pip install/), any_args)
+        end
+      end
     end
 
     context "when a requirement file uses a quoted long-form reference" do
       let(:dependency_requirements) do
         [{ file: "constraints.txt", requirement: "==1.2.4", groups: [], source: nil }]
       end
+      let(:constraint_reference) { '--constraint "constraints.txt"' }
       let(:requirements_file) do
         Dependabot::DependencyFile.new(
           name: "requirements.txt",
-          content: "--constraint \"constraints.txt\"\nrequests==2.32.4\n"
+          content: "#{constraint_reference}\nrequests==2.32.4\n"
         )
       end
       let(:dependency_files) do
@@ -1004,6 +1017,14 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
 
       it "retains the existing candidate selection" do
         expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+      end
+
+      context "when the quoted reference uses a continuation line" do
+        let(:constraint_reference) { "--constraint \\\n  \"constraints.txt\"" }
+
+        it "retains the existing candidate selection" do
+          expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+        end
       end
     end
 

@@ -44,6 +44,8 @@ module Dependabot
         PIP_REQUIREMENT_FILE_EXTENSIONS = %w(.txt .in).freeze
         HASH_OPTION_PATTERN = /(?:[ \t]*\\[ \t]*\r?\n[ \t]*|[ \t]+)--hash(?:=|[ \t]+)[^\s\\]+/
         REQUIRE_HASHES_PATTERN = /(?:^|[ \t]+)--require-hashes(?=[ \t]*(?:--|#|\\|\r?$))/
+        PIP_COMMENT_PATTERN = /(^|\s+)#.*$/
+        PIP_COMMENT_LINE_PATTERN = /^\s*#/
         PIP_FILE_REFERENCE_PATTERN =
           /^\s*(?:-(?:r|c)\s*|--(?:requirement|constraint)(?:\s+|=))
             (?:"(?<double>[^"]+)"|'(?<single>[^']+)'|(?<plain>[^\s'"]+))/x
@@ -426,10 +428,12 @@ module Dependabot
 
           reachable_file_names.none? do |name|
             content = T.must(T.must(files_by_name[name]).content)
-            content.match?(QUOTED_PIP_FILE_REFERENCE_PATTERN) ||
-              content.match?(EDITABLE_REQUIREMENT_PATTERN) ||
-              content.match?(LOCAL_PATH_REQUIREMENT_PATTERN) ||
-              non_python_environment_marker?(content)
+            pip_logical_lines(content).any? do |line|
+              line.match?(QUOTED_PIP_FILE_REFERENCE_PATTERN) ||
+                line.match?(EDITABLE_REQUIREMENT_PATTERN) ||
+                line.match?(LOCAL_PATH_REQUIREMENT_PATTERN) ||
+                non_python_environment_marker?(line)
+            end
           end
         end
 
@@ -461,7 +465,7 @@ module Dependabot
         sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
         def referenced_requirement_file_names(file)
           current_directory = File.dirname(file.name)
-          T.must(file.content).each_line.filter_map do |line|
+          pip_logical_lines(T.must(file.content)).filter_map do |line|
             match = line.match(PIP_FILE_REFERENCE_PATTERN)
             next unless match
 
@@ -469,6 +473,28 @@ module Dependabot
             joined_path = current_directory == "." ? path : File.join(current_directory, path)
             normalize_path(joined_path)
           end
+        end
+
+        sig { params(content: String).returns(T::Array[String]) }
+        def pip_logical_lines(content)
+          logical_lines = T.let([], T::Array[String])
+          continued_line = T.let(+"", String)
+
+          content.each_line(chomp: true) do |line|
+            if line.end_with?("\\") && !line.match?(PIP_COMMENT_LINE_PATTERN)
+              continued_line << line.delete_suffix("\\")
+              next
+            end
+
+            line = " #{line}" if line.match?(PIP_COMMENT_LINE_PATTERN)
+            continued_line << line
+            logical_line = continued_line.sub(PIP_COMMENT_PATTERN, "").strip
+            logical_lines << logical_line unless logical_line.empty?
+            continued_line = +""
+          end
+
+          logical_lines << continued_line unless continued_line.empty?
+          logical_lines
         end
 
         sig do
@@ -893,7 +919,7 @@ module Dependabot
           content = file.content
           return [] unless content
 
-          content.each_line.filter_map do |line|
+          pip_logical_lines(content).filter_map do |line|
             path = constraint_path_from_line(line)
             next unless path
 
