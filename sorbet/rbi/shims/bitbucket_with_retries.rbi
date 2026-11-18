@@ -44,7 +44,7 @@ module Dependabot
       sig { params(url: String).returns(Excon::Response) }
       def get(url); end
 
-      sig { params(repo: String, previous_tag: String, new_tag: String).returns(T::Array[Bitbucket::JsonObject]) }
+      sig { params(repo: String, previous_tag: String, new_tag: String).returns(T::Array[ComparisonCommit]) }
       def compare(repo, previous_tag, new_tag); end
 
       sig { params(repo: String).returns(T::Array[T::Hash[Symbol, String]]) }
