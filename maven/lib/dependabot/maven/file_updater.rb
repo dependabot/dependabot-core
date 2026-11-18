@@ -358,7 +358,7 @@ module Dependabot
       sig { params(xml_prefix: String).returns(T::Boolean) }
       def inside_comment_or_cdata?(xml_prefix)
         stripped = xml_prefix.gsub(/<!--.*?-->|<\?.*?\?>|<!\[CDATA\[.*?\]\]>/m, "")
-        stripped.include?("<!--") || stripped.include?("<![CDATA[")
+        stripped.include?("<!--") || stripped.include?("<?") || stripped.include?("<![CDATA[")
       end
 
       sig { params(xml_prefix: String).returns(Integer) }
