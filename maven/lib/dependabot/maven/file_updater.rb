@@ -12,6 +12,12 @@ require "dependabot/maven/distributions"
 module Dependabot
   module Maven
     class FileUpdater < Dependabot::FileUpdaters::Base # rubocop:disable Metrics/ClassLength
+      XML_TAG_SCANNER = %r{
+        <!--.*?-->
+        |<!\[CDATA\[.*?\]\]>
+        |<(/?)[^\s>/!?](?:"[^"]*"|'[^']*'|[^>"'])*?(/?)>
+      }mx
+
       extend T::Sig
 
       require_relative "file_updater/declaration_finder"
@@ -332,7 +338,7 @@ module Dependabot
         original_req_string = T.must(previous_req.requirement_string)
 
         own_version = %r{
-          (<version\s*>(?:\s|<!--.*?-->)*)
+          (<version(?:\s[^>]*)?>(?:\s|<!--.*?-->)*)
           #{Regexp.quote(original_req_string)}
           ((?:\s|<!--.*?-->)*</version\s*>)
         }mx
@@ -350,11 +356,11 @@ module Dependabot
       sig { params(xml_prefix: String).returns(Integer) }
       def element_depth(xml_prefix)
         depth = 0
-        xml_prefix.scan(%r{<!--.*?-->|<!\[CDATA\[.*?\]\]>|<(/?)[^\s>/!?][^>]*?(/?)>}m) do |closing, self_closing|
+        xml_prefix.scan(XML_TAG_SCANNER) do |closing, self_closing|
           next if Regexp.last_match(0).to_s.start_with?("<!")
 
           if closing == "/" then depth -= 1
-          elsif self_closing != "/" then depth += 1
+          elsif self_closing.to_s.empty? then depth += 1
           end
         end
         depth
