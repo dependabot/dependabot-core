@@ -18,6 +18,7 @@ module Dependabot
         extend T::Sig
 
         CRATES_IO_API = "https://crates.io/api/v1/crates"
+        CRATES_IO_INDEX = "sparse+https://index.crates.io/"
         PACKAGE_TYPE = "gem"
         PACKAGE_LANGUAGE = "rust"
 
@@ -54,13 +55,12 @@ module Dependabot
         def fetch
           releases = T.cast(crates_listing.fetch("versions", []), T::Array[T::Hash[String, T.anything]])
           package_releases = releases.reject { |v| v["yanked"] }.map do |release|
-            created_at = T.cast(release["created_at"], T.nilable(String))
             package_release(
-              version: T.cast(release["num"], T.nilable(String)) || T.cast(release["vers"], String),
-              released_at: created_at ? Time.parse(created_at) : nil,
+              version: release_version(release),
+              released_at: released_at(release),
               downloads: T.cast(release["downloads"], T.nilable(Integer)),
-              url: "#{CRATES_IO_API}/#{T.cast(release['dl_path'], T.nilable(String))}",
-              rust_version: T.cast(release["rust"], T.nilable(String))
+              url: download_url(release),
+              rust_version: rust_version(release)
             )
           end
 
@@ -76,27 +76,44 @@ module Dependabot
           return @crates_listing unless @crates_listing.nil?
 
           index = fetch_index
+          listing = fetch_listing(index)
+          listing = crates_io_api_listing if crates_io_api_fallback?(listing)
 
-          hdrs = default_headers
-          hdrs.merge!(auth_headers) if index != CRATES_IO_API
+          T.must(@crates_listing = T.let(listing, T.nilable(T::Hash[String, T.anything])))
+        end
+
+        sig { params(index: String).returns(T::Hash[String, T.anything]) }
+        def fetch_listing(index)
+          headers = default_headers
+          headers.merge!(auth_headers) if index != CRATES_IO_API
 
           url = metadata_fetch_url(dependency, index)
-
           Dependabot.logger.info("Calling #{url} to fetch metadata for #{dependency.name} from #{index}")
 
-          response = fetch_response(url, hdrs)
+          response = fetch_response(url, headers)
           return {} if response.status == 404
-
-          @crates_listing = T.let(parse_response(response, index), T.nilable(T::Hash[String, T.anything]))
 
           Dependabot.logger.info("Fetched metadata for #{dependency.name} from #{index} successfully")
 
-          T.must(@crates_listing)
+          parse_response(response, index)
+        end
+
+        sig { returns(T::Hash[String, T.anything]) }
+        def crates_io_api_listing
+          @crates_io_api_listing ||= T.let(
+            fetch_listing(CRATES_IO_API),
+            T.nilable(T::Hash[String, T.anything])
+          )
         end
 
         sig { returns(String) }
         def fetch_index
-          dependency.source_string("index") || CRATES_IO_API
+          dependency.source_string("index") || CRATES_IO_INDEX
+        end
+
+        sig { returns(T::Boolean) }
+        def default_registry?
+          dependency.source_string("index").nil?
         end
 
         sig { returns(T::Hash[String, String]) }
@@ -151,17 +168,54 @@ module Dependabot
 
           # Determine cargo's index file path for the dependency
           index = index.delete_prefix("sparse+")
-          name_length = dependency.name.length
+          dependency_name = dependency.name.downcase
+          name_length = dependency_name.length
           dependency_path = case name_length
                             when 1, 2
-                              "#{name_length}/#{dependency.name}"
+                              "#{name_length}/#{dependency_name}"
                             when 3
-                              "#{name_length}/#{dependency.name[0..1]}/#{dependency.name}"
+                              "3/#{dependency_name[0]}/#{dependency_name}"
                             else
-                              "#{dependency.name[0..1]}/#{dependency.name[2..3]}/#{dependency.name}"
+                              "#{dependency_name[0..1]}/#{dependency_name[2..3]}/#{dependency_name}"
                             end
 
           "#{index}#{'/' unless index.end_with?('/')}#{dependency_path}"
+        end
+
+        sig { params(listing: T::Hash[String, T.anything]).returns(T::Boolean) }
+        def crates_io_api_fallback?(listing)
+          return false unless default_registry?
+
+          releases = T.cast(listing.fetch("versions", []), T::Array[T::Hash[String, T.anything]])
+          releases.empty? || releases.reject { |release| release["yanked"] }.any? do |release|
+            T.cast(release["pubtime"], T.nilable(Object)).nil? &&
+              T.cast(release["created_at"], T.nilable(Object)).nil?
+          end
+        end
+
+        sig { params(release: T::Hash[String, T.anything]).returns(String) }
+        def release_version(release)
+          T.cast(release["num"], T.nilable(String)) || T.cast(release["vers"], String)
+        end
+
+        sig { params(release: T::Hash[String, T.anything]).returns(T.nilable(Time)) }
+        def released_at(release)
+          timestamp = T.cast(release["pubtime"], T.nilable(String)) ||
+                      T.cast(release["created_at"], T.nilable(String))
+
+          Time.parse(timestamp) if timestamp
+        end
+
+        sig { params(release: T::Hash[String, T.anything]).returns(T.nilable(String)) }
+        def download_url(release)
+          path = T.cast(release["dl_path"], T.nilable(String))
+          "#{CRATES_IO_API}/#{path}" if path
+        end
+
+        sig { params(release: T::Hash[String, T.anything]).returns(T.nilable(String)) }
+        def rust_version(release)
+          value = T.cast(release["rust_version"] || release["rust"], T.nilable(Object))
+          value if value.is_a?(String)
         end
 
         sig { returns(T::Boolean) }

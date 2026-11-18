@@ -66,8 +66,29 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
   let(:crates_fixture_name) { "#{dependency_name}.json" }
   let(:crates_response) { fixture("crates_io_responses", crates_fixture_name) }
   let(:crates_url) { "https://crates.io/api/v1/crates/#{dependency_name}" }
+  let(:crates_index_url) do
+    name = dependency_name.downcase
+    path = case name.length
+           when 1, 2 then "#{name.length}/#{name}"
+           when 3 then "3/#{name[0]}/#{name}"
+           else "#{name[0..1]}/#{name[2..3]}/#{name}"
+           end
+    "https://index.crates.io/#{path}"
+  end
+  let(:crates_index_response) do
+    releases = T.cast(JSON.parse(T.must(crates_response)).fetch("versions", []), T::Array[T::Hash[String, T.anything]])
+    releases.map do |release|
+      {
+        "name" => dependency_name,
+        "vers" => release.fetch("num"),
+        "yanked" => release.fetch("yanked"),
+        "pubtime" => release.fetch("created_at")
+      }.to_json
+    end.join("\n")
+  end
 
   before do
+    stub_request(:get, crates_index_url).to_return(status: 200, body: crates_index_response) if crates_response
     stub_request(:get, crates_url).to_return(status: 200, body: crates_response)
   end
 
