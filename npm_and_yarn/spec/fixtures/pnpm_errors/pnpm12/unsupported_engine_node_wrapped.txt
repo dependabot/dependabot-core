@@ -1,0 +1,5 @@
+Error: ERR_PNPM_UNSUPPORTED_ENGINE
+
+  × Unsupported engine for /home/dependabot/dependabot-updater/repo/apps/
+  │ workspace-website: wanted: {"node":">=26.13.0 <27"} (current:
+  │ {"node":"24.22.3"})
