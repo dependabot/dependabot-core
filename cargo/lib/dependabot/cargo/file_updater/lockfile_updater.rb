@@ -128,7 +128,7 @@ module Dependabot
               fingerprint: "cargo update -p <dependency_spec>"
             )
 
-            return if valid_transitive_fallback?(lockfile_before, File.read("Cargo.lock"))
+            return if valid_transitive_result?(lockfile_before, File.read("Cargo.lock"))
 
             File.write("Cargo.lock", lockfile_before)
             raise e
@@ -163,7 +163,7 @@ module Dependabot
         end
 
         sig { params(lockfile_before: String, lockfile_after: String).returns(T::Boolean) }
-        def valid_transitive_fallback?(lockfile_before, lockfile_after)
+        def valid_transitive_result?(lockfile_before, lockfile_after)
           target = dependency.version
           return false unless target && version_class.correct?(target)
 
@@ -173,8 +173,23 @@ module Dependabot
           return false unless versions_after.include?(target)
 
           target_version = version_class.new(target)
+          selected_versions = selected_registry_versions
           (versions_after - versions_before).all? do |version|
-            version_class.correct?(version) && version_class.new(version) <= target_version
+            next false unless version_class.correct?(version)
+
+            version_class.new(version) <= target_version || selected_versions.include?(version)
+          end
+        end
+
+        sig { returns(T::Array[String]) }
+        def selected_registry_versions
+          source = dependency.metadata[:cargo_package_source]
+          dependencies.filter_map do |candidate|
+            next unless candidate.name == dependency.name
+            next unless candidate.metadata[:cargo_package_source] == source
+            next unless candidate.version && candidate.version_class.correct?(candidate.version)
+
+            candidate.version
           end
         end
 
@@ -208,12 +223,9 @@ module Dependabot
           return false unless version_class.correct?(previous_version)
 
           lockfile_content = File.read("Cargo.lock")
-          if transitive_registry_dependency? &&
-             valid_transitive_fallback?(T.must(lockfile.content), lockfile_content)
-            return true
-          end
+          return valid_transitive_result?(T.must(lockfile.content), lockfile_content) if transitive_registry_dependency?
+
           return false if package_version_count(lockfile_content, dependency, previous_version).positive?
-          return desired_version_present?(lockfile_content) if transitive_registry_dependency?
 
           true
         end
@@ -230,8 +242,12 @@ module Dependabot
 
         sig { params(updated_lockfile: String).void }
         def validate_dependency_update(updated_lockfile)
+          if transitive_registry_dependency?
+            return if valid_transitive_result?(T.must(lockfile.content), updated_lockfile)
+
+            raise "Failed to update #{dependency.name}!"
+          end
           return if desired_version_present?(updated_lockfile)
-          raise "Failed to update #{dependency.name}!" if transitive_registry_dependency?
 
           raise "Failed to update #{dependency.name}!" unless dependency_updated?(updated_lockfile, dependency)
 

@@ -433,6 +433,26 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           expect(updated_getrandom_versions).not_to include(Gem::Version.new("0.4.2"))
         end
 
+        context "when an exact update also introduces an unselected newer version" do
+          before do
+            allow(updater).to receive(:run_cargo_command) do |command, **|
+              next unless command.include?("getrandom:0.4.2")
+
+              content = File.read("Cargo.lock")
+              old_entry = content.match(
+                /\[\[package\]\]\nname = "getrandom"\nversion = "0\.4\.2".*?(?=\n\[\[package\]\]|\z)/m
+              ).to_s
+              target_entry = old_entry.sub('version = "0.4.2"', 'version = "0.4.3"')
+              newer_entry = old_entry.sub('version = "0.4.2"', 'version = "0.4.4"')
+              File.write("Cargo.lock", content.sub(old_entry, "#{target_entry}\n#{newer_entry}"))
+            end
+          end
+
+          it "rejects the result during final validation" do
+            expect { updated_lockfile_content }.to raise_error("Failed to update getrandom!")
+          end
+        end
+
         context "when more than one locked line is independently updateable" do
           let(:dependencies) do
             [
@@ -530,6 +550,32 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
               expect(updated_lockfile_content).to include(%(name = "getrandom"\nversion = "0.4.2"))
               expect(updated_lockfile_content).to include(%(name = "getrandom"\nversion = "0.4.3"))
               expect(commands).to eq(["cargo update -p getrandom:0.2.17 --precise 0.2.18"])
+            end
+          end
+
+          context "when the first command introduces the second target and an unselected newer version" do
+            before do
+              allow(updater).to receive(:run_cargo_command) do |command, **|
+                commands << command
+                next unless command.include?("getrandom:0.2.17")
+
+                content = File.read("Cargo.lock")
+                content = content.sub(
+                  %(name = "getrandom"\nversion = "0.2.17"),
+                  %(name = "getrandom"\nversion = "0.2.18")
+                )
+                old_entry = content.match(
+                  /\[\[package\]\]\nname = "getrandom"\nversion = "0\.4\.2".*?(?=\n\[\[package\]\]|\z)/m
+                ).to_s
+                target_entry = old_entry.sub('version = "0.4.2"', 'version = "0.4.3"')
+                newer_entry = old_entry.sub('version = "0.4.2"', 'version = "0.4.4"')
+                File.write("Cargo.lock", content.sub(old_entry, "#{target_entry}\n#{newer_entry}"))
+              end
+            end
+
+            it "does not accept the selected target as proof that the line was safely resolved" do
+              expect { updated_lockfile_content }
+                .to raise_error("Failed to identify the current locked version for getrandom!")
             end
           end
 
