@@ -476,6 +476,64 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
       end
     end
 
+    context "when the section has a value with backslashes, such as a Windows path" do
+      let(:package_json) do
+        Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: <<~JSON
+            {
+              "name": "app",
+              "dependencies": {
+                "fetch-factory": "^0.0.1",
+                "xlsx": "file:vendor\\\\xlsx-0.20.3.tgz",
+                "shared": "file:..\\\\packages\\\\shared"
+              }
+            }
+          JSON
+        )
+      end
+
+      it "updates the dependency and keeps the backslashes escaped" do
+        content = updated_package_json.content
+
+        expect(content).to include('"fetch-factory": "^0.0.2"')
+        expect(content).to include('"xlsx": "file:vendor\\\\xlsx-0.20.3.tgz"')
+        expect(JSON.parse(content)["dependencies"]).to eq(
+          "fetch-factory" => "^0.0.2",
+          "xlsx" => "file:vendor\\xlsx-0.20.3.tgz",
+          "shared" => "file:..\\packages\\shared"
+        )
+      end
+
+      context "when the overrides section has one too" do
+        let(:package_json) do
+          Dependabot::DependencyFile.new(
+            name: "package.json",
+            content: <<~JSON
+              {
+                "name": "app",
+                "dependencies": { "fetch-factory": "^0.0.1" },
+                "overrides": {
+                  "fetch-factory": "^0.0.1",
+                  "local-lib": "file:.\\\\libs\\\\local-lib"
+                }
+              }
+            JSON
+          )
+        end
+
+        it "updates both declarations and keeps the backslashes escaped" do
+          parsed = JSON.parse(updated_package_json.content)
+
+          expect(parsed["dependencies"]).to eq("fetch-factory" => "^0.0.2")
+          expect(parsed["overrides"]).to eq(
+            "fetch-factory" => "^0.0.2",
+            "local-lib" => "file:.\\libs\\local-lib"
+          )
+        end
+      end
+    end
+
     context "with non-standard whitespace" do
       let(:project_name) { "npm8/non_standard_whitespace" }
 
