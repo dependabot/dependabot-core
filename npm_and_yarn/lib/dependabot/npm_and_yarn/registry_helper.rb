@@ -188,6 +188,13 @@ module Dependabot
         env_variables
       end
 
+      # The registry npm, pnpm and Yarn resolve packages from: the configured one, or the public npm registry.
+      sig { returns(String) }
+      def registry_url
+        registry = find_registry_and_token[:registry]
+        registry ? RegistryHelper.normalize_registry_url(registry) : DEFAULT_NPM_REGISTRY
+      end
+
       private
 
       sig { returns(T::Hash[Symbol, T.nilable(String)]) }
