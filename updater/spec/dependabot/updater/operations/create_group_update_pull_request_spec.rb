@@ -198,6 +198,30 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
 
         perform
       end
+
+      it "attaches the failure's context to the error report" do
+        allow(job).to receive(:security_advisories).and_return(
+          [
+            Dependabot::Job::SecurityAdvisoryEntry.new(
+              dependency_name: failed_dependency.name.upcase,
+              affected_versions: ["< 2.0.0"],
+              patched_versions: ["2.0.0"]
+            )
+          ]
+        )
+        reported_error = nil
+        allow(mock_error_handler).to receive(:handle_dependency_error) { |error:, **| reported_error = error }
+
+        perform
+
+        expect(Dependabot::ErrorReportContext.build(error: reported_error)).to eq(
+          "security-update-skip-reasons" => ["not-attempted"],
+          "security-update-directories" => ["/"],
+          "advisory-count" => 1,
+          "advisory-has-patched-version" => true,
+          "group-updated-dependency-count" => 1
+        )
+      end
     end
 
     context "when the group has no updated dependencies" do
@@ -364,6 +388,23 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
           expect(mock_service).not_to receive(:record_update_job_error)
 
           perform
+        end
+
+        it "reports why the update failed with the unknown error" do
+          allow(job).to receive(:security_advisories_for).and_return([])
+          reported_error = nil
+          allow(mock_error_handler).to receive(:handle_dependency_error) { |error:, **| reported_error = error }
+
+          perform
+
+          expect(Dependabot::ErrorReportContext.build(error: reported_error)).to include(
+            "security-update-skip-reasons" => ["/: update-types-rejected"],
+            "security-update-directories" => ["/"],
+            "advisory-count" => 0,
+            "advisory-has-patched-version" => false,
+            "lowest-security-fix-version" => "2.0.0",
+            "group-updated-dependency-count" => 0
+          )
         end
 
         context "when the installed version is a git SHA" do
