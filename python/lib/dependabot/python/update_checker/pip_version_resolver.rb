@@ -47,13 +47,16 @@ module Dependabot
         PIP_COMMENT_PATTERN = /(^|\s+)#.*$/
         PIP_COMMENT_LINE_PATTERN = /^\s*#/
         PIP_FILE_REFERENCE_PATTERN =
-          /^\s*(?:-(?:r|c)\s*|--(?:requirement|constraint)(?:\s+|=))
+          /^\s*(?:-(?<short_option>r|c)\s*|--(?<long_option>requirement|constraint)(?:\s+|=))
             (?:"(?<double>[^"]+)"|'(?<single>[^']+)'|(?<plain>[^\s'"]+))/x
         QUOTED_PIP_FILE_REFERENCE_PATTERN =
           /^\s*(?:-(?:r|c)\s*|--(?:requirement|constraint)(?:\s+|=))["']/
         LowerBound = T.type_alias { [String, Gem::Version] }
+        PipFileGraph = T.type_alias { T::Hash[String, T::Boolean] }
+        PipFileReference = T.type_alias { [String, T::Boolean] }
+        PipResolutionRoot = T.type_alias { [Dependabot::DependencyFile, T::Boolean] }
         PipResolution = T.type_alias do
-          [Dependabot::DependencyFile, T::Array[Dependabot::DependencyRequirement]]
+          [Dependabot::DependencyFile, T::Array[Dependabot::DependencyRequirement], T::Boolean]
         end
         PipReportResult = T.type_alias { [T::Boolean, T.nilable(Dependabot::Version)] }
         sig do
@@ -201,7 +204,7 @@ module Dependabot
           resolution = pip_resolution
           return policy_candidate unless resolution
 
-          root_file, requirements = resolution
+          root_file, requirements, target_constraint_only = resolution
 
           SharedHelpers.in_a_temporary_directory do
             SharedHelpers.with_git_configured(credentials: credentials) do
@@ -216,7 +219,7 @@ module Dependabot
               )
 
               report_valid, resolved_version = pip_report_result
-              if report_valid && resolved_version.nil? && constraints_dependency?
+              if report_valid && resolved_version.nil? && target_constraint_only
                 policy_candidate
               else
                 resolved_version
@@ -335,10 +338,11 @@ module Dependabot
           declaration_files = pip_declaration_files(requirements)
           return unless declaration_files.length == requirements.length
 
-          root_file = pip_resolution_root(declaration_files.map(&:name).uniq)
-          return unless root_file
+          root = pip_resolution_root(declaration_files.map(&:name).uniq)
+          return unless root
 
-          [root_file, requirements]
+          root_file, target_constraint_only = root
+          [root_file, requirements, target_constraint_only]
         end
 
         sig do
@@ -397,22 +401,28 @@ module Dependabot
           end
         end
 
-        sig { params(declaration_file_names: T::Array[String]).returns(T.nilable(Dependabot::DependencyFile)) }
+        sig { params(declaration_file_names: T::Array[String]).returns(T.nilable(PipResolutionRoot)) }
         def pip_resolution_root(declaration_file_names)
           requirement_files = dependency_files.select do |file|
             file.content && file.name.end_with?(*PIP_REQUIREMENT_FILE_EXTENSIONS)
           end
           files_by_name = requirement_files.to_h { |file| [file.name, file] }
-          reachable_files = requirement_files.to_h do |file|
-            [file.name, reachable_requirement_file_names(file, requirement_files)]
+          file_graphs = requirement_files.to_h do |file|
+            [file.name, reachable_requirement_files(file, requirement_files)]
           end
-          ancestors = reachable_files.filter_map do |file_name, reachable_file_names|
-            file_name if reachable_file_names.intersect?(declaration_file_names)
+          ancestors = file_graphs.filter_map do |file_name, file_graph|
+            file_name if file_graph.keys.intersect?(declaration_file_names)
           end
 
-          requirement_files.find do |file|
-            pip_resolution_root_candidate?(file, T.must(reachable_files[file.name]), ancestors, files_by_name)
+          root_file = requirement_files.find do |file|
+            file_graph = T.must(file_graphs[file.name])
+            pip_resolution_root_candidate?(file, file_graph.keys, ancestors, files_by_name)
           end
+          return unless root_file
+
+          root_graph = T.must(file_graphs[root_file.name])
+          target_constraint_only = declaration_file_names.all? { |name| root_graph[name] == true }
+          [root_file, target_constraint_only]
         end
 
         sig do
@@ -441,29 +451,35 @@ module Dependabot
           params(
             root_file: Dependabot::DependencyFile,
             requirement_files: T::Array[Dependabot::DependencyFile]
-          ).returns(T::Array[String])
+          ).returns(PipFileGraph)
         end
-        def reachable_requirement_file_names(root_file, requirement_files)
+        def reachable_requirement_files(root_file, requirement_files)
           files_by_name = requirement_files.to_h { |file| [file.name, file] }
-          reachable = T.let([], T::Array[String])
+          constraint_only_by_file = T.let({ root_file.name => false }, PipFileGraph)
+          visited = T.let([], T::Array[String])
           pending = T.let([root_file], T::Array[Dependabot::DependencyFile])
 
           until pending.empty?
             file = T.must(pending.shift)
-            next if reachable.include?(file.name)
+            next if visited.include?(file.name)
 
-            reachable << file.name
-            referenced_requirement_file_names(file).each do |name|
+            visited << file.name
+            referenced_requirement_files(file).each do |name, constraint_only|
               referenced_file = files_by_name[name]
-              pending << referenced_file if referenced_file
+              next unless referenced_file
+
+              current_constraint_only = constraint_only_by_file[name]
+              constraint_only_by_file[name] =
+                current_constraint_only.nil? ? constraint_only : current_constraint_only && constraint_only
+              pending << referenced_file
             end
           end
 
-          reachable
+          constraint_only_by_file
         end
 
-        sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
-        def referenced_requirement_file_names(file)
+        sig { params(file: Dependabot::DependencyFile).returns(T::Array[PipFileReference]) }
+        def referenced_requirement_files(file)
           current_directory = File.dirname(file.name)
           pip_logical_lines(T.must(file.content)).filter_map do |line|
             match = line.match(PIP_FILE_REFERENCE_PATTERN)
@@ -471,7 +487,8 @@ module Dependabot
 
             path = T.must(match[:double] || match[:single] || match[:plain])
             joined_path = current_directory == "." ? path : File.join(current_directory, path)
-            normalize_path(joined_path)
+            constraint_only = match[:short_option] == "c" || match[:long_option] == "constraint"
+            [normalize_path(joined_path), constraint_only]
           end
         end
 

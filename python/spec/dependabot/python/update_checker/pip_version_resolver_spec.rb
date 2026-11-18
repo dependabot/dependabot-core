@@ -794,18 +794,20 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
 
     context "when the target is an unused constraint" do
       let(:dependency_requirements) do
-        [{ file: "constraints.txt", requirement: "==1.2.4", groups: [], source: nil }]
+        [{ file: "pins.txt", requirement: "==1.2.4", groups: [], source: nil }]
       end
+      let(:constraint_reference) { "-c pins.txt" }
+      let(:requirements_file_content) { "#{constraint_reference}\nrequests==2.32.4\n" }
       let(:requirements_file) do
         Dependabot::DependencyFile.new(
-          name: "requirements.txt",
-          content: "-c constraints.txt\nrequests==2.32.4\n"
+          name: "prod.txt",
+          content: requirements_file_content
         )
       end
       let(:dependency_files) do
         [
           requirements_file,
-          Dependabot::DependencyFile.new(name: "constraints.txt", content: "django==1.2.4\n")
+          Dependabot::DependencyFile.new(name: "pins.txt", content: "django==1.2.4\n")
         ]
       end
       let(:pip_commands) { [] }
@@ -828,7 +830,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
 
       it "uses the policy candidate after a valid report omits the constraint" do
         expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
-        expect(pip_commands).to contain_exactly(a_string_ending_with("-r requirements.txt"))
+        expect(pip_commands).to contain_exactly(a_string_ending_with("-r prod.txt"))
       end
 
       context "when the report is malformed" do
@@ -839,6 +841,24 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
         end
 
         it "does not use the policy candidate" do
+          expect(latest_resolvable_version).to be_nil
+        end
+      end
+
+      context "when the constraint reference uses the compact form" do
+        let(:constraint_reference) { "-cpins.txt" }
+
+        it "uses the policy candidate after a valid report omits the constraint" do
+          expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+        end
+      end
+
+      context "when the target file is also included as a requirement" do
+        let(:requirements_file_content) do
+          "-c pins.txt\n-r pins.txt\nrequests==2.32.4\n"
+        end
+
+        it "does not use the policy candidate when the valid report omits the requirement" do
           expect(latest_resolvable_version).to be_nil
         end
       end
