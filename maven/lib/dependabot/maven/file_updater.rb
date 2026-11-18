@@ -331,7 +331,11 @@ module Dependabot
       def updated_file_declaration(old_declaration, previous_req, requirement)
         original_req_string = T.must(previous_req.requirement_string)
 
-        own_version = %r{(<version>\s*)#{Regexp.quote(original_req_string)}((?:\s|<!--.*?-->)*</version>)}m
+        own_version = %r{
+          (<version\s*>(?:\s|<!--.*?-->)*)
+          #{Regexp.quote(original_req_string)}
+          ((?:\s|<!--.*?-->)*</version\s*>)
+        }mx
 
         # Only rewrite the declaration's own <version> child; nested elements
         # (e.g. plugin <configuration>) may contain the same text.
@@ -346,8 +350,8 @@ module Dependabot
       sig { params(xml_prefix: String).returns(Integer) }
       def element_depth(xml_prefix)
         depth = 0
-        xml_prefix.scan(%r{<!--.*?-->|<(/?)[^\s>/!?][^>]*?(/?)>}m) do |closing, self_closing|
-          next if Regexp.last_match(0).to_s.start_with?("<!--")
+        xml_prefix.scan(%r{<!--.*?-->|<!\[CDATA\[.*?\]\]>|<(/?)[^\s>/!?][^>]*?(/?)>}m) do |closing, self_closing|
+          next if Regexp.last_match(0).to_s.start_with?("<!")
 
           if closing == "/" then depth -= 1
           elsif self_closing != "/" then depth += 1

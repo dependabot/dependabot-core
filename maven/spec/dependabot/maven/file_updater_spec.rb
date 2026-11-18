@@ -309,13 +309,15 @@ RSpec.describe Dependabot::Maven::FileUpdater do
               file: "pom.xml",
               requirement: "3.7.0",
               groups: ["plugin"],
-              source: nil
+              source: nil,
+              metadata: { packaging_type: "jar" }
             }],
             previous_requirements: [{
               file: "pom.xml",
               requirement: "3.6.3",
               groups: ["plugin"],
-              source: nil
+              source: nil,
+              metadata: { packaging_type: "jar" }
             }],
             package_manager: "maven"
           )
