@@ -11,6 +11,7 @@ require "dependabot/cargo/requirement"
 require "dependabot/cargo/version"
 require "dependabot/errors"
 require "dependabot/cargo/registry_fetcher"
+require "dependabot/cargo/registry_response"
 require "dependabot/cargo/language"
 require "dependabot/cargo/package_manager"
 
@@ -328,7 +329,11 @@ module Dependabot
         url = index_url.delete_prefix("sparse+")
         url << "/" unless url.end_with?("/")
         url << "config.json"
-        config_json = JSON.parse(RegistryClient.get(url: url, headers: headers).body)
+        response = RegistryClient.get(url: url, headers: headers)
+        RegistryResponse.raise_for_error_status!(response, index_url.delete_prefix("sparse+"))
+        config_json = RegistryResponse.with_parse_error_context(response, url) do
+          T.cast(JSON.parse(response.body), T::Hash[String, String])
+        end
 
         {
           type: "registry",
