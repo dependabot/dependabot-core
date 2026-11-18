@@ -33,6 +33,7 @@ module Dependabot
 
         PIP_REPORT_FILENAME = "dependabot-pip-report.json"
         RESOLUTION_ERROR_PATTERN = /ResolutionImpossible|No matching distribution found/
+        PRERELEASE_OPT_IN_REQUIREMENT = ">=0.0.dev0"
         LOWER_BOUND_OPERATORS = %w(> >= ~>).freeze
         NON_PYTHON_MARKER_PATTERN =
           /\b(?:implementation_name|implementation_version|os_name|platform_machine|
@@ -93,8 +94,7 @@ module Dependabot
 
           candidate = pip_resolvable_version(
             policy_candidate: policy_candidate,
-            requirement_string: resolver_requirement(policy_candidate, eligible_versions, language_version),
-            allow_prereleases: eligible_versions.any?(&:prerelease?)
+            requirement_string: resolver_requirement(policy_candidate, eligible_versions, language_version)
           )
           return unless candidate && eligible_versions.include?(candidate)
           return candidate if compatible_with_pinned_pyproject_dependencies?(candidate)
@@ -116,8 +116,7 @@ module Dependabot
 
           resolved_candidate = pip_resolvable_version(
             policy_candidate: candidate,
-            requirement_string: "==#{candidate}",
-            allow_prereleases: candidate.prerelease?
+            requirement_string: "==#{candidate}"
           )
           return unless resolved_candidate == candidate
           return candidate if compatible_with_pinned_pyproject_dependencies?(candidate)
@@ -180,11 +179,10 @@ module Dependabot
         sig do
           params(
             policy_candidate: Dependabot::Version,
-            requirement_string: String,
-            allow_prereleases: T::Boolean
+            requirement_string: String
           ).returns(T.nilable(Dependabot::Version))
         end
-        def pip_resolvable_version(policy_candidate:, requirement_string:, allow_prereleases:)
+        def pip_resolvable_version(policy_candidate:, requirement_string:)
           return policy_candidate if local_version_bounds?(policy_candidate)
 
           requirement = pip_requirement
@@ -195,7 +193,7 @@ module Dependabot
               write_dependency_files(requirement: requirement, requirement_string: requirement_string)
               language_version_manager.install_required_python
               SharedHelpers.run_shell_command(
-                pip_resolver_command(requirement, allow_prereleases: allow_prereleases),
+                pip_resolver_command(requirement),
                 allow_unsafe_shell_command: true,
                 env: pip_environment,
                 fingerprint: pip_resolver_fingerprint,
@@ -250,6 +248,7 @@ module Dependabot
           requirements << "!=#{dependency.numeric_version}" if dependency.numeric_version
           requirements.concat(source_exclusion_requirements)
           requirements.concat(excluded_version_requirements(policy_candidate, eligible_versions, language_version))
+          requirements << PRERELEASE_OPT_IN_REQUIREMENT if eligible_versions.any?(&:prerelease?)
           requirements.uniq.join(",")
         end
 
@@ -452,18 +451,12 @@ module Dependabot
           requirement_string&.split(",")&.map { |clause| clause.gsub(/\s/, "") }&.sort
         end
 
-        sig do
-          params(
-            requirement: Dependabot::DependencyRequirement,
-            allow_prereleases: T::Boolean
-          ).returns(String)
-        end
-        def pip_resolver_command(requirement, allow_prereleases:)
+        sig { params(requirement: Dependabot::DependencyRequirement).returns(String) }
+        def pip_resolver_command(requirement)
           command = [
             "pyenv", "exec", "pip", "install", "--dry-run", "--ignore-installed",
             "--report", PIP_REPORT_FILENAME
           ]
-          command << "--pre" if allow_prereleases
           requirements_file = T.must(requirement.file)
           Shellwords.join([*command, "-r", requirements_file])
         end

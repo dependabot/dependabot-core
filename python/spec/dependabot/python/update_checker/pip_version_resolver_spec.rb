@@ -444,6 +444,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
 
     context "when prereleases are eligible below a stable policy ceiling" do
       let(:pip_commands) { [] }
+      let(:rewritten_requirements) { [] }
       let(:dependency_version) { "1.0" }
       let(:dependency_requirements) do
         [{
@@ -474,6 +475,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
           next "" unless command.include?("pip install")
 
           pip_commands << command
+          rewritten_requirements << File.read("requirements.txt")
           File.write(
             "dependabot-pip-report.json",
             JSON.dump(
@@ -484,9 +486,11 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
         end
       end
 
-      it "allows pip to backtrack to a prerelease" do
+      it "allows a target prerelease without enabling prereleases for peer dependencies" do
         expect(latest_resolvable_version).to eq(Gem::Version.new("2.5rc1"))
-        expect(pip_commands).to contain_exactly(a_string_including(" --pre "))
+        expect(rewritten_requirements).to contain_exactly(include("django", ">=0.0.dev0"))
+        expect(pip_commands.length).to eq(1)
+        expect(pip_commands.first).not_to include(" --pre ")
       end
     end
 
