@@ -347,10 +347,17 @@ module Dependabot
         # (e.g. plugin <configuration>) may contain the same text.
         old_declaration.gsub(own_version) do
           match = T.must(Regexp.last_match)
-          next match[0].to_s unless element_depth(old_declaration[0...match.begin(0)].to_s) == 1
+          prefix = old_declaration[0...match.begin(0)].to_s
+          next match[0].to_s if inside_comment_or_cdata?(prefix) || element_depth(prefix) != 1
 
           "#{match[1]}#{requirement.requirement_string}#{match[2]}"
         end
+      end
+
+      sig { params(xml_prefix: String).returns(T::Boolean) }
+      def inside_comment_or_cdata?(xml_prefix)
+        stripped = xml_prefix.gsub(%r{<!--.*?-->|<!\[CDATA\[.*?\]\]>}m, "")
+        stripped.include?("<!--") || stripped.include?("<![CDATA[")
       end
 
       sig { params(xml_prefix: String).returns(Integer) }
