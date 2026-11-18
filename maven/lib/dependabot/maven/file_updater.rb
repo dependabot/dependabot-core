@@ -12,6 +12,11 @@ require "dependabot/maven/distributions"
 module Dependabot
   module Maven
     class FileUpdater < Dependabot::FileUpdaters::Base # rubocop:disable Metrics/ClassLength
+      XML_TERMINATORS = T.let(
+        { "<!--" => "-->", "<?" => "?>", "<![CDATA[" => "]]>" }.freeze,
+        T::Hash[String, String]
+      )
+
       XML_TAG_SCANNER = %r{
         <!--.*?-->
         |<\?.*?\?>
@@ -358,8 +363,15 @@ module Dependabot
 
       sig { params(xml_prefix: String).returns(T::Boolean) }
       def inside_comment_or_cdata?(xml_prefix)
-        stripped = xml_prefix.gsub(/<!--.*?-->|<\?.*?\?>|<!\[CDATA\[.*?\]\]>/m, "")
-        stripped.include?("<!--") || stripped.include?("<?") || stripped.include?("<![CDATA[")
+        pos = 0
+        while (match = xml_prefix.match(/<!--|<\?|<!\[CDATA\[/, pos))
+          terminator = XML_TERMINATORS.fetch(match[0].to_s)
+          finish = xml_prefix.index(terminator, match.end(0))
+          return true unless finish
+
+          pos = finish + terminator.length
+        end
+        false
       end
 
       sig { params(xml_prefix: String).returns(Integer) }
