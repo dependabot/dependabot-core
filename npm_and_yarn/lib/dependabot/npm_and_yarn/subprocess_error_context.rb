@@ -14,6 +14,14 @@ module Dependabot
 
       SUBCOMMANDS = %w(add audit config dedupe exec info install list outdated remove up update upgrade view why).freeze
 
+      # A whole semver version, so command output that merely starts with a version is never reported.
+      VERSION_PATTERN = /\A\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?\z/
+
+      sig { params(version: T.nilable(String)).returns(T::Boolean) }
+      def self.valid_version?(version)
+        !version.nil? && VERSION_PATTERN.match?(version)
+      end
+
       sig do
         params(
           error: SharedHelpers::HelperSubprocessFailed,
@@ -28,7 +36,7 @@ module Dependabot
           error,
           {
             command_name: command_name(package_manager, command),
-            package_manager_version: version,
+            package_manager_version: valid_version?(version) ? version : nil,
             registry_host: registry && registry_host(registry)
           }
         )

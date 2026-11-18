@@ -34,6 +34,11 @@ RSpec.describe Dependabot::NpmAndYarn::SubprocessErrorContext do
       expect(attach(command: "install", registry: "not a url")).not_to have_key("registry-host")
     end
 
+    it "omits a version that is not a whole semver version" do
+      expect(attach(command: "install", version: "10.9.2 warning: https://user:token@npm.example.com/private"))
+        .not_to have_key("package-manager-version")
+    end
+
     it "omits unknown version and registry" do
       expect(attach(command: "install", version: nil, registry: nil))
         .not_to include("package-manager-version", "registry-host")

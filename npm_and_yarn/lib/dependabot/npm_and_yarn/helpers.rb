@@ -71,23 +71,36 @@ module Dependabot
           self.npm_version_selector = manifest && npm_version_selector_for(manifest.directory)
         end
 
-        # The version this job read with `corepack <runnable name> -v`, reported with subprocess failures.
+        # A version a package manager printed for `-v`, reported with later failures of the same runnable name. It
+        # is scoped to the working directory and project, since `yarnPath`, `packageManager` and Corepack can make
+        # the same name run a different version elsewhere.
         sig { params(name: String, version: String).void }
         def register_package_manager_version(name, version)
-          package_manager_versions[name] = version
+          return unless SubprocessErrorContext.valid_version?(version)
+
+          package_manager_versions[package_manager_version_key(name)] = version
         end
 
         sig { params(name: String).returns(T.nilable(String)) }
         def package_manager_version_for(name)
-          package_manager_versions[name]
+          package_manager_versions[package_manager_version_key(name)]
         end
 
         private
 
-        sig { returns(T::Hash[String, String]) }
+        sig { params(name: String).returns(T::Array[T.nilable(String)]) }
+        def package_manager_version_key(name)
+          manifest = dependency_files&.find { |file| file.name == "package.json" && !file.support_file }
+          [Dir.pwd, manifest&.directory, name]
+        end
+
+        sig { returns(T::Hash[T::Array[T.nilable(String)], String]) }
         def package_manager_versions
           Thread.current[:npm_and_yarn_package_manager_versions] ||= {}
-          T.cast(Thread.current[:npm_and_yarn_package_manager_versions], T::Hash[String, String])
+          T.cast(
+            Thread.current[:npm_and_yarn_package_manager_versions],
+            T::Hash[T::Array[T.nilable(String)], String]
+          )
         end
 
         sig { returns(T::Hash[String, T.nilable(String)]) }
@@ -140,6 +153,9 @@ module Dependabot
       # corepack supported package managers
       SUPPORTED_COREPACK_PACKAGE_MANAGERS = %w(npm yarn pnpm).freeze
       COREPACK_SIGNATURE_METADATA_ERROR = "No compatible signature found in package metadata"
+
+      # Commands whose output is recorded as the version for later subprocess error context.
+      VERSION_COMMANDS = %w(-v --version).freeze
 
       # pnpm's `minimumReleaseAge` and yarn's `npmMinimalAgeGate` are expressed in
       # minutes, whereas dependabot.yml cooldown and npm's `min-release-age` use
@@ -1016,10 +1032,12 @@ module Dependabot
       # from the system without involving Corepack
       sig { params(name: String).returns(String) }
       def self.local_package_manager_version(name)
-        Dependabot::SharedHelpers.run_shell_command(
+        version = Dependabot::SharedHelpers.run_shell_command(
           "#{name} -v",
           fingerprint: "#{name} -v"
         ).strip
+        register_package_manager_version(name, version)
+        version
       end
 
       # Corepack can't provide the requested npm, so the image's npm would be used. Fail instead of silently
@@ -1050,7 +1068,6 @@ module Dependabot
         Dependabot.logger.info("Fetching version for package manager: #{name}")
 
         version = version_from_output(package_manager_run_command(name, "-v", env: env))
-        register_package_manager_version(name, version) if version.match?(/\A\d+\.\d+\.\d+/)
 
         Dependabot.logger.info("Installed version of #{name}: #{version}")
 
@@ -1173,7 +1190,11 @@ module Dependabot
         ).returns(String)
       end
       def self.with_subprocess_error_context(package_manager, command, env, &block)
-        yield
+        output = yield
+        if VERSION_COMMANDS.include?(command)
+          register_package_manager_version(package_manager, version_from_output(output))
+        end
+        output
       rescue SharedHelpers::HelperSubprocessFailed => e
         attach_subprocess_error_context(e, package_manager, command, env)
         raise
@@ -1194,9 +1215,13 @@ module Dependabot
           error,
           package_manager: T.must(name),
           command: command,
-          # An exact Corepack selector is the version that ran; otherwise use the version
-          # this job already read with `-v` for the same runnable name (e.g. `pnpm@8`).
-          version: selector&.match?(/\A\d+\.\d+\.\d+/) ? selector : package_manager_version_for(package_manager),
+          # An exact Corepack selector is the version that ran; otherwise use a version the same runnable name
+          # (e.g. `pnpm@8`) printed for `-v` in this directory and project. Omitted when there is none.
+          version: if SubprocessErrorContext.valid_version?(selector)
+                     selector
+                   else
+                     package_manager_version_for(package_manager)
+                   end,
           registry: env&.fetch(RegistryHelper::NPM_CONFIG_REGISTRY_ENV, nil) || registry_helper&.registry_url
         )
       rescue StandardError => e

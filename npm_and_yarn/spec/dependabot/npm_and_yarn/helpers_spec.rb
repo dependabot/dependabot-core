@@ -831,6 +831,34 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       Thread.current[:npm_and_yarn_package_manager_versions] = nil
     end
 
+    it "does not record output that only starts with a version" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack pnpm@8 -v",
+        fingerprint: "corepack pnpm@8 -v",
+        env: nil
+      ).and_return("8.15.9 warning: https://user:token@npm.example.com/private\n")
+
+      described_class.package_manager_version("pnpm@8")
+
+      expect(described_class.package_manager_version_for("pnpm@8")).to be_nil
+    ensure
+      Thread.current[:npm_and_yarn_package_manager_versions] = nil
+    end
+
+    it "records a version printed by an in-project version command" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "yarn --version",
+        fingerprint: "yarn --version",
+        env: nil
+      ).and_return("3.6.4\n")
+
+      described_class.yarn_major_version
+
+      expect(described_class.package_manager_version_for("yarn")).to eq("3.6.4")
+    ensure
+      Thread.current[:npm_and_yarn_package_manager_versions] = nil
+    end
+
     it "passes env through to the corepack version command" do
       env = { "COREPACK_NPM_REGISTRY" => "https://packages.example.com/artifactory/api/npm/npm" }
 
@@ -1282,6 +1310,22 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         expect(context).not_to have_key("package-manager-version")
       end
+    end
+
+    it "omits a version recorded for another project" do
+      described_class.dependency_files = [
+        Dependabot::DependencyFile.new(name: "package.json", content: "{}", directory: "/other")
+      ]
+
+      context = context_for { described_class.run_npm_command("install") }
+
+      expect(context).not_to have_key("package-manager-version")
+    end
+
+    it "omits a version recorded in another working directory" do
+      context = Dir.mktmpdir { |dir| Dir.chdir(dir) { context_for { described_class.run_npm_command("install") } } }
+
+      expect(context).not_to have_key("package-manager-version")
     end
 
     it "reports an exact Corepack selector as the version" do
