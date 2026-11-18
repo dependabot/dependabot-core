@@ -11,7 +11,7 @@ require "dependabot/maven/distributions"
 
 module Dependabot
   module Maven
-    class FileUpdater < Dependabot::FileUpdaters::Base
+    class FileUpdater < Dependabot::FileUpdaters::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
 
       require_relative "file_updater/declaration_finder"
@@ -331,10 +331,29 @@ module Dependabot
       def updated_file_declaration(old_declaration, previous_req, requirement)
         original_req_string = T.must(previous_req.requirement_string)
 
-        old_declaration.gsub(
-          /(?<=\s|>)#{Regexp.quote(original_req_string)}(?=\s|<)/,
-          T.must(requirement.requirement_string)
-        )
+        own_version = %r{(<version>\s*)#{Regexp.quote(original_req_string)}((?:\s|<!--.*?-->)*</version>)}m
+
+        # Only rewrite the declaration's own <version> child; nested elements
+        # (e.g. plugin <configuration>) may contain the same text.
+        old_declaration.gsub(own_version) do
+          match = T.must(Regexp.last_match)
+          next match[0].to_s unless element_depth(old_declaration[0...match.begin(0)].to_s) == 1
+
+          "#{match[1]}#{requirement.requirement_string}#{match[2]}"
+        end
+      end
+
+      sig { params(xml_prefix: String).returns(Integer) }
+      def element_depth(xml_prefix)
+        depth = 0
+        xml_prefix.scan(%r{<!--.*?-->|<(/?)[^\s>/!?][^>]*?(/?)>}m) do |closing, self_closing|
+          next if Regexp.last_match(0).to_s.start_with?("<!--")
+
+          if closing == "/" then depth -= 1
+          elsif self_closing != "/" then depth += 1
+          end
+        end
+        depth
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }

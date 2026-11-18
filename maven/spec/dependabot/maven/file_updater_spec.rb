@@ -299,6 +299,34 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         its(:content) { is_expected.to include("<version> 4.6.1 </version>") }
       end
 
+      context "with a plugin whose configuration holds the same version" do
+        let(:pom_body) { fixture("poms", "plugin_config_same_version.xml") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.apache.maven.plugins:maven-enforcer-plugin",
+            version: "3.7.0",
+            requirements: [{
+              file: "pom.xml",
+              requirement: "3.7.0",
+              groups: ["plugin"],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "pom.xml",
+              requirement: "3.6.3",
+              groups: ["plugin"],
+              source: nil
+            }],
+            package_manager: "maven"
+          )
+        end
+
+        its(:content) do
+          is_expected.to include("<artifactId>maven-enforcer-plugin</artifactId>\n        <version>3.7.0</version>")
+          is_expected.to include("<requireMavenVersion><version>3.6.3</version></requireMavenVersion>")
+        end
+      end
+
       context "with a comment on the version" do
         let(:pom_body) { fixture("poms", "version_with_comment.xml") }
 
