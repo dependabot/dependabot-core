@@ -124,6 +124,25 @@ RSpec.describe Dependabot::Python::PipenvRunner do
         expect(context).to include("command-name" => "pipenv upgrade", "index-hosts" => ["pypi.org"])
         expect(context.values.flatten.join(" ")).not_to include("requests", "--verbose")
       end
+
+      context "when the index is configured only in the Pipfile" do
+        let(:dependency_files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "Pipfile",
+              content: "[[source]]\nname = \"internal\"\nurl = \"https://pipfile.example.com/simple\"\n"
+            ),
+            lockfile
+          ]
+        end
+
+        it "reports the Pipfile index host" do
+          expect { runner.run_upgrade("==2.19.0") }.to raise_error(error)
+
+          expect(Dependabot::ErrorReportContext.build(error: error))
+            .to include("index-hosts" => ["pipfile.example.com"])
+        end
+      end
     end
   end
 

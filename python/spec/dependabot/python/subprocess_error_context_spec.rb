@@ -61,6 +61,18 @@ RSpec.describe Dependabot::Python::SubprocessErrorContext do
         .to include("command-name" => "pipenv upgrade", "index-hosts" => ["pipfile.example.com", "lock.example.com"])
     end
 
+    it "never reports query string or fragment contents as the host" do
+      credentials = [
+        Dependabot::Credential.new("type" => "python_index", "index-url" => "https://query.example.com?auth=user@token"),
+        Dependabot::Credential.new("type" => "python_index", "index-url" => "https://fragment.example.com#user@token")
+      ]
+
+      context = attach(command: "pyenv exec poetry lock", credentials: credentials)
+
+      expect(context).to include("index-hosts" => ["query.example.com", "fragment.example.com"])
+      expect(context.values.flatten.join(" ")).not_to include("token")
+    end
+
     it "falls back to PyPI when no index is configured or parsable" do
       pipfile = Dependabot::DependencyFile.new(name: "Pipfile", content: "not [valid toml")
 

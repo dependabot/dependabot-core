@@ -93,11 +93,19 @@ module Dependabot
         []
       end
 
-      # Userinfo is stripped first so that URLs with templated credentials (e.g.
-      # `https://${USER}:${TOKEN}@host/simple`) still yield their host.
+      # Userinfo is stripped from the authority first so that URLs with templated credentials
+      # (e.g. `https://${USER}:${TOKEN}@host/simple`) still yield their host. The authority
+      # ends at the first `/`, `?` or `#`, so query strings and fragments are never read.
       sig { params(url: String).returns(T.nilable(String)) }
       def self.host(url)
-        host = ErrorReportContext.host_for(url.strip.sub(%r{(?<=://)[^/]*@}, ""))
+        url = url.strip
+        scheme_end = url.index("://")
+        return unless scheme_end
+
+        authority_start = scheme_end + 3
+        authority_end = %w(/ ? #).filter_map { |char| url.index(char, authority_start) }.min || url.length
+        authority = T.must(url[authority_start...authority_end]).rpartition("@").last
+        host = ErrorReportContext.host_for("#{url[0...authority_start]}#{authority}#{url[authority_end..]}")
         host == ErrorReportContext::REDACTED ? nil : host
       end
       private_class_method :command_name, :index_hosts, :source_urls, :host
