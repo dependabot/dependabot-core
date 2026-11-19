@@ -378,6 +378,51 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
     }
 
     [Fact]
+    public async Task DiscoveryContinuesAfterPartialRestoreFailure()
+    {
+        using var testDirectory = await TemporaryDirectory.CreateWithContentsAsync(
+            ("library.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Dependency" Version="1.2.3" />
+                  </ItemGroup>
+                </Project>
+                """));
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.2.3", "net9.0",
+                    [(null, [("Transitive.Dependency", "4.5.6")])]),
+                MockNuGetPackage.CreateSimplePackage("Transitive.Dependency", "4.5.6", "net9.0"),
+            ],
+            testDirectory.DirectoryPath);
+        var projectPath = Path.Combine(testDirectory.DirectoryPath, "library.csproj");
+        var (exitCode, output, _) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(
+            ["restore", projectPath], testDirectory.DirectoryPath);
+        Assert.NotEqual(0, exitCode);
+        Assert.Contains("NU1202", output);
+
+        var projects = await SdkProjectDiscovery.DiscoverAsync(
+            testDirectory.DirectoryPath,
+            testDirectory.DirectoryPath,
+            projectPath,
+            new ExperimentsManager(),
+            solutionDir: null,
+            new TestLogger());
+
+        var project = Assert.Single(projects);
+        foreach (var tfm in new[] { "net9.0", "net10.0" })
+        {
+            Assert.Contains(project.Dependencies, d => d.Name == "Some.Dependency" &&
+                d.Version == "1.2.3" && d.TargetFrameworks?.Contains(tfm) == true && d.IsTopLevel);
+            Assert.Contains(project.Dependencies, d => d.Name == "Transitive.Dependency" &&
+                d.Version == "4.5.6" && d.TargetFrameworks?.Contains(tfm) == true && !d.IsTopLevel);
+        }
+    }
+
+    [Fact]
     public async Task DiscoveryIgnoresNetStandardLibrary()
     {
         await TestDiscoverAsync(

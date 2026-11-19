@@ -1,15 +1,19 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "tmpdir"
 require "bundler/compact_index_client"
 require "bundler/compact_index_client/updater"
 
-TMP_DIR_PATH = File.expand_path("../tmp", __dir__)
+TMP_DIR_PATH = T.let(File.expand_path("../tmp", __dir__), String)
 
 RSpec.shared_context "when in a temporary bundler directory" do
+  extend T::Sig
+
+  sig { returns(String) }
   let(:project_name) { "gemfile" }
 
+  sig { returns(Pathname) }
   let(:tmp_path) do
     FileUtils.mkdir_p(TMP_DIR_PATH)
     dir = Dir.mktmpdir("native_helper_spec_", TMP_DIR_PATH)
@@ -18,10 +22,15 @@ RSpec.shared_context "when in a temporary bundler directory" do
 
   before do
     project_dependency_files(project_name).each do |file|
-      File.write(File.join(tmp_path, file[:name]), file[:content])
+      File.write(File.join(tmp_path, file.fetch(:name)), file.fetch(:content))
     end
   end
 
+  sig do
+    type_parameters(:Result)
+      .params(block: T.proc.params(directory: String).returns(T.type_parameter(:Result)))
+      .returns(T.type_parameter(:Result))
+  end
   def in_tmp_folder(&block)
     Dir.chdir(tmp_path, &block)
   end
@@ -40,7 +49,7 @@ RSpec.shared_context "when stubbing rubygems compact index" do
     fixtures =
       Dir[File.join("../../spec", "fixtures", "rubygems_responses", "info-*")]
     fixtures.each do |path|
-      dep_name = path.split("/").last.gsub("info-", "")
+      dep_name = File.basename(path).gsub("info-", "")
       stub_request(:get, "https://index.rubygems.org/info/#{dep_name}")
         .to_return(
           status: 200,

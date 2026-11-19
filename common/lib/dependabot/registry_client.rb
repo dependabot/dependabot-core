@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/error_report_context"
 require "dependabot/shared_helpers"
 
 # This class provides a thin wrapper around our normal usage of Excon as a simple HTTP client in order to
@@ -36,8 +37,7 @@ module Dependabot
         retry_interval: 5
       )
     rescue Excon::Error::Timeout, Excon::Error::Socket => e
-      cache_error(url, e) if cacheable_error?(e)
-      raise e
+      handle_request_error(e, http_method: "GET", url: url)
     end
 
     sig do
@@ -57,13 +57,22 @@ module Dependabot
         **SharedHelpers.excon_defaults({ headers: headers }.merge(options))
       )
     rescue Excon::Error::Timeout, Excon::Error::Socket => e
-      cache_error(url, e) if cacheable_error?(e)
-      raise e
+      handle_request_error(e, http_method: "HEAD", url: url)
     end
 
     sig { void }
     def self.clear_cache!
       @cached_errors = {}
+    end
+
+    sig { params(error: CachedErrorType, http_method: String, url: String).returns(T.noreturn) }
+    private_class_method def self.handle_request_error(error, http_method:, url:)
+      # Replayed cached errors keep the context of the request that originally failed
+      raise error if cached_error_for(url).equal?(error)
+
+      cache_error(url, error) if cacheable_error?(error)
+      ErrorReportContext.attach(error, { http_method: http_method, host: ErrorReportContext.host_for(url) })
+      raise error
     end
 
     sig { params(url: String, error: CachedErrorType).void }

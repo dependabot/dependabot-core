@@ -16,6 +16,20 @@ module Dependabot
 
         sig do
           params(
+            requirement: Dependabot::DependencyRequirement,
+            other: Dependabot::DependencyRequirement
+          ).returns(T::Boolean)
+        end
+        def self.shared_property?(requirement, other)
+          property_name = requirement.metadata_string("property_name")
+          return false unless property_name && property_name == other.metadata_string("property_name")
+          return true unless [requirement, other].any? { |req| req.file&.end_with?(".toml") }
+
+          requirement.file == other.file
+        end
+
+        sig do
+          params(
             dependency: Dependabot::Dependency,
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Dependabot::Credential],
@@ -48,7 +62,8 @@ module Dependabot
           @update_possible = T.let(nil, T.nilable(T::Boolean))
           @updated_dependencies = T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))
           @dependencies_to_update = T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))
-          @property_name = T.let(nil, T.nilable(String))
+          @property_requirements = T.let(nil, T.nilable(T::Array[Dependabot::DependencyRequirement]))
+          @property_names = T.let(nil, T.nilable(T::Array[String]))
           @dependency_set = T.let(nil, T.nilable(T::Hash[Symbol, String]))
           @updated_requirements = T.let({}, T::Hash[String, T::Array[Dependabot::DependencyRequirement]])
         end
@@ -128,20 +143,22 @@ module Dependabot
               source: nil
             ).parse.select do |dep|
               dep.requirements.any? do |r|
-                tmp_p_name = r.metadata_string("property_name")
                 tmp_dep_set = r.metadata_string_hash("dependency_set")
-                next true if property_name && tmp_p_name == property_name
+                next true if property_requirements.any? { |pr| self.class.shared_property?(r, pr) }
 
                 dependency_set && tmp_dep_set == dependency_set
               end
             end
         end
 
-        sig { returns(T.nilable(String)) }
-        def property_name
-          @property_name ||= dependency.requirements
-                                       .find { |r| r.metadata_string("property_name") }
-                                       &.metadata_string("property_name")
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
+        def property_requirements
+          @property_requirements ||= dependency.requirements.select { |r| r.metadata_string("property_name") }
+        end
+
+        sig { returns(T::Array[String]) }
+        def property_names
+          @property_names ||= property_requirements.filter_map { |r| r.metadata_string("property_name") }
         end
 
         sig { returns(T.nilable(T::Hash[Symbol, String])) }
@@ -158,7 +175,7 @@ module Dependabot
               requirements: dep.requirements,
               latest_version: target_version.to_s,
               source_url: source_url,
-              properties_to_update: [property_name].compact
+              properties_to_update: property_names
             ).updated_requirements
         end
       end

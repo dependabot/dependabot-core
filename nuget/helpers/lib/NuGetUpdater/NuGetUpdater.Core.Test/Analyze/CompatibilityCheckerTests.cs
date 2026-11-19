@@ -211,6 +211,36 @@ public class CompatibilityCheckerTests
         Assert.True(isCompatible);
     }
 
+    [Theory]
+    [InlineData("net10.0-windows", "net10.0", true)]
+    [InlineData("net10.0-windows7.0", "net10.0", true)]
+    [InlineData("net10.0-windows10.0.19041", "net10.0", true)]
+    [InlineData("net10.0-ios18.0", "net10.0", true)]
+    [InlineData("net10.0-windows10.0.19041", "net10.0-windows10.0.17763", true)]
+    [InlineData("net10.0-windows10.0.17763", "net10.0-windows10.0.19041", false)]
+    [InlineData("net10.0", "net10.0-windows", false)]
+    [InlineData("net10.0-windows", "net11.0", false)]
+    public async Task CheckAsync_PackageWithLibAssembly_ChecksPlatformCompatibility(
+        string projectTfm,
+        string packageTfm,
+        bool expectedCompatible)
+    {
+        using var tempDir = new TemporaryDirectory();
+        var package = MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", packageTfm);
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([package], tempDir.DirectoryPath, includeCommonPackages: false);
+        var packageId = new PackageIdentity(package.Id, NuGetVersion.Parse(package.Version));
+        using var context = new NuGetContext(tempDir.DirectoryPath, NuGet.Common.NullLogger.Instance);
+
+        var isCompatible = await CompatibilityChecker.CheckAsync(
+            packageId,
+            [NuGetFramework.Parse(projectTfm)],
+            context,
+            new TestLogger(),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(expectedCompatible, isCompatible);
+    }
+
     [Fact]
     public async Task ExistsAndIsCompatibleAsync_ExistingPackageWithoutProjectFrameworks_ReportsAsCompatible()
     {

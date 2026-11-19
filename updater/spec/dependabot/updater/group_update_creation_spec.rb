@@ -1457,6 +1457,12 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0", directory: "/other")
       end
 
+      it "records the skip reason once when the dependency is skipped repeatedly" do
+        2.times { test_instance.send(:skip_dependency?, dependency, group) }
+
+        expect(test_instance.send(:skipped_dependency_reasons)).to eq("dep1" => ["belongs-to-another-directory"])
+      end
+
       it "skips the dependency" do
         result = test_instance.send(:skip_dependency?, dependency, group)
         expect(result).to be(true)

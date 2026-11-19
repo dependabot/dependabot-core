@@ -485,8 +485,8 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
                 Dependabot::GitTagWithDetail.new(tag: "v1.1.0", release_date: "2019-07-20T00:00:00+00:00")
               ],
               local_tags_for_allowed_versions: [
-                { tag: "v1.0.1", version: Dependabot::GithubActions::Version.new("1.0.1") },
-                { tag: "v1.1.0", version: Dependabot::GithubActions::Version.new("1.1.0") }
+                Dependabot::GitTagDetails.new(tag: "v1.0.1", version: Dependabot::GithubActions::Version.new("1.0.1")),
+                Dependabot::GitTagDetails.new(tag: "v1.1.0", version: Dependabot::GithubActions::Version.new("1.1.0"))
               ]
             )
             instance
@@ -631,7 +631,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         allow(Dir).to receive(:chdir).and_yield
 
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(%r{git clone --no-recurse-submodules https://github\.com/actions/setup-node},
+          .with(%r{git clone --no-checkout --filter=tree:0 --no-recurse-submodules https://github\.com/actions/setup-node},
                 any_args)
           .and_return("")
       end
@@ -833,7 +833,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
     context "when latest version tag exists and current SHA is not tag-resolvable" do
       let(:latest_version_tag) do
-        { tag: "v2.7.0", commit_sha: "ee0669bd1cc54295c223e0bb666b733df41de1c5" }
+        Dependabot::GitTagDetails.new(tag: "v2.7.0", commit_sha: "ee0669bd1cc54295c223e0bb666b733df41de1c5")
       end
       let(:latest_release_version) { "cooldown-filtered-sha" }
 
@@ -919,7 +919,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         allow(Dir).to receive(:chdir).and_yield
 
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(%r{git clone --no-recurse-submodules https://github\.com/actions/setup-node},
+          .with(%r{git clone --no-checkout --filter=tree:0 --no-recurse-submodules https://github\.com/actions/setup-node},
                 any_args)
           .and_return("")
 
@@ -953,7 +953,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         allow(Dir).to receive(:chdir).and_yield
 
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(%r{git clone --no-recurse-submodules https://github\.com/actions/setup-node},
+          .with(%r{git clone --no-checkout --filter=tree:0 --no-recurse-submodules https://github\.com/actions/setup-node},
                 any_args)
           .and_return("")
 
@@ -979,7 +979,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         allow(checker.send(:latest_version_finder)).to receive(:latest_release_version).and_return(nil)
 
         allow(Dependabot::CommandHelpers).to receive(:capture3_with_timeout)
-          .with(array_including(%r{\Agit clone --no-recurse-submodules https://github\.com/actions/setup-node }),
+          .with(array_including(%r{\Agit clone .*https://github\.com/actions/setup-node }),
                 any_args)
           .and_return(
             [
@@ -1469,7 +1469,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         finder = checker.send(:latest_version_finder)
         allow(finder).to receive(:select_version_tags_in_cooldown_period) do |tags_with_dates|
           tags_with_dates.filter_map do |tag|
-            tag_name = tag.is_a?(Hash) ? tag.fetch(:tag) : tag.tag
+            tag_name = tag.tag
             tag_name if tag_name.start_with?("v3")
           end
         end
@@ -1503,7 +1503,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         finder = checker.send(:latest_version_finder)
         allow(finder).to receive(:select_version_tags_in_cooldown_period) do |tags_with_dates|
           tags_with_dates.filter_map do |tag|
-            tag_name = tag.is_a?(Hash) ? tag.fetch(:tag) : tag.tag
+            tag_name = tag.tag
             tag_name if tag_name.start_with?("v3")
           end
         end

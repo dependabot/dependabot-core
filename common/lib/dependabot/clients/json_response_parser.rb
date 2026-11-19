@@ -77,14 +77,6 @@ module Dependabot
         raise_bad_response(context, "#{key} must contain at least one object")
       end
 
-      sig { params(object: JsonObject, context: String, paths: T::Array[T::Array[String]]).void }
-      def validate_string_paths(object, context, paths)
-        paths.each do |path|
-          current = T.must(path[0...-1]).reduce(object) { |value, key| object_field(value, key, context) }
-          string_field(current, T.must(path.last), context)
-        end
-      end
-
       sig { params(context: String, message: String).returns(T.noreturn) }
       def raise_bad_response(context, message)
         provider, source = response_identity

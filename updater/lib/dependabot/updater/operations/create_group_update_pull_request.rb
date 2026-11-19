@@ -1,6 +1,7 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "dependabot/error_report_context"
 require "dependabot/updater/group_update_creation"
 require "dependabot/updater/group_dependency_selector"
 require "sorbet-runtime"
@@ -142,15 +143,61 @@ module Dependabot
 
           undiagnosed
             .reject { |dep| handled.include?(dep.name.downcase) }
-            .each do |dep|
-              error_handler.handle_dependency_error(
-                error: Dependabot::DependabotError.new(
-                  "Security update failed for #{dep.name} #{dep.version}"
-                ),
-                dependency: dep,
-                dependency_group: group
-              )
-            end
+            .each { |dep| report_undiagnosed_security_update_failure(dep) }
+        end
+
+        sig { params(dep: Dependabot::Dependency).void }
+        def report_undiagnosed_security_update_failure(dep)
+          # Not vulnerable per the job's advisories: report it as a single-dependency update does. A missing
+          # or git SHA version cannot be matched against the advisories, so it is not known to be safe.
+          occurrences = group.dependencies.select { |candidate| candidate.name.casecmp?(dep.name) }
+          versions_checkable = occurrences.all? { |candidate| candidate.version_class.correct?(candidate.version) }
+          if not_vulnerable_dependency_names.include?(dep.name.downcase) && versions_checkable
+            record_security_update_not_needed_error(dep)
+            return
+          end
+
+          # The error is never raised, so give it a backtrace for error reports.
+          error = Dependabot::DependabotError.new("Security update failed for #{dep.name} #{dep.version}")
+          error.set_backtrace(caller)
+          Dependabot::ErrorReportContext.attach(error, undiagnosed_failure_context(dep))
+
+          error_handler.handle_dependency_error(
+            error: error,
+            dependency: dep,
+            dependency_group: group
+          )
+        end
+
+        # Why an undiagnosed security update failed, for the error report. Only values the updater
+        # derives itself are included: no URLs, commands or helper output.
+        sig { params(dep: Dependabot::Dependency).returns(T::Hash[String, Dependabot::ErrorReportContext::Value]) }
+        def undiagnosed_failure_context(dep)
+          name = dep.name.downcase
+          updated_names = (dependency_change&.updated_dependencies || []).map { |updated| updated.name.downcase }
+
+          context = T.let(
+            {
+              "security-update-skip-reasons" => skipped_dependency_reasons.fetch(name, ["not-attempted"]),
+              "security-update-directories" => job.source.directories || [job.source.directory || "/"],
+              "group-updated-dependency-count" => updated_names.uniq.length
+            },
+            T::Hash[String, Dependabot::ErrorReportContext::Value]
+          )
+          context.merge!(advisory_context(dep))
+          if lowest_security_fix_versions.key?(name)
+            context["lowest-security-fix-version"] = lowest_security_fix_versions[name] || "none"
+          end
+          context
+        end
+
+        sig { params(dep: Dependabot::Dependency).returns(T::Hash[String, Dependabot::ErrorReportContext::Value]) }
+        def advisory_context(dep)
+          advisories = job.security_advisories.select { |advisory| advisory.dependency_name.casecmp?(dep.name) }
+          {
+            "advisory-count" => advisories.length,
+            "advisory-has-patched-version" => advisories.any? { |advisory| advisory.patched_versions.any? }
+          }
         end
       end
     end

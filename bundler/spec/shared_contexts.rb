@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -19,7 +19,7 @@ RSpec.shared_context "when stubbing rubygems compact index" do
     fixtures =
       Dir[File.join("spec", "fixtures", "rubygems_responses", "info-*")]
     fixtures.each do |path|
-      dep_name = path.split("/").last.gsub("info-", "")
+      dep_name = File.basename(path).gsub("info-", "")
       stub_request(:get, "https://index.rubygems.org/info/#{dep_name}")
         .to_return(
           status: 200,
@@ -42,7 +42,7 @@ RSpec.shared_context "when stubbing rubygems versions api" do
         )
       ]
     fixtures.each do |path|
-      dep_name = path.split("/").last.gsub("versions-", "")
+      dep_name = File.basename(path).gsub("versions-", "")
       stub_request(:get, "https://rubygems.org/api/v1/versions/#{dep_name}")
         .to_return(
           status: 200,

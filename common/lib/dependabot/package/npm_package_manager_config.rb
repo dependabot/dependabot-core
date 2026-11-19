@@ -10,6 +10,11 @@ module Dependabot
 
       ObjectHash = T.type_alias { T::Hash[String, Object] }
 
+      # Engines Dependabot reads (package managers and the Node.js language requirement). Other
+      # keys are free-form: npm accepts any value under engines, and tools like Apache Cordova
+      # store objects there (engines.cordovaDependencies).
+      KNOWN_ENGINES = %w(node npm yarn pnpm bun).freeze
+
       const :package_manager, T.nilable(String), default: nil
       const :engines, T.nilable(T::Hash[String, String]), default: nil
 
@@ -35,6 +40,7 @@ module Dependabot
         engines = T.let({}, T::Hash[String, String])
         object_hash(raw_engines, "engines").each do |name, raw_requirement|
           next if raw_requirement.nil?
+          next if !raw_requirement.is_a?(String) && !KNOWN_ENGINES.include?(name)
 
           raise TypeError, "engines.#{name} must be a string" unless raw_requirement.is_a?(String)
 
