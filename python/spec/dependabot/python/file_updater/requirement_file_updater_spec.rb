@@ -460,6 +460,20 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
       end
     end
 
+    context "when the previous requirement is not declared in the file" do
+      let(:previous_requirement_string) { "==2.5.0" }
+
+      it "raises with the manifest file name attached as error report context" do
+        expect { updated_files }.to raise_error(RuntimeError, "Declaration not found for psycopg2!") do |error|
+          expect(Dependabot::ErrorReportContext.build(error: error)).to include(
+            "dependency-file" => "requirements.txt",
+            "old-requirement" => "==2.5.0",
+            "new-requirement" => "==2.8.1"
+          )
+        end
+      end
+    end
+
     context "with only a setup.py" do
       subject(:updated_setup_file) do
         updated_files.find { |f| f.name == "setup.py" }
