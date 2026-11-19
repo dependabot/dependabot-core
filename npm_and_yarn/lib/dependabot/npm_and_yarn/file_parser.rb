@@ -262,17 +262,11 @@ module Dependabot
       sig { returns(Dependabot::FileParsers::Base::DependencySet) }
       def workspace_catalog_dependencies
         dependency_set = DependencySet.new
-        workspace_config = YAML.safe_load(T.must(pnpm_workspace_yml&.content), aliases: true)
+        workspace_config = yaml_mapping(YAML.safe_load(T.must(pnpm_workspace_yml&.content), aliases: true))
+        catalogs = [workspace_config["catalog"], *yaml_mapping(workspace_config["catalogs"]).values]
 
-        workspace_config["catalog"]&.each do |name, version|
-          dep = build_dependency(
-            file: T.must(pnpm_workspace_yml), type: "dependencies", name: name, requirement: version
-          )
-          dependency_set << dep if dep
-        end
-
-        workspace_config["catalogs"]&.each do |_, group_depenencies|
-          group_depenencies.each do |name, version|
+        catalogs.each do |catalog|
+          yaml_mapping(catalog).each do |name, version|
             dep = build_dependency(
               file: T.must(pnpm_workspace_yml), type: "dependencies", name: name, requirement: version
             )
@@ -281,6 +275,12 @@ module Dependabot
         end
 
         dependency_set
+      end
+
+      # Empty or comment-only YAML documents and keys with no entries parse to nil, not a mapping
+      sig { params(value: T.untyped).returns(T::Hash[T.untyped, T.untyped]) }
+      def yaml_mapping(value)
+        value.is_a?(Hash) ? value : {}
       end
 
       sig { returns(LockfileParser) }

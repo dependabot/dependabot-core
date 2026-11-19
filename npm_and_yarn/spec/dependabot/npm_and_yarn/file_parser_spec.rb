@@ -2196,6 +2196,36 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
       end
 
+      context "with a pnpm-workspace.yaml whose catalogs aren't YAML mappings" do
+        let(:files) do
+          project_dependency_files("pnpm/catalogs_all_examples").map do |file|
+            next file unless file.name == "pnpm-workspace.yaml"
+
+            Dependabot::DependencyFile.new(name: file.name, content: workspace_content)
+          end
+        end
+
+        context "when the file is empty" do
+          let(:workspace_content) { "" }
+
+          it { is_expected.to be_empty }
+        end
+
+        context "when the file only contains comments" do
+          let(:workspace_content) { "# catalog:\n#   react: ^18.0.0\n" }
+
+          it { is_expected.to be_empty }
+        end
+
+        context "when the catalogs are empty" do
+          let(:workspace_content) { "catalog:\ncatalogs:\n  react18:\n  react16:\n    react: 16.0.0\n" }
+
+          it "parses the remaining catalog dependencies" do
+            expect(top_level_dependencies.map(&:name)).to eq(["react"])
+          end
+        end
+      end
+
       context "when a catalogued dependency also resolves to an older transitive version" do
         subject(:globals) { top_level_dependencies.find { |dep| dep.name == "globals" } }
 
