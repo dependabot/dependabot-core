@@ -139,7 +139,7 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
         let(:dependency_version) { "1.1.0" }
 
         it "does not broaden the ref to an equivalent lower-precision tag" do
-          expect(fetcher.latest_version_tag.fetch(:tag)).to eq("v1.1.0")
+          expect(fetcher.latest_version_tag.tag).to eq("v1.1.0")
         end
 
         context "when the current full semver tag is no longer advertised" do
@@ -159,7 +159,7 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
           end
 
           it "does not downgrade to the older full semver tag" do
-            expect(fetcher.latest_version_tag.fetch(:tag)).to eq("v1.1")
+            expect(fetcher.latest_version_tag.tag).to eq("v1.1")
           end
         end
 
@@ -183,7 +183,7 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
           end
 
           it "prefers the higher lower-precision ref over the unchanged matching-precision ref" do
-            expect(fetcher.latest_version_tag.fetch(:tag)).to eq("v1.2")
+            expect(fetcher.latest_version_tag.tag).to eq("v1.2")
           end
         end
       end
@@ -362,7 +362,7 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
 
     context "when a supported newer version is available" do
       it "updates to the least new supported version" do
-        expect(lowest_security_fix_version).to eq(
+        expect(lowest_security_fix_version&.details).to have_attributes(
           { tag: "v1",
             version: Dependabot::GithubActions::Version.new("1.0.0"),
             commit_sha: "d0b521928fa734513b5cd9c7d9d8e09db50e884a",
@@ -375,11 +375,77 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
       let(:ignored_versions) { ["= 1.0.0"] }
 
       it "doesn't return ignored versions" do
-        expect(lowest_security_fix_version).to eq(
+        expect(lowest_security_fix_version&.details).to have_attributes(
           { commit_sha: "bb178d2de54771e6f9332a2b1d55546cf2bc3e08", tag: "v2",
             tag_sha: "bb178d2de54771e6f9332a2b1d55546cf2bc3e08",
             version: Dependabot::GithubActions::Version.new("2.0.0") }
         )
+      end
+    end
+  end
+
+  describe "#allowed_version_tags_with_release_dates" do
+    subject(:candidates) { fetcher.allowed_version_tags_with_release_dates }
+
+    let(:older_tag) do
+      Dependabot::GitTagDetails.new(
+        tag: "v1",
+        version: Dependabot::GithubActions::Version.new("1"),
+        commit_sha: "older-commit",
+        tag_sha: "older-tag"
+      )
+    end
+    let(:latest_tag) do
+      Dependabot::GitTagDetails.new(
+        tag: "v2",
+        version: Dependabot::GithubActions::Version.new("2"),
+        commit_sha: "latest-commit",
+        tag_sha: "latest-tag"
+      )
+    end
+
+    before do
+      checker = instance_double(
+        Dependabot::GitCommitChecker,
+        local_tags_for_allowed_versions: [older_tag, latest_tag]
+      )
+      allow(fetcher).to receive_messages(
+        git_commit_checker: checker,
+        fetch_tag_and_release_date: [Dependabot::GitTagWithDetail.new(tag: "v1", release_date: "2024-01-01")]
+      )
+    end
+
+    it "joins dates without losing the original tag metadata or parsed versions" do
+      expect(candidates.map(&:details)).to eq([latest_tag, older_tag])
+      expect(candidates.first.details).to equal(latest_tag)
+      expect(candidates.first.version).to equal(latest_tag.version)
+      expect(candidates.map(&:release_date)).to eq([nil, "2024-01-01"])
+      expect(latest_tag.to_h).to eq(
+        tag: "v2",
+        version: Dependabot::GithubActions::Version.new("2"),
+        commit_sha: "latest-commit",
+        tag_sha: "latest-tag"
+      )
+    end
+
+    context "when versions compare equal at different precisions" do
+      let(:latest_tag) do
+        Dependabot::GitTagDetails.new(
+          tag: "v1.0.0",
+          version: Dependabot::GithubActions::Version.new("1.0.0")
+        )
+      end
+
+      it "preserves the existing reverse-sorted tie ordering" do
+        expect(candidates.map { |candidate| candidate.details.tag }).to eq(["v1.0.0", "v1"])
+      end
+    end
+
+    context "when a versioned candidate has no parsed version" do
+      let(:latest_tag) { Dependabot::GitTagDetails.new(tag: "v2") }
+
+      it "rejects the candidate instead of silently excluding it" do
+        expect { candidates }.to raise_error(TypeError, /v2.*version/)
       end
     end
   end

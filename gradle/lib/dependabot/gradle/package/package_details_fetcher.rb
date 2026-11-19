@@ -402,9 +402,9 @@ module Dependabot
         sig { returns(T::Array[T::Hash[String, Object]]) }
         def dependency_repository_details
           requirement_files =
-            dependency.requirements
-                      .filter_map(&:file)
-                      .map { |nm| dependency_files.find { |f| f.name == nm } }
+            (dependency.requirements.filter_map(&:file) +
+              (dependency.subdependency_metadata || []).filter_map { |metadata| metadata[:file] })
+            .map { |name| dependency_files.find { |file| file.name == name } }
 
           @dependency_repository_details ||=
             requirement_files.flat_map do |target_file|

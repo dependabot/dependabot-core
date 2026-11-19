@@ -70,11 +70,11 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
       allow(git_commit_checker).to receive(:local_tag_for_latest_version).and_return(latest_tag)
     end
 
-    it "returns the full tag hash including commit_sha" do
+    it "returns the full tag record including commit_sha" do
       tag = T.must(resolver.latest_resolvable_version_tag)
-      expect(tag).to be_a(Hash)
-      expect(tag[:version]).to eq(Dependabot::Swift::Version.new("7.0.2"))
-      expect(tag[:commit_sha]).to eq("91132c0fe9a98e76f3d7381a608685aa41770706")
+      expect(tag).to be_a(Dependabot::GitTagDetails)
+      expect(tag.version).to eq(Dependabot::Swift::Version.new("7.0.2"))
+      expect(tag.commit_sha).to eq("91132c0fe9a98e76f3d7381a608685aa41770706")
     end
 
     it "is memoized" do
@@ -355,13 +355,13 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
     it "returns the highest version within the range when latest exceeds upper bound" do
       tag = T.must(resolver.latest_resolvable_version_tag)
       expect(tag).not_to be_nil
-      expect(tag[:version]).to eq(Dependabot::Swift::Version.new("5.19.0"))
-      expect(tag[:commit_sha]).to eq("ccc333")
+      expect(tag.version).to eq(Dependabot::Swift::Version.new("5.19.0"))
+      expect(tag.commit_sha).to eq("ccc333")
     end
 
     it "returns a version higher than current" do
       tag = T.must(resolver.latest_resolvable_version_tag)
-      expect(tag[:version]).to be > Dependabot::Swift::Version.new("5.15.0")
+      expect(tag.version).to be > Dependabot::Swift::Version.new("5.15.0")
     end
   end
 end

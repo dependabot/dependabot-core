@@ -329,7 +329,7 @@ module Dependabot
           return "0.0.1" unless lockfile
 
           gemspec_specs =
-            CachedLockfileParser.parse(sanitized_lockfile_content).specs
+            CachedLockfileParser.parse(T.must(T.must(lockfile).content)).specs
                                 .select { |s| gemspec_sources.include?(s.source.class) }
 
           gem_name =
@@ -343,13 +343,6 @@ module Dependabot
           spec&.version&.to_s || gemspec_specs.first&.version&.to_s || "0.0.1"
         end
         # rubocop:enable Metrics/PerceivedComplexity
-
-        # TODO: Stop sanitizing the lockfile once we have bundler 2 installed
-        sig { returns(String) }
-        def sanitized_lockfile_content
-          re = FileUpdater::LockfileUpdater::LOCKFILE_ENDING
-          T.must(T.must(lockfile).content).gsub(re, "")
-        end
       end
     end
   end

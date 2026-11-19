@@ -7,6 +7,7 @@ require "sorbet-runtime"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/registry_client"
+require "dependabot/cargo/registry_response"
 
 module Dependabot
   module Cargo
@@ -65,9 +66,12 @@ module Dependabot
         hdrs = build_headers(index, dependency.source_string("name"))
 
         url = metadata_fetch_url(dependency, index)
-        response = fetch_metadata(url, hdrs)
+        response = Dependabot::RegistryClient.get(url: url, headers: hdrs)
+        return @crates_listing = {} if response.status == 404
 
-        @crates_listing = parse_response(response, index)
+        RegistryResponse.raise_for_error_status!(response, index.delete_prefix("sparse+")) if index != CRATES_IO_API
+
+        @crates_listing = RegistryResponse.with_parse_error_context(response, url) { parse_response(response, index) }
       end
 
       sig do
@@ -84,15 +88,6 @@ module Dependabot
         end
 
         hdrs
-      end
-
-      sig { params(url: String, headers: T::Hash[String, String]).returns(Excon::Response) }
-      def fetch_metadata(url, headers)
-        Excon.get(
-          url,
-          idempotent: true,
-          **SharedHelpers.excon_defaults(headers: headers)
-        )
       end
 
       sig { params(response: Excon::Response, index: String).returns(T::Hash[String, T.anything]) }

@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -108,17 +108,17 @@ module Dependabot
           release
         end
 
-        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        sig { returns(T.nilable(Dependabot::GithubActions::Package::ReleaseCandidate)) }
         def lowest_security_fix_release
           available_security_fix_releases
         end
 
-        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        sig { returns(T.nilable(Dependabot::GitTagDetails)) }
         def latest_version_tag
           available_latest_version_tag
         end
 
-        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        sig { returns(T.nilable(Dependabot::GitTagDetails)) }
         def latest_version_tag_respecting_cooldown
           return @latest_version_tag_respecting_cooldown if defined?(@latest_version_tag_respecting_cooldown)
 
@@ -129,14 +129,14 @@ module Dependabot
                 nil
               else
                 latest_tag = available_latest_version_tag
-                if latest_tag&.fetch(:version) == selected_release
+                if latest_tag&.version == selected_release
                   latest_tag
                 else
                   tag_for_version(selected_release)
                 end
               end
             end,
-            T.nilable(T::Hash[Symbol, T.untyped])
+            T.nilable(Dependabot::GitTagDetails)
           )
         end
 
@@ -176,19 +176,19 @@ module Dependabot
           )
         end
 
-        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        sig { returns(T.nilable(Dependabot::GithubActions::Package::ReleaseCandidate)) }
         def available_security_fix_releases
           @available_security_fix_releases = T.let(
             T.must(package_details_fetcher).lowest_security_fix_version_tag,
-            T.nilable(T::Hash[Symbol, T.untyped])
+            T.nilable(Dependabot::GithubActions::Package::ReleaseCandidate)
           )
         end
 
-        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        sig { returns(T.nilable(Dependabot::GitTagDetails)) }
         def available_latest_version_tag
           @latest_version_tag = T.let(
             T.must(package_details_fetcher).latest_version_tag,
-            T.nilable(T::Hash[Symbol, T.untyped])
+            T.nilable(Dependabot::GitTagDetails)
           )
         end
 
@@ -231,10 +231,10 @@ module Dependabot
           # Walk through the candidate version tags in descending order (newest first)
           # and return the first one NOT in cooldown
           candidates.each do |tag_info|
-            tag_name = tag_info.fetch(:tag)
+            tag_name = tag_info.tag
             next if tags_in_cooldown.include?(tag_name)
 
-            version = tag_info.fetch(:version)
+            version = tag_info.version
             # Candidates are sorted descending, so once we drop below the pinned version
             # every remaining candidate would be a downgrade.
             break if pinned_version && version < pinned_version
@@ -253,27 +253,28 @@ module Dependabot
         # version. Returns every tag when the pin isn't a version we can reason about
         # (e.g. a commit SHA), since precision has no meaning in that case.
         sig do
-          params(tags: T::Array[T::Hash[Symbol, T.untyped]])
-            .returns(T::Array[T::Hash[Symbol, T.untyped]])
+          params(tags: T::Array[Dependabot::GithubActions::Package::ReleaseCandidate])
+            .returns(T::Array[Dependabot::GithubActions::Package::ReleaseCandidate])
         end
         def tags_matching_pinned_precision(tags)
           pinned = pinned_version
           return tags unless pinned
 
           pinned_precision = precision(pinned.to_s)
-          tags.select { |tag_info| precision(tag_info.fetch(:version).to_s) == pinned_precision }
+          tags.select { |tag_info| precision(tag_info.version.to_s) == pinned_precision }
         end
 
         # Resolves a version back to its tag. Versions compare equal across precisions
         # (`2` == `2.0.0`), so tags matching the pinned precision are preferred to avoid
         # rewriting e.g. a `v2` pin to `v2.0.0`.
-        sig { params(version: Dependabot::Version).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        sig { params(version: Dependabot::Version).returns(T.nilable(Dependabot::GitTagDetails)) }
         def tag_for_version(version)
           all_tags = T.must(package_details_fetcher).allowed_version_tags_with_release_dates
           matching_precision = tags_matching_pinned_precision(all_tags)
 
-          matching_precision.find { |tag_hash| tag_hash.fetch(:version) == version } ||
-            all_tags.find { |tag_hash| tag_hash.fetch(:version) == version }
+          candidate = matching_precision.find { |tag| tag.version == version } ||
+                      all_tags.find { |tag| tag.version == version }
+          candidate&.details
         end
 
         sig { returns(T.nilable(Dependabot::Version)) }
@@ -292,18 +293,19 @@ module Dependabot
         sig do
           params(
             tags_with_dates: T.nilable(
-              T.any(T::Array[Dependabot::GitTagWithDetail], T::Array[T::Hash[Symbol, T.untyped]])
+              T.any(
+                T::Array[Dependabot::GitTagWithDetail],
+                T::Array[Dependabot::GithubActions::Package::ReleaseCandidate]
+              )
             )
           ).returns(T::Array[String])
         end
         def select_version_tags_in_cooldown_period(tags_with_dates = nil)
           tags_to_check = tags_with_dates || T.must(package_details_fetcher).fetch_tag_and_release_date
-          # Handle both GitTagWithDetail objects and hashes with release_date
           in_cooldown = tags_to_check.select do |tag|
-            release_date = tag.is_a?(Hash) ? tag.fetch(:release_date, nil) : tag.release_date
-            check_if_version_in_cooldown_period?(release_date)
+            check_if_version_in_cooldown_period?(tag.release_date)
           end
-          in_cooldown.map { |tag| tag.is_a?(Hash) ? tag.fetch(:tag) : tag.tag }
+          in_cooldown.map(&:tag)
         rescue StandardError => e
           Dependabot.logger.error("Error checking if version is in cooldown (using empty filter): #{e.message}")
           []
@@ -324,7 +326,7 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         def resolve_commit_metadata_details
           # First, try GitHub Release published_at via Octokit
-          tag_name = latest_version_tag&.fetch(:tag, nil)
+          tag_name = latest_version_tag&.tag
           normalized_tag = tag_name ? normalize_tag_name(tag_name) : nil
           if normalized_tag
             release_date = github_release_published_at(normalized_tag)
@@ -402,7 +404,7 @@ module Dependabot
 
         sig { returns(String) }
         def commit_ref
-          latest_version_tag&.fetch(:commit_sha)
+          T.must(latest_version_tag&.commit_sha)
         end
 
         sig { returns(T.nilable(T.any(Dependabot::Version, String))) }

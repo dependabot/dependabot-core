@@ -8,6 +8,13 @@ module Dependabot
     class MarkerEvaluator
       extend T::Sig
 
+      # File parsers can't know the target platform, so they assume non-Python markers hold. The resolver
+      # leaves this off so it only applies constraints whose markers depend on the Python version.
+      sig { params(non_python_markers_satisfied: T::Boolean).void }
+      def initialize(non_python_markers_satisfied: false)
+        @non_python_markers_satisfied = non_python_markers_satisfied
+      end
+
       sig { params(requirement_string: String).returns([T.nilable(String), T.nilable(String)]) }
       def split_requirement_and_marker(requirement_string)
         separator_index = T.let(nil, T.nilable(Integer))
@@ -60,12 +67,16 @@ module Dependabot
 
         not_expression = strip_top_level_not(expr)
         if not_expression
-          return false unless python_marker?(not_expression)
+          return @non_python_markers_satisfied unless python_marker?(not_expression)
 
           return !evaluate_marker_expression(not_expression, python_version)
         end
 
-        evaluate_python_version_condition(expr, python_version, default: python_marker?(expr))
+        evaluate_python_version_condition(
+          expr,
+          python_version,
+          default: python_marker?(expr) || @non_python_markers_satisfied
+        )
       end
 
       sig { params(expression: String).returns(T.nilable(String)) }
