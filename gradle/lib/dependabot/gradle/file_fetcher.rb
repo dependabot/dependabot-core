@@ -31,10 +31,6 @@ module Dependabot
         gradle/wrapper/gradle-wrapper.properties
       ).freeze
 
-      # For now Gradle only supports library .toml files in the main gradle folder
-      SUPPORTED_VERSION_CATALOG_FILE_PATH =
-        %w(/gradle/libs.versions.toml).freeze
-
       PLUGIN_SOURCE_SET_DIRS =
         %w(src/main/java src/main/kotlin src/main/groovy src/main/resources).freeze
 
@@ -82,9 +78,13 @@ module Dependabot
 
       private
 
-      sig { params(root_dir: String).returns(T::Array[DependencyFile]) }
-      def all_buildfiles_in_build(root_dir)
-        files = [buildfile(root_dir), settings_file(root_dir), version_catalog_file(root_dir), lockfile(root_dir),
+      # Builds can include themselves or each other (e.g. `includeBuild(".")` or a child build
+      # that includes its parent with `includeBuild("..")`), so each build is only visited once.
+      sig { params(root_dir: String, visited: T::Set[String]).returns(T::Array[DependencyFile]) }
+      def all_buildfiles_in_build(root_dir, visited = Set.new)
+        return [] unless visited.add?(root_dir)
+
+        files = [buildfile(root_dir), settings_file(root_dir), *version_catalog_files(root_dir), lockfile(root_dir),
                  properties_file(root_dir)]
                 .compact
         files += wrapper_files(root_dir)
@@ -94,7 +94,7 @@ module Dependabot
         files += convention_plugin_source_files(files, root_dir)
 
         files + included_builds(root_dir)
-                .flat_map { |dir| all_buildfiles_in_build(dir) }
+                .flat_map { |dir| all_buildfiles_in_build(dir, visited) }
       end
 
       # Only fetch source trees for *nested* project directories (e.g. "build-logic/convention"
@@ -262,11 +262,28 @@ module Dependabot
         end
       end
 
-      sig { params(root_dir: String).returns(T.nilable(DependencyFile)) }
-      def version_catalog_file(root_dir)
-        return nil unless root_dir == "."
+      sig { params(root_dir: String).returns(T::Array[DependencyFile]) }
+      def version_catalog_files(root_dir)
+        # We only look for version catalogs in the root project, not in included builds.
+        return [] unless root_dir == "."
 
-        gradle_toml_file(root_dir)
+        paths = [clean_join([root_dir, "gradle", "libs.versions.toml"])]
+
+        if (settings = settings_file(root_dir))
+          parser = SettingsFileParser.new(settings_file: settings)
+          paths += parser.version_catalog_paths.filter_map { |p| catalog_path_in_repo(root_dir, p) }
+        end
+
+        paths.uniq.filter_map { |p| fetch_file_if_present(p) }
+      end
+
+      sig { params(root_dir: String, path: String).returns(T.nilable(String)) }
+      def catalog_path_in_repo(root_dir, path)
+        joined = clean_join([root_dir, path])
+        return joined unless path.start_with?("/") || clean_join([".", directory, joined]).start_with?("../")
+
+        Dependabot.logger.warn("Ignoring version catalog path outside the repository: #{path}")
+        nil
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
@@ -324,11 +341,6 @@ module Dependabot
         file = find_first(dir, SUPPORTED_BUILD_FILE_NAMES) || return
         @buildfile_name ||= File.basename(file.name)
         file
-      end
-
-      sig { params(dir: String).returns(T.nilable(DependencyFile)) }
-      def gradle_toml_file(dir)
-        find_first(dir, SUPPORTED_VERSION_CATALOG_FILE_PATH)
       end
 
       sig { params(dir: String).returns(T.nilable(DependencyFile)) }

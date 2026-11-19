@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only resolved_file and dependencies fixtures.
+
 require "json"
 require "spec_helper"
 require "dependabot/dependency"

@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -673,6 +673,155 @@ RSpec.describe Dependabot::Uv::FileUpdater::RequirementFileUpdater do
         end
 
         its(:content) { is_expected.to include "flake8 > 2.5.4, < 3.4.0\n" }
+      end
+    end
+
+    context "when the same package appears more than once with different environment markers" do
+      let(:dependency_files) { [pyproject] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          content: <<~TOML,
+            [project]
+            name = "example"
+            version = "0.0.0"
+            dependencies = [
+              #{declarations.join(",\n  ")},
+            ]
+          TOML
+          name: "pyproject.toml"
+        )
+      end
+      let(:darwin_declaration) { "\"example-alpha==1.0.0; platform_system == 'Darwin'\"" }
+      let(:other_declaration) { "\"example-alpha>=0.5.0; platform_system != 'Darwin'\"" }
+      let(:base_requirement) { { file: "pyproject.toml", groups: ["dependencies"], source: nil } }
+      let(:darwin_requirement) { base_requirement.merge(requirement: "==1.0.0") }
+      let(:other_requirement) { base_requirement.merge(requirement: ">=0.5.0") }
+      let(:updated_darwin_requirement) { darwin_requirement.merge(requirement: "==1.1.0") }
+      let(:declarations) { [darwin_declaration, other_declaration] }
+      let(:requirements_list) { [updated_darwin_requirement, other_requirement] }
+      let(:previous_requirements_list) { [darwin_requirement, other_requirement] }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "example-alpha",
+          version: "1.1.0",
+          previous_version: "1.0.0",
+          requirements: requirements_list,
+          previous_requirements: previous_requirements_list,
+          package_manager: "uv"
+        )
+      end
+
+      context "when the updated declaration comes first" do
+        it "updates only the matching declaration" do
+          expect(updated_files.count).to eq(1)
+          content = updated_files.first.content
+          expect(content).to include("\"example-alpha==1.1.0; platform_system == 'Darwin'\"")
+          expect(content).to include("\"example-alpha>=0.5.0; platform_system != 'Darwin'\"")
+        end
+      end
+
+      context "when the updated declaration comes last" do
+        let(:declarations) { [other_declaration, darwin_declaration] }
+        let(:requirements_list) { [other_requirement, updated_darwin_requirement] }
+        let(:previous_requirements_list) { [other_requirement, darwin_requirement] }
+
+        it "updates only the matching declaration" do
+          expect(updated_files.count).to eq(1)
+          content = updated_files.first.content
+          expect(content).to include("\"example-alpha==1.1.0; platform_system == 'Darwin'\"")
+          expect(content).to include("\"example-alpha>=0.5.0; platform_system != 'Darwin'\"")
+        end
+      end
+    end
+
+    context "when one declaration of the package starts with another one" do
+      let(:dependency_files) { [pyproject] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          content: <<~TOML,
+            [project]
+            name = "example"
+            version = "0.0.0"
+            dependencies = [
+              "example-alpha#{short_requirement}",
+            ]
+
+            [project.optional-dependencies]
+            extra = ["example-alpha#{long_requirement}"]
+          TOML
+          name: "pyproject.toml"
+        )
+      end
+      let(:short_requirement) { ">=2.7.0" }
+      let(:long_requirement) { ">=2.7.0,<3.0.0" }
+      let(:short) { { file: "pyproject.toml", groups: ["dependencies"], source: nil, requirement: short_requirement } }
+      let(:long) { { file: "pyproject.toml", groups: ["extra"], source: nil, requirement: long_requirement } }
+      let(:updated_short) { short.merge(requirement: ">=3.1.0") }
+      let(:updated_long) { long.merge(requirement: ">=3.1.0,<4.0.0") }
+      let(:requirements_list) { [updated_short, updated_long] }
+      let(:previous_requirements_list) { [short, long] }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "example-alpha",
+          version: "3.1.0",
+          previous_version: "2.7.0",
+          requirements: requirements_list,
+          previous_requirements: previous_requirements_list,
+          package_manager: "uv"
+        )
+      end
+
+      it "updates both declarations" do
+        expect(updated_files.count).to eq(1)
+        content = updated_files.first.content
+        expect(content).to include("\"example-alpha>=3.1.0\",")
+        expect(content).to include("[\"example-alpha>=3.1.0,<4.0.0\"]")
+      end
+
+      context "when the longer declaration comes first" do
+        let(:requirements_list) { [updated_long, updated_short] }
+        let(:previous_requirements_list) { [long, short] }
+
+        it "updates both declarations" do
+          content = updated_files.first.content
+          expect(content).to include("\"example-alpha>=3.1.0\",")
+          expect(content).to include("[\"example-alpha>=3.1.0,<4.0.0\"]")
+        end
+      end
+
+      context "when only the shorter declaration changes" do
+        let(:requirements_list) { [updated_short, long] }
+
+        it "leaves the longer declaration as it was" do
+          content = updated_files.first.content
+          expect(content).to include("\"example-alpha>=3.1.0\",")
+          expect(content).to include("[\"example-alpha>=2.7.0,<3.0.0\"]")
+        end
+      end
+
+      context "when the longer declaration has a marker" do
+        let(:long_requirement) { ">=2.7.0,!=2.9.0" }
+        let(:pyproject) do
+          Dependabot::DependencyFile.new(
+            content: <<~TOML,
+              [project]
+              name = "example"
+              version = "0.0.0"
+              dependencies = [
+                "example-alpha#{short_requirement}",
+                "example-alpha#{long_requirement}; sys_platform == 'win32'",
+              ]
+            TOML
+            name: "pyproject.toml"
+          )
+        end
+        let(:requirements_list) { [updated_short, long] }
+
+        it "leaves the longer declaration and its marker as they were" do
+          content = updated_files.first.content
+          expect(content).to include("\"example-alpha>=3.1.0\",")
+          expect(content).to include("\"example-alpha>=2.7.0,!=2.9.0; sys_platform == 'win32'\"")
+        end
       end
     end
 

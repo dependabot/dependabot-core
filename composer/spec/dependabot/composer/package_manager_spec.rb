@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only detected_version and raw_version fixtures.
+
 require "dependabot/composer/package_manager"
 require "dependabot/ecosystem"
 require "spec_helper"

@@ -405,6 +405,7 @@ public class RunWorker
     {
         var options = new JsonSerializerOptions(SerializerOptions);
         options.Converters.Insert(0, new JobCommandConverter(logger));
+        options.Converters.Insert(0, new PullRequestVersionConverter(logger));
         return options;
     }
 

@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -6,6 +6,8 @@ require "dependabot/julia"
 require_common_spec "shared_examples_for_autoloading"
 
 RSpec.describe Dependabot::Julia do
+  extend T::Sig
+
   it_behaves_like "it registers the required classes", "julia"
 
   it "has a version number" do
@@ -13,6 +15,7 @@ RSpec.describe Dependabot::Julia do
   end
 
   describe ".file_updater_class" do
+    sig { returns(T.class_of(Dependabot::Julia::FileUpdater)) }
     subject(:file_updater_class) { described_class.file_updater_class }
 
     it "returns the FileUpdater class" do

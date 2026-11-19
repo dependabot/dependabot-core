@@ -1,0 +1,18 @@
+version = 1
+revision = 1
+requires-python = ">=3.9"
+
+[[package]]
+name = "git-sources-project"
+version = "0.1.0"
+source = { editable = "." }
+
+[[package]]
+name = "tagged-package"
+version = "0.3.0"
+source = { git = "https://github.com/example/tagged.git?tag=1.2.3#aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
+
+[[package]]
+name = "requests"
+version = "2.32.3"
+source = { registry = "https://pypi.org/simple" }

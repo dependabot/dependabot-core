@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/swift/language"
@@ -6,8 +6,14 @@ require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::Swift::Language do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Dependabot::Swift::Language) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:language) { described_class.new(version) }
+  sig { returns(String) }
   let(:version) { "3.0.0" }
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#version" do
     it "returns the version" do

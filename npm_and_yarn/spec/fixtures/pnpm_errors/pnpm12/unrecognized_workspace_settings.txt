@@ -1,0 +1,7 @@
+Error: ERR_PNPM_UNRECOGNIZED_WORKSPACE_SETTINGS
+
+  × The following settings in pnpm-workspace.yaml are not recognized by this
+  │ version of pnpm: "minimumReleaseAg" (did you mean "minimumReleaseAge"?).
+  help: The project pins pnpm to a version the running pnpm satisfies, so
+        these settings cannot be meant for a different pnpm version. Remove
+        them from pnpm-workspace.yaml or fix their spelling.

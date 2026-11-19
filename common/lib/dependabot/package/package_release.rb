@@ -59,6 +59,9 @@ module Dependabot
       sig { returns(T.nilable(Time)) }
       attr_reader :released_at
 
+      sig { params(released_at: T.nilable(Time)).returns(T.nilable(Time)) }
+      attr_writer :released_at
+
       sig { returns(T::Boolean) }
       attr_reader :latest
 

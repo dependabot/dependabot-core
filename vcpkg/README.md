@@ -23,6 +23,13 @@ VCPKG support for [`dependabot-core`][core-repo].
 - Updating a port's [`version>=` constraint][version-gte].
 - Security updates for ports, driven by advisories under the `vcpkg` OSV ecosystem.
 
+### Manifest parsing
+
+Dependabot preserves fields that an update does not change, including unknown fields.
+It writes updated JSON with indentation.
+If a required object or array has the wrong JSON type, Dependabot reports the file path and field.
+Dependabot still ignores unsupported registry types and entries without the information it needs to track a dependency.
+
 ### Security updates
 
 A port's version comes from its `version>=` constraint, from the registry baseline, or from both. vcpkg installs the lowest version that satisfies every constraint, so Dependabot works out the effective version by reading `versions/baseline.json` at the commit the manifest pins. That is what gives a bare string dependency a version to test an advisory against.

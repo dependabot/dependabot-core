@@ -1,7 +1,8 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/hex/update_checker/version_resolver"
@@ -12,13 +13,21 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       dependency: dependency,
       prepared_dependency_files: prepared_files,
       original_dependency_files: original_files,
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }]
+      credentials: credentials
     )
+  end
+
+  let(:credentials) do
+    [
+      Dependabot::Credential.new(
+        {
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }
+      )
+    ]
   end
 
   let(:dependency) do
@@ -124,6 +133,15 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       end
     end
 
+    context "with a deps.update alias" do
+      let(:mixfile_fixture_name) { "deps_update_alias" }
+
+      it "resolves without invoking the project alias" do
+        expect(latest_resolvable_version).to be > Gem::Version.new("1.3.5")
+        expect(latest_resolvable_version).to be < Gem::Version.new("1.4.0")
+      end
+    end
+
     context "when the environments for another dependency diverge" do
       # In this example, updating `credo` would add its sub-dependency,
       # `poison`, to the `dev` environment, but the Mixfile explicitly specifies
@@ -150,14 +168,52 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       end
     end
 
+    context "when a source-less OAuth token exchange fails" do
+      let(:oauth_error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "Failed to exchange API key for OAuth token",
+          error_context: {}
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_raise(oauth_error)
+      end
+
+      context "with one organization credential" do
+        let(:credentials) { [organization_credential("dependabot")] }
+
+        it "does not attribute the source-less failure to that organization" do
+          expect { latest_resolvable_version }
+            .to raise_error(Dependabot::DependencyFileNotResolvable)
+        end
+      end
+
+      context "with duplicate credentials for one organization" do
+        let(:credentials) do
+          [
+            organization_credential("dependabot", token: "first-token"),
+            organization_credential("dependabot", token: "second-token")
+          ]
+        end
+
+        it "does not infer a source from duplicate credentials" do
+          expect { latest_resolvable_version }
+            .to raise_error(Dependabot::DependencyFileNotResolvable)
+        end
+      end
+    end
+
     context "without a lockfile" do
+      let(:original_files) { [mixfile] }
+      let(:prepared_files) { [sanitized_mixfile] }
+
       it "respects the resolvability of the mix.exs" do
         expect(latest_resolvable_version).to be > Gem::Version.new("1.3.5")
         expect(latest_resolvable_version).to be < Gem::Version.new("1.4.0")
       end
 
       context "with a mix.exs that has caused trouble in the past" do
-        let(:files) { [mixfile] }
         let(:mixfile_fixture_name) { "coxir" }
         let(:dependency_name) { "kcl" }
         let(:version) { nil }
@@ -169,6 +225,16 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
           expect(latest_resolvable_version).to be >= Gem::Version.new("1.1.0")
         end
       end
+    end
+
+    def organization_credential(organization, token: "token")
+      Dependabot::Credential.new(
+        {
+          "type" => "hex_organization",
+          "organization" => organization,
+          "token" => token
+        }
+      )
     end
   end
 end

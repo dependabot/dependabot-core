@@ -5,6 +5,7 @@ require "spec_helper"
 require "tmpdir"
 require "open3"
 require "fileutils"
+require "securerandom"
 
 # Specs need to be run in a container,
 # e.g., ./bin/docker-bin-dev bundler
@@ -144,6 +145,52 @@ RSpec.describe "bin/dry-run" do # rubocop:disable RSpec/DescribeClass
       expect(stdout + stderr).to include("Invalid username or password")
       expect(stdout + stderr).to include("Cloning into")
       expect(status.exitstatus).to eq(1) # Ensure the script exits with a non-zero status
+    end
+
+    context "with a local repo" do
+      # dry-run reuses tmp/<repo> relative to the working directory when caching files
+      let(:repo_name) { "dry-run-spec/#{SecureRandom.hex(4)}" }
+      let(:repo_path) { File.join("tmp", repo_name) }
+
+      before do
+        FileUtils.mkdir_p(repo_path)
+        File.write(File.join(repo_path, "Gemfile"), gemfile)
+        system(
+          "git init -q && git add Gemfile && git -c user.name=t -c user.email=t@example.com commit -qm init",
+          chdir: repo_path,
+          exception: true
+        )
+      end
+
+      after { FileUtils.rm_rf(File.dirname(repo_path)) }
+
+      def run_local
+        Open3.capture3("ruby", script_path, "--cache", "files", "bundler", repo_name)
+      end
+
+      context "when a handled error occurs" do
+        let(:gemfile) { "source \"https://rubygems.org\"\nraise \"boom\"\n" }
+
+        it "summarises the error and exits non-zero" do
+          stdout, _, status = run_local
+
+          expect(stdout).to include("Dry-run completed with 1 handled error(s):")
+          expect(stdout).to include("  - parsing dependencies: dependency_file_not_evaluatable")
+          expect(stdout).not_to include("Dry-run completed successfully.")
+          expect(status.exitstatus).to eq(1)
+        end
+      end
+
+      context "when no error occurs" do
+        let(:gemfile) { "source \"https://rubygems.org\"\n" }
+
+        it "reports success and exits zero" do
+          stdout, _, status = run_local
+
+          expect(stdout).to include("Dry-run completed successfully.")
+          expect(status.exitstatus).to eq(0)
+        end
+      end
     end
   end
 end

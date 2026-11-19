@@ -20,6 +20,8 @@ At the top of the test, there will be a [Dependabot CLI](https://github.com/depe
 dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
 ```
 
+The test harness automatically adds `--skip-image-verification` because the silent updater image is built locally and has no published signature. Add this flag when running the command manually with a locally built image.
+
 This will be followed by commands which assert expectations:
 
 ```bash
@@ -86,4 +88,3 @@ Additionally, you can add a `!` before the command, like `! pr-created` to asser
 You will need Docker and the Dependabot CLI installed and on your path.
 
 To execute all the tests, run `script/updater-e2e`. For a specific test, specify a part of the name as an argument, like `script/updater-e2e group`.
-

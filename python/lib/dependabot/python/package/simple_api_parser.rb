@@ -1,19 +1,16 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
-require "json"
-require "uri"
 require "sorbet-runtime"
 require "dependabot/errors"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/package/distribution"
 
 module Dependabot
   module Python
     module Package
       class SimpleApiParser
         extend T::Sig
-
-        ReleaseDetail = T.type_alias { T::Hash[String, T.nilable(T.any(String, T::Boolean))] }
 
         sig { params(dependency: Dependabot::Dependency, project_url: String).void }
         def initialize(dependency:, project_url:)
@@ -23,31 +20,32 @@ module Dependabot
 
         sig do
           params(json_body: String)
-            .returns(T::Hash[String, T::Array[ReleaseDetail]])
+            .returns(T::Hash[String, T::Array[Distribution]])
         end
         def parse(json_body)
-          data = JSON.parse(json_body)
-          validate_api_version!(data.dig("meta", "api-version").to_s)
+          context = Distribution.context("Simple API JSON", project_url)
+          data = Distribution.object(Distribution.parse_json(json_body, context), context)
+          meta = data["meta"]
+          metadata = meta.nil? ? {} : Distribution.object(meta, "#{context}.meta")
+          validate_api_version!(metadata.fetch("api-version", "1.0"), context)
 
-          data.fetch("files", []).each_with_object({}) do |file, releases|
-            filename = file["filename"]
+          releases = T.let({}, T::Hash[String, T::Array[Distribution]])
+          Distribution.array(data.fetch("files", []), "#{context}.files").each_with_index do |entry, index|
+            location = "#{context}.files[#{index}]"
+            file = Distribution.object(entry, location)
+            filename = Distribution.optional_string(file["filename"], "#{location}.filename")
             next unless filename&.match?(name_regex)
 
             version = version_from_filename(filename)
-            next unless dependency.version_class.correct?(version)
+            next unless version && dependency.version_class.correct?(version)
 
-            yanked = file["yanked"] || false
-            details = {
-              "version" => version,
-              "requires_python" => file["requires-python"],
-              "yanked" => yanked != false,
-              "yanked_reason" => yanked.is_a?(String) ? yanked : nil,
-              "upload_time" => file["upload-time"],
-              "url" => resolve_url(file["url"])
-            }
+            distribution = Distribution.from_simple(
+              file, version_string: version, context: location, project_url: project_url
+            )
             releases[version] ||= []
-            releases[version] << details
+            T.must(releases[version]) << distribution
           end
+          releases
         end
 
         private
@@ -58,18 +56,11 @@ module Dependabot
         sig { returns(String) }
         attr_reader :project_url
 
-        sig { params(url: T.nilable(String)).returns(T.nilable(String)) }
-        def resolve_url(url)
-          return unless url
-
-          resolved_url = URI.join(project_url, url)
-          resolved_url.user = nil
-          resolved_url.password = nil
-          resolved_url.to_s
-        end
-
-        sig { params(api_version: String).void }
-        def validate_api_version!(api_version)
+        sig { params(api_version: Object, context: String).void }
+        def validate_api_version!(api_version, context)
+          unless api_version.is_a?(String) && api_version.match?(/\A[0-9]+\.[0-9]+\z/)
+            Distribution.invalid("#{context}.meta.api-version", "must be a Major.Minor string")
+          end
           return unless api_version.split(".").first.to_i > 1
 
           raise Dependabot::DependencyFileNotResolvable, "Unsupported PEP 691 API version: #{api_version}"

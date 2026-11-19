@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve constants through the dynamically described class. https://srb.help/5001
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -81,6 +82,18 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
     subject { checker.latest_version }
 
     it { is_expected.to eq(version_class.new("23.6-jre")) }
+
+    context "when Maven Central is rate limited" do
+      before do
+        stub_request(:get, maven_central_metadata_url)
+          .to_return(status: 429, body: "Too Many Requests")
+      end
+
+      it "raises a RegistryError instead of reporting no versions" do
+        expect { checker.latest_version }
+          .to raise_error(Dependabot::RegistryError) { |e| expect(e.status).to eq(429) }
+      end
+    end
 
     context "when Maven Central doesn't return a release tag" do
       let(:maven_central_releases) do
@@ -672,6 +685,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
     it "delegates to the RequirementsUpdater" do
       expect(described_class::RequirementsUpdater)
         .to receive(:new)
+        .at_least(:once)
         .with(
           requirements: dependency_requirements,
           latest_version: "23.6-jre",
@@ -717,6 +731,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
       it "delegates to the RequirementsUpdater" do
         expect(described_class::RequirementsUpdater)
           .to receive(:new)
+          .at_least(:once)
           .with(
             requirements: dependency_requirements,
             latest_version: "20.0",
@@ -817,10 +832,25 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
               version: version_class.new("23.6-jre"),
               source_url: "https://repo.maven.apache.org/maven2"
             },
-            update_cooldown: nil
+            update_cooldown: nil,
+            security_update: false
           )
           .and_call_original
         expect(latest_version_resolvable_with_full_unlock).to be(true)
+      end
+
+      context "with the transitive experiment on" do
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?).and_return(false)
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:maven_transitive_dependencies).and_return(true)
+          allow(Dependabot::Maven::FileParser::MavenDependencyParser).to receive(:build_dependency_set)
+        end
+
+        it "re-parses the POMs without running the dependency tree scan" do
+          expect(latest_version_resolvable_with_full_unlock).to be(true)
+          expect(Dependabot::Maven::FileParser::MavenDependencyParser).not_to have_received(:build_dependency_set)
+        end
       end
     end
   end
@@ -889,7 +919,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
                 version: version_class.new("23.6-jre"),
                 source_url: "https://repo.maven.apache.org/maven2"
               },
-              update_cooldown: nil
+              update_cooldown: nil,
+              security_update: false
             )
             .and_call_original
           expect(checker_updated_dependencies_after_full_unlock).to eq(
@@ -980,7 +1011,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
                 version: version_class.new("23.6-jre"),
                 source_url: "https://repo.maven.apache.org/maven2"
               },
-              update_cooldown: cooldown_options
+              update_cooldown: cooldown_options,
+              security_update: false
             )
             .and_call_original
           expect(checker_updated_dependencies_after_full_unlock).to eq(
@@ -1061,6 +1093,237 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
       let(:dependency_version) { "RELEASE&802" }
 
       it { is_expected.to be(false) }
+    end
+  end
+
+  context "with a transitive override" do
+    let(:override_requirement) do
+      {
+        file: "pom.xml",
+        requirement: "23.3-jre",
+        groups: [],
+        metadata: { packaging_type: "jar", transitive_override: true },
+        source: nil
+      }
+    end
+    let(:dependency_requirements) { [override_requirement] }
+
+    context "when the dependency isn't vulnerable" do
+      it "leaves the override alone" do
+        expect(checker.up_to_date?).to be(true)
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+      end
+    end
+
+    context "when the dependency is vulnerable" do
+      let(:dependency_version) { "18.0" }
+      let(:override_requirement) { super().merge(requirement: "18.0") }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "maven",
+            safe_versions: ["> 19.0"]
+          )
+        ]
+      end
+
+      before do
+        stub_request(:head, %r{\Ahttps://repo\.maven\.apache\.org/maven2/com/google/guava/guava/.*\.jar\z})
+          .to_return(status: 200)
+      end
+
+      it "raises the override to the lowest fix" do
+        expect(checker.up_to_date?).to be(false)
+        expect(checker.updated_requirements.map(&:requirement)).to eq(["20.0"])
+      end
+    end
+
+    context "when another module declares the dependency" do
+      let(:dependency_files) do
+        %w(module-a/pom.xml module-b/pom.xml module-c/pom.xml).map do |name|
+          Dependabot::DependencyFile.new(name: name, content: pom_body)
+        end
+      end
+      let(:dependency_requirements) do
+        [
+          {
+            file: "module-a/pom.xml",
+            requirement: "23.3-jre",
+            groups: [],
+            metadata: { packaging_type: "jar" },
+            source: nil
+          },
+          override_requirement.merge(file: "module-b/pom.xml"),
+          {
+            file: nil,
+            requirement: "23.3-jre",
+            groups: [],
+            metadata: { packaging_type: "jar", pom_file: "module-c/pom.xml" },
+            source: nil
+          }
+        ]
+      end
+
+      it "updates the declaration only" do
+        expect(checker.up_to_date?).to be(false)
+        expect(checker.updated_requirements.map { |req| [req.file, req.requirement] })
+          .to eq([["module-a/pom.xml", "23.6-jre"], ["module-b/pom.xml", "23.3-jre"], [nil, "23.3-jre"]])
+      end
+    end
+
+    context "when a declaration and an override share a version" do
+      let(:declaration) do
+        { file: "pom.xml", requirement: "23.3-jre", groups: [], metadata: { packaging_type: "jar" }, source: nil }
+      end
+      let(:dependency_requirements) { [declaration, override_requirement] }
+
+      context "with the same literal version in one file" do
+        it "leaves both alone" do
+          expect(checker.up_to_date?).to be(true)
+        end
+      end
+
+      context "with the same literal version in one file but a different scope" do
+        let(:declaration) { super().merge(groups: ["test"]) }
+
+        it "updates the declaration only" do
+          expect(checker.up_to_date?).to be(false)
+          expect(checker.updated_requirements.map(&:requirement)).to eq(["23.6-jre", "23.3-jre"])
+        end
+      end
+
+      context "with the same literal version in one file but a classified override" do
+        let(:override_requirement) do
+          super().merge(metadata: { packaging_type: "jar", classifier: "linux", transitive_override: true })
+        end
+
+        it "updates the declaration only, since its rewrite skips the classified entry" do
+          expect(checker.up_to_date?).to be(false)
+          expect(checker.updated_requirements.map(&:requirement)).to eq(["23.6-jre", "23.3-jre"])
+        end
+
+        context "when the override comes first" do
+          let(:dependency_requirements) { [override_requirement, declaration] }
+
+          before do
+            stub_request(:head, %r{\Ahttps://repo\.maven\.apache\.org/maven2/com/google/guava/guava/.*\.jar\z})
+              .to_return(status: 200)
+          end
+
+          it "still updates the declaration only" do
+            expect(checker.up_to_date?).to be(false)
+            expect(checker.updated_requirements.map(&:requirement)).to eq(["23.3-jre", "23.6-jre"])
+          end
+        end
+
+        context "when the declaration has the same classifier" do
+          let(:declaration) { super().merge(metadata: { packaging_type: "jar", classifier: "linux" }) }
+
+          it "leaves both alone, since the rewrite would hit the override" do
+            expect(checker.up_to_date?).to be(true)
+          end
+        end
+
+        context "when a classified plugin copy is listed after a plain declaration" do
+          let(:dependency_requirements) do
+            [declaration, override_requirement,
+             declaration.merge(groups: ["plugin"], metadata: { packaging_type: "jar", classifier: "linux" })]
+          end
+
+          it "holds the plugin copy whose rewrite would hit the override" do
+            expect(checker.updated_requirements.map(&:requirement)).to eq(["23.6-jre", "23.3-jre", "23.3-jre"])
+          end
+        end
+      end
+
+      context "when the dependency tree scan resolved a classified artifact for an unclassified override" do
+        let(:dependency_files) do
+          %w(pom.xml module-a/pom.xml).map { |name| Dependabot::DependencyFile.new(name: name, content: pom_body) }
+        end
+        let(:dependency_requirements) do
+          scanned = { file: nil, requirement: "23.3-jre", groups: [], source: nil,
+                      metadata: { classifier: "linux", pom_file: "pom.xml" } }
+          plugin_copy = declaration.merge(groups: ["plugin"])
+          Dependabot::Maven::FileParser::MavenDependencyParser.merge_requirements(
+            [declaration.merge(file: "module-a/pom.xml"), override_requirement, plugin_copy, scanned]
+              .map { |req| Dependabot::DependencyRequirement.create(req) }
+          ).map(&:to_h)
+        end
+
+        it "still holds the plugin copy whose rewrite would hit the override" do
+          expect(checker.updated_requirements.map { |req| [req.file, req.groups, req.requirement] }).to eq(
+            [["module-a/pom.xml", [], "23.6-jre"], ["pom.xml", [], "23.3-jre"], ["pom.xml", ["plugin"], "23.3-jre"]]
+          )
+        end
+      end
+
+      context "with the same version property" do
+        let(:dependency_files) do
+          %w(pom.xml module-b/pom.xml).map { |name| Dependabot::DependencyFile.new(name: name, content: pom_body) }
+        end
+        let(:property_metadata) do
+          { packaging_type: "jar", property_name: "guava.version", property_source: "pom.xml" }
+        end
+        let(:declaration) { super().merge(file: "module-b/pom.xml", metadata: property_metadata) }
+        let(:override_requirement) do
+          super().merge(metadata: property_metadata.merge(transitive_override: true))
+        end
+
+        it "updates the declaration, and the override follows the property" do
+          expect(checker.up_to_date?).to be(false)
+          expect(checker.updated_requirements.map(&:requirement)).to eq(["23.6-jre", "23.6-jre"])
+        end
+      end
+
+      context "with a property only overrides use" do
+        let(:dependency_files) do
+          [
+            pom,
+            Dependabot::DependencyFile.new(name: "module-b/pom.xml", content: <<~XML)
+              <project>
+                <modelVersion>4.0.0</modelVersion>
+                <groupId>com.dependabot</groupId>
+                <artifactId>module-b</artifactId>
+                <version>1.0.0</version>
+                <properties>
+                  <family.version>23.3-jre</family.version>
+                </properties>
+                <dependencyManagement>
+                  <dependencies>
+                    <dependency>
+                      <groupId>com.google.guava</groupId>
+                      <artifactId>guava</artifactId>
+                      <version>${family.version}</version>
+                    </dependency>
+                    <dependency>
+                      <groupId>com.google.guava</groupId>
+                      <artifactId>guava-testlib</artifactId>
+                      <version>${family.version}</version>
+                    </dependency>
+                  </dependencies>
+                </dependencyManagement>
+              </project>
+            XML
+          ]
+        end
+        let(:override_requirement) do
+          super().merge(
+            file: "module-b/pom.xml",
+            metadata: {
+              packaging_type: "jar",
+              property_name: "family.version",
+              property_source: "module-b/pom.xml",
+              transitive_override: true
+            }
+          )
+        end
+
+        it "updates the declaration without raising the property" do
+          expect(checker.latest_resolvable_version).to eq(version_class.new("23.6-jre"))
+          expect(checker.updated_requirements.map(&:requirement)).to eq(["23.6-jre", "23.3-jre"])
+        end
+      end
     end
   end
 

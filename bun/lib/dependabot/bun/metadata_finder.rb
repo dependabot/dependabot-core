@@ -178,21 +178,25 @@ module Dependabot
       def latest_version_listing
         return @latest_version_listing unless @latest_version_listing.nil?
 
+        @latest_version_listing = T.let({}, T.nilable(T::Hash[String, T.untyped]))
+
         response = Dependabot::RegistryClient.get(
           url: "#{dependency_url}/latest",
           headers: registry_auth_headers
         )
-        return @latest_version_listing = {} if response.status >= 500
+        return T.must(@latest_version_listing) if response.status >= 500
 
         begin
-          @latest_version_listing = JSON.parse(response.body)
+          # A registry can answer a missing package with a bare JSON string such as "Not Found"
+          parsed = JSON.parse(response.body)
+          @latest_version_listing = parsed if parsed.is_a?(Hash)
         rescue JSON::ParserError
           raise unless non_standard_registry?
-
-          @latest_version_listing = {}
         end
+
+        T.must(@latest_version_listing)
       rescue JSON::ParserError, Excon::Error::Timeout
-        @latest_version_listing = T.let({}, T.nilable(T::Hash[String, T.untyped]))
+        T.must(@latest_version_listing)
       end
 
       sig { returns(T::Array[[String, T::Hash[String, T.untyped]]]) }
@@ -209,18 +213,21 @@ module Dependabot
       def npm_listing
         return @npm_listing unless @npm_listing.nil?
 
+        @npm_listing = T.let({}, T.nilable(T::Hash[String, T.untyped]))
+
         response = Dependabot::RegistryClient.get(url: dependency_url, headers: registry_auth_headers)
-        return @npm_listing = {} if response.status >= 500
+        return T.must(@npm_listing) if response.status >= 500
 
         begin
-          @npm_listing = JSON.parse(response.body)
+          parsed = JSON.parse(response.body)
+          @npm_listing = parsed if parsed.is_a?(Hash)
         rescue JSON::ParserError
           raise unless non_standard_registry?
-
-          @npm_listing = {}
         end
+
+        T.must(@npm_listing)
       rescue Excon::Error::Timeout
-        @npm_listing = T.let({}, T.nilable(T::Hash[String, T.untyped]))
+        T.must(@npm_listing)
       end
 
       sig { returns(String) }

@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve child-only dependency_files or fixtures and matchers in generated malformed-input examples.
+
 require "spec_helper"
 
 require "dependabot/dependency_file"
@@ -107,6 +109,41 @@ RSpec.describe Dependabot::Vcpkg::ManifestBaseline do
 
     it "does not raise" do
       expect(baseline.ref).to be_nil
+    end
+  end
+
+  [nil, [], false, { "builtin-baseline" => [] }].each do |value|
+    context "with an unusable manifest #{value.inspect}" do
+      let(:dependency_files) { [manifest(JSON.dump(value))] }
+
+      it "preserves the tolerant baseline lookup" do
+        expect(baseline.ref).to be_nil
+        expect(baseline.location).to be_nil
+      end
+    end
+  end
+
+  context "with malformed fields unrelated to the baseline" do
+    let(:dependency_files) do
+      [
+        manifest(JSON.dump("dependencies" => false)),
+        configuration(
+          JSON.dump(
+            "default-registry" => {
+              "kind" => "git",
+              "repository" => "https://github.com/microsoft/vcpkg/",
+              "baseline" => sha,
+              "reference" => []
+            },
+            "registries" => false
+          )
+        )
+      ]
+    end
+
+    it "reads the ref and location without validating unused fields" do
+      expect(baseline.ref).to eq(sha)
+      expect(baseline.location).to eq(["vcpkg-configuration.json", %w(default-registry baseline)])
     end
   end
 end

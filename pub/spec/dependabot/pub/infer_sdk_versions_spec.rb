@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the project fixture defined only in child contexts.
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
@@ -34,8 +36,8 @@ RSpec.describe "Helpers" do
     let(:project) { "requires_latest_beta" }
 
     it "Finds a matching beta" do
-      expect(inferred_result["flutter"]).to eq "3.25.0-0.1.pre"
-      expect(inferred_result["channel"]).to eq "beta"
+      expect(inferred_result.flutter).to eq "3.25.0-0.1.pre"
+      expect(inferred_result.channel).to eq "beta"
     end
   end
 
@@ -43,8 +45,8 @@ RSpec.describe "Helpers" do
     let(:project) { "requires_old_beta" }
 
     it "Finds a matching beta" do
-      expect(inferred_result["flutter"]).to eq "2.13.0-0.4.pre"
-      expect(inferred_result["channel"]).to eq "beta"
+      expect(inferred_result.flutter).to eq "2.13.0-0.4.pre"
+      expect(inferred_result.channel).to eq "beta"
     end
   end
 
@@ -52,8 +54,8 @@ RSpec.describe "Helpers" do
     let(:project) { "allows_latest_stable" }
 
     it "Finds a matching stable" do
-      expect(inferred_result["flutter"]).to eq "3.24.1"
-      expect(inferred_result["channel"]).to eq "stable"
+      expect(inferred_result.flutter).to eq "3.24.1"
+      expect(inferred_result.channel).to eq "stable"
     end
   end
 
@@ -61,8 +63,8 @@ RSpec.describe "Helpers" do
     let(:project) { "requires_dart_2_15" }
 
     it "Finds a matching beta" do
-      expect(inferred_result["dart"]).to eq "2.15.1"
-      expect(inferred_result["channel"]).to eq "stable"
+      expect(inferred_result.dart).to eq "2.15.1"
+      expect(inferred_result.channel).to eq "stable"
     end
   end
 end

@@ -1,0 +1,18 @@
+? Verifying lockfile against supply-chain policies (3 entries)...
+✗ Lockfile failed supply-chain policy check (3 entries in 70ms)
+Error: ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION
+
+  × installing dependencies
+  ╰─▶ 2 lockfile entries failed verification:
+        cooldown-test-child@2.0.0 was published at 2026-10-26T01:32:35.582Z,
+      within the minimumReleaseAge cutoff (2026-10-22T01:32:40.804Z)
+        legacy-young@1.0.0 was published at 2026-10-27T01:32:35.582Z, within
+      the minimumReleaseAge cutoff (2026-10-22T01:32:40.804Z)
+  help: The lockfile contains entries that the active policies reject. This
+        can mean the lockfile is stale, or that someone committed a lockfile
+        that bypassed the policy locally — inspect recent changes to pnpm-
+        lock.yaml before trusting it. If the changes look expected, run "pnpm
+        clean --lockfile" and then "pnpm install" to rebuild from a fresh
+        resolution. If the fresh resolution still fails and you trust the
+        affected packages, relax the policy that flagged them.
+

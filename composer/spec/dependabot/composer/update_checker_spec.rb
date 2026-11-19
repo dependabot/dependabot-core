@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -234,7 +234,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           Dependabot::SecurityAdvisory.new(
             dependency_name: dependency_name,
             package_manager: "composer",
-            vulnerable_versions: ["<= 1.22.0"]
+            vulnerable_versions: [Dependabot::Composer::Requirement.new("<= 1.22.0")]
           )
         ]
       end
@@ -821,7 +821,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           Dependabot::SecurityAdvisory.new(
             dependency_name: dependency_name,
             package_manager: "composer",
-            vulnerable_versions: ["<= 1.15.0"]
+            vulnerable_versions: [Dependabot::Composer::Requirement.new("<= 1.15.0")]
           )
         ]
       end
@@ -881,7 +881,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     end
 
     it "delegates to the RequirementsUpdater" do
-      expect(described_class::RequirementsUpdater)
+      expect(Dependabot::Composer::UpdateChecker::RequirementsUpdater)
         .to receive(:new)
         .with(
           requirements: dependency_requirements,
@@ -906,7 +906,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           Dependabot::SecurityAdvisory.new(
             dependency_name: dependency_name,
             package_manager: "composer",
-            vulnerable_versions: ["<= 1.15.0"]
+            vulnerable_versions: [Dependabot::Composer::Requirement.new("<= 1.15.0")]
           )
         ]
       end
@@ -918,7 +918,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
 
       it "delegates to the RequirementsUpdater" do
-        expect(described_class::RequirementsUpdater)
+        expect(Dependabot::Composer::UpdateChecker::RequirementsUpdater)
           .to receive(:new)
           .with(
             requirements: dependency_requirements,

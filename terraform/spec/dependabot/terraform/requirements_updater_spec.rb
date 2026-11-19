@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot rewrite its blocks inside class-scope generated examples.
+
 require "spec_helper"
 require "dependabot/terraform/version"
 require "dependabot/terraform/requirements_updater"

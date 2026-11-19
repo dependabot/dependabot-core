@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -6,6 +6,8 @@ require "dependabot/deno/helpers"
 require "dependabot/shared_helpers"
 
 RSpec.describe Dependabot::Deno::Helpers do
+  extend T::Sig
+
   describe ".parse_json_or_jsonc" do
     it "returns an empty hash for nil content" do
       expect(described_class.parse_json_or_jsonc(nil)).to eq({})
@@ -52,6 +54,7 @@ RSpec.describe Dependabot::Deno::Helpers do
   end
 
   describe ".run_deno_command" do
+    sig { returns(String) }
     let(:dir) { "/tmp/some-dir" }
 
     it "delegates to SharedHelpers.run_shell_command with scoped DENO_DIR" do

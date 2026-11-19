@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve child-context-only version fixtures used by the parent subject.
+
 require "spec_helper"
 require "dependabot/npm_and_yarn/requirement"
 require "dependabot/npm_and_yarn/version"

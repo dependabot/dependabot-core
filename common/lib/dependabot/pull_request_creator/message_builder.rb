@@ -341,7 +341,9 @@ module Dependabot
         subject = pr_name.gsub("⬆️", ":arrow_up:").gsub("🔒", ":lock:")
         return subject unless subject.length > 72
 
-        subject = subject.gsub(/ from [^\s]*? to [^\s]*/, "")
+        # Requirements can contain spaces ("^0.20, ^0.21"), so match up to the
+        # suffixes solo_pr_name adds rather than to the next space
+        subject = subject.sub(%r{ from .+? to .+?(?= \(via audit fix\)| in /|\z)}, "")
         return subject unless subject.length > 72
 
         T.must(subject.split(" in ").first)
@@ -713,6 +715,9 @@ module Dependabot
         else
           dependency.display_name
         end
+      rescue StandardError => e
+        suppress_error("dependency link for #{dependency.name}", e)
+        dependency.display_name
       end
 
       sig { params(dependency: Dependabot::Dependency).returns(String) }
@@ -744,6 +749,9 @@ module Dependabot
         msg += "\n- [Upgrade guide](#{upgrade_url(dep)})" if upgrade_url(dep)
         msg += "\n- [Commits](#{commits_url(dep)})" if commits_url(dep)
         msg
+      rescue StandardError => e
+        suppress_error("metadata links for #{dep.name}", e)
+        ""
       end
 
       sig { params(rows: T::Array[T::Array[String]]).returns(String) }

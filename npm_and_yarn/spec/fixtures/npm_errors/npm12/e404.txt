@@ -1,0 +1,8 @@
+npm error code E404
+npm error 404 Not Found - GET https://registry.npmjs.org/this-pkg-does-not-exist-xyz-123 - Not found
+npm error 404
+npm error 404  The requested resource 'this-pkg-does-not-exist-xyz-123@^1.0.0' could not be found or you do not have permission to access it.
+npm error 404
+npm error 404 Note that you can also install from a
+npm error 404 tarball, folder, http url, or git url.
+npm error A complete log of this run can be found in: /home/dependabot/.npm/_logs/2026-10-14T20_24_36_450Z-debug-0.log

@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -64,6 +64,19 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
     end
 
     its(:length) { is_expected.to eq(1) }
+
+    context "when no dependency file has a changed requirement" do
+      let(:files) { [Dependabot::DependencyFile.new(content: dockerfile_body, name: "docker-compose.override.yml")] }
+
+      it "raises with error report context attached" do
+        expect { updated_files }.to raise_error(RuntimeError, "No files changed!") do |error|
+          expect(Dependabot::ErrorReportContext.build(error: error)).to eq(
+            "dependency-names" => ["ubuntu"],
+            "dependency-files" => ["docker-compose.override.yml"]
+          )
+        end
+      end
+    end
 
     describe "the updated docker-compose.yml" do
       subject(:updated_dockerfile) do

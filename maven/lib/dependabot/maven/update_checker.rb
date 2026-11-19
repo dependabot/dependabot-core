@@ -11,6 +11,7 @@ module Dependabot
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/version_finder"
       require_relative "update_checker/property_updater"
+      require_relative "update_checker/transitive_overrides"
 
       VersionDetails = T.type_alias do
         {
@@ -57,6 +58,16 @@ module Dependabot
         @all_property_based_dependencies = T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))
       end
 
+      # Transitive overrides hold a version on purpose (often a security fix), so only a
+      # vulnerable one is updated. A dependency set only by overrides is "up to date" otherwise,
+      # which keeps version, grouped and refresh jobs away from it.
+      sig { override.returns(T::Boolean) }
+      def up_to_date?
+        return true if no_updatable_declarations? && !vulnerable?
+
+        super
+      end
+
       sig { override.returns(T.nilable(Dependabot::Version)) }
       def latest_version
         version = latest_version_details&.fetch(:version)
@@ -70,12 +81,14 @@ module Dependabot
         # Maven's version resolution algorithm is very simple: it just uses
         # the version defined "closest", with the first declaration winning
         # if two declarations are equally close. As a result, we can just
-        # return that latest version unless dealing with a property dep.
+        # return the latest version with writable requirements unless dealing
+        # with a property dep.
         # https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#Transitive_Dependencies
         return nil if version_comes_from_multi_dependency_property?
-        return nil if version_comes_from_project_parent_version?
+        return nil if version_comes_from_parent_version?
 
-        latest_version
+        version = latest_version
+        version if writable_requirements?(version)
       end
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
@@ -88,7 +101,10 @@ module Dependabot
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
       def lowest_resolvable_security_fix_version
-        lowest_security_fix_version
+        return nil if version_comes_from_parent_version?
+
+        version = lowest_security_fix_version
+        version if writable_requirements?(version)
       end
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
@@ -105,16 +121,7 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        property_names =
-          declarations_using_a_property
-          .filter_map { |req| req.metadata_string("property_name") }
-
-        RequirementsUpdater.new(
-          requirements: dependency.requirements,
-          latest_version: preferred_resolvable_version&.to_s,
-          source_url: preferred_version_details&.fetch(:source_url),
-          properties_to_update: property_names
-        ).updated_requirements
+        updated_requirements_for(preferred_resolvable_version)
       end
 
       sig { override.returns(T::Boolean) }
@@ -136,9 +143,75 @@ module Dependabot
 
       private
 
+      sig { params(version: T.nilable(Dependabot::Version)).returns(T::Boolean) }
+      def writable_requirements?(version)
+        return false unless version
+        return false unless requirements_unlocked_or_can_be?
+
+        updated = updated_requirements_for(version)
+        return true if updated.map(&:requirement) != dependency.requirements.map(&:requirement)
+
+        Dependabot.logger.info(
+          "Cannot update #{dependency.name} to #{version}: no writable requirement changes " \
+          "(requirements may be inherited or ranges)"
+        )
+        false
+      end
+
+      sig do
+        params(version: T.nilable(T.any(String, Gem::Version))).returns(T::Array[Dependabot::DependencyRequirement])
+      end
+      def updated_requirements_for(version)
+        property_names =
+          declarations_using_a_property
+          .filter_map { |req| req.metadata_string("property_name") }
+
+        updated = RequirementsUpdater.new(
+          requirements: dependency.requirements,
+          latest_version: version&.to_s,
+          source_url: preferred_version_details&.fetch(:source_url),
+          properties_to_update: property_names
+        ).updated_requirements
+        return updated if vulnerable? || dependency.requirements.none? { |req| transitive_override?(req) }
+
+        # Outside a security update only declarations change, plus overrides sharing a property being
+        # raised (they move with it anyway, and must change so their version suffix is normalized).
+        # Other overrides keep their version, and scanned requirements aren't pinned underneath them.
+        dependency.requirements.zip(updated).map do |original, updated_req|
+          updatable_declaration?(original) || follows_raised_property?(original) ? T.must(updated_req) : original
+        end
+      end
+
+      sig { params(requirement: Dependabot::DependencyRequirement).returns(T::Boolean) }
+      def follows_raised_property?(requirement)
+        transitive_override?(requirement) && declarations_using_a_property.include?(requirement)
+      end
+
+      sig { returns(T::Boolean) }
+      def no_updatable_declarations?
+        declared = dependency.requirements.select(&:file)
+        declared.any? && declared.none? { |req| updatable_declaration?(req) }
+      end
+
+      sig { params(requirement: Dependabot::DependencyRequirement).returns(T::Boolean) }
+      def updatable_declaration?(requirement)
+        declared_requirement?(requirement) &&
+          !TransitiveOverrides.rewrites_an_override?(requirement, dependency.requirements)
+      end
+
+      sig { params(requirement: Dependabot::DependencyRequirement).returns(T::Boolean) }
+      def transitive_override?(requirement)
+        TransitiveOverrides.override?(requirement)
+      end
+
+      sig { params(requirement: Dependabot::DependencyRequirement).returns(T::Boolean) }
+      def declared_requirement?(requirement)
+        !requirement.file.nil? && !transitive_override?(requirement)
+      end
+
       sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock?
-        return false if version_comes_from_project_parent_version?
+        return false if version_comes_from_parent_version?
         return false unless version_comes_from_multi_dependency_property?
 
         property_updater.update_possible?
@@ -203,7 +276,8 @@ module Dependabot
             target_version_details: latest_version_details,
             credentials: credentials,
             ignored_versions: ignored_versions,
-            update_cooldown: update_cooldown
+            update_cooldown: update_cooldown,
+            security_update: vulnerable?
           )
       end
 
@@ -235,8 +309,9 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def declarations_using_a_property
         @declarations_using_a_property ||=
-          dependency.requirements
-                    .select { |req| req.metadata_string("property_name") }
+          TransitiveOverrides.raisable_property_requirements(dependency.requirements, security_update: vulnerable?) do
+            all_property_based_dependencies
+          end
       end
 
       sig { returns(T::Array[Dependabot::Dependency]) }
@@ -244,16 +319,17 @@ module Dependabot
         @all_property_based_dependencies ||=
           Maven::FileParser.new(
             dependency_files: dependency_files,
-            source: nil
+            source: nil,
+            options: { skip_dependency_tree: true }
           ).parse.select do |dep|
             dep.requirements.any? { |req| req.metadata_string("property_name") }
           end
       end
 
       sig { returns(T::Boolean) }
-      def version_comes_from_project_parent_version?
+      def version_comes_from_parent_version?
         declarations_using_a_property.any? do |requirement|
-          requirement.metadata_string("property_name") == "project.parent.version"
+          requirement.metadata_string("property_name")&.sub(/\A(?:pom|project)\./, "") == "parent.version"
         end
       end
     end

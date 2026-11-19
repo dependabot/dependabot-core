@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only dependency_files and package_manager fixtures.
+
 require "spec_helper"
 require "dependabot/npm_and_yarn/dependency_grapher"
 require "dependabot/npm_and_yarn/dependency_grapher/lockfile_generator"
@@ -33,7 +35,10 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
       let(:dependency_files) { project_dependency_files("grapher/npm_no_lockfile") }
 
       it "attempts to generate a package-lock.json" do
-        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command).and_return("")
+        allow(Dependabot::NpmAndYarn::Helpers).to receive_messages(
+          npm_version: Dependabot::NpmAndYarn::Version.new("11.17.0"),
+          run_npm_command: ""
+        )
 
         allow(File).to receive(:exist?).and_call_original
         allow(File).to receive(:exist?).with("package-lock.json").and_return(true)
@@ -47,6 +52,28 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
             "install --package-lock-only --ignore-scripts --force",
             fingerprint: "install --package-lock-only --ignore-scripts --force"
           )
+      end
+
+      context "when running on npm 12" do
+        it "includes --allow-git=all and --allow-remote=all flags" do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive_messages(
+            npm_version: Dependabot::NpmAndYarn::Version.new("12.2.0"),
+            run_npm_command: ""
+          )
+
+          allow(File).to receive(:exist?).and_call_original
+          allow(File).to receive(:exist?).with("package-lock.json").and_return(true)
+          allow(File).to receive(:read).and_call_original
+          allow(File).to receive(:read).with("package-lock.json").and_return("{}")
+
+          generator.generate
+
+          expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_npm_command)
+            .with(
+              "install --package-lock-only --ignore-scripts --force --allow-git=all --allow-remote=all",
+              fingerprint: "install --package-lock-only --ignore-scripts --force --allow-git=all --allow-remote=all"
+            )
+        end
       end
 
       context "when lockfile generation succeeds" do
@@ -209,6 +236,20 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
       end
     end
 
+    context "with ERESOLVE error from npm 12" do
+      it "raises DependencyFileNotResolvable with a user-friendly message" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command)
+          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                       message: fixture("npm_errors", "npm12", "eresolve.txt"),
+                       error_context: {}
+                     ))
+
+        expect { generator.generate }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message).to include("conflicting peer dependencies")
+        end
+      end
+    end
+
     context "with network error" do
       it "raises PrivateSourceTimedOut with the registry hostname" do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command)
@@ -301,6 +342,23 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
 
         expect { generator.generate }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
           expect(error.message).to include("something completely unexpected happened")
+        end
+      end
+    end
+
+    context "with a pnpm 12 authentication error whose URL is wrapped" do
+      let(:package_manager) { "pnpm" }
+      let(:dependency_files) { project_dependency_files("grapher/pnpm_no_lockfile") }
+
+      it "raises PrivateSourceAuthenticationFailure with the whole registry URL" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                       message: fixture("pnpm_errors", "pnpm12", "private_tarball_urls.txt"),
+                       error_context: {}
+                     ))
+
+        expect { generator.generate }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.message).to include("https://npm.pkg.github.com/@dsp-testing%2Finner-source-top-secret-npm-2")
         end
       end
     end

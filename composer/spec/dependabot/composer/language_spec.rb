@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/composer/language"
@@ -8,9 +8,16 @@ require "spec_helper"
 ComposerLanguage = Dependabot::Composer::Language
 
 RSpec.describe Dependabot::Composer::Language do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Dependabot::Composer::Language) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:language) { described_class.new(version, requirement: requirement) }
+  sig { returns(String) }
   let(:version) { "7.4.33" }
+  sig { returns(T.nilable(Dependabot::Composer::Requirement)) }
   let(:requirement) { nil }
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#initialize" do
     context "when version is a String" do
@@ -36,10 +43,11 @@ RSpec.describe Dependabot::Composer::Language do
     end
 
     context "when a requirement is provided" do
+      sig { returns(Dependabot::Composer::Requirement) }
       let(:requirement) { Dependabot::Composer::Requirement.new([">=7.4", "<8.0"]) }
 
       it "sets the requirement correctly" do
-        expect(language.requirement.requirements).to eq(
+        expect(T.must(language.requirement).requirements).to eq(
           [
             [">=", Gem::Version.new("7.4")],
             ["<", Gem::Version.new("8.0")]
@@ -75,6 +83,7 @@ RSpec.describe Dependabot::Composer::Language do
     end
 
     context "when version is invalid" do
+      sig { returns(String) }
       let(:version) { "invalid" }
 
       it "raises an error when parsed as a Dependabot::Version" do
@@ -91,10 +100,11 @@ RSpec.describe Dependabot::Composer::Language do
     end
 
     context "when a requirement is provided" do
+      sig { returns(Dependabot::Composer::Requirement) }
       let(:requirement) { Dependabot::Composer::Requirement.new([">=7.4", "<8.0"]) }
 
       it "returns the requirement object" do
-        expect(language.requirement.requirements).to eq(
+        expect(T.must(language.requirement).requirements).to eq(
           [
             [">=", Gem::Version.new("7.4")],
             ["<", Gem::Version.new("8.0")]

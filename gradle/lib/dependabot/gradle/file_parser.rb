@@ -6,6 +6,7 @@ require "toml-rb"
 
 require "dependabot/dependency"
 require "dependabot/ecosystem"
+require "dependabot/experiments"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
@@ -27,6 +28,7 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
       require_relative "file_parser/distributions_finder"
       require_relative "file_parser/property_value_finder"
+      require_relative "file_parser/lockfile_parser"
 
       SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts settings.gradle settings.gradle.kts).freeze
 
@@ -41,7 +43,8 @@ module Dependabot
       DEPENDENCY_DECLARATION_REGEX = /(?:\(|\s)\s*['"](?<declaration>#{PART}:#{PART}:#{VSN_PART})['"]/o
 
       DEPENDENCY_SET_DECLARATION_REGEX = /(?:^|\s)dependencySet\((?<arguments>[^\)]+)\)\s*\{/
-      DEPENDENCY_SET_ENTRY_REGEX = /entry\s+['"](?<name>#{PART})['"]/o
+      DEPENDENCY_SET_COORDINATES_REGEX = /\A\s*['"](?<group>#{PART}):(?<version>#{VSN_PART})['"]\s*\z/o
+      DEPENDENCY_SET_ENTRY_REGEX = /\bentry(?:\s+|\s*\(\s*)['"](?<name>#{PART})['"]/o
       PLUGIN_BLOCK_DECLARATION_REGEX = /(?:^|\s)plugins\s*\{/
       PLUGIN_ID_REGEX = /['"](?<id>#{PART})['"]/o
       DEPENDENCY_SUBSTITUTION_DECLARATION_REGEX = /\bdependencySubstitution\s*\{/
@@ -58,8 +61,11 @@ module Dependabot
         wrapper_properties_file.each do |properties_file|
           dependency_set += wrapper_properties_dependencies(properties_file)
         end
-        version_catalog_file.each do |toml_file|
+        version_catalog_files.each do |toml_file|
           dependency_set += version_catalog_dependencies(toml_file)
+        end
+        if Dependabot::Experiments.enabled?(:gradle_transitive_security_updates)
+          add_lockfile_dependencies(dependency_set)
         end
         dependency_set.dependencies.reject do |dependency|
           dependency.version == "latest.integration" || dependency.version == "latest.release"
@@ -466,9 +472,7 @@ module Dependabot
         end
 
         dependency_set_blocks.each do |blk|
-          arguments = T.must(blk[:arguments])
-          group   = argument_from_string(arguments, "group")
-          version = argument_from_string(arguments, "version")
+          group, version = dependency_set_group_and_version(T.must(blk[:arguments]))
 
           next unless group && version
 
@@ -483,6 +487,18 @@ module Dependabot
         end
 
         dependency_set
+      end
+
+      # Groovy builds usually declare `dependencySet(group: 'g', version: 'v')`, while the Kotlin DSL only
+      # supports the `dependencySet("g:v")` coordinates form (which Groovy accepts as well).
+      sig { params(arguments: String).returns([T.nilable(String), T.nilable(String)]) }
+      def dependency_set_group_and_version(arguments)
+        group   = argument_from_string(arguments, "group")
+        version = argument_from_string(arguments, "version")
+        return [group, version] if group && version
+
+        coordinates = arguments.match(DEPENDENCY_SET_COORDINATES_REGEX)
+        [coordinates&.[](:group), coordinates&.[](:version)]
       end
 
       sig { params(buildfile: Dependabot::DependencyFile).returns(DependencySet) }
@@ -724,6 +740,41 @@ module Dependabot
         )
       end
 
+      sig { params(dependency_set: DependencySet).void }
+      def add_lockfile_dependencies(dependency_set)
+        declared_names = dependency_set.dependencies.map { |dep| dep.name.downcase }
+        locked = DependencySet.new
+        dependency_files.select { |file| File.basename(file.name) == "gradle.lockfile" }.each do |lockfile|
+          LockfileParser.new(lockfile: lockfile).parse.each do |dependency|
+            locked << dependency unless declared_names.include?(dependency.name.downcase)
+          end
+        end
+        locked.dependencies.each do |dependency|
+          versions = locked.all_versions_for_name(dependency.name).map do |version|
+            lockfile_dependency(dependency, version.version)
+          end
+          dependency_set << lockfile_dependency(dependency, dependency.version, versions)
+        end
+      end
+
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          version: T.nilable(String),
+          all_versions: T::Array[Dependabot::Dependency]
+        ).returns(Dependabot::Dependency)
+      end
+      def lockfile_dependency(dependency, version, all_versions = [])
+        Dependabot::Dependency.new(
+          name: dependency.name,
+          version: version,
+          package_manager: "gradle",
+          requirements: [],
+          subdependency_metadata: dependency.subdependency_metadata,
+          metadata: all_versions.empty? ? {} : { all_versions: all_versions }
+        )
+      end
+
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def wrapper_properties_file
         @wrapper_properties_file ||= T.let(
@@ -733,11 +784,9 @@ module Dependabot
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def version_catalog_file
-        @version_catalog_file ||= T.let(
-          dependency_files.select do |f|
-            f.name.end_with?("libs.versions.toml")
-          end,
+      def version_catalog_files
+        @version_catalog_files ||= T.let(
+          dependency_files.reject(&:support_file?).select { |f| f.name.end_with?(".toml") },
           T.nilable(T::Array[Dependabot::DependencyFile])
         )
       end

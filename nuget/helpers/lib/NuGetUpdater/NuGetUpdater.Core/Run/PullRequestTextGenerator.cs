@@ -14,9 +14,19 @@ public class PullRequestTextGenerator
 {
     private const int MaxTitleLength = 70;
 
-    public static string GetPullRequestTitle(Job job, ImmutableArray<UpdateOperationBase> updateOperationsPerformed, string? dependencyGroupName)
+    public static string GetPullRequestTitle(
+        Job job,
+        ImmutableArray<UpdateOperationBase> updateOperationsPerformed,
+        string? dependencyGroupName,
+        string? dependencyNameGroupTarget = null,
+        IEnumerable<string>? updatedDirectories = null)
     {
-        var shortTitle = GetPullRequestShortTitle(job, updateOperationsPerformed, dependencyGroupName);
+        var shortTitle = GetPullRequestShortTitle(
+            job,
+            updateOperationsPerformed,
+            dependencyGroupName,
+            dependencyNameGroupTarget,
+            updatedDirectories);
         var titlePrefix = GetPullRequestTitlePrefix(job);
         var fullTitle = $"{titlePrefix}{shortTitle}";
         return fullTitle;
@@ -43,13 +53,30 @@ public class PullRequestTextGenerator
         return prefix;
     }
 
-    private static string GetPullRequestShortTitle(Job job, ImmutableArray<UpdateOperationBase> updateOperationsPerformed, string? dependencyGroupName)
+    private static string GetPullRequestShortTitle(
+        Job job,
+        ImmutableArray<UpdateOperationBase> updateOperationsPerformed,
+        string? dependencyGroupName,
+        string? dependencyNameGroupTarget,
+        IEnumerable<string>? updatedDirectories)
     {
         string title;
         var dependencySets = GetDependencySets(updateOperationsPerformed);
-        if (dependencyGroupName is not null)
+        if (dependencyGroupName is not null && dependencyNameGroupTarget is null)
         {
             title = $"Bump the {dependencyGroupName} group with {dependencySets.Length} update{(dependencySets.Length > 1 ? "s" : "")}";
+        }
+        else if (dependencyNameGroupTarget is not null)
+        {
+            var directories = (updatedDirectories ?? [])
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            title = directories.Length switch
+            {
+                > 1 => $"Bump {dependencyNameGroupTarget} across {directories.Length} directories",
+                1 when directories[0] != "/" => $"Bump {dependencyNameGroupTarget} in {directories[0]}",
+                _ => $"Bump {dependencyNameGroupTarget}",
+            };
         }
         else
         {
@@ -73,13 +100,23 @@ public class PullRequestTextGenerator
         return title;
     }
 
-    public static string GetPullRequestCommitMessage(Job job, ImmutableArray<UpdateOperationBase> updateOperationsPerformed, string? dependencyGroupName)
+    public static string GetPullRequestCommitMessage(
+        Job job,
+        ImmutableArray<UpdateOperationBase> updateOperationsPerformed,
+        string? dependencyGroupName,
+        string? dependencyNameGroupTarget = null,
+        IEnumerable<string>? updatedDirectories = null)
     {
         var sb = new StringBuilder();
-        sb.AppendLine(GetPullRequestTitle(job, updateOperationsPerformed, dependencyGroupName));
+        sb.AppendLine(GetPullRequestTitle(
+            job,
+            updateOperationsPerformed,
+            dependencyGroupName,
+            dependencyNameGroupTarget,
+            updatedDirectories));
         var dependencySets = GetDependencySets(updateOperationsPerformed);
         if (dependencySets.Length > 1 ||
-            dependencyGroupName is not null)
+            (dependencyGroupName is not null && dependencyNameGroupTarget is null))
         {
             // multiple updates performed, enumerate them
             sb.AppendLine();

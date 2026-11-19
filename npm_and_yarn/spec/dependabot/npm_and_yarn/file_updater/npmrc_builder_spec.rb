@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only dependency_files fixture used by the parent builder.
+
 require "spec_helper"
 require "dependabot/credential"
 require "dependabot/dependency_file"
@@ -56,6 +58,51 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
         it "removes the env variable use" do
           expect(npmrc_content)
             .to eq("@dependabot:registry=https://npm.fury.io/dependabot/\n")
+        end
+      end
+
+      context "with a project fixture that sets npm 12 allow policies" do
+        let(:dependency_files) { project_dependency_files("npm8/npmrc_allow_policies") }
+
+        it "keeps the policies, including env-substituted values, and drops the env-based auth token" do
+          expect(npmrc_content).to eq("allow-git=none\nallow-remote=${ALLOW_REMOTE}\n")
+        end
+
+        context "when credentials have a scope" do
+          let(:credentials) do
+            [Dependabot::Credential.new(
+              {
+                "type" => "npm_registry",
+                "registry" => "npm.pkg.github.com",
+                "token" => "my_token",
+                "scope" => "@my-company"
+              }
+            )]
+          end
+
+          it "keeps the policies in the generated .npmrc" do
+            expect(npmrc_content).to eq(<<~NPMRC.chomp)
+              @my-company:registry=https://npm.pkg.github.com
+              //npm.pkg.github.com/:_authToken=my_token
+              allow-git=none
+              allow-remote=${ALLOW_REMOTE}
+            NPMRC
+          end
+        end
+      end
+
+      context "when npm 12 allow policies use environment substitution" do
+        let(:dependency_files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: ".npmrc",
+              content: "allow-git=${ALLOW_GIT}\n//npm.fury.io/:_authToken=${TOKEN}\nregistry=https://example.com\n"
+            )
+          ]
+        end
+
+        it "keeps the policy line but still removes other environment variable use" do
+          expect(npmrc_content).to eq("allow-git=${ALLOW_GIT}\n\nregistry=https://example.com\n")
         end
       end
     end
@@ -1150,6 +1197,38 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
           expect(npmrc_content).to include("@dependabot:registry=https://pkgs.dev.azure.com/dependabot/my-project/_packaging/my-feed/npm/registry/")
         end
       end
+
+      context "with a committed .npmrc and a replaces-base credential" do
+        let(:dependency_files) do
+          project_dependency_files("pnpm/private_source") +
+            [Dependabot::DependencyFile.new(name: ".npmrc", content: "auto-install-peers=true\n")]
+        end
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "npm_registry",
+              "registry" => "artifactory.example.com/artifactory/api/npm/npm",
+              "token" => "my_token",
+              "replaces-base" => true
+            }
+          )]
+        end
+
+        before do
+          stub_request(:get, %r{https://artifactory\.example\.com/artifactory/api/npm/npm/.*})
+            .to_return(status: 404)
+        end
+
+        it "adds the replaces-base registry as the global registry" do
+          expect(npmrc_content)
+            .to eq(
+              "auto-install-peers=true\n" \
+              "registry = https://artifactory.example.com/artifactory/api/npm/npm\n" \
+              "//artifactory.example.com/artifactory/api/npm/npm/:_authToken=my_token\n" \
+              "always-auth = true\n"
+            )
+        end
+      end
     end
 
     context "when dealing with registry scope generation" do
@@ -1405,6 +1484,39 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
             .to eq(<<~NPMRC.chomp)
               @my-company:registry=https://npm.pkg.github.com
               //npm.pkg.github.com/:_authToken=my_token
+            NPMRC
+        end
+      end
+
+      context "when credentials have scope and the committed .npmrc sets npm 12 allow policies" do
+        let(:dependency_files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: ".npmrc",
+              content: "allow-git=none\n\"allow-remote\" = root\nallow-git=${ALLOW_GIT}\nregistry=https://example.com\n"
+            )
+          ]
+        end
+
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "npm_registry",
+              "registry" => "npm.pkg.github.com",
+              "token" => "my_token",
+              "scope" => "@my-company"
+            }
+          )]
+        end
+
+        it "keeps the allow policies so they match the flags derived from the committed .npmrc" do
+          expect(npmrc_content)
+            .to eq(<<~NPMRC.chomp)
+              @my-company:registry=https://npm.pkg.github.com
+              //npm.pkg.github.com/:_authToken=my_token
+              allow-git=none
+              "allow-remote" = root
+              allow-git=${ALLOW_GIT}
             NPMRC
         end
       end

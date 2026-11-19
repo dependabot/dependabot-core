@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "excon"
@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/pub/requirement_source"
+require "dependabot/pub/package/registry_package"
 require "dependabot/registry_client"
 
 module Dependabot
@@ -26,20 +27,16 @@ module Dependabot
         end
         repository_url = (source.description_string("url") || "https://pub.dev").delete_suffix("/")
 
-        listing = repository_listing(repository_url)
-        repo = listing.dig("latest", "pubspec", "repository")
-        # The repository field did not always exist in pubspec.yaml, and some
-        # packages specify a git repository in the "homepage" field.
-        repo ||= listing.dig("latest", "pubspec", "homepage")
+        repo = repository_listing(repository_url).source_url
         return nil unless repo
 
         Source.from_url(repo)
       end
 
-      sig { params(repository_url: String).returns(T::Hash[String, T.untyped]) }
+      sig { params(repository_url: String).returns(Package::RegistryPackage) }
       def repository_listing(repository_url)
         response = Dependabot::RegistryClient.get(url: "#{repository_url}/api/packages/#{dependency.name}")
-        JSON.parse(response.body)
+        Package::RegistryPackage.from_json(response.body)
       end
     end
   end

@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/maven/language"
@@ -6,8 +6,15 @@ require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::Maven::Language do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Dependabot::Maven::Language) } # rubocop:disable RSpec/DescribedClass -- Signatures need concrete types.
   let(:language) { described_class.new(version) }
+
+  sig { returns(String) }
   let(:version) { "3.0.0" }
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#version" do
     it "returns the version" do

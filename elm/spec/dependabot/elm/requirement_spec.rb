@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only version and version_string fixtures.
+
 require "spec_helper"
 require "dependabot/elm/requirement"
 require "dependabot/elm/version"

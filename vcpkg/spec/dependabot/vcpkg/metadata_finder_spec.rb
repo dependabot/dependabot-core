@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve dependency_name and requirements fixtures defined only in child contexts.
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/vcpkg/metadata_finder"

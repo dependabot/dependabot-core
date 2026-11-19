@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the channel fixture defined only in child contexts.
+
 require "spec_helper"
 require "dependabot/rust_toolchain/channel_parser"
 

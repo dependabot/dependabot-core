@@ -172,7 +172,7 @@ module Dependabot
         # Return the git tag if updating a pinned version
         if source_git_commit_checker.pinned_ref_looks_like_version? &&
            (new_tag = T.must(latest_version_finder).latest_version_tag)
-          return tag_name(new_tag)
+          return new_tag.tag
         end
 
         # Return the pinned git commit if one is available
@@ -189,7 +189,7 @@ module Dependabot
         new_tag = T.must(latest_version_finder).latest_version_tag
 
         if new_tag
-          return tag_commit_sha(new_tag) if version_from_comment || git_commit_checker.local_tag_for_pinned_sha
+          return T.must(new_tag.commit_sha) if version_from_comment || git_commit_checker.local_tag_for_pinned_sha
 
           return latest_commit_for_pinned_ref
         end
@@ -199,20 +199,6 @@ module Dependabot
         return latest_ver if latest_ver.is_a?(String)
 
         nil
-      end
-
-      sig { params(tag: T::Hash[Symbol, Object]).returns(String) }
-      def tag_name(tag)
-        return tag.tag if tag.is_a?(Dependabot::GitTagDetails)
-
-        T.cast(tag.fetch(:tag), String)
-      end
-
-      sig { params(tag: T::Hash[Symbol, Object]).returns(String) }
-      def tag_commit_sha(tag)
-        return T.must(tag.commit_sha) if tag.is_a?(Dependabot::GitTagDetails)
-
-        T.cast(tag.fetch(:commit_sha), String)
       end
 
       sig { returns(Dependabot::GitCommitChecker) }
@@ -274,7 +260,7 @@ module Dependabot
       sig { params(_new_ref: String).returns(T.nilable(String)) }
       def resolve_new_comment_version(_new_ref)
         new_tag = T.must(latest_version_finder).latest_version_tag
-        return T.cast(new_tag.fetch(:tag, nil), T.nilable(String)) if new_tag
+        return new_tag.tag if new_tag
 
         nil
       end

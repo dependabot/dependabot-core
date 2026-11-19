@@ -155,7 +155,11 @@ module Dependabot
       sig { returns(String) }
       def vendor_cache_dir
         @vendor_cache_dir ||= T.let(
-          Helpers.fetch_yarnrc_yml_value("cacheFolder", "./.yarn/cache"),
+          Helpers.fetch_yarnrc_yml_value(
+            "cacheFolder",
+            "./.yarn/cache",
+            dependency_files: dependency_files
+          ),
           T.nilable(String)
         )
       end
@@ -163,7 +167,11 @@ module Dependabot
       sig { returns(String) }
       def install_state_path
         @install_state_path ||= T.let(
-          Helpers.fetch_yarnrc_yml_value("installStatePath", "./.yarn/install-state.gz"),
+          Helpers.fetch_yarnrc_yml_value(
+            "installStatePath",
+            "./.yarn/install-state.gz",
+            dependency_files: dependency_files
+          ),
           T.nilable(String)
         )
       end

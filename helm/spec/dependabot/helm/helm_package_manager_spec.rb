@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/helm/package_manager"
@@ -6,6 +6,9 @@ require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::Helm::HelmPackageManager do
+  extend T::Sig
+
+  sig { returns(Dependabot::Helm::HelmPackageManager) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:package_manager) do
     described_class.new
   end

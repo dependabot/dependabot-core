@@ -43,7 +43,7 @@ module Dependabot
           options: {}
         )
           @package_details = T.let(nil, T.nilable(Dependabot::Package::PackageDetails))
-          @latest_version_details = T.let(nil, T.nilable(T::Hash[Symbol, T.untyped]))
+          @latest_version_details = T.let(nil, T.nilable(VersionDetails))
           @releases_from_dependency_source = T.let(nil, T.nilable(T::Array[Dependabot::Package::PackageRelease]))
           super
         end
@@ -57,11 +57,15 @@ module Dependabot
           ).fetch
         end
 
-        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        sig { returns(T.nilable(VersionDetails)) }
         def latest_version_details
           @latest_version_details ||= begin
             latest_version = fetch_latest_version(language_version: nil)
-            latest_version ? { version: latest_version } : nil
+            if latest_version
+              raise TypeError, "expected a Bundler version" unless latest_version.is_a?(Dependabot::Bundler::Version)
+
+              VersionDetails.new(version: latest_version)
+            end
           end
         end
 

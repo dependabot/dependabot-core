@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "excon"
@@ -27,7 +27,7 @@ module Dependabot
             credentials: T::Array[Dependabot::Credential],
             ignored_versions: T::Array[String],
             security_advisories: T::Array[Dependabot::SecurityAdvisory],
-            options: T::Hash[Symbol, T.untyped],
+            options: T::Hash[Symbol, T.anything],
             cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
@@ -49,10 +49,10 @@ module Dependabot
           @cooldown_options = cooldown_options
         end
 
-        sig { returns(T::Hash[String, T.untyped]) }
+        sig { returns(DependencyServicesResult::ReportEntry) }
         def current_report
           @current_report ||= T.let(
-            T.must(
+            DependencyServicesResult.find_report(
               PackageDetailsFetcher.new(
                 dependency: dependency,
                 dependency_files: dependency_files,
@@ -60,15 +60,16 @@ module Dependabot
                 ignored_versions: ignored_versions,
                 security_advisories: security_advisories,
                 options: options
-              ).report.find { |d| d["name"] == dependency.name }
+              ).report,
+              dependency.name
             ),
-            T.nilable(T::Hash[String, T.untyped])
+            T.nilable(DependencyServicesResult::ReportEntry)
           )
         end
 
         sig { returns(T.nilable(String)) }
         def latest_version
-          latest_version = current_report["latest"]
+          latest_version = current_report.latest
           return nil unless latest_version
 
           filter_cooldown_versions(latest_version)
@@ -76,36 +77,36 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def latest_resolvable_version
-          latest_resolvable_version = current_report["singleBreaking"]&.find { |d| d["name"] == dependency.name }
-          return nil unless latest_resolvable_version
+          version = latest_resolvable_update&.version
+          return nil unless version
 
-          filter_cooldown_versions(latest_resolvable_version["version"])
+          filter_cooldown_versions(version)
         end
 
         sig { returns(T.nilable(String)) }
         def latest_resolvable_version_with_no_unlock
-          version_with_no_unlock = current_report["compatible"]&.find { |d| d["name"] == dependency.name }
-          return nil unless version_with_no_unlock
+          version = current_report.compatible.find { |entry| entry.name == dependency.name }&.version
+          return nil unless version
 
-          filter_cooldown_versions(version_with_no_unlock["version"])
+          filter_cooldown_versions(version)
         end
 
         sig { returns(T.nilable(String)) }
         def latest_version_resolvable_with_full_unlock
-          version_with_full_unlock = current_report["multiBreaking"]&.find { |d| d["name"] == dependency.name }
-          return nil unless version_with_full_unlock
+          version = full_unlock_updates.find { |entry| entry.name == dependency.name }&.version
+          return nil unless version
 
-          filter_cooldown_versions(version_with_full_unlock["version"])
+          filter_cooldown_versions(version)
         end
 
-        sig { returns(T.untyped) }
-        def latest_version_resolvable_with_full_unlock_hash
-          current_report["multiBreaking"]
+        sig { returns(T::Array[DependencyServicesResult::DependencyUpdate]) }
+        def full_unlock_updates
+          current_report.multi_breaking
         end
 
-        sig { returns(T.untyped) }
-        def latest_resolvable_version_hash
-          current_report["singleBreaking"].find { |d| d["name"] == dependency.name }
+        sig { returns(T.nilable(DependencyServicesResult::DependencyUpdate)) }
+        def latest_resolvable_update
+          current_report.single_breaking.find { |entry| entry.name == dependency.name }
         end
 
         private
@@ -286,7 +287,7 @@ module Dependabot
         sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
         attr_reader :security_advisories
 
-        sig { returns(T::Hash[Symbol, T.untyped]) }
+        sig { returns(T::Hash[Symbol, T.anything]) }
         attr_reader :options
 
         sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }

@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "json"
@@ -48,12 +48,14 @@ RSpec.describe Dependabot::GitSubmodules::Package::PackageDetailsFetcher do
   let(:checker) do
     described_class.new(
       dependency: dependency,
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }]
+      credentials: [Dependabot::Credential.new(
+        {
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }
+      )]
     )
   end
 

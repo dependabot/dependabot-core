@@ -1,0 +1,15 @@
+Error: ERR_PNPM_UPDATE_VERSION_ON_INDIRECT_DEP
+
+  × updating dependencies
+  ╰─▶ "accepts" (requested "1.3.5") is not a direct dependency, so the
+      requested version cannot be recorded.
+  help: An update resolves a transitive dependency the way a fresh install
+        would, so a version on the command line has no effect on it. To pin
+        one, add an override scoped to the range its dependents declare to
+        pnpm-workspace.yaml:
+        
+          overrides:
+            accepts@<declared range>: 1.3.5
+        
+        To update it within the range its dependents already declare, drop the
+        version: pnpm update accepts

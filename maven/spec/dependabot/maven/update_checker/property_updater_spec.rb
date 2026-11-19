@@ -1,9 +1,11 @@
 # typed: false
+# Sorbet cannot resolve fixture methods supplied by shared contexts. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/maven/update_checker/property_updater"
+require "dependabot/maven/file_updater"
 
 RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
   let(:updater) do
@@ -84,6 +86,20 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
 
     it { is_expected.to be(true) }
 
+    context "with the transitive experiment on" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:maven_transitive_dependencies).and_return(true)
+        allow(Dependabot::Maven::FileParser::MavenDependencyParser).to receive(:build_dependency_set)
+      end
+
+      it "re-parses the POMs without running the dependency tree scan" do
+        expect(updater.update_possible?).to be(true)
+        expect(Dependabot::Maven::FileParser::MavenDependencyParser).not_to have_received(:build_dependency_set)
+      end
+    end
+
     context "without a target version" do
       let(:target_version_details) { nil }
 
@@ -149,10 +165,764 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
 
       it { is_expected.to be(true) }
     end
+
+    context "with merged declarations from different POMs" do
+      let(:pom_body) do
+        fixture("poms", "writable_versions.xml")
+          .sub("<shared.version>1.0</shared.version>", "<shared.version>[1.0,3.0)</shared.version>")
+      end
+      let(:other_pom_body) { fixture("poms", "shared_property_other_declarations.xml") }
+      let(:other_pom) { Dependabot::DependencyFile.new(name: "other/pom.xml", content: other_pom_body) }
+      let(:dependency_files) { [pom, other_pom] }
+      let(:dependency_name) { "com.example:shared-one" }
+      let(:dependency_version) { "1.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "[1.0,3.0)",
+          groups: [],
+          source: nil,
+          metadata: {
+            property_name: "shared.version",
+            property_source: "pom.xml",
+            packaging_type: "jar"
+          }
+        }]
+      end
+      let(:target_version_details) do
+        { version: version_class.new("3.0"), source_url: "https://repo.maven.apache.org/maven2" }
+      end
+
+      before do
+        stub_request(:get, "https://repo.maven.apache.org/maven2/com/example/parent/1.0/parent-1.0.pom")
+          .to_return(body: "<project/>")
+        stub_request(:get, %r{\Ahttps://repo\.maven\.apache\.org/maven2/com/example/shared-(one|two)/maven-metadata\.xml\z})
+          .to_return(body: "<metadata><versioning><versions><version>3.0</version></versions></versioning></metadata>")
+      end
+
+      it "rejects changes to exact declarations that leave the shared range untouched" do
+        expect(updater.update_possible?).to be(false)
+        expect { updater.updated_dependencies }.to raise_error("Update not possible!")
+      end
+
+      context "with the same property name from a different source" do
+        let(:other_pom_body) do
+          super().gsub("      <version>1.0</version>", "      <version>${shared.version}</version>")
+        end
+
+        it "does not count changes to the other property source" do
+          expect(updater.update_possible?).to be(false)
+          expect { updater.updated_dependencies }.to raise_error("Update not possible!")
+        end
+      end
+
+      context "with a different property name" do
+        let(:other_pom_body) do
+          super().gsub("      <version>1.0</version>", "      <version>${other.version}</version>")
+        end
+
+        it { is_expected.to be(false) }
+      end
+
+      context "when the selected property is already at the target version" do
+        let(:pom_body) { super().sub("[1.0,3.0)", "3.0") }
+        let(:dependency_version) { "3.0" }
+        let(:dependency_requirements) { super().map { |req| req.merge(requirement: "3.0") } }
+
+        it { is_expected.to be(false) }
+      end
+
+      context "when the selected property has a writable exact version" do
+        let(:pom_body) { super().sub("[1.0,3.0)", "1.0") }
+        let(:dependency_requirements) { super().map { |req| req.merge(requirement: "1.0") } }
+        let(:other_pom_body) do
+          super().gsub("      <version>1.0</version>", "      <version>${other.version}</version>")
+        end
+
+        shared_examples "an isolated property update" do
+          it "updates the selected property without touching unrelated properties" do
+            expect(updater.update_possible?).to be(true)
+            updates = updater.updated_dependencies
+            expect(updates.map(&:name)).to contain_exactly("com.example:shared-one", "com.example:shared-two")
+            expect(updates.map(&:version)).to eq(["3.0", "3.0"])
+
+            files = Dependabot::Maven::FileUpdater.new(
+              dependencies: updates,
+              dependency_files: dependency_files,
+              credentials: []
+            ).updated_dependency_files
+
+            expect(files.map(&:name)).to eq(["pom.xml"])
+            expect(files.first.content).to eq(
+              pom_body.sub("<shared.version>1.0</shared.version>", "<shared.version>3.0</shared.version>")
+            )
+            updates.each do |update|
+              expect(update.requirements.select { |req| req.file == "other/pom.xml" })
+                .to eq(update.previous_requirements.select { |req| req.file == "other/pom.xml" })
+            end
+          end
+        end
+
+        it_behaves_like "an isolated property update"
+
+        context "with the same property name in another POM" do
+          let(:other_pom_body) { super().gsub("${other.version}", "${shared.version}") }
+
+          it_behaves_like "an isolated property update"
+        end
+      end
+    end
+
+    context "with a shared property defined with the same value in several modules" do
+      let(:module_a_body) { fixture("poms", "shared_property_module_pom.xml") }
+      let(:module_b_body) do
+        module_a_body.sub("<artifactId>module-a</artifactId>", "<artifactId>module-b</artifactId>")
+      end
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "pom.xml",
+            content: fixture("poms", "shared_property_aggregator_pom.xml")
+          ),
+          Dependabot::DependencyFile.new(name: "a/pom.xml", content: module_a_body),
+          Dependabot::DependencyFile.new(name: "b/pom.xml", content: module_b_body)
+        ]
+      end
+      let(:dependency) do
+        Dependabot::Maven::FileParser.new(
+          dependency_files: dependency_files,
+          source: nil,
+          options: { skip_dependency_tree: true }
+        ).parse.find { |dep| dep.name == "com.example:lib-core" }
+      end
+      let(:target_version_details) do
+        { version: version_class.new("1.0.1"), source_url: "https://repo.maven.apache.org/maven2" }
+      end
+
+      before do
+        stub_request(:get, %r{\Ahttps://repo\.maven\.apache\.org/maven2/com/example/lib-(core|extra)/maven-metadata\.xml\z})
+          .to_return(
+            body: "<metadata><versioning><versions><version>1.0.0</version>" \
+                  "<version>1.0.1</version></versions></versioning></metadata>"
+          )
+      end
+
+      def updated_files
+        Dependabot::Maven::FileUpdater.new(
+          dependencies: updater.updated_dependencies,
+          dependency_files: dependency_files,
+          credentials: []
+        ).updated_dependency_files
+      end
+
+      it "updates the property in every module that defines it" do
+        expect(updater.update_possible?).to be(true)
+        expect(updater.updated_dependencies.map(&:name))
+          .to contain_exactly("com.example:lib-core", "com.example:lib-extra")
+
+        files = updated_files
+        expect(files.map(&:name)).to contain_exactly("a/pom.xml", "b/pom.xml")
+        files.each do |file|
+          expect(file.content).to include("<lib.version>1.0.1</lib.version>")
+        end
+      end
+
+      context "when another module only uses one of the dependencies" do
+        let(:module_b_body) do
+          # Drops the first declaration, lib-core
+          super().sub(%r{\s*<dependency>.*?</dependency>}m, "")
+        end
+
+        it "updates the property in every module that defines it" do
+          expect(updater.update_possible?).to be(true)
+          expect(updated_files.map(&:name)).to contain_exactly("a/pom.xml", "b/pom.xml")
+        end
+      end
+
+      context "when another module also uses the property with a suffix" do
+        let(:module_b_body) do
+          super().sub(
+            "    </dependencies>",
+            "      <dependency>\n        <groupId>com.example</groupId>\n        <artifactId>lib-ext</artifactId>\n" \
+            "        <version>${lib.version}-ext</version>\n      </dependency>\n    </dependencies>"
+          )
+        end
+
+        before do
+          stub_request(:get, "https://repo.maven.apache.org/maven2/com/example/lib-ext/maven-metadata.xml")
+            .to_return(
+              body: "<metadata><versioning><versions><version>1.0.0-ext</version>" \
+                    "<version>1.0.1-ext</version></versions></versioning></metadata>"
+            )
+        end
+
+        it "leaves that module unchanged" do
+          expect(updater.update_possible?).to be(true)
+          expect(updater.updated_dependencies.map(&:name))
+            .to contain_exactly("com.example:lib-core", "com.example:lib-extra")
+
+          files = updated_files
+          expect(files.map(&:name)).to eq(["a/pom.xml"])
+          expect(files.first.content).to include("<lib.version>1.0.1</lib.version>")
+          expect(files.first.content.scan("<version>${lib.version}</version>").length).to eq(2)
+        end
+      end
+
+      context "when another module uses the property with a suffix for the same dependency" do
+        let(:module_b_body) do
+          super().sub(
+            "<artifactId>lib-core</artifactId>\n        <version>${lib.version}</version>",
+            "<artifactId>lib-core</artifactId>\n        <version>${lib.version}-ext</version>"
+          )
+        end
+
+        it "leaves that module unchanged" do
+          expect(updater.update_possible?).to be(true)
+
+          files = updated_files
+          expect(files.map(&:name)).to eq(["a/pom.xml"])
+          expect(files.first.content).to include("<lib.version>1.0.1</lib.version>")
+          expect(files.first.content.scan("<version>${lib.version}</version>").length).to eq(2)
+        end
+      end
+
+      context "when another module uses the property for a dependency without the target version" do
+        let(:module_b_body) do
+          # Keeps only the first managed and consumed dependency, renamed to an unrelated library
+          super().gsub(%r{(</dependency>)\s*<dependency>.*?</dependency>}m, '\\1')
+                 .gsub("<artifactId>lib-core</artifactId>", "<artifactId>other</artifactId>")
+        end
+
+        before do
+          stub_request(:get, "https://repo.maven.apache.org/maven2/com/example/other/maven-metadata.xml")
+            .to_return(
+              body: "<metadata><versioning><versions><version>1.0.0</version>" \
+                    "<version>2.0.0</version></versions></versioning></metadata>"
+            )
+        end
+
+        it "only updates the module with the selected property" do
+          expect(updater.update_possible?).to be(true)
+          expect(updater.updated_dependencies.map(&:name))
+            .to contain_exactly("com.example:lib-core", "com.example:lib-extra")
+
+          files = updated_files
+          expect(files.map(&:name)).to eq(["a/pom.xml"])
+          expect(files.first.content).to include("<lib.version>1.0.1</lib.version>")
+        end
+      end
+
+      context "when another module uses the property where the version can't be located" do
+        let(:module_b_body) do
+          super().sub(
+            "  <dependencyManagement>",
+            "  <build>\n    <plugins>\n      <plugin>\n        <groupId>io.github.ascopes</groupId>\n" \
+            "        <artifactId>protobuf-maven-plugin</artifactId>\n        <version>3.9.0</version>\n" \
+            "        <configuration>\n          <plugins>\n            <plugin kind=\"binary-maven\">\n" \
+            "              <groupId>com.example</groupId>\n              <artifactId>lib-plugin</artifactId>\n" \
+            "              <version>${lib.version}</version>\n            </plugin>\n          </plugins>\n" \
+            "        </configuration>\n      </plugin>\n    </plugins>\n  </build>\n  <dependencyManagement>"
+          )
+        end
+
+        it "only updates the module with the selected property" do
+          expect(updater.update_possible?).to be(true)
+
+          files = updated_files
+          expect(files.map(&:name)).to eq(["a/pom.xml"])
+          expect(files.first.content).to include("<lib.version>1.0.1</lib.version>")
+        end
+      end
+
+      context "when the version lookup fails for a dependency in another module" do
+        let(:module_b_body) do
+          # Keeps only the first managed and consumed dependency, renamed to a library from a private repository
+          super().gsub(%r{(</dependency>)\s*<dependency>.*?</dependency>}m, '\\1')
+                 .gsub("<artifactId>lib-core</artifactId>", "<artifactId>other</artifactId>")
+                 .sub(
+                   "  <dependencyManagement>",
+                   "  <repositories>\n    <repository>\n      <id>private</id>\n" \
+                   "      <url>https://private.example.com/maven2</url>\n    </repository>\n  </repositories>\n" \
+                   "  <dependencyManagement>"
+                 )
+        end
+
+        before do
+          stub_request(:get, "https://repo.maven.apache.org/maven2/com/example/other/maven-metadata.xml")
+            .to_return(status: 404)
+          stub_request(:get, "https://private.example.com/maven2/com/example/other/maven-metadata.xml")
+            .to_return(status: 401)
+        end
+
+        it "only updates the module with the selected property" do
+          expect(updater.update_possible?).to be(true)
+          expect(updated_files.map(&:name)).to eq(["a/pom.xml"])
+        end
+      end
+
+      context "when the selected module uses the property with a suffix" do
+        let(:module_a_body) do
+          super().sub(
+            "<artifactId>lib-extra</artifactId>\n        <version>${lib.version}</version>",
+            "<artifactId>lib-extra</artifactId>\n        <version>${lib.version}-ext</version>"
+          )
+        end
+        let(:module_b_body) do
+          fixture("poms", "shared_property_module_pom.xml")
+            .sub("<artifactId>module-a</artifactId>", "<artifactId>module-b</artifactId>")
+        end
+
+        before do
+          stub_request(:get, "https://repo.maven.apache.org/maven2/com/example/lib-extra/maven-metadata.xml")
+            .to_return(
+              body: "<metadata><versioning><versions><version>1.0.0</version><version>1.0.0-ext</version>" \
+                    "<version>1.0.1</version><version>1.0.1-ext</version></versions></versioning></metadata>"
+            )
+        end
+
+        it "leaves the other modules unchanged" do
+          expect(dependency.requirements.find { |req| req.requirement == dependency.version }&.file).to eq("a/pom.xml")
+          expect(updater.update_possible?).to be(true)
+          expect(updated_files.map(&:name)).to eq(["a/pom.xml"])
+        end
+      end
+
+      context "when another module also uses the property indirectly" do
+        let(:module_b_body) do
+          super()
+            .sub("</lib.version>", "</lib.version>\n    <ext.version>${lib.version}-ext</ext.version>")
+            .sub(
+              "    </dependencies>",
+              "      <dependency>\n        <groupId>com.example</groupId>\n        <artifactId>lib-ext</artifactId>\n" \
+              "        <version>${ext.version}</version>\n      </dependency>\n    </dependencies>"
+            )
+        end
+
+        it "leaves that module unchanged" do
+          expect(updater.update_possible?).to be(true)
+          expect(updated_files.map(&:name)).to eq(["a/pom.xml"])
+        end
+      end
+
+      context "when another module resolves the dependency from a repository without the target version" do
+        let(:module_b_body) do
+          super().sub(
+            "  <dependencyManagement>",
+            "  <repositories>\n    <repository>\n      <id>central</id>\n" \
+            "      <url>https://mirror.example.com/maven2</url>\n    </repository>\n  </repositories>\n" \
+            "  <dependencyManagement>"
+          )
+        end
+
+        before do
+          stub_request(:get, %r{\Ahttps://mirror\.example\.com/maven2/com/example/lib-(core|extra)/maven-metadata\.xml\z})
+            .to_return(
+              body: "<metadata><versioning><versions><version>1.0.0</version></versions></versioning></metadata>"
+            )
+        end
+
+        it "leaves that module unchanged" do
+          expect(updater.update_possible?).to be(true)
+          expect(updated_files.map(&:name)).to eq(["a/pom.xml"])
+        end
+      end
+
+      context "when a child of another module resolves the dependency from a repository without the target version" do
+        let(:module_b_child_body) do
+          "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project xmlns=\"http://maven.apache.org/POM/4.0.0\">\n" \
+            "  <modelVersion>4.0.0</modelVersion>\n  <parent>\n    <groupId>com.example</groupId>\n" \
+            "    <artifactId>module-b</artifactId>\n    <version>1.0</version>\n  </parent>\n" \
+            "  <artifactId>module-b-child</artifactId>\n  <repositories>\n    <repository>\n" \
+            "      <id>central</id>\n      <url>https://mirror.example.com/maven2</url>\n    </repository>\n" \
+            "  </repositories>\n  <dependencies>\n    <dependency>\n      <groupId>com.example</groupId>\n" \
+            "      <artifactId>lib-core</artifactId>\n      <version>${lib.version}</version>\n" \
+            "    </dependency>\n  </dependencies>\n</project>\n"
+        end
+        let(:dependency_files) do
+          super() + [Dependabot::DependencyFile.new(name: "b/child/pom.xml", content: module_b_child_body)]
+        end
+
+        before do
+          stub_request(:get, "https://mirror.example.com/maven2/com/example/lib-core/maven-metadata.xml")
+            .to_return(
+              body: "<metadata><versioning><versions><version>1.0.0</version></versions></versioning></metadata>"
+            )
+        end
+
+        it "leaves that module unchanged" do
+          expect(dependency.requirements.map { |req| req.metadata_string("property_source") })
+            .to include("b/pom.xml")
+          expect(updater.update_possible?).to be(true)
+          expect(updated_files.map(&:name)).to eq(["a/pom.xml"])
+        end
+
+        context "when the child takes the version from the module's dependencyManagement" do
+          let(:module_b_child_body) { super().sub("      <version>${lib.version}</version>\n", "") }
+
+          it "leaves that module unchanged" do
+            expect(updater.update_possible?).to be(true)
+            expect(updated_files.map(&:name)).to eq(["a/pom.xml"])
+          end
+        end
+      end
+
+      context "when another module only manages the dependencies as transitive overrides" do
+        let(:module_b_body) { super().sub(%r{\n  <dependencies>.*?</dependencies>}m, "") }
+
+        it "leaves that module unchanged" do
+          expect(updater.update_possible?).to be(true)
+          expect(updated_files.map(&:name)).to eq(["a/pom.xml"])
+        end
+      end
+
+      context "when a dependency only in another module also has a versionless consumer" do
+        let(:module_b_body) do
+          super().gsub("<artifactId>lib-core</artifactId>", "<artifactId>other</artifactId>")
+        end
+
+        before do
+          stub_request(:get, "https://repo.maven.apache.org/maven2/com/example/other/maven-metadata.xml")
+            .to_return(
+              body: "<metadata><versioning><versions><version>1.0.0</version>" \
+                    "<version>1.0.1</version></versions></versioning></metadata>"
+            )
+        end
+
+        it "updates the property in every module that defines it" do
+          expect(updater.update_possible?).to be(true)
+
+          files = updated_files
+          expect(files.map(&:name)).to contain_exactly("a/pom.xml", "b/pom.xml")
+          files.each { |file| expect(file.content).to include("<lib.version>1.0.1</lib.version>") }
+        end
+      end
+
+      context "when another module uses the property for a dependency it also manages as an override" do
+        let(:tool_dependency) do
+          "<dependency>\n<groupId>com.example</groupId>\n<artifactId>lib-tool</artifactId>\n" \
+            "<version>${lib.version}</version>\n</dependency>\n"
+        end
+        let(:module_b_body) do
+          super()
+            .sub(
+              "  <dependencyManagement>",
+              "  <build>\n<plugins>\n<plugin>\n<groupId>com.example</groupId>\n<artifactId>some-plugin</artifactId>\n" \
+              "<version>1.0</version>\n<dependencies>\n#{tool_dependency}</dependencies>\n</plugin>\n</plugins>\n" \
+              "</build>\n  <dependencyManagement>"
+            )
+            .sub(
+              "    </dependencies>\n  </dependencyManagement>",
+              "#{tool_dependency}    </dependencies>\n  </dependencyManagement>"
+            )
+        end
+
+        before do
+          stub_request(:get, "https://repo.maven.apache.org/maven2/com/example/lib-tool/maven-metadata.xml")
+            .to_return(
+              body: "<metadata><versioning><versions><version>1.0.0</version>" \
+                    "<version>1.0.1</version></versions></versioning></metadata>"
+            )
+        end
+
+        it "updates the property in every module that defines it" do
+          expect(updater.update_possible?).to be(true)
+          expect(updated_files.map(&:name)).to contain_exactly("a/pom.xml", "b/pom.xml")
+        end
+      end
+
+      context "when no repository of another module lists any version of its dependency" do
+        let(:module_b_body) do
+          # Keeps only the first managed and consumed dependency, renamed to an unrelated library
+          super().gsub(%r{(</dependency>)\s*<dependency>.*?</dependency>}m, '\\1')
+                 .gsub("<artifactId>lib-core</artifactId>", "<artifactId>other</artifactId>")
+        end
+
+        before do
+          stub_request(:get, "https://repo.maven.apache.org/maven2/com/example/other/maven-metadata.xml")
+            .to_return(status: 404)
+        end
+
+        it "leaves that module unchanged" do
+          expect(updater.update_possible?).to be(true)
+          expect(updated_files.map(&:name)).to eq(["a/pom.xml"])
+        end
+      end
+
+      context "when another module declares the same dependency in dependencyManagement and dependencies" do
+        let(:module_b_body) do
+          super().sub(
+            "      <artifactId>lib-core</artifactId>\n    </dependency>",
+            "      <artifactId>lib-core</artifactId>\n      <version>${lib.version}</version>\n    </dependency>"
+          )
+        end
+
+        it "updates the property in every module that defines it" do
+          expect(updater.update_possible?).to be(true)
+          expect(updated_files.map(&:name)).to contain_exactly("a/pom.xml", "b/pom.xml")
+        end
+      end
+
+      context "when a dependency only in another module is also declared with a literal version" do
+        let(:module_b_body) do
+          # Keeps only the first managed and consumed dependency, renamed to an unrelated library
+          super().gsub(%r{(</dependency>)\s*<dependency>.*?</dependency>}m, '\\1')
+                 .gsub("<artifactId>lib-core</artifactId>", "<artifactId>other</artifactId>")
+        end
+        let(:module_c_body) do
+          fixture("poms", "shared_property_module_pom.xml")
+            .sub("<artifactId>module-a</artifactId>", "<artifactId>module-c</artifactId>")
+            .sub(%r{\s*<properties>.*?</properties>}m, "")
+            .gsub(%r{(</dependency>)\s*<dependency>.*?</dependency>}m, '\\1')
+            .gsub("<artifactId>lib-core</artifactId>", "<artifactId>other</artifactId>")
+            .sub("${lib.version}", "2.0.0")
+        end
+        let(:dependency_files) do
+          super() + [Dependabot::DependencyFile.new(name: "c/pom.xml", content: module_c_body)]
+        end
+
+        before do
+          stub_request(:get, "https://repo.maven.apache.org/maven2/com/example/other/maven-metadata.xml")
+            .to_return(
+              body: "<metadata><versioning><versions><version>1.0.0</version><version>1.0.1</version>" \
+                    "<version>2.0.0</version></versions></versioning></metadata>"
+            )
+        end
+
+        it "leaves the other modules unchanged" do
+          expect(updater.update_possible?).to be(true)
+          expect(updated_files.map(&:name)).to eq(["a/pom.xml"])
+        end
+      end
+
+      context "when a dependency only in another module is first declared in a module that isn't updated" do
+        let(:module_b_body) do
+          # Keeps only the first managed and consumed dependency, renamed to an unrelated library
+          super().gsub(%r{(</dependency>)\s*<dependency>.*?</dependency>}m, '\\1')
+                 .gsub("<artifactId>lib-core</artifactId>", "<artifactId>other</artifactId>")
+        end
+        let(:module_c_body) do
+          module_b_body
+            .sub("<artifactId>module-b</artifactId>", "<artifactId>module-c</artifactId>")
+            .sub("<lib.version>1.0.0</lib.version>", "<lib.version>0.9.0</lib.version>")
+            .sub(
+              "  <dependencyManagement>",
+              "  <repositories>\n    <repository>\n      <id>central</id>\n" \
+              "      <url>https://mirror.example.com/maven2</url>\n    </repository>\n  </repositories>\n" \
+              "  <dependencyManagement>"
+            )
+        end
+        let(:dependency_files) do
+          files = super()
+          [files[0], files[1], Dependabot::DependencyFile.new(name: "c/pom.xml", content: module_c_body), files[2]]
+        end
+
+        before do
+          stub_request(:get, "https://repo.maven.apache.org/maven2/com/example/other/maven-metadata.xml")
+            .to_return(
+              body: "<metadata><versioning><versions><version>0.9.0</version><version>1.0.0</version>" \
+                    "<version>1.0.1</version></versions></versioning></metadata>"
+            )
+          stub_request(:get, "https://mirror.example.com/maven2/com/example/other/maven-metadata.xml")
+            .to_return(
+              body: "<metadata><versioning><versions><version>0.9.0</version></versions></versioning></metadata>"
+            )
+        end
+
+        it "checks the dependency only against the linked module" do
+          expect(updater.update_possible?).to be(true)
+          expect(updated_files.map(&:name)).to contain_exactly("a/pom.xml", "b/pom.xml")
+        end
+      end
+
+      context "when an updated dependency is also declared with a literal version in another module" do
+        let(:module_c_body) do
+          fixture("poms", "shared_property_module_pom.xml")
+            .sub("<artifactId>module-a</artifactId>", "<artifactId>module-c</artifactId>")
+            .sub(%r{\s*<properties>.*?</properties>}m, "")
+            .gsub(%r{(</dependency>)\s*<dependency>.*?</dependency>}m, '\\1')
+            .sub("${lib.version}", "0.9.0")
+        end
+        let(:dependency_files) do
+          super() + [Dependabot::DependencyFile.new(name: "c/pom.xml", content: module_c_body)]
+        end
+
+        it "still updates the property in every module that defines it" do
+          expect(updater.update_possible?).to be(true)
+          expect(updated_files.map(&:name)).to include("a/pom.xml", "b/pom.xml")
+        end
+      end
+
+      context "when another module inherits the property from a remote parent" do
+        let(:module_b_body) do
+          super()
+            .sub(%r{\s*<properties>.*?</properties>}m, "")
+            .sub(
+              "  <groupId>com.example</groupId>\n  <artifactId>module-b</artifactId>",
+              "  <parent>\n    <groupId>com.example</groupId>\n    <artifactId>remote-parent</artifactId>\n" \
+              "    <version>1.0</version>\n  </parent>\n  <groupId>com.example</groupId>\n" \
+              "  <artifactId>module-b</artifactId>"
+            )
+        end
+
+        before do
+          stub_request(:get, "https://repo.maven.apache.org/maven2/com/example/remote-parent/1.0/remote-parent-1.0.pom")
+            .to_return(
+              body: "<project><groupId>com.example</groupId><artifactId>remote-parent</artifactId>" \
+                    "<version>1.0</version><properties><lib.version>1.0.0</lib.version></properties></project>"
+            )
+        end
+
+        it "only updates the property declared in the repository" do
+          expect(dependency.requirements.map { |req| req.metadata_string("property_source") })
+            .to include("remote_pom.xml")
+          expect(updater.update_possible?).to be(true)
+          expect(updated_files.map(&:name)).to eq(["a/pom.xml"])
+        end
+      end
+
+      context "when another module defines the property with a different value" do
+        let(:module_b_body) do
+          super().sub("<lib.version>1.0.0</lib.version>", "<lib.version>0.9.0</lib.version>")
+        end
+
+        it "only updates the module with the selected property value" do
+          expect(updater.update_possible?).to be(true)
+          selected_file = dependency.requirements.find { |req| req.requirement == dependency.version }&.file
+
+          files = updated_files
+          expect(files.map(&:name)).to eq([selected_file])
+          expect(files.first.content).to include("<lib.version>1.0.1</lib.version>")
+        end
+      end
+    end
   end
 
   describe "#updated_dependencies" do
     subject(:updated_dependencies) { updater.updated_dependencies }
+
+    context "when the dependency also has an override that uses a property no declaration uses" do
+      let(:dependency_files) { [pom, tools_pom] }
+      let(:tools_pom) do
+        Dependabot::DependencyFile.new(name: "tools/pom.xml", content: <<~XML)
+          <project>
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>com.dependabot</groupId>
+            <artifactId>tools</artifactId>
+            <version>0.0.1-RELEASE</version>
+            <properties>
+              <tools.version>4.3.12.RELEASE</tools.version>
+            </properties>
+            <dependencyManagement>
+              <dependencies>
+                <dependency>
+                  <groupId>org.springframework</groupId>
+                  <artifactId>spring-beans</artifactId>
+                  <version>${tools.version}</version>
+                </dependency>
+              </dependencies>
+            </dependencyManagement>
+          </project>
+        XML
+      end
+      let(:dependency_requirements) do
+        [
+          {
+            file: "tools/pom.xml",
+            requirement: "4.3.12.RELEASE",
+            groups: [],
+            source: nil,
+            metadata: {
+              property_name: "tools.version",
+              property_source: "tools/pom.xml",
+              packaging_type: "jar",
+              transitive_override: true
+            }
+          },
+          *super()
+        ]
+      end
+
+      it "raises the declared property, not the override's" do
+        expect(updated_dependencies.map(&:name))
+          .to contain_exactly("org.springframework:spring-beans", "org.springframework:spring-context")
+        beans = updated_dependencies.find { |dep| dep.name == "org.springframework:spring-beans" }
+        expect(beans.requirements.find { |req| req.file == "tools/pom.xml" }.requirement).to eq("4.3.12.RELEASE")
+      end
+    end
+
+    context "when a dependency sharing the property also has a literal transitive override" do
+      let(:dependency_files) { [pom, tools_pom] }
+      let(:tools_pom) do
+        Dependabot::DependencyFile.new(name: "tools/pom.xml", content: <<~XML)
+          <project>
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>com.dependabot</groupId>
+            <artifactId>tools</artifactId>
+            <version>0.0.1-RELEASE</version>
+            <dependencyManagement>
+              <dependencies>
+                <dependency>
+                  <groupId>org.springframework</groupId>
+                  <artifactId>spring-context</artifactId>
+                  <version>4.3.10.RELEASE</version>
+                </dependency>
+              </dependencies>
+            </dependencyManagement>
+            <build>
+              <plugins>
+                <plugin>
+                  <groupId>org.apache.maven.plugins</groupId>
+                  <artifactId>maven-shade-plugin</artifactId>
+                  <version>3.5.1</version>
+                  <dependencies>
+                    <dependency>
+                      <groupId>org.springframework</groupId>
+                      <artifactId>spring-context</artifactId>
+                      <version>4.3.10.RELEASE</version>
+                    </dependency>
+                  </dependencies>
+                </plugin>
+              </plugins>
+            </build>
+          </project>
+        XML
+      end
+
+      def tools_requirements(updated)
+        dep = updated.find { |d| d.name == "org.springframework:spring-context" }
+        dep.requirements.select { |req| req.file == "tools/pom.xml" }.map(&:requirement)
+      end
+
+      def updated_tools_pom(updated)
+        Dependabot::Maven::FileUpdater.new(dependencies: updated, dependency_files: dependency_files, credentials: [])
+                                      .updated_dependency_files
+                                      .find { |file| file.name == "tools/pom.xml" }
+      end
+
+      it "leaves the override, and the plugin copy that would rewrite it, alone in a version update" do
+        expect(tools_requirements(updated_dependencies)).to eq(["4.3.10.RELEASE", "4.3.10.RELEASE"])
+        expect(updated_tools_pom(updated_dependencies)).to be_nil
+      end
+
+      context "when it's a security update for that dependency" do
+        let(:updater) do
+          described_class.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            target_version_details: target_version_details,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            security_update: true
+          )
+        end
+        let(:dependency_name) { "org.springframework:spring-context" }
+
+        it "raises the override and the plugin copy" do
+          expect(tools_requirements(updated_dependencies)).to eq(["23.6-jre", "23.6-jre"])
+          expect(updated_tools_pom(updated_dependencies).content).not_to include("4.3.10.RELEASE")
+        end
+      end
+    end
 
     it "updates both dependencies" do
       expect(updated_dependencies).to eq(

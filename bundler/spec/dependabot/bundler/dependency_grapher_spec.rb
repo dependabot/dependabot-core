@@ -1,5 +1,7 @@
-# typed: strict
+# typed: false
 # frozen_string_literal: true
+
+# Sorbet cannot resolve the child-context-only dependency_files fixture.
 
 require "spec_helper"
 require "dependabot/bundler"

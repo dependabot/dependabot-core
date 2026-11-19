@@ -1,12 +1,11 @@
 # typed: strong
 # frozen_string_literal: true
 
-require "pathname"
 require "sorbet-runtime"
 
 require "dependabot/dependency_file"
 require "dependabot/dependency_graphers/base"
-require "dependabot/python/shared_file_fetcher"
+require "dependabot/python/requirement_references"
 
 module Dependabot
   module Python
@@ -55,27 +54,6 @@ module Dependabot
             path.match?(REQUIRE_TXT_REGEX) ||
             path.match?(DEPENDENCIES_TXT_REGEX) ||
             path.match?(DEPEND_TXT_REGEX)
-        end
-
-        # Resolves the sibling paths a requirements file references via `-r`/`-c`, returning repo-relative
-        # cleanpaths (matching fetched DependencyFile names). Single home for reference resolution, shared by the
-        # grapher's bystander filter and the layering group builder so reference-syntax handling never drifts.
-        #
-        # Reuses SharedFileFetcher's reference regexes so callers keep exactly the children the file fetcher pulled in.
-        sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
-        def self.referenced_paths(file)
-          content = file.content
-          return [] if content.nil?
-
-          current_dir = File.dirname(file.name)
-          referenced =
-            content.scan(Dependabot::Python::SharedFileFetcher::CHILD_REQUIREMENT_REGEX).flatten +
-            content.scan(Dependabot::Python::SharedFileFetcher::CONSTRAINT_REGEX).flatten
-
-          referenced.map do |path|
-            resolved = current_dir == "." ? path : File.join(current_dir, path)
-            Pathname.new(resolved).cleanpath.to_path
-          end
         end
 
         sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
@@ -129,7 +107,9 @@ module Dependabot
           end
 
           # When the primary is a compiled `.txt`, the `-r`/`-c` directives live in the paired `.in` files.
-          referenced = referenced_requirement_files([primary] + paired)
+          # Constraints files join every layer below, so they are seeded here too: a constraints file
+          # that references siblings needs those siblings on disk for the layer to parse.
+          referenced = referenced_requirement_files([primary] + paired + constraints_files)
 
           support = (paired + referenced + constraints_files).uniq.map do |f|
             as_support_file(f)
@@ -167,7 +147,7 @@ module Dependabot
 
           until queue.empty?
             current = T.must(queue.shift)
-            self.class.referenced_paths(current).each do |path|
+            RequirementReferences.paths(current).each do |path|
               next if seen.include?(path)
 
               seen << path

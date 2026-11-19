@@ -41,8 +41,11 @@ module Dependabot
         # intersection semantics for operator-style lists anyway because this
         # method also parses Dependabot ignore conditions (e.g. ">= 2.a, < 3"),
         # which are always intersections; treating those as unions would make
-        # every ignore condition match all versions.
+        # every ignore condition match all versions. A list of equalities only
+        # ("=0.5.4, =0.5.5") would admit nothing as an intersection, so it is
+        # read as the union Pkg takes.
         return false if constraints.length <= 1
+        return false if constraints.all? { |c| c.start_with?("=") }
 
         constraints.all? { |c| c.match?(/^[<>=]/) }
       end
@@ -63,6 +66,18 @@ module Dependabot
       sig { params(requirement_string: String).returns(T::Array[Dependabot::Julia::Requirement]) }
       def self.parse_requirements(requirement_string)
         requirements_array(requirement_string)
+      end
+
+      # Whether a compat entry admits the version. Pkg compares a bound
+      # against major.minor.patch only, so a JLL rebuild ("0.0.43+1") is
+      # admitted by "=0.0.43" or "0.0.42 - 0.0.43" exactly as the version it
+      # rebuilds is, and a prerelease exactly as its release ("1" rejects
+      # "2.0.0-rc1"). Ignore conditions go through satisfied_by? instead and
+      # keep the ordering between builds ("> 1.6.10" ignores "1.6.10+1").
+      sig { params(version: T.any(Gem::Version, String)).returns(T::Boolean) }
+      def admits?(version)
+        release = Dependabot::Julia::Version.new(version.to_s).compat_version_string
+        T.cast(satisfied_by?(Dependabot::Julia::Version.new(release)), T::Boolean)
       end
 
       sig { params(version: String).returns(String) }

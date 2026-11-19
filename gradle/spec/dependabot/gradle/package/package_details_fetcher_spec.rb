@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve parameterized its examples. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -595,6 +596,89 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
         it "raises after exhausting retries" do
           expect { versions }.to raise_error(Excon::Error::Socket)
         end
+      end
+    end
+
+    context "when Maven Central is rate limited" do
+      before do
+        stub_request(:get, maven_central_metadata_url)
+          .to_return(status: 429, body: "Too Many Requests")
+      end
+
+      it "raises a RegistryError instead of returning no versions" do
+        expect { versions }.to raise_error(Dependabot::RegistryError) { |e| expect(e.status).to eq(429) }
+      end
+    end
+
+    context "when Maven Central returns a server error" do
+      before do
+        stub_request(:get, maven_central_metadata_url)
+          .to_return(status: 503, body: "Service Unavailable")
+      end
+
+      it "raises a RegistryError instead of returning no versions" do
+        expect { versions }.to raise_error(Dependabot::RegistryError) { |e| expect(e.status).to eq(503) }
+      end
+    end
+
+    context "when Maven Central returns a 404" do
+      before do
+        stub_request(:get, maven_central_metadata_url).to_return(status: 404, body: "")
+      end
+
+      it "returns no versions" do
+        expect(versions).to eq([])
+      end
+    end
+
+    context "when a private repository returns a server error" do
+      let(:private_repo) { "https://private.repo.example.com/maven2" }
+      let(:credentials) do
+        [Dependabot::Credential.new({ "type" => "maven_repository", "url" => private_repo })]
+      end
+      let(:private_metadata_url) { "#{private_repo}/com/google/guava/guava/maven-metadata.xml" }
+
+      before do
+        stub_request(:get, private_metadata_url).to_return(status: 502, body: "Bad Gateway")
+      end
+
+      context "when no other repository has versions" do
+        before do
+          stub_request(:get, maven_central_metadata_url).to_return(status: 404, body: "")
+        end
+
+        it "raises PrivateSourceBadResponse" do
+          expect { versions }
+            .to raise_error(Dependabot::PrivateSourceBadResponse) { |e| expect(e.source).to eq(private_repo) }
+        end
+      end
+
+      context "when another repository has versions" do
+        it "returns the versions from the other repository" do
+          expect(versions.count).to eq(70)
+        end
+      end
+    end
+
+    context "when a registry that replaces Maven Central is rate limited" do
+      let(:metadata_base_url) { "https://registry.example.com/maven" }
+      let(:mirror_metadata_url) { "https://mirror.example.com/maven/com/google/guava/guava/maven-metadata.xml" }
+      let(:credentials) do
+        [
+          Dependabot::Credential.new({ "type" => "maven_repository", "url" => "https://mirror.example.com/maven/" }),
+          Dependabot::Credential.new(
+            { "type" => "maven_repository", "url" => "https://registry.example.com/maven/", "replaces-base" => true }
+          )
+        ]
+      end
+
+      before do
+        stub_request(:get, maven_central_metadata_url).to_return(status: 429, body: "Too Many Requests")
+        stub_request(:get, mirror_metadata_url).to_return(status: 200, body: maven_central_releases)
+      end
+
+      it "raises a RegistryError even when another repository has versions" do
+        expect { versions }.to raise_error(Dependabot::RegistryError) { |e| expect(e.status).to eq(429) }
       end
     end
   end

@@ -1,0 +1,4 @@
+npm error code ERR_INVALID_AUTH
+npm error Invalid auth configuration found: `_auth` must be renamed to `//registry.npmjs.org/:_auth` in project config
+npm error Please run `npm config fix` to repair your configuration.`
+npm error A complete log of this run can be found in: /home/dependabot/.npm/_logs/2026-10-14T20_24_36_943Z-debug-0.log

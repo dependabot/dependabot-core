@@ -1,0 +1,11 @@
+Error: ERR_PNPM_PACKAGE_MANAGER_ADD_RESOLVE_TARBALL
+
+  × adding a new package
+  ╰─▶ Failed to resolve tarball dependency "http://127.0.0.1:9/x/
+      aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      aaaaaaaaaaaaaaaaaaaaaaaaaaaa.tgz": error sending request for url
+      (http://127.0.0.1:9/x/
+      aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      aaaaaaaaaaaaaaaaaaaaaaaaaaaa.tgz): client error (Connect): tcp connect
+      error: Connection refused (os error 111)
+

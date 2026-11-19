@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the dependency fixture defined only in child contexts.
+
 require "spec_helper"
 require "dependabot/deno/metadata_finder"
 require "dependabot/dependency"

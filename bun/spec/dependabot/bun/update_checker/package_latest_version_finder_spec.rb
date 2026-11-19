@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -9,6 +9,7 @@ require "dependabot/credential"
 require "dependabot/security_advisory"
 require "dependabot/package/release_cooldown_options"
 require "dependabot/bun/version"
+require "dependabot/bun/requirement"
 require "dependabot/bun/package/package_details_fetcher"
 
 MAX_COOLDOWN_DAYS = 100 * 365
@@ -1131,7 +1132,9 @@ RSpec.describe Dependabot::Bun::UpdateChecker::PackageLatestVersionFinder do
         Dependabot::SecurityAdvisory.new(
           dependency_name: "rails",
           package_manager: "bun",
-          vulnerable_versions: ["~1.1.0", "1.2.0", "1.3.0"]
+          vulnerable_versions: ["~1.1.0", "1.2.0", "1.3.0"].map do |requirement|
+            Dependabot::Bun::Requirement.new(requirement)
+          end
         )
       ]
     end

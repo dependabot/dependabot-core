@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the files fixture defined only in child contexts.
+
 require "spec_helper"
 require "dependabot/deno/file_parser"
 require "dependabot/dependency_file"

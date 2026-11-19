@@ -1,0 +1,12 @@
+ext {
+    exampleGroup = 'com.example'
+}
+
+dependencies {
+    implementation 'com.example:lib-instrumentation:4.0.0-RC1', 'com.example:error-handler:4.0.0-RC1'
+    implementation 'org.other:error-handler:4.0.0-RC1'
+    implementation group: 'com.example', name: 'lib-metrics', version: '4.0.0-RC1'
+    implementation group: 'com.example', name: 'lib-metrics-extra', version: '4.0.0-RC1'
+    implementation "$exampleGroup:lib-tracing:4.0.0-RC1"
+    implementation "$exampleGroup:lib-tracing-extra:4.0.0-RC1"
+}

@@ -228,7 +228,9 @@ module Dependabot
         cooldown = update_cooldown
         return false unless cooldown
 
-        current_version = dependency.version ? version_class.new(dependency.version) : nil
+        # Starlark constants parsed as versions (e.g. RULES_ANDROID_VERSION) are not comparable
+        current = dependency.version
+        current_version = version_class.new(current) if current && version_class.correct?(current)
         new_version = version_class.new(version_string)
         days = Dependabot::UpdateCheckers::CooldownCalculation.cooldown_days_for(cooldown, current_version, new_version)
         Dependabot::UpdateCheckers::CooldownCalculation.within_cooldown_window?(release_date, days)

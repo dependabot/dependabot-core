@@ -1,22 +1,33 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/nix/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Nix::FileFetcher do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(T::Array[Dependabot::Credential]) }
   let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
+  sig { returns(String) }
   let(:url) { github_url + "repos/example/repo/contents/" }
+  sig { returns(String) }
   let(:github_url) { "https://api.github.com/" }
+  sig { returns(String) }
   let(:directory) { "/" }
+  sig { returns(Dependabot::Source) }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -24,6 +35,7 @@ RSpec.describe Dependabot::Nix::FileFetcher do
       directory: directory
     )
   end
+  sig { returns(Dependabot::Nix::FileFetcher) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:file_fetcher_instance) do
     described_class.new(
       source: source,
@@ -31,6 +43,7 @@ RSpec.describe Dependabot::Nix::FileFetcher do
       repo_contents_path: nil
     )
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   before do
     allow(file_fetcher_instance).to receive_messages(commit: "sha")
@@ -80,6 +93,7 @@ RSpec.describe Dependabot::Nix::FileFetcher do
 
   private
 
+  sig { params(filename: String).returns(String) }
   def fixture_body(filename)
     content = File.read(
       File.join(__dir__, "fixtures", filename)

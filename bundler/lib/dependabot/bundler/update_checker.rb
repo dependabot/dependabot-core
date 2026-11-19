@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/bundler/file_updater/requirement_replacer"
@@ -16,6 +16,7 @@ module Dependabot
     # ecosystem update checkers (npm_and_yarn, bun, docker, python) disable this cop
     # for the same reason, so the exception is retained deliberately.
     class UpdateChecker < Dependabot::UpdateCheckers::Base # rubocop:disable Metrics/ClassLength
+      require_relative "update_checker/version_details"
       require_relative "update_checker/force_updater"
       require_relative "update_checker/file_preparer"
       require_relative "update_checker/requirements_updater"
@@ -29,14 +30,14 @@ module Dependabot
       def latest_version
         return latest_version_for_git_dependency if git_dependency?
 
-        latest_version_details&.fetch(:version)
+        latest_version_details&.version
       end
 
       sig { override.returns(T.nilable(T.any(String, Dependabot::Bundler::Version))) }
       def latest_resolvable_version
         return latest_resolvable_version_for_git_dependency if git_dependency?
 
-        latest_resolvable_version_details&.fetch(:version)
+        latest_resolvable_version_details&.version
       end
 
       sig { override.returns(T.nilable(Dependabot::Bundler::Version)) }
@@ -67,7 +68,7 @@ module Dependabot
 
         @latest_resolvable_version_detail_with_no_unlock = T.let(
           @latest_resolvable_version_detail_with_no_unlock,
-          T.nilable(T::Hash[Symbol, T.untyped])
+          T.nilable(VersionDetails)
         )
 
         @latest_resolvable_version_detail_with_no_unlock ||=
@@ -75,16 +76,16 @@ module Dependabot
           .latest_resolvable_version_details
 
         if git_dependency?
-          @latest_resolvable_version_detail_with_no_unlock&.fetch(:commit_sha)
+          @latest_resolvable_version_detail_with_no_unlock&.commit_sha
         else
-          @latest_resolvable_version_detail_with_no_unlock&.fetch(:version)
+          @latest_resolvable_version_detail_with_no_unlock&.version
         end
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        latest_version_for_req_updater = latest_version_details&.fetch(:version)&.to_s
-        latest_resolvable_version_for_req_updater = preferred_resolvable_version_details&.fetch(:version)&.to_s
+        latest_version_for_req_updater = latest_version_details&.version&.to_s
+        latest_resolvable_version_for_req_updater = preferred_resolvable_version_details&.version&.to_s
 
         RequirementsUpdater.new(
           requirements: dependency.requirements,
@@ -204,9 +205,12 @@ module Dependabot
         force_updater.updated_dependencies
       end
 
-      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { returns(T.nilable(VersionDetails)) }
       def preferred_resolvable_version_details
-        return { version: lowest_resolvable_security_fix_version } if vulnerable?
+        if vulnerable?
+          version = lowest_resolvable_security_fix_version
+          return version && VersionDetails.new(version: version)
+        end
 
         latest_resolvable_version_details
       end
@@ -263,17 +267,17 @@ module Dependabot
           end
       end
 
-      sig { params(remove_git_source: T::Boolean).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { params(remove_git_source: T::Boolean).returns(T.nilable(VersionDetails)) }
       def latest_version_details(remove_git_source: false)
-        @latest_version_details ||= T.let({}, T.nilable(T::Hash[T.untyped, T.untyped]))
+        @latest_version_details ||= T.let({}, T.nilable(T::Hash[T::Boolean, T.nilable(VersionDetails)]))
         @latest_version_details[remove_git_source] ||=
           latest_version_finder(remove_git_source: remove_git_source)
           .latest_version_details
       end
 
-      sig { params(remove_git_source: T::Boolean).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { params(remove_git_source: T::Boolean).returns(T.nilable(VersionDetails)) }
       def latest_resolvable_version_details(remove_git_source: false)
-        @latest_resolvable_version_details ||= T.let({}, T.nilable(T::Hash[T.untyped, T.untyped]))
+        @latest_resolvable_version_details ||= T.let({}, T.nilable(T::Hash[T::Boolean, T.nilable(VersionDetails)]))
         @latest_resolvable_version_details[remove_git_source] ||=
           version_resolver(remove_git_source: remove_git_source)
           .latest_resolvable_version_details
@@ -283,7 +287,7 @@ module Dependabot
       def latest_version_for_git_dependency
         latest_release =
           latest_version_details(remove_git_source: true)
-          &.fetch(:version)
+          &.version
 
         # If there's been a release that includes the current pinned ref or
         # that the current branch is behind, we switch to that release.
@@ -329,12 +333,12 @@ module Dependabot
         dependency.version
       end
 
-      sig { returns(T.any(String, T.nilable(Dependabot::Bundler::Version))) }
+      sig { returns(T.nilable(Dependabot::Bundler::Version)) }
       def latest_resolvable_version_without_git_source
         return nil unless latest_version.is_a?(Gem::Version)
 
         latest_resolvable_version_details(remove_git_source: true)
-          &.fetch(:version)
+          &.version
       rescue Dependabot::DependencyFileNotResolvable
         nil
       end
@@ -346,9 +350,7 @@ module Dependabot
         # If this dependency has a git version in the Gemfile.lock but not in
         # the Gemfile (i.e., because they're out-of-sync) we might not get a
         # commit_sha back from Bundler. In that case, return `nil`.
-        return unless details&.key?(:commit_sha)
-
-        details.fetch(:commit_sha)
+        details&.commit_sha
       rescue Dependabot::DependencyFileNotResolvable
         nil
       end
@@ -361,7 +363,7 @@ module Dependabot
         git_tag_resolvable?(latest_tag_details.tag)
       end
 
-      sig { params(release: T.untyped).returns(T::Boolean) }
+      sig { params(release: T.nilable(Dependabot::Bundler::Version)).returns(T::Boolean) }
       def git_branch_or_ref_in_release?(release)
         return false unless release
 
@@ -423,11 +425,11 @@ module Dependabot
           )
       end
 
-      sig { params(remove_git_source: T::Boolean, unlock_requirement: T::Boolean).returns(T.untyped) }
+      sig { params(remove_git_source: T::Boolean, unlock_requirement: T::Boolean).returns(VersionResolver) }
       def version_resolver(remove_git_source:, unlock_requirement: true)
-        @version_resolver ||= T.let({}, T.nilable(T::Hash[T.untyped, T.untyped]))
-        @version_resolver[remove_git_source] ||= {}
-        @version_resolver[remove_git_source][unlock_requirement] ||=
+        @version_resolver ||= T.let({}, T.nilable(T::Hash[T::Boolean, T::Hash[T::Boolean, VersionResolver]]))
+        resolvers = @version_resolver[remove_git_source] ||= {}
+        resolvers[unlock_requirement] ||=
           VersionResolver.new(
             dependency: dependency,
             unprepared_dependency_files: dependency_files,
@@ -445,7 +447,7 @@ module Dependabot
 
       sig { params(remove_git_source: T::Boolean).returns(Dependabot::Bundler::UpdateChecker::LatestVersionFinder) }
       def latest_version_finder(remove_git_source:)
-        @latest_version_finder ||= T.let({}, T.nilable(T::Hash[T.untyped, T.untyped]))
+        @latest_version_finder ||= T.let({}, T.nilable(T::Hash[T::Boolean, LatestVersionFinder]))
         @latest_version_finder[remove_git_source] ||=
           begin
             prepared_dependency_files = prepared_dependency_files(

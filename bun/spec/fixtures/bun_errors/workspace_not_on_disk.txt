@@ -1,0 +1,3 @@
+bun add v1.4.2 (744846f84)
+error: workspace "@example/scripts" depends on workspace "@example/closed" (packages/closed), which is listed in bun.lock but not on disk
+note: a pruned checkout must keep every workspace that its remaining workspaces depend on

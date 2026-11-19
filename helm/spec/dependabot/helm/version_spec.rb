@@ -1,10 +1,12 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/helm/version"
 
 RSpec.describe Dependabot::Helm::Version do
+  extend T::Sig
+
   describe ".correct?" do
     it "returns true for versions" do
       expect(described_class.correct?("3.7.7-slim-buster")).to be true
@@ -43,9 +45,40 @@ RSpec.describe Dependabot::Helm::Version do
     it "sorts properly for <prefix>_<year><month><day>.<version>" do
       expect(described_class.new("img_20230915.3")).to be < described_class.new("img_20231011.1")
     end
+
+    it "does not raise for versions with more than one underscore-separated group" do
+      expect { described_class.new("24_2_0") }.not_to raise_error
+      expect { described_class.new("13_1.10.1_3.4.2") }.not_to raise_error
+      expect { described_class.new("09_15_05_30") }.not_to raise_error
+    end
+
+    it "treats the first group as the release part for versions with several underscore groups" do
+      expect(described_class.new("13_1.10.1_3.4.2").to_semver).to eq("13")
+      expect(described_class.new("24_2_0").to_semver).to eq("24")
+    end
+
+    it "sorts properly for <version>_<version>_<version> (for example java, sbt and scala)" do
+      expect(described_class.new("17.0.4_1.7.1_3.2.0")).to be < described_class.new("17.0.4_1.8.0_3.2.0")
+      expect(described_class.new("17.0.4_1.8.0_3.2.0")).to be < described_class.new("17.0.4_1.8.0_3.3.1")
+      expect(described_class.new("17.0.4_1.8.0_3.3.1")).to be < described_class.new("17.0.5_1.7.1_3.2.0")
+    end
+
+    it "sorts a version with extra groups after the same version without them" do
+      expect(described_class.new("17.0.4_8")).to be < described_class.new("17.0.4_8_1")
+    end
+
+    it "ignores groups that are not numeric" do
+      expect(described_class.new("2_1_d088644")).to eq(described_class.new("2_1_0"))
+    end
+
+    it "agrees with .correct? for versions with several underscore groups" do
+      expect(described_class.correct?("24_2_0")).to be true
+      expect(described_class.new("24_2_0")).to be_a(described_class)
+    end
   end
 
   describe ".correct?" do
+    sig { params(version: String).returns(T::Boolean) }
     def check_version_for_correctness?(version)
       docker_version = described_class.new(version)
       described_class.correct?(docker_version)
@@ -112,6 +145,18 @@ RSpec.describe Dependabot::Helm::Version do
 
     it "returns the version string without prefix" do
       expect(described_class.new("img_20230915.3").to_s).to eq("20230915.3")
+    end
+  end
+
+  describe Dependabot::Helm::ImageTag do
+    it "returns the tag exactly as published" do
+      expect(described_class.new("v1.5.0").to_s).to eq("v1.5.0")
+      expect(described_class.new("20.9.0-alpine3.18").to_s).to eq("20.9.0-alpine3.18")
+    end
+
+    it "compares like a Helm::Version" do
+      expect(described_class.new("v1.5.0")).to be > Dependabot::Helm::Version.new("1.4.9")
+      expect(described_class.new("v1.5.0")).to eq(Dependabot::Helm::Version.new("1.5.0"))
     end
   end
 end

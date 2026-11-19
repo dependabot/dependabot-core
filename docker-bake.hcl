@@ -16,6 +16,7 @@ variable "UPDATER_IMAGE_PREFIX" {
 
 variable "ECOSYSTEMS" {
   default = [
+    { name = "apm", image = "apm", dockerfile = "apm/Dockerfile" },
     { name = "bazel", image = "bazel", dockerfile = "bazel/Dockerfile" },
     { name = "bun", image = "bun", dockerfile = "bun/Dockerfile" },
     { name = "bundler", image = "bundler", dockerfile = "bundler/Dockerfile" },

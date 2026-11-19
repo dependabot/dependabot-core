@@ -1,0 +1,3 @@
+bun install v1.4.2 (744846f84)
+error: failed to download @example/clock@1.0.0: 403 Forbidden
+  https://npm.example.com:8443/@example/clock/-/clock-1.0.0.tgz

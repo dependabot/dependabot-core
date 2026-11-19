@@ -378,8 +378,9 @@ module Dependabot
         def new_version
           # New version looks like a git SHA and there's a new ref, guarding
           # against changes to a nil new_ref (not certain this can actually
-          # happen atm)
-          if T.must(dependency.version).match?(/^[0-9a-f]{40}$/) && ref_changed? &&
+          # happen atm). A requirement-only update, such as a Julia stdlib's
+          # compat entry, has no version at all.
+          if dependency.version&.match?(/^[0-9a-f]{40}$/) && ref_changed? &&
              new_ref
             return new_ref
           end

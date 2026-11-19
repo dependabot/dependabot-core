@@ -1,0 +1,7 @@
+Error:   × installing dependencies
+  ├─▶ Failed to resolve dependency tree: Failed to resolve dependency: Could
+  │   not install from "/tmp/npm/pkg" as it does not exist.
+  │   
+  │   Failed to resolve example@file:../npm/pkg
+  ╰─▶ Failed to resolve dependency: Could not install from "/tmp/npm/pkg" as
+      it does not exist.

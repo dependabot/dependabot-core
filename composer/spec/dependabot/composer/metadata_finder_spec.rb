@@ -1,34 +1,47 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "octokit"
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/composer/metadata_finder"
 require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
 RSpec.describe Dependabot::Composer::MetadataFinder do
+  extend T::Sig
+
+  sig { returns(Dependabot::Composer::MetadataFinder) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   subject(:finder) do
     described_class.new(dependency: dependency, credentials: credentials)
   end
 
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(String) }
   let(:packagist_response) do
     sanitized_name = dependency_name.downcase.gsub("/", "--")
     fixture("packagist_responses", "#{sanitized_name}.json")
   end
+  sig { returns(String) }
   let(:packagist_url) { "https://repo.packagist.org/p2/monolog/monolog.json" }
+  sig { returns(String) }
   let(:dependency_name) { "monolog/monolog" }
+  sig { returns(T::Array[Dependabot::Credential]) }
   let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
+  sig { returns(T::Array[T::Hash[Symbol, Object]]) }
   let(:requirements) do
     [{ file: "composer.json", requirement: "1.*", groups: [], source: nil }]
   end
+  sig { returns(Dependabot::Dependency) }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -37,6 +50,7 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
       package_manager: "composer"
     )
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   before do
     packagist_url = "https://repo.packagist.org/p2/#{dependency_name.downcase}.json"
@@ -52,6 +66,7 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
   it_behaves_like "a dependency metadata finder"
 
   describe "#source_url" do
+    sig { returns(T.nilable(String)) }
     subject(:source_url) { finder.source_url }
 
     context "when there is a github link in the packagist response" do
@@ -63,6 +78,7 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
       end
 
       context "when the package name includes capitals" do
+        sig { returns(String) }
         let(:dependency_name) { "monolog/MonoLog" }
 
         it "downcases the dependency name" do
@@ -115,6 +131,7 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
       end
 
       context "when there is a source URL on the dependency" do
+        sig { returns(T::Array[T::Hash[Symbol, Object]]) }
         let(:requirements) do
           [{
             file: "composer.json",
@@ -137,12 +154,14 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
     end
 
     context "when packagist returns an empty array" do
+      sig { returns(String) }
       let(:packagist_response) { '{"packages":[]}' }
 
       it { is_expected.to be_nil }
     end
 
     context "when the packagist link resolves to a redirect" do
+      sig { returns(String) }
       let(:redirect_url) { "https://repo.packagist.org/p2/monolog/Monolog.json" }
 
       before do

@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve child-only target_version fixtures and shared-example fixtures.
+
 require "spec_helper"
 require "shared_contexts"
 
@@ -397,7 +399,9 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         # Mock the LatestVersionFinder to verify it receives cooldown_options
         latest_version_finder = instance_double(Dependabot::Bundler::UpdateChecker::LatestVersionFinder)
         allow(latest_version_finder)
-          .to receive(:latest_version_details).and_return({ version: Dependabot::Bundler::Version.new("1.5.0") })
+          .to receive(:latest_version_details).and_return(
+            described_class::VersionDetails.new(version: Dependabot::Bundler::Version.new("1.5.0"))
+          )
         allow(Dependabot::Bundler::UpdateChecker::LatestVersionFinder)
           .to receive(:new).and_return(latest_version_finder)
       end
@@ -693,7 +697,9 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
   describe "#latest_resolvable_version cached tag probes" do
     let(:current_version) { "a" * 40 }
     let(:tag) { Dependabot::GitTagDetails.new(tag: "v1.5.0", tag_sha: "b" * 40) }
-    let(:resolution_result) { { version: Dependabot::Bundler::Version.new("1.5.0") } }
+    let(:resolution_result) do
+      described_class::VersionDetails.new(version: Dependabot::Bundler::Version.new("1.5.0"))
+    end
     let(:resolver) do
       instance_double(
         Dependabot::Bundler::UpdateChecker::VersionResolver,
@@ -766,6 +772,148 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     end
   end
 
+  describe "#latest_resolvable_version_with_no_unlock typed results" do
+    let(:current_version) { "a" * 40 }
+    let(:commit_sha) { "b" * 40 }
+    let(:resolution_result) do
+      described_class::VersionDetails.new(
+        version: Dependabot::Bundler::Version.new("1.5.0"),
+        commit_sha: commit_sha
+      )
+    end
+    let(:resolver) do
+      instance_double(
+        Dependabot::Bundler::UpdateChecker::VersionResolver,
+        latest_resolvable_version_details: resolution_result
+      )
+    end
+    let(:git_checker) do
+      instance_double(Dependabot::GitCommitChecker, git_dependency?: true, pinned?: false)
+    end
+
+    before do
+      allow(checker).to receive(:latest_version).and_return(current_version)
+      allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+      allow(Dependabot::Bundler::UpdateChecker::VersionResolver).to receive(:new).and_return(resolver)
+    end
+
+    it "returns the SHA from the cached record" do
+      2.times { expect(checker.latest_resolvable_version_with_no_unlock).to eq(commit_sha) }
+
+      expect(resolver).to have_received(:latest_resolvable_version_details).once
+    end
+
+    context "without a SHA" do
+      let(:commit_sha) { nil }
+
+      it "returns nil while retaining the successful details" do
+        2.times { expect(checker.latest_resolvable_version_with_no_unlock).to be_nil }
+
+        expect(resolver).to have_received(:latest_resolvable_version_details).once
+      end
+    end
+
+    context "without a result" do
+      let(:resolution_result) { nil }
+
+      it "does not negatively cache nil results" do
+        2.times { expect(checker.latest_resolvable_version_with_no_unlock).to be_nil }
+
+        expect(resolver).to have_received(:latest_resolvable_version_details).twice
+      end
+    end
+
+    context "when the helper response is malformed" do
+      before do
+        allow(resolver).to receive(:latest_resolvable_version_details)
+          .and_raise(described_class::VersionDetails::InvalidResult.new(
+                       message: "resolve_version result.version must be a string",
+                       error_class: "TypeError",
+                       error_context: { function: "resolve_version" }
+                     ))
+      end
+
+      it "propagates the failure without caching it" do
+        2.times do
+          expect { checker.latest_resolvable_version_with_no_unlock }
+            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+        end
+        expect(resolver).to have_received(:latest_resolvable_version_details).twice
+      end
+    end
+  end
+
+  describe "typed resolution caches" do
+    let(:unlocked_version) { Dependabot::Bundler::Version.new("1.6.0") }
+    let(:locked_version) { Dependabot::Bundler::Version.new("1.5.0") }
+    let(:unlocked_resolver) do
+      instance_double(
+        Dependabot::Bundler::UpdateChecker::VersionResolver,
+        latest_resolvable_version_details: described_class::VersionDetails.new(version: unlocked_version)
+      )
+    end
+    let(:locked_resolver) do
+      instance_double(
+        Dependabot::Bundler::UpdateChecker::VersionResolver,
+        latest_resolvable_version_details: described_class::VersionDetails.new(version: locked_version)
+      )
+    end
+
+    before do
+      allow(checker).to receive(:latest_version).and_return(unlocked_version)
+      allow(Dependabot::Bundler::UpdateChecker::VersionResolver).to receive(:new)
+        .with(hash_including(unlock_requirement: true)).and_return(unlocked_resolver)
+      allow(Dependabot::Bundler::UpdateChecker::VersionResolver).to receive(:new)
+        .with(hash_including(unlock_requirement: false)).and_return(locked_resolver)
+    end
+
+    it "keeps locked and unlocked resolver results separate" do
+      2.times do
+        expect(checker.latest_resolvable_version).to eq(unlocked_version)
+        expect(checker.latest_resolvable_version_with_no_unlock).to eq(locked_version)
+      end
+
+      expect(unlocked_resolver).to have_received(:latest_resolvable_version_details).once
+      expect(locked_resolver).to have_received(:latest_resolvable_version_details).once
+      expect(Dependabot::Bundler::UpdateChecker::VersionResolver).to have_received(:new).twice
+    end
+  end
+
+  describe "#updated_requirements without a security fix" do
+    let(:latest_finder) do
+      instance_double(
+        Dependabot::Bundler::UpdateChecker::LatestVersionFinder,
+        latest_version_details: described_class::VersionDetails.new(
+          version: Dependabot::Bundler::Version.new("1.5.0")
+        ),
+        lowest_security_fix_version: nil
+      )
+    end
+    let(:requirements_updater) do
+      instance_double(Dependabot::Bundler::UpdateChecker::RequirementsUpdater, updated_requirements: [])
+    end
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: dependency_name,
+          package_manager: "bundler",
+          vulnerable_versions: ["<= 1.4.0"]
+        )
+      ]
+    end
+
+    before do
+      allow(Dependabot::Bundler::UpdateChecker::LatestVersionFinder).to receive(:new).and_return(latest_finder)
+      allow(Dependabot::Bundler::UpdateChecker::RequirementsUpdater).to receive(:new).and_return(requirements_updater)
+    end
+
+    it "passes a nil resolvable version to the requirements updater" do
+      expect(checker.updated_requirements).to eq([])
+      expect(Dependabot::Bundler::UpdateChecker::RequirementsUpdater).to have_received(:new)
+        .with(hash_including(latest_version: "1.5.0", latest_resolvable_version: nil))
+    end
+  end
+
   describe "#latest_version_resolvable_with_full_unlock?" do
     subject { checker.send(:latest_version_resolvable_with_full_unlock?) }
 
@@ -811,6 +959,64 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
         it { is_expected.to be_truthy }
       end
+    end
+  end
+
+  # Regression for a lockfile whose CHECKSUMS entry for an unrelated gem
+  # (statesman) doesn't match what the registry serves. Bundler refuses to
+  # resolve, so every update fails. It used to surface as an unknown error on
+  # version updates, and as a silent "not resolvable" on security updates.
+  describe "with a checksum mismatch on an unrelated gem" do
+    include_context "when stubbing rubygems compact index"
+    include_context "when stubbing rubygems versions api"
+
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: dependency_name,
+          package_manager: "bundler",
+          vulnerable_versions: ["<= 1.4.0"]
+        )
+      ]
+    end
+
+    shared_examples "a checksum mismatch" do
+      def raise_checksum_mismatch
+        raise_error(Dependabot::DependencyChecksumMismatch) do |error|
+          expect(error.dependency_name).to eq("statesman (1.2.1)")
+          expect(error.message).to include("mismatched checksums for statesman (1.2.1)")
+          expect(error.message).to include("sha256=#{'e65a37e5' * 8} from the lockfile CHECKSUMS at Gemfile.lock:")
+          expect(error.message).to include("from the API at https://rubygems.org.")
+          expect(error.message).not_to include("dependabot-updater")
+          expect(error.message).not_to include("disable_checksum_validation")
+        end
+      end
+
+      it "raises it from version update resolution" do
+        expect { checker.latest_resolvable_version }.to raise_checksum_mismatch
+      end
+
+      it "raises it from security update resolution instead of reporting the fix as not resolvable" do
+        expect { checker.lowest_resolvable_security_fix_version }.to raise_checksum_mismatch
+      end
+
+      it "raises it from full unlock resolution instead of reporting it as not resolvable" do
+        allow(checker).to receive(:latest_version).and_return(Dependabot::Bundler::Version.new("1.5.0"))
+
+        expect { checker.can_update?(requirements_to_unlock: :all) }.to raise_checksum_mismatch
+      end
+    end
+
+    context "with Bundler 2" do
+      let(:dependency_files) { bundler_project_dependency_files("checksum_mismatch_unrelated_gem_2") }
+
+      it_behaves_like "a checksum mismatch"
+    end
+
+    context "with Bundler 4" do
+      let(:dependency_files) { bundler_project_dependency_files("checksum_mismatch_unrelated_gem_4") }
+
+      it_behaves_like "a checksum mismatch"
     end
   end
 
@@ -1568,7 +1774,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             allow(checker)
               .to receive(:latest_resolvable_version_details)
               .with(remove_git_source: true)
-              .and_return(version: Dependabot::Bundler::Version.new("2.0.0"))
+              .and_return(described_class::VersionDetails.new(version: Dependabot::Bundler::Version.new("2.0.0")))
           end
 
           it "raises a helpful error" do
@@ -1618,7 +1824,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             allow(checker)
               .to receive(:latest_resolvable_version_details)
               .with(remove_git_source: true)
-              .and_return(version: Dependabot::Bundler::Version.new("2.0.0"))
+              .and_return(described_class::VersionDetails.new(version: Dependabot::Bundler::Version.new("2.0.0")))
           end
 
           it { is_expected.to be_nil }
@@ -1788,7 +1994,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           .and_return(dummy_version_resolver)
         expect(dummy_version_resolver)
           .to receive(:latest_version_details)
-          .and_return(version: dummy_version)
+          .and_return(described_class::VersionDetails.new(version: dummy_version))
         expect(checker.latest_resolvable_version).to eq(dummy_version)
       end
     end

@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only dependency_files fixture used by the parent resolver.
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
@@ -10,12 +12,14 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
   let(:resolver) do
     described_class.new(
       dependency_files: dependency_files,
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }]
+      credentials: [Dependabot::Credential.new(
+        {
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }
+      )]
     )
   end
 
@@ -30,6 +34,13 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
   let(:dependency_name) { "abind" }
   let(:current_version) { "1.0.5" }
   let(:target_version) { "2.0.0" }
+  let(:enable_yarn_berry_conflicting_dependencies) { true }
+
+  before do
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_yarn_berry_conflicting_dependencies)
+      .and_return(enable_yarn_berry_conflicting_dependencies)
+  end
 
   describe "#conflicting_dependencies" do
     subject(:conflicting_dependencies) do
@@ -53,10 +64,42 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
         )
       end
 
+      it "does not pass affected versions to the npm helper" do
+        expect(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+          .with(
+            hash_including(
+              function: "npm:findConflictingDependencies",
+              args: [a_kind_of(String), dependency_name, target_version]
+            )
+          )
+          .and_call_original
+
+        conflicting_dependencies
+      end
+
       context "with no blocking dependencies" do
         let(:target_version) { "1.0.0" }
 
         it "returns an empty array" do
+          expect(conflicting_dependencies).to be_empty
+        end
+      end
+
+      context "when the conflicting dependency helper fails" do
+        let(:helper_error) do
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: "unexpected helper failure",
+            error_context: {}
+          )
+        end
+
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_raise(helper_error)
+        end
+
+        it "uses the legacy fallback without consulting the Yarn experiment" do
+          expect(Dependabot::Experiments).not_to receive(:enabled?)
+
           expect(conflicting_dependencies).to be_empty
         end
       end
@@ -74,6 +117,192 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
             "version" => "4.1.4"
           }
         )
+      end
+
+      it "passes the current version so only the matching instance is checked" do
+        expect(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+          .with(
+            hash_including(
+              function: "yarn:findConflictingDependencies",
+              args: [a_kind_of(String), dependency_name, target_version, true, [current_version]]
+            )
+          )
+          .and_call_original
+
+        expect(conflicting_dependencies).not_to be_empty
+      end
+
+      context "when the lockfile holds several versions of the dependency" do
+        let(:dependency_files) { project_dependency_files("yarn/subdependency_multiple_versions") }
+        let(:target_version) { "1.0.9" }
+
+        it "only reports requirements locked to the current version" do
+          expect(conflicting_dependencies).to be_empty
+        end
+
+        context "when the yarn berry conflicting dependencies experiment is disabled" do
+          let(:enable_yarn_berry_conflicting_dependencies) { false }
+
+          it "keeps reporting every instance's requirements" do
+            expect(conflicting_dependencies.map { |c| c["name"] }).to eq(["mid"])
+          end
+        end
+      end
+
+      context "when several locked versions are affected" do
+        subject(:conflicting_dependencies) do
+          resolver.conflicting_dependencies(
+            dependency: dependency,
+            target_version: target_version,
+            affected_versions: %w(1.0.5 1.0.6)
+          )
+        end
+
+        let(:dependency_files) { project_dependency_files("yarn/subdependency_multiple_vulnerable_versions") }
+        let(:target_version) { "1.0.9" }
+
+        it "reports blockers of every affected version" do
+          expect(conflicting_dependencies.map { |c| c["name"] }).to eq(["pin"])
+        end
+      end
+
+      context "when the yarn berry conflicting dependencies experiment is disabled" do
+        let(:enable_yarn_berry_conflicting_dependencies) { false }
+
+        it "still returns yarn v1 blocking dependencies" do
+          expect(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+            .with(
+              hash_including(
+                function: "yarn:findConflictingDependencies",
+                args: [a_kind_of(String), dependency_name, target_version, false]
+              )
+            )
+            .and_call_original
+
+          expect(conflicting_dependencies).not_to be_empty
+        end
+      end
+    end
+
+    context "with yarn berry lockfiles" do
+      let(:dependency_files) { project_dependency_files("yarn_berry/subdependency_out_of_range_gt") }
+
+      it "returns the right array of blocking dependencies" do
+        expect(conflicting_dependencies).to contain_exactly(
+          {
+            "explanation" => "objnest@4.1.4 requires abind@^1.0.0",
+            "name" => "objnest",
+            "requirement" => "^1.0.0",
+            "version" => "4.1.4"
+          }
+        )
+      end
+
+      context "with no blocking dependencies" do
+        let(:target_version) { "1.0.0" }
+
+        it "returns an empty array" do
+          expect(conflicting_dependencies).to be_empty
+        end
+      end
+
+      context "when the yarn berry conflicting dependencies experiment is disabled" do
+        let(:enable_yarn_berry_conflicting_dependencies) { false }
+
+        it "uses the legacy Yarn helper" do
+          expect(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+            .with(
+              hash_including(
+                function: "yarn:findConflictingDependencies",
+                args: [a_kind_of(String), dependency_name, target_version, false]
+              )
+            )
+            .and_call_original
+
+          expect(conflicting_dependencies).to be_empty
+        end
+      end
+    end
+
+    context "with no lockfile" do
+      let(:dependency_files) do
+        project_dependency_files("yarn/subdependency_out_of_range_gt")
+          .select { |file| file.name == "package.json" }
+      end
+
+      it "uses the legacy Yarn helper without consulting the Yarn experiment" do
+        expect(Dependabot::Experiments).not_to receive(:enabled?)
+        expect(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+          .with(
+            hash_including(
+              function: "yarn:findConflictingDependencies",
+              args: [a_kind_of(String), dependency_name, target_version, false]
+            )
+          )
+          .and_call_original
+
+        expect(conflicting_dependencies).to be_empty
+      end
+    end
+
+    context "with pnpm lockfiles" do
+      let(:dependency_files) { project_dependency_files("pnpm/multiple_sub_dependencies") }
+
+      it "uses the legacy Yarn helper without consulting the Yarn experiment" do
+        expect(Dependabot::Experiments).not_to receive(:enabled?)
+        expect(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+          .with(
+            hash_including(
+              function: "yarn:findConflictingDependencies",
+              args: [a_kind_of(String), dependency_name, target_version, false]
+            )
+          )
+          .and_call_original
+
+        expect(conflicting_dependencies).to be_empty
+      end
+    end
+
+    context "when preparing dependency files fails" do
+      let(:dependency_files) { project_dependency_files("yarn/subdependency_out_of_range_gt") }
+      let(:dependency_files_builder) do
+        instance_double(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder)
+      end
+      let(:helper_error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "failed to prepare dependency files",
+          error_context: {}
+        )
+      end
+
+      before do
+        allow(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder)
+          .to receive(:new).and_return(dependency_files_builder)
+        allow(dependency_files_builder).to receive(:write_temporary_dependency_files).and_raise(helper_error)
+      end
+
+      it "uses the legacy fallback without consulting the Yarn experiment" do
+        expect(Dependabot::Experiments).not_to receive(:enabled?)
+
+        expect(conflicting_dependencies).to be_empty
+      end
+    end
+
+    context "when the conflicting dependency helper fails" do
+      let(:dependency_files) { project_dependency_files("yarn/subdependency_out_of_range_gt") }
+      let(:helper_error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "unexpected helper failure",
+          error_context: {}
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_raise(helper_error)
+      end
+
+      it "raises the helper error" do
+        expect { conflicting_dependencies }.to raise_error(helper_error)
       end
     end
   end
