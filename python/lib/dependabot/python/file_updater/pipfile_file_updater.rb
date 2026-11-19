@@ -378,7 +378,8 @@ module Dependabot
             PipenvRunner.new(
               dependency: T.must(dependency),
               lockfile: lockfile,
-              language_version_manager: language_version_manager
+              language_version_manager: language_version_manager,
+              credentials: credentials
             )
         end
 

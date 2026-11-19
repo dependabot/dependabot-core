@@ -381,7 +381,8 @@ module Dependabot
             PipenvRunner.new(
               dependency: dependency,
               lockfile: lockfile,
-              language_version_manager: language_version_manager
+              language_version_manager: language_version_manager,
+              credentials: credentials
             ),
             T.nilable(Dependabot::Python::PipenvRunner)
           )

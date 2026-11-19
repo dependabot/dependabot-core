@@ -105,6 +105,26 @@ RSpec.describe Dependabot::Python::PipenvRunner do
           .with("pyenv exec pipenv upgrade --verbose requests==2.19.0 --dev", anything)
       end
     end
+
+    context "when the pipenv command fails" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "failed", error_context: {})
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(start_with("pyenv exec pipenv upgrade"), anything)
+          .and_raise(error)
+      end
+
+      it "attaches the command name and index host without the command line" do
+        expect { runner.run_upgrade("==2.19.0") }.to raise_error(error)
+
+        context = Dependabot::ErrorReportContext.build(error: error)
+        expect(context).to include("command-name" => "pipenv upgrade", "index-hosts" => ["pypi.org"])
+        expect(context.values.flatten.join(" ")).not_to include("requests", "--verbose")
+      end
+    end
   end
 
   describe "#run_upgrade_and_fetch_version" do

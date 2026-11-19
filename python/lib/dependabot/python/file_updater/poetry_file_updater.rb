@@ -16,6 +16,7 @@ require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/poetry_plugin_installer"
 require "dependabot/python/poetry_subdependency_pin"
+require "dependabot/python/subprocess_error_context"
 require "dependabot/package/release_cooldown_options"
 
 module Dependabot
@@ -336,6 +337,11 @@ module Dependabot
         sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
         def run_poetry_command(command, fingerprint: nil)
           SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          SubprocessErrorContext.attach(
+            e, command: command, dependency_files: dependency_files, credentials: credentials
+          )
+          raise
         end
 
         sig { params(pyproject_content: String).returns(Integer) }
