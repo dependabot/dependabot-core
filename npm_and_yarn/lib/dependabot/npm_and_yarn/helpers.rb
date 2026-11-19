@@ -9,6 +9,7 @@ require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
 require "dependabot/npm_and_yarn/pnpm_error_message"
 require "dependabot/npm_and_yarn/registry_helper"
+require "dependabot/npm_and_yarn/subprocess_error_context"
 require "dependabot/experiments"
 require "dependabot/package/release_cooldown_options"
 require "dependabot/package/npm_package_json"
@@ -733,6 +734,12 @@ module Dependabot
           output_observer: ->(output) { command_observer(output) },
           env: merge_corepack_env(env)
         )
+      rescue SharedHelpers::HelperSubprocessFailed => e
+        unless npm_version_selector
+          SubprocessErrorContext.new(executable: "npm", registry_hosts: registry_error_hosts("npm", env), env: env)
+                                .attach(e, command)
+        end
+        raise
       end
 
       sig { returns(String) }
@@ -839,6 +846,12 @@ module Dependabot
           fingerprint: "pnpm #{fingerprint || command}",
           env: env
         )
+      rescue SharedHelpers::HelperSubprocessFailed => e
+        unless matching_major
+          SubprocessErrorContext.new(executable: "pnpm", registry_hosts: registry_error_hosts("pnpm", env), env: env)
+                                .attach(e, command)
+        end
+        raise
       end
 
       # The pnpm major to run for a repository whose lockfile is older than the default pnpm reads (5.4 is pnpm 7,
@@ -904,6 +917,10 @@ module Dependabot
           fingerprint: "yarn #{fingerprint || command}",
           env: env
         )
+      rescue SharedHelpers::HelperSubprocessFailed => e
+        SubprocessErrorContext.new(executable: "yarn", registry_hosts: registry_error_hosts("yarn", env), env: env)
+                              .attach(e, command)
+        raise
       end
 
       # Activate the package manager for specified version by using corepack
@@ -1058,6 +1075,14 @@ module Dependabot
           output_observer: output_observer,
           env: env
         )
+      rescue SharedHelpers::HelperSubprocessFailed => e
+        error_context = SubprocessErrorContext.new(
+          executable: "corepack #{name}",
+          registry_hosts: registry_error_hosts(name, env),
+          env: env
+        )
+        error_context.attach(e, command)
+        raise
       end
 
       # Run a corepack shell command, retrying once with signature verification
@@ -1113,14 +1138,14 @@ module Dependabot
         corepack_env.merge(env)
       end
 
-      sig { returns(T.nilable(T::Hash[String, String])) }
-      def self.build_corepack_env_variables
+      sig { returns(T.nilable(RegistryHelper)) }
+      def self.build_registry_helper
         return nil if dependency_files.nil? || credentials.nil?
 
         files = T.must(dependency_files)
         creds = T.must(credentials)
 
-        registry_helper = RegistryHelper.new(
+        RegistryHelper.new(
           {
             npmrc: files.find { |f| f.name.end_with?(".npmrc") },
             yarnrc: files.find { |f| f.name.end_with?(".yarnrc") && !f.name.end_with?(".yarnrc.yml") },
@@ -1128,9 +1153,90 @@ module Dependabot
           },
           creds
         )
-
-        registry_helper.find_corepack_env_variables
       end
+      private_class_method :build_registry_helper
+
+      sig { returns(T.nilable(T::Hash[String, String])) }
+      def self.build_corepack_env_variables
+        build_registry_helper&.find_corepack_env_variables
+      end
+
+      sig { params(name: String, env: T.nilable(T::Hash[String, String])).returns(T::Array[String]) }
+      def self.registry_error_hosts(name, env)
+        manager = diagnostic_registry_manager(name)
+        return [] if manager == :unknown
+
+        overrides = registry_error_overrides(manager, env)
+        custom_yarnrc = env&.key?("YARN_RC_FILENAME") || ENV.fetch("YARN_RC_FILENAME", nil)
+        urls = diagnostic_registry_helper.diagnostic_registry_urls(
+          manager: manager, include_global: overrides.empty?, include_yarn_config: !custom_yarnrc
+        )
+        urls.concat(scoped_registry_environment(env)) unless manager == :yarn_berry
+        urls.concat(overrides)
+        diagnostic_registry_hosts(urls)
+      rescue ArgumentError, NoMethodError, TypeError, Psych::Exception => e
+        Dependabot.logger.warn("Could not resolve registry for error context (#{e.class})")
+        []
+      end
+      private_class_method :registry_error_hosts
+
+      sig { params(manager: Symbol, env: T.nilable(T::Hash[String, String])).returns(T::Array[String]) }
+      def self.registry_error_overrides(manager, env)
+        keys = if manager == :yarn_berry
+                 ["YARN_NPM_REGISTRY_SERVER"]
+               else
+                 %w(npm_config_registry NPM_CONFIG_REGISTRY)
+               end
+        keys.filter_map { |key| env&.fetch(key, nil) || ENV.fetch(key, nil) }
+      end
+      private_class_method :registry_error_overrides
+
+      sig { params(env: T.nilable(T::Hash[String, String])).returns(T::Array[String]) }
+      def self.scoped_registry_environment(env)
+        ENV.to_h.merge(env || {}).filter_map do |key, value|
+          value if key.match?(/\Anpm_config_@[^:\s]+:registry\z/i)
+        end
+      end
+      private_class_method :scoped_registry_environment
+
+      sig { params(urls: T::Array[String]).returns(T::Array[String]) }
+      def self.diagnostic_registry_hosts(urls)
+        urls.filter_map do |url|
+          next if url.include?("${") || !url.match?(%r{\Ahttps?://}i)
+
+          host = ErrorReportContext.host_for(url)
+          host unless host == ErrorReportContext::REDACTED
+        end.uniq
+      end
+      private_class_method :diagnostic_registry_hosts
+
+      sig { returns(RegistryHelper) }
+      def self.diagnostic_registry_helper
+        files = dependency_files || []
+        RegistryHelper.new(
+          {
+            npmrc: files.find { |file| file.name == ".npmrc" },
+            yarnrc: files.find { |file| file.name == ".yarnrc" },
+            yarnrc_yml: files.find { |file| file.name == ".yarnrc.yml" }
+          },
+          credentials || []
+        )
+      end
+      private_class_method :diagnostic_registry_helper
+
+      sig { params(name: String).returns(Symbol) }
+      def self.diagnostic_registry_manager(name)
+        return :npm unless name.match?(/\Ayarn(?:@|\z)/)
+
+        files = dependency_files
+        selector = name == "yarn" && files ? package_manager_pin(files) : name
+        major = selector&.match(/\Ayarn@(\d+)(?:\.|\z)/)&.captures&.first
+        return :unknown unless major
+        return :yarn_berry if major.to_i >= 2
+
+        :yarn_classic
+      end
+      private_class_method :diagnostic_registry_manager
 
       sig do
         params(
