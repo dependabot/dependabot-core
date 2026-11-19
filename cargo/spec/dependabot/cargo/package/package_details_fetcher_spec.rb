@@ -96,5 +96,62 @@ RSpec.describe Dependabot::Cargo::Package::PackageDetailsFetcher do
         expect(T.must(first_result.language).requirement).to eq(T.must(latest_release.language).requirement)
       end
     end
+
+    context "when crates.io returns an empty error response" do
+      before do
+        stub_request(:get, json_url).to_return(status: 503, body: "")
+      end
+
+      it "attaches only the registry host to the parse error" do
+        expect { fetch }.to raise_error(JSON::ParserError) do |error|
+          context = T.must(Dependabot::ErrorReportContext.build(error: error))
+          expect(context).to include("host" => "crates.io", "http-status" => 503)
+          expect(context.values.join).not_to include("es-entity")
+        end
+      end
+    end
+
+    context "with a dependency from a private registry" do
+      sig { returns(Dependabot::Dependency) }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "0.3.23",
+          requirements: [{
+            requirement: "==0.3.23",
+            file: "Cargo.toml",
+            groups: ["dependencies"],
+            source: { type: "registry", name: "my-registry", index: "https://private.example.com/index" }
+          }],
+          package_manager: "cargo"
+        )
+      end
+
+      context "when the registry rejects the credentials" do
+        before do
+          stub_request(:get, "https://private.example.com/index/es/-e/es-entity").to_return(
+            status: 403,
+            body: "Forbidden"
+          )
+        end
+
+        it "raises a PrivateSourceAuthenticationFailure for the registry" do
+          expect { fetch }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+            expect(T.cast(error, Dependabot::PrivateSourceAuthenticationFailure).source)
+              .to eq("https://private.example.com/index")
+          end
+        end
+      end
+
+      context "when the registry returns a server error" do
+        before do
+          stub_request(:get, "https://private.example.com/index/es/-e/es-entity").to_return(status: 500, body: "")
+        end
+
+        it "raises a PrivateSourceBadResponse" do
+          expect { fetch }.to raise_error(Dependabot::PrivateSourceBadResponse)
+        end
+      end
+    end
   end
 end

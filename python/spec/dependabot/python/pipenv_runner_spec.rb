@@ -66,6 +66,47 @@ RSpec.describe Dependabot::Python::PipenvRunner do
   let(:dependency_files) { nil }
   let(:repo_contents_path) { nil }
 
+  describe "#run_upgrade" do
+    let(:requirements) { [] }
+    let(:lockfile_content) do
+      JSON.generate(
+        "default" => { "requests" => { "version" => "==2.19.0" } },
+        "develop" => { "requests" => { "version" => "==2.18.0" } }
+      )
+    end
+
+    before do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("")
+    end
+
+    it "upgrades the section containing the dependency's current version" do
+      runner.run_upgrade("==2.19.0")
+
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+        .with("pyenv exec pipenv upgrade --verbose requests==2.19.0 --dev", anything)
+    end
+
+    context "when generating updated dependency files" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.19.0",
+          previous_version: "2.18.0",
+          requirements: [],
+          previous_requirements: [],
+          package_manager: "pip"
+        )
+      end
+
+      it "selects the section using the previous version rather than the target version" do
+        runner.run_upgrade("==2.19.0")
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with("pyenv exec pipenv upgrade --verbose requests==2.19.0 --dev", anything)
+      end
+    end
+  end
+
   describe "#run_upgrade_and_fetch_version" do
     before do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("")

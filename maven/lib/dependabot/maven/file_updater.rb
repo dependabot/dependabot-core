@@ -11,7 +11,19 @@ require "dependabot/maven/distributions"
 
 module Dependabot
   module Maven
-    class FileUpdater < Dependabot::FileUpdaters::Base
+    class FileUpdater < Dependabot::FileUpdaters::Base # rubocop:disable Metrics/ClassLength
+      XML_TERMINATORS = T.let(
+        { "<!--" => "-->", "<?" => "?>", "<![CDATA[" => "]]>" }.freeze,
+        T::Hash[String, String]
+      )
+
+      XML_TAG_SCANNER = %r{
+        <!--.*?-->
+        |<\?.*?\?>
+        |<!\[CDATA\[.*?\]\]>
+        |<(/?)[^\s>/!?](?:"[^"]*"|'[^']*'|[^>"'])*?(/?)>
+      }mx
+
       extend T::Sig
 
       require_relative "file_updater/declaration_finder"
@@ -331,10 +343,48 @@ module Dependabot
       def updated_file_declaration(old_declaration, previous_req, requirement)
         original_req_string = T.must(previous_req.requirement_string)
 
-        old_declaration.gsub(
-          /(?<=\s|>)#{Regexp.quote(original_req_string)}(?=\s|<)/,
-          T.must(requirement.requirement_string)
-        )
+        filler = /(?:\s|<!--(?:(?!-->).)*-->|<\?(?:(?!\?>).)*\?>)*/m
+        own_version = %r{
+          (<(?:[\w.-]+:)?version(?:\s(?:"[^"]*"|'[^']*'|[^>"'])*)?>#{filler}(?:<!\[CDATA\[\s*)?)
+          #{Regexp.quote(original_req_string)}
+          ((?:\s*\]\]>)?#{filler}</(?:[\w.-]+:)?version\s*>)
+        }mx
+
+        # Only rewrite the declaration's own <version> child; nested elements
+        # (e.g. plugin <configuration>) may contain the same text.
+        old_declaration.gsub(own_version) do
+          match = T.must(Regexp.last_match)
+          prefix = old_declaration[0...match.begin(0)].to_s
+          next match[0].to_s if inside_comment_or_cdata?(prefix) || element_depth(prefix) != 1
+
+          "#{match[1]}#{requirement.requirement_string}#{match[2]}"
+        end
+      end
+
+      sig { params(xml_prefix: String).returns(T::Boolean) }
+      def inside_comment_or_cdata?(xml_prefix)
+        pos = 0
+        while (match = xml_prefix.match(/<!--|<\?|<!\[CDATA\[/, pos))
+          terminator = XML_TERMINATORS.fetch(match[0].to_s)
+          finish = xml_prefix.index(terminator, match.end(0))
+          return true unless finish
+
+          pos = finish + terminator.length
+        end
+        false
+      end
+
+      sig { params(xml_prefix: String).returns(Integer) }
+      def element_depth(xml_prefix)
+        depth = 0
+        xml_prefix.scan(XML_TAG_SCANNER) do |closing, self_closing|
+          next if Regexp.last_match(0).to_s.start_with?("<!", "<?")
+
+          if closing == "/" then depth -= 1
+          elsif self_closing.to_s.empty? then depth += 1
+          end
+        end
+        depth
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
