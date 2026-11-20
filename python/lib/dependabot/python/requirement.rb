@@ -136,15 +136,15 @@ module Dependabot
       def convert_caret_req(req_string)
         version = req_string.gsub(/^\^/, "")
         parts = version.split(".")
+        # Pick the part to bump before padding, so `^0` and `^0.0` bump their
+        # last given part (`< 1.0.0.dev` and `< 0.1.0.dev`), as Poetry does.
+        first_non_zero_index = parts.index { |d| d != "0" } || (parts.count - 1)
         parts.fill("0", parts.length...3)
-        first_non_zero = parts.find { |d| d != "0" }
-        first_non_zero_index =
-          first_non_zero ? parts.index(first_non_zero) : parts.count - 1
         upper_bound = parts.map.with_index do |part, i|
-          if i < T.must(first_non_zero_index) then part
+          if i < first_non_zero_index then part
           elsif i == first_non_zero_index then (part.to_i + 1).to_s
           # .dev has lowest precedence: https://packaging.python.org/en/latest/specifications/version-specifiers/#summary-of-permitted-suffixes-and-relative-ordering
-          elsif i > T.must(first_non_zero_index) && i == 2 then "0.dev"
+          elsif i > first_non_zero_index && i == 2 then "0.dev"
           else
             0
           end
