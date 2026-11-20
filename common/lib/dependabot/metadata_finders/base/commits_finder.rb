@@ -16,7 +16,7 @@ require_relative "commit_response_parser"
 module Dependabot
   module MetadataFinders
     class Base
-      class CommitsFinder
+      class CommitsFinder # rubocop:disable Metrics/ClassLength
         extend T::Sig
 
         sig { returns(T.nilable(Dependabot::Source)) }
@@ -77,24 +77,36 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def new_tag
+          return @new_tag if defined?(@new_tag)
+
+          @new_tag = T.let(compute_new_tag, T.nilable(String))
+        end
+
+        private
+
+        sig { returns(T.nilable(String)) }
+        def compute_new_tag
           new_version = dependency.version
 
           return T.must(new_version) if git_source?(dependency.requirements) && git_sha?(new_version)
 
           return new_ref if new_ref && ref_changed?
 
-          tags = dependency_tags
-                 .select { |tag| tag_matches_version?(tag, new_version) }
-                 .sort_by(&:length)
+          tags = tags_matching_version(new_version).sort_by(&:length)
 
           tags.find { |t| t.include?(dependency.name) } || tags.first
         end
 
-        private
+        sig { returns(T.nilable(String)) }
+        def previous_tag
+          return @previous_tag if defined?(@previous_tag)
+
+          @previous_tag = T.let(compute_previous_tag, T.nilable(String))
+        end
 
         # rubocop:disable Metrics/PerceivedComplexity
         sig { returns(T.nilable(String)) }
-        def previous_tag
+        def compute_previous_tag
           previous_version = dependency.previous_version
 
           if git_source?(dependency.previous_requirements) &&
@@ -103,9 +115,7 @@ module Dependabot
           elsif previous_ref && ref_changed?
             previous_ref
           elsif previous_version
-            tags = dependency_tags
-                   .select { |tag| tag_matches_version?(tag, previous_version) }
-                   .sort_by(&:length)
+            tags = tags_matching_version(previous_version).sort_by(&:length)
 
             tags.find { |t| t.include?(dependency.name) } || tags.first
           elsif !git_source?(dependency.previous_requirements)
@@ -186,19 +196,22 @@ module Dependabot
           new_refs.first if new_refs.one?
         end
 
-        sig { params(tag: String, version: T.nilable(String)).returns(T::Boolean) }
-        def tag_matches_version?(tag, version)
-          return false unless version
+        sig { params(version: T.nilable(String)).returns(T::Array[String]) }
+        def tags_matching_version(version)
+          return [] unless version
 
-          return tag.match?(/(?:[^0-9\.]|\A)#{Regexp.escape(version)}\z/) unless version_class.correct?(version)
+          unless version_class.correct?(version)
+            exact_regex = /(?:[^0-9\.]|\A)#{Regexp.escape(version)}\z/
+            return dependency_tags.select { |tag| tag.match?(exact_regex) }
+          end
 
-          version_regex = GitCommitChecker::VERSION_REGEX
-          return false unless tag.match?(version_regex)
+          target_version = version_class.new(version)
+          dependency_tags.select do |tag|
+            tag_version = GitCommitChecker::VERSION_REGEX.match(tag)&.[](:version)
+            next false unless tag_version && version_class.correct?(tag_version)
 
-          tag_version = tag.match(version_regex)&.named_captures&.fetch("version")
-          return false unless version_class.correct?(tag_version)
-
-          version_class.new(tag_version) == version_class.new(version)
+            version_class.new(tag_version) == target_version
+          end
         end
 
         sig { returns(T::Array[String]) }
