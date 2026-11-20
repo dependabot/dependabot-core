@@ -1,28 +1,45 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "digest"
 require "fileutils"
+require "pathname"
 require "sorbet-runtime"
 
 require "dependabot/errors"
+require "dependabot/file_updaters/vendor_updater"
 require "dependabot/shared_helpers"
+require "dependabot/workspace"
 require "dependabot/apm/file_updater"
 require "dependabot/apm/lockfile"
 require "dependabot/apm/native_helpers"
+require "dependabot/apm/targets"
 
 module Dependabot
   module Apm
     class FileUpdater < Dependabot::FileUpdaters::Base
-      # Regenerates `apm.lock.yaml` with `apm lock`, which resolves the updated
-      # manifest without deploying any package files. APM only re-resolves the
-      # entries whose manifest ref changed, keeping every other entry on its
-      # locked commit, so tag and SHA updates are picked up from the manifest.
+      # Regenerates `apm.lock.yaml` for the updated manifest. It runs
+      # `apm install` when it can tell which harnesses to deploy to (see
+      # #apm_command): `apm lock` doesn't deploy, so it would keep the old
+      # version's deployed file list and hashes, which `apm install --frozen`
+      # rejects. Otherwise it runs `apm lock`, which needs no harness. APM only
+      # re-resolves the entries whose manifest ref changed, keeping every other
+      # entry on its locked commit, so tag and SHA updates are picked up from
+      # the manifest.
       # A branch pin's ref doesn't change, so its lock entry is first moved to
       # the branch's new head commit for APM to verify and re-hash.
       class LockfileUpdater
         extend T::Sig
 
+        # The regenerated lockfile and the committed deployed files
+        # `apm install` changed alongside it.
+        class Result < T::Struct
+          const :lockfile_content, String
+          const :deployed_files, T::Array[Dependabot::DependencyFile]
+        end
+
         APM_MODULES_DIRECTORY = "apm_modules"
+        SHA256_PREFIX = "sha256:"
 
         AUTHENTICATION_FAILED_REGEX = /Authentication failed for '(?<url>[^']+)'/
         REPOSITORY_NOT_FOUND_REGEX = /repository '(?<url>[^']+)' not found/i
@@ -68,12 +85,35 @@ module Dependabot
           @manifest_content = manifest_content
           @credentials = credentials
           @repo_contents_path = repo_contents_path
+          @result = T.let(nil, T.nilable(Result))
         end
 
         sig { returns(String) }
         def updated_lockfile_content
+          result.lockfile_content
+        end
+
+        # The deployed files `apm install` added, changed or removed that the
+        # repository commits. Git reports only tracked and untracked files,
+        # never ignored ones, so a repository that ignores its deployed files
+        # gets none.
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        def updated_deployed_files
+          result.deployed_files
+        end
+
+        private
+
+        sig { returns(Result) }
+        def result
+          @result ||= regenerate
+        end
+
+        sig { returns(Result) }
+        def regenerate
           SharedHelpers.in_a_temporary_repo_directory(lockfile.directory, repo_contents_path) do
-            # `apm lock` downloads packages into apm_modules/ and resolves
+            regenerated = T.let(nil, T.nilable(Result))
+            # APM downloads packages into apm_modules/ and resolves
             # transitive dependencies from what is already there. The git reset
             # between updates doesn't remove that ignored directory, so clear it
             # to keep one update's packages from leaking into the next.
@@ -81,19 +121,27 @@ module Dependabot
             File.write(FileUpdater::MANIFEST_FILENAME, manifest_content)
             File.write(FileUpdater::LOCKFILE_FILENAME, prepared_lockfile_content)
 
+            command = apm_command
+            install = command.start_with?("install")
+            remove_unmodified_deployed_files if install
+
             SharedHelpers.with_git_configured(credentials: credentials) do
-              NativeHelpers.run_apm_command("lock")
+              NativeHelpers.run_apm_command(command)
             end
 
-            File.read(FileUpdater::LOCKFILE_FILENAME)
+            content = File.read(FileUpdater::LOCKFILE_FILENAME)
+            # `apm lock` deploys nothing, so only an install changes deployed
+            # files, and they must be read before its output is cleaned up.
+            regenerated = Result.new(
+              lockfile_content: content,
+              deployed_files: install ? changed_deployed_files(content) : []
+            )
           ensure
-            FileUtils.rm_rf(APM_MODULES_DIRECTORY)
+            remove_apm_output(regenerated)
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
-          handle_apm_lock_error(e)
+          handle_apm_error(e)
         end
-
-        private
 
         sig { returns(T::Array[Dependabot::Dependency]) }
         attr_reader :dependencies
@@ -109,6 +157,177 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         attr_reader :repo_contents_path
+
+        # Chooses targets in the order `apm audit` does: the manifest's, then
+        # the lockfile's. Passing the recorded targets keeps `apm install` from
+        # auto-detecting harnesses from the checkout, where ignored harness
+        # directories are missing. APM maps some MCP runtimes (e.g. `intellij`)
+        # to a different file target, which `--target` can't express, so a
+        # service runtime outside the recorded targets falls back to `apm lock`.
+        sig { returns(String) }
+        def apm_command
+          return "install" if Targets.declared_in_manifest?(manifest_content)
+
+          recorded = Lockfile.new(lockfile)
+          targets = recorded.deployment_targets
+          return "lock" if targets.empty?
+
+          targets &= supported_targets
+          return "lock" if targets.empty? || (recorded.service_runtimes - targets).any?
+
+          "install --target #{targets.join(',')}"
+        end
+
+        # The harnesses the installed APM CLI supports, so a new APM release
+        # needs no change here. Only stdout is parsed, because APM logs
+        # warnings such as policy discovery to stderr.
+        sig { returns(T::Array[String]) }
+        def supported_targets
+          Targets.supported(NativeHelpers.run_apm_command("targets --json --all", stderr_to_stdout: false))
+        rescue SharedHelpers::HelperSubprocessFailed
+          []
+        end
+
+        # Workaround for microsoft/apm#3625: without the local deployment
+        # receipts APM keeps outside the repository, `apm install` won't
+        # replace the committed deployed files of a package whose version
+        # changes, and fails. (microsoft/apm#3564 fixed the unchanged-package
+        # case, #3391.) Removing each file that still matches the digest the
+        # lockfile recorded lets APM deploy the new version. APM would refuse
+        # an edited file too, so the update fails first, naming the edited
+        # files, and removes nothing.
+        # APM fixed #3625 only for `apm update`. Remove this once `apm install`
+        # also deploys a changed package over its committed files.
+        sig { void }
+        def remove_unmodified_deployed_files
+          root = File.realpath(Dir.pwd)
+          unmodified = T.let([], T::Array[String])
+          edited = T.let([], T::Array[String])
+          Lockfile.new(lockfile).deployed_file_hashes.each do |path, digest|
+            next unless digest.start_with?(SHA256_PREFIX) && file_in_checkout?(path, root)
+
+            matches = apm_file_digest(path) == digest.delete_prefix(SHA256_PREFIX)
+            (matches ? unmodified : edited) << path
+          end
+          raise Dependabot::DependencyFileNotResolvable, edited_files_message(edited) if edited.any?
+
+          unmodified.each { |path| File.delete(path) }
+        end
+
+        # Hashes a deployed file the way APM's compute_file_hash
+        # (apm_cli/utils/content_hash.py) does: text, meaning valid UTF-8
+        # with no NUL byte, has CRLF collapsed to LF, so a CRLF checkout or
+        # a CRLF upstream file matches the digest APM recorded. A bare CR
+        # still counts, and anything else is hashed raw.
+        sig { params(path: String).returns(String) }
+        def apm_file_digest(path)
+          content = File.binread(path)
+          text = !content.include?("\0") && content.dup.force_encoding(Encoding::UTF_8).valid_encoding?
+          Digest::SHA256.hexdigest(text ? content.gsub("\r\n", "\n") : content)
+        end
+
+        sig { params(paths: T::Array[String]).returns(String) }
+        def edited_files_message(paths)
+          "These committed deployed files have been edited since APM deployed them: #{paths.sort.join(', ')}. " \
+            "On a fresh checkout APM can't overwrite an edited deployed file, because it has no local deployment " \
+            "receipt for it (microsoft/apm#3625). Revert the edits, or move the edited files out of the deployed " \
+            "directories, so Dependabot can update the package."
+        end
+
+        sig { params(path: String, root: String).returns(T::Boolean) }
+        def file_in_checkout?(path, root)
+          return false if Pathname.new(path).absolute? || !File.file?(path) || File.symlink?(path)
+
+          File.realpath(path).start_with?("#{root}#{File::SEPARATOR}")
+        end
+
+        # Collects, as git status reports them, the changes under every path
+        # the old or new lockfile records as deployed: a file a new version
+        # adds is recorded only in the new lockfile, and one it drops only in
+        # the old. They're flagged as vendored, so a grouped update carries
+        # them to the pull request without handing them to the next update as
+        # dependency files. A file the #3625 workaround removed and APM wrote
+        # back unchanged shows no change. Git status doesn't give each file's
+        # mode, and the pull request writes a file without one as 100644, so
+        # each written file's mode is read from disk to keep scripts executable.
+        sig { params(new_lockfile_content: String).returns(T::Array[Dependabot::DependencyFile]) }
+        def changed_deployed_files(new_lockfile_content)
+          project_root = repo_contents_path
+          return [] unless project_root
+
+          new_lockfile = Dependabot::DependencyFile.new(
+            name: FileUpdater::LOCKFILE_FILENAME,
+            content: new_lockfile_content
+          )
+          roots = deployment_roots(Lockfile.new(lockfile).deployed_paths + Lockfile.new(new_lockfile).deployed_paths)
+          return [] if roots.empty?
+
+          Dependabot::FileUpdaters::VendorUpdater
+            .new(repo_contents_path: project_root, vendor_dir: ".")
+            .updated_vendor_cache_files(base_directory: lockfile.directory)
+            .select { |file| deployed_file?(file.name, roots) }
+            .each do |file|
+              next if file.deleted?
+
+              file.mode = file_mode(File.join(project_root, lockfile.directory, file.name))
+            end
+        end
+
+        sig { params(path: String).returns(String) }
+        def file_mode(path)
+          File.executable?(path) ? Dependabot::DependencyFile::Mode::EXECUTABLE : Dependabot::DependencyFile::Mode::FILE
+        end
+
+        # The recorded paths as clean relative paths inside the project. An
+        # absolute path, one leading out of it, or the project itself is
+        # dropped, so nothing outside what APM deploys is reported.
+        sig { params(paths: T::Array[String]).returns(T::Array[String]) }
+        def deployment_roots(paths)
+          paths.filter_map do |path|
+            clean = Pathname.new(path).cleanpath
+            next if clean.absolute?
+
+            root = clean.to_s
+            root unless root == "." || root == ".." || root.start_with?("../")
+          end.uniq
+        end
+
+        sig { params(name: String, roots: T::Array[String]).returns(T::Boolean) }
+        def deployed_file?(name, roots)
+          return false if [FileUpdater::MANIFEST_FILENAME, FileUpdater::LOCKFILE_FILENAME].include?(name)
+          return false if name.start_with?("#{APM_MODULES_DIRECTORY}/")
+
+          roots.any? { |root| name == root || name.start_with?("#{root}/") }
+        end
+
+        # `apm install` deploys files, and the git reset between updates keeps
+        # ignored directories, so a later update in the same checkout would
+        # find files it doesn't own. The checkout starts as a clean clone, so
+        # every untracked file here was written by APM.
+        # A grouped update commits each update's changes to its workspace
+        # before the next one runs, so the files this update returns as
+        # created are written back: the workspace then matches what it
+        # returned, and the next update doesn't report them as created again.
+        sig { params(regenerated: T.nilable(Result)).void }
+        def remove_apm_output(regenerated)
+          FileUtils.rm_rf(APM_MODULES_DIRECTORY)
+          return unless repo_contents_path
+
+          SharedHelpers.run_shell_command("git clean -fdx -- .", fingerprint: "git clean -fdx -- .")
+          return unless regenerated && Dependabot::Workspace.active_workspace
+
+          regenerated.deployed_files.each { |file| restore_created_file(file) }
+        end
+
+        sig { params(file: Dependabot::DependencyFile).void }
+        def restore_created_file(file)
+          return unless file.operation == Dependabot::DependencyFile::Operation::CREATE
+
+          path = File.join(T.must(repo_contents_path), lockfile.directory, file.name)
+          FileUtils.mkdir_p(File.dirname(path))
+          File.binwrite(path, file.decoded_content)
+          File.chmod(file.mode == Dependabot::DependencyFile::Mode::EXECUTABLE ? 0o755 : 0o644, path)
+        end
 
         sig { returns(String) }
         def prepared_lockfile_content
@@ -135,7 +354,7 @@ module Dependabot
         end
 
         sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T.noreturn) }
-        def handle_apm_lock_error(error)
+        def handle_apm_error(error)
           message = error.message
 
           unreachable_url = unreachable_repository_url(message)

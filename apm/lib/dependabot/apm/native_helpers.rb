@@ -30,12 +30,15 @@ module Dependabot
 
       # Runs an APM CLI command (e.g. `lock`) in the current directory, raising
       # SharedHelpers::HelperSubprocessFailed with APM's output on failure.
-      sig { params(command: String).returns(String) }
-      def self.run_apm_command(command)
+      # Pass stderr_to_stdout: false for a command whose stdout is parsed, so
+      # diagnostics APM logs to stderr stay out of it.
+      sig { params(command: String, stderr_to_stdout: T::Boolean).returns(String) }
+      def self.run_apm_command(command, stderr_to_stdout: true)
         SharedHelpers.run_shell_command(
           "#{apm_path} #{command}",
           env: COMMAND_ENV,
-          fingerprint: "apm #{command}"
+          fingerprint: "apm #{command}",
+          stderr_to_stdout: stderr_to_stdout
         )
       end
 
