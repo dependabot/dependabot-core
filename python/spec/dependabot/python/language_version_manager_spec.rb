@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/python/file_parser/python_requirement_parser"
 require "dependabot/python/language_version_manager"
 require "dependabot/python/language"
 
