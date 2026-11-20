@@ -28,6 +28,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::YarnLock do
       .to have_attributes(version: "1.2.0", resolution: "example@npm:1.2.0")
   end
 
+  it "requires an exact descriptor when strict lookup is requested" do
+    expect(reader.details("example", "^9.0.0", ".yarnrc.yml", strict: true)).to be_nil
+    expect(reader.details("example", "~1.2.0", ".yarnrc.yml", strict: true))
+      .to have_attributes(version: "1.2.0")
+  end
+
   context "when the requirement is only a prefix of another descriptor" do
     let(:result) do
       {
