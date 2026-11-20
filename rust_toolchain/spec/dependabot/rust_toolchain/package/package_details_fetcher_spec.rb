@@ -99,7 +99,7 @@ RSpec.describe Dependabot::RustToolchain::Package::PackageDetailsFetcher do
       end
       channel_1_26_0 = version_1_26_0.version.channel
       expect(channel_1_26_0.version).to eq("1.26.0")
-      expect(channel_1_26_0.date).to be_nil # Version releases don't have dates in the current implementation
+      expect(channel_1_26_0.date).to be_nil # The channel names no date; the release date is released_at
       expect(channel_1_26_0.stability).to be_nil
 
       version_1_42_0 = version_releases.find do |v|
@@ -109,6 +109,53 @@ RSpec.describe Dependabot::RustToolchain::Package::PackageDetailsFetcher do
       expect(channel_1_42_0.version).to eq("1.42.0")
       expect(channel_1_42_0.date).to be_nil
       expect(channel_1_42_0.stability).to be_nil
+    end
+
+    it "sets each release's date from its manifest" do
+      released_at = finder.fetch.releases.to_h { |r| [r.version.to_s, r.released_at] }
+
+      expect(released_at).to include(
+        "stable-2018-05-10" => Time.utc(2018, 5, 10),
+        "stable-2018-05-11" => Time.utc(2018, 5, 11),
+        "beta-2018-05-10" => Time.utc(2018, 5, 10),
+        "nightly-2018-05-10" => Time.utc(2018, 5, 10),
+        "1.26.0" => Time.utc(2018, 5, 10),
+        "1.26.1" => Time.utc(2018, 5, 11),
+        "1.32.0" => Time.utc(2019, 1, 15),
+        "1.42.0" => Time.utc(2020, 3, 12)
+      )
+    end
+
+    context "when a version appears in more than one manifest" do
+      let(:manifests_response) do
+        <<~MANIFESTS
+          static.rust-lang.org/dist/2018-05-12/channel-rust-1.26.toml
+          static.rust-lang.org/dist/2018-05-10/channel-rust-1.26.toml
+          static.rust-lang.org/dist/2018-05-11/channel-rust-1.26.toml
+        MANIFESTS
+      end
+
+      it "uses the earliest date" do
+        releases = finder.fetch.releases
+
+        expect(releases.length).to eq(1)
+        expect(releases.first.released_at).to eq(Time.utc(2018, 5, 10))
+      end
+    end
+
+    context "when a manifest's date isn't a real date" do
+      let(:manifests_response) do
+        <<~MANIFESTS
+          static.rust-lang.org/dist/2018-13-45/channel-rust-1.26.0.toml
+        MANIFESTS
+      end
+
+      it "keeps the release without a date" do
+        releases = finder.fetch.releases
+
+        expect(releases.map { |r| r.version.to_s }).to eq(["1.26.0"])
+        expect(releases.first.released_at).to be_nil
+      end
     end
 
     it "handles network errors gracefully" do

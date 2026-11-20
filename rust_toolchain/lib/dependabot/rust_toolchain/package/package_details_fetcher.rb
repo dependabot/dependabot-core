@@ -1,6 +1,7 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "date"
 require "sorbet-runtime"
 require "uri"
 
@@ -20,6 +21,7 @@ module Dependabot
         extend T::Sig
 
         MANIFESTS_URL = "https://static.rust-lang.org/manifests.txt"
+        MANIFEST_LINE = %r{static\.rust-lang\.org/dist/(\d{4}-\d{2}-\d{2})/channel-rust-(.+)\.toml}
 
         sig do
           params(
@@ -28,6 +30,7 @@ module Dependabot
         end
         def initialize(dependency:)
           @dependency = dependency
+          @release_dates = T.let({}, T::Hash[String, Time])
         end
 
         sig { returns(Dependabot::Package::PackageDetails) }
@@ -38,7 +41,9 @@ module Dependabot
 
           Dependabot::Package::PackageDetails.new(
             dependency: dependency,
-            releases: all_versions.map { |v| Dependabot::Package::PackageRelease.new(version: v) },
+            releases: all_versions.map do |v|
+              Dependabot::Package::PackageRelease.new(version: v, released_at: release_dates[v.to_s])
+            end,
             dist_tags: nil
           )
         end
@@ -74,12 +79,19 @@ module Dependabot
 
         sig { params(line: String).returns(T.nilable(Dependabot::RustToolchain::Version)) }
         def parse_manifest_line(line)
-          match = line.match(%r{static\.rust-lang\.org/dist/(\d{4}-\d{2}-\d{2})/channel-rust-(.+)\.toml})
+          match = line.match(MANIFEST_LINE)
           return nil unless match
 
-          date = match[1]
-          channel_part = match[2]
+          date = T.must(match[1])
+          channel_part = T.must(match[2])
 
+          version = version_for(channel_part, date)
+          record_release_date(version, date) if version
+          version
+        end
+
+        sig { params(channel_part: String, date: String).returns(T.nilable(Dependabot::RustToolchain::Version)) }
+        def version_for(channel_part, date)
           case channel_part
           when STABLE_CHANNEL
             Version.new("#{STABLE_CHANNEL}-#{date}")
@@ -91,6 +103,22 @@ module Dependabot
             Version.new(channel_part)
           end
         end
+
+        # The manifest's dist date is the day that toolchain was published, which is what
+        # `cooldown` needs. A version can appear in more than one manifest; keep the earliest.
+        sig { params(version: Dependabot::RustToolchain::Version, date: String).void }
+        def record_release_date(version, date)
+          day = Date.strptime(date, "%Y-%m-%d")
+          released_at = Time.utc(day.year, day.month, day.day)
+          key = version.to_s
+          existing = release_dates[key]
+          release_dates[key] = released_at if existing.nil? || released_at < existing
+        rescue Date::Error
+          nil
+        end
+
+        sig { returns(T::Hash[String, Time]) }
+        attr_reader :release_dates
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
