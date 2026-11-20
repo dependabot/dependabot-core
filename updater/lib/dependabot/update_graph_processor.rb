@@ -9,6 +9,7 @@ require "dependabot/errors"
 require "dependabot/experiments"
 require "dependabot/dependency_graphers"
 require "dependabot/logger"
+require "dependabot/manifest_sets/collector"
 
 # Updater components
 require "dependabot/updater/error_handler"
@@ -330,7 +331,29 @@ module Dependabot
         package_manager: job.package_manager,
         manifest_snapshots: manifest_group_snapshots,
         status: status || GithubApi::DependencySubmission::SnapshotStatus::SUCCESS,
-        reason: reason || nil
+        reason: reason || nil,
+        manifest_set_inputs: collect_manifest_set_inputs(grapher, source)
+      )
+    end
+
+    # Hands the union of original repository inputs across every manifest group to submission code, so it never
+    # has to reconstruct them from the representative manifest files. The list also carries every owner-selection
+    # file in the directory, including ones this job's package manager does not read.
+    sig do
+      params(
+        grapher: Dependabot::DependencyGraphers::Base,
+        source: Dependabot::Source
+      ).returns(T.nilable(Dependabot::ManifestSets::Inputs))
+    end
+    def collect_manifest_set_inputs(grapher, source)
+      return nil unless Dependabot::Experiments.enabled?(:emit_manifest_set_envelope)
+
+      Dependabot::ManifestSets::Collector.collect(
+        dependency_files: grapher.manifest_set_input_files,
+        repo_contents_path: job.repo_contents_path,
+        commit: base_commit_sha,
+        directory: T.must(source.directory),
+        owner_id: job.package_manager
       )
     end
 
