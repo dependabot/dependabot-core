@@ -1,0 +1,8 @@
+# frozen_string_literal: true
+source "https://rubygems.org"
+
+gem "statesman", "~> 1.2.0"
+
+git "https://github.com/dependabot-fixtures/que", tag: "v0.11.6" do
+  gem "que"
+end
