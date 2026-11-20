@@ -43,6 +43,16 @@ RSpec.describe Dependabot::GoModules::GoModManifest do
     expect(manifest.exclusions.first).to have_attributes(path: "rsc.io/quote", version: "v1.3.0")
   end
 
+  it "reports the original workfile command for malformed workfile replacement output" do
+    matcher = raise_error(described_class::InvalidOutput) do |error|
+      expect(error.message).to include("go work edit -json for /go.work: Replace[0]")
+      expect(error.error_context).to eq(command: "go work edit -json")
+    end
+    expect do
+      described_class.from_json('{"Replace":[null]}', file_path: "/go.work", command: "go work edit -json")
+    end.to matcher
+  end
+
   it "decodes the real Go command's output" do
     go_mod = fixture("projects", "replace", "go.mod")
     Dependabot::SharedHelpers.in_a_temporary_directory do

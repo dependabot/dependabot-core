@@ -516,6 +516,27 @@ RSpec.describe Dependabot::GoModules::FileParser do
       end
     end
 
+    describe "path comments in a parsed context" do
+      let(:go_mod_content) do
+        <<~GOMOD
+          module example.com/root
+
+          go 1.21
+
+          require example.com/shared v0.0.0
+          // Keep ../external for local development.
+          replace example.com/shared => ../external
+        GOMOD
+      end
+
+      it "resolves metadata and restores the original replacement and comment" do
+        expect(parser.run_in_parsed_context("go list -m all")).to include("example.com/shared")
+        content = File.read(File.join(repo_contents_path, "go.mod"))
+        expect(content).to include("// Keep ../external for local development.", "=> ../external")
+        expect(content).not_to include("dependabot-replacements-")
+      end
+    end
+
     describe "a dependency replaced by a local override" do
       subject(:dependency) do
         dependencies.find { |d| d.name == "rsc.io/qr" }
