@@ -313,7 +313,7 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def run_pnpm_update_packages
-          run_pnpm_update_specs(dependencies.map { |d| "#{d.name}@#{d.version}" })
+          run_pnpm_update_specs(dependencies.map { |d| pnpm_update_spec(d) })
         rescue SharedHelpers::HelperSubprocessFailed => e
           indirect = Helpers.pnpm_indirect_dependency_names(e.message)
           raise if indirect.empty?
@@ -327,8 +327,42 @@ module Dependabot
           )
           @unpinned_dependency_names = indirect
           run_pnpm_update_specs(
-            dependencies.map { |d| indirect.include?(d.name) ? d.name : "#{d.name}@#{d.version}" }
+            dependencies.map { |d| indirect.include?(d.name) ? d.name : pnpm_update_spec(d) }
           )
+        end
+
+        # A git dependency's version is the commit it resolves to. Passed as
+        # `name@<commit>`, pnpm looks the commit up as a version on the
+        # registry and fails, so name the git source with the commit as its
+        # ref instead, as the npm updater does for `npm install`.
+        sig { params(dependency: Dependabot::Dependency).returns(String) }
+        def pnpm_update_spec(dependency)
+          version = dependency.version
+          git_requirement = dependency.requirements.find { |req| req.source_string("type") == "git" }
+          return "#{dependency.name}@#{version}" unless version && git_requirement
+
+          requirement = updated_manifest_requirement(dependency) || git_requirement.source_string("url")
+          return "#{dependency.name}@#{version}" unless requirement
+
+          # Git is configured to authenticate over https while updating
+          requirement = requirement.gsub(%r{git\+ssh://git@(.*?)[:/]}, 'https://\1/')
+          return "#{dependency.name}@#{requirement}" if requirement.include?(version)
+
+          "#{dependency.name}@#{requirement.sub(/#.*/, '')}##{version}"
+        end
+
+        # The dependency's requirement in the updated manifests. For a git
+        # dependency it holds the source (`github:owner/repo#ref`), which
+        # Dependency#requirements does not keep.
+        sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
+        def updated_manifest_requirement(dependency)
+          package_files.each do |file|
+            json = T.cast(JSON.parse(updated_package_json_content(file)), T::Hash[String, Object])
+            NpmAndYarn::FileParser.each_dependency(json) do |name, requirement, _type|
+              return requirement if name == dependency.name
+            end
+          end
+          nil
         end
 
         # An update retried without a version resolves whatever a fresh install

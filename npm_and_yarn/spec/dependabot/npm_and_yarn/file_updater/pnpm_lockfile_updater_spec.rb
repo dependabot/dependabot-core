@@ -1211,6 +1211,49 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     end
   end
 
+  describe "when updating a git dependency to a new tag" do
+    let(:project_name) { "pnpm/git_dependency_ref" }
+    let(:dependency_name) { "is-number" }
+    let(:version) { "98e8ff1da1a89f93d1397a24d7413ed15421c139" }
+    let(:previous_version) { "b0953635829711e7dceec0eaa92bc56521a546eb" }
+    let(:requirements) do
+      [{
+        file: "package.json",
+        requirement: nil,
+        groups: ["dependencies"],
+        source: { type: "git", url: "https://github.com/jonschlinkert/is-number", branch: nil, ref: "7.0.0" }
+      }]
+    end
+    let(:previous_requirements) do
+      [{
+        file: "package.json",
+        requirement: nil,
+        groups: ["dependencies"],
+        source: { type: "git", url: "https://github.com/jonschlinkert/is-number", branch: nil, ref: "6.0.0" }
+      }]
+    end
+
+    it "names the git source in the update, not the commit alone" do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
+      expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+        .with(
+          "update is-number@github:jonschlinkert/is-number#98e8ff1da1a89f93d1397a24d7413ed15421c139  " \
+          "--lockfile-only --no-save -r",
+          { fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r" }
+        )
+
+      updated_pnpm_lock_content
+    end
+
+    it "locks the commit of the new tag" do
+      lockfile = YAML.safe_load(updated_pnpm_lock_content)
+      expect(lockfile.dig("importers", ".", "dependencies", "is-number", "specifier"))
+        .to eq("github:jonschlinkert/is-number#7.0.0")
+      expect(lockfile.dig("importers", ".", "dependencies", "is-number", "version"))
+        .to eq("https://codeload.github.com/jonschlinkert/is-number/tar.gz/98e8ff1da1a89f93d1397a24d7413ed15421c139")
+    end
+  end
+
   describe "when pnpm refuses to pin a transitive dependency" do
     let(:project_name) { "pnpm/no_lockfile_change" }
     let(:dependencies) { [dependency, transitive_dependency] }
