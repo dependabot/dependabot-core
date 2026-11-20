@@ -377,7 +377,10 @@ module Dependabot
           version_str = dependency.version
           return false unless version_str
 
-          !Dependabot::PreCommit::Version.correct?(version_str) && !version_from_frozen_comment.nil?
+          return false if version_from_frozen_comment.nil?
+
+          Dependabot::PreCommit::Version.v_prefixed?(version_str) ||
+            !Dependabot::PreCommit::Version.correct?(version_str)
         end
 
         # Extracts the semantic version from a frozen comment (e.g. "# frozen: v5.0.0")
