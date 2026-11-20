@@ -338,15 +338,15 @@ module Dependabot
 
       sig { returns(String) }
       def commit_subject
-        subject = pr_name.gsub("⬆️", ":arrow_up:").gsub("🔒", ":lock:")
-        return subject unless subject.length > 72
+        title = pr_name
+        return title unless title.length > 72
 
         # Requirements can contain spaces ("^0.20, ^0.21"), so match up to the
         # suffixes solo_pr_name adds rather than to the next space
-        subject = subject.sub(%r{ from .+? to .+?(?= \(via audit fix\)| in /|\z)}, "")
-        return subject unless subject.length > 72
+        without_versions = title.sub(%r{ from .+? to .+?(?= \(via audit fix\)| in /|\z)}, "")
+        return without_versions unless without_versions.length > 72
 
-        T.must(subject.split(" in ").first)
+        T.must(without_versions.split(" in ").first)
       end
 
       sig { returns(String) }
