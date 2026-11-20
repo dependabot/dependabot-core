@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/cargo"
 require "dependabot/cargo/file_parser"
 require "dependabot/dependency_file"
 require "dependabot/source"
@@ -58,6 +59,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
                 source: nil
               }]
             )
+            expect(dependency.production?).to be(true)
           end
         end
       end
@@ -748,6 +750,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
                   source: nil
                 }]
               )
+              expect(dependency.production?).to be(false)
             end
           end
         end
