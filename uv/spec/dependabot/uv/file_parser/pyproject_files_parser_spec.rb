@@ -285,6 +285,43 @@ RSpec.describe Dependabot::Uv::FileParser::PyprojectFilesParser do
       end
     end
 
+    context "with Poetry build configuration and PEP 621 dependencies" do
+      let(:pyproject_fixture_name) { "pep621_poetry_build_config.toml" }
+
+      it "parses project, optional, group and build dependencies" do
+        expect(dependencies.map(&:name)).to contain_exactly("requests", "pytest", "ruff", "poetry-core")
+        expect(dependencies.find { |dependency| dependency.name == "requests" }.requirements).to eq(
+          [{ requirement: ">=2.31.0", file: "pyproject.toml", groups: [], source: nil }]
+        )
+      end
+
+      context "with an empty Poetry dependency table" do
+        let(:pyproject_body) { super() + "\n[tool.poetry.dependencies]\n" }
+
+        it "still parses the PEP 621 dependencies" do
+          expect(dependencies.map(&:name)).to contain_exactly("requests", "pytest", "ruff", "poetry-core")
+        end
+      end
+
+      context "with Poetry dependency declarations" do
+        let(:pyproject_body) { super() + "\n[tool.poetry.dependencies]\nrequests = \"^2.31.0\"\n" }
+
+        it "preserves Poetry requirement parsing" do
+          expect(dependencies.map(&:name)).to contain_exactly("requests")
+          expect(dependencies.first.requirements.first[:requirement]).to eq("^2.31.0")
+        end
+      end
+
+      context "with only Poetry group dependencies" do
+        let(:pyproject_body) { super() + "\n[tool.poetry.group.dev.dependencies]\nblack = \"^24.0\"\n" }
+
+        it "preserves Poetry group parsing" do
+          expect(dependencies.map(&:name)).to contain_exactly("black")
+          expect(dependencies.first.requirements.first[:groups]).to eq(["dev"])
+        end
+      end
+    end
+
     context "without dependencies" do
       subject(:dependencies) { parser.dependency_set.dependencies }
 

@@ -40,7 +40,8 @@ module Dependabot
         def dependency_set
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
-          dependency_set += pyproject_dependencies if using_poetry? || using_pep621? || using_pep735?
+          dependency_set += pyproject_dependencies if using_poetry? || pyproject_document.pep621? ||
+                                                      pyproject_document.pep735?
           dependency_set += workspace_member_dependencies if workspace_member_pyproject_files.any?
           dependency_set += lockfile_dependencies if using_poetry? && lockfile
 
@@ -252,22 +253,16 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         def using_poetry?
-          pyproject_document.poetry?
-        end
+          return false unless pyproject_document.poetry?
+          return true unless pyproject_document.pep621? || pyproject_document.pep735?
 
-        sig { returns(T::Boolean) }
-        def using_pep621?
-          pyproject_document.pep621?
-        end
-
-        sig { returns(T::Boolean) }
-        def using_pep735?
-          pyproject_document.pep735?
+          POETRY_DEPENDENCY_TYPES.any? { |type| pyproject_document.poetry_dependencies(type).any? } ||
+            pyproject_document.poetry_groups.values.any?(&:any?)
         end
 
         sig { returns(T::Boolean) }
         def using_pdm?
-          using_pep621? && !pdm_lock.nil?
+          pyproject_document.pep621? && !pdm_lock.nil?
         end
 
         # Create a DependencySet where each element has no requirement. Any
