@@ -194,6 +194,13 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
 
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
 
+      context "when it names only the major version" do
+        let(:pipfile_fixture_name) { "required_python_major_only" }
+        let(:lockfile_fixture_name) { "exact_version.lock" }
+
+        it { is_expected.to eq(Gem::Version.new("2.18.4")) }
+      end
+
       context "when version comes from a Poetry file and includes || logic" do
         let(:pipfile_fixture_name) { "exact_version" }
         let(:dependency_files) { [pipfile, pyproject] }
