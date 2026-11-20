@@ -849,8 +849,31 @@ module Dependabot
         sig { returns(T::Boolean) }
         def create_or_update_lock_file?
           return true if lockfile && T.must(dependency).requirements.empty?
+          return true if T.must(dependency).requirements.any? { |req| req.file&.end_with?(*REQUIRED_FILES) }
 
-          T.must(dependency).requirements.any? { |req| req.file&.end_with?(*REQUIRED_FILES) }
+          locked_with_unchanged_requirements?
+        end
+
+        # A requirements file that uv doesn't manage, such as requirements.txt, can list a package that uv.lock holds
+        # as a dependency of a pyproject.toml dependency. uv lock updates it there. That file isn't rewritten, so this
+        # applies only while its requirement stays the same (for example an unpinned name).
+        sig { returns(T::Boolean) }
+        def locked_with_unchanged_requirements?
+          dep = T.must(dependency)
+          return false unless lockfile
+          return false unless dep.requirements == dep.previous_requirements
+
+          locked_package_names.include?(normalise(dep.name))
+        end
+
+        sig { returns(T::Array[String]) }
+        def locked_package_names
+          packages = TomlRB.parse(T.must(lockfile).content)["package"]
+          return [] unless packages.is_a?(Array)
+
+          packages.filter_map { |package| normalise(package["name"]) if package.is_a?(Hash) && package["name"] }
+        rescue TomlRB::ParseError
+          []
         end
 
         sig { returns(T::Hash[String, String]) }

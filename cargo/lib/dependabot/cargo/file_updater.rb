@@ -39,7 +39,7 @@ module Dependabot
             updated_file(file: T.must(lockfile), content: updated_lockfile_content)
         end
 
-        raise "No files changed!" if updated_files.empty?
+        raise no_files_changed_error("No files changed!") if updated_files.empty?
 
         updated_files
       end

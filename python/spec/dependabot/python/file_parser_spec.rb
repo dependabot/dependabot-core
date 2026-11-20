@@ -641,6 +641,82 @@ RSpec.describe Dependabot::Python::FileParser do
             end
           end
         end
+
+        context "when parsing from requirement roots" do
+          let(:constraints) do
+            Dependabot::DependencyFile.new(
+              name: "constraints.txt",
+              content: "requests==2.0.0\ncertifi==2024.2.2\n"
+            )
+          end
+
+          before { parser.options[:requirement_roots] = true }
+
+          it "uses the referenced constraints file to pin versions without adding its requirements" do
+            expect(dependencies.map(&:name)).to eq(["requests"])
+            expect(dependencies.first.version).to eq("2.0.0")
+            expect(dependencies.first.requirements).to contain_exactly(
+              { requirement: nil, file: "requirements.txt", groups: ["dependencies"], source: nil }
+            )
+          end
+
+          context "when the files reference each other" do
+            let(:constraints) do
+              Dependabot::DependencyFile.new(
+                name: "constraints.txt",
+                content: "-r requirements.txt\nrequests==2.0.0\n"
+              )
+            end
+
+            it "reports the loop rather than parsing nothing" do
+              expect { dependencies }.to raise_error(Dependabot::DependencyFileNotEvaluatable, /recursively references/)
+            end
+
+            context "when another file is a root" do
+              let(:files) { [requirements, constraints, other_requirements] }
+              let(:other_requirements) do
+                Dependabot::DependencyFile.new(name: "requirements-other.txt", content: "certifi==2024.2.2\n")
+              end
+
+              it "reports the loop rather than parsing only that root" do
+                expect { dependencies }
+                  .to raise_error(Dependabot::DependencyFileNotEvaluatable, /recursively references/)
+              end
+            end
+          end
+
+          context "when a pip-compile input is constrained by its own compiled output" do
+            let(:files) { [requirements_in, requirements] }
+            let(:requirements_in) do
+              Dependabot::DependencyFile.new(name: "requirements.in", content: "-c requirements.txt\nrequests\n")
+            end
+            let(:requirements) do
+              Dependabot::DependencyFile.new(
+                name: "requirements.txt",
+                content: "certifi==2024.2.2\nrequests==2.0.0\n"
+              )
+            end
+
+            it "still parses the compiled output, as it is what gets installed" do
+              expect(dependencies.map { |d| [d.name, d.version] })
+                .to contain_exactly(["certifi", "2024.2.2"], ["requests", "2.0.0"])
+            end
+
+            context "when the input is itself only reached through a constraint" do
+              let(:files) { [tests_requirements_in, requirements_in, requirements] }
+              let(:tests_requirements_in) do
+                Dependabot::DependencyFile.new(
+                  name: "requirements-tests.in",
+                  content: "-c requirements.in\npytest==8.3.3\n"
+                )
+              end
+
+              it "uses the compiled output only to pin versions" do
+                expect(dependencies.map(&:name)).to eq(["pytest"])
+              end
+            end
+          end
+        end
       end
     end
 
