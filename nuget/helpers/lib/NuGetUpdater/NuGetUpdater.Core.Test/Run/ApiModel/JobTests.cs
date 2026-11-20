@@ -88,7 +88,8 @@ public class JobTests
     [Theory]
     [InlineData(null, "/src/Project", true)]
     [InlineData("", "/src/Project", true)]
-    [InlineData("/", "/src/Project", true)]
+    [InlineData("/", "/src/Project", false)]
+    [InlineData("/", "/", true)]
     [InlineData("/src/Project", "/src/Project", true)]
     [InlineData("/src/Other", "/src/Project", false)]
     public void GetExistingPullRequestForDependencies_DirectoryMatching_Refresh(string? existingDirectory, string desiredDirectory, bool expectedMatch)
@@ -110,13 +111,13 @@ public class JobTests
             new ReportedDependencyWithDirectory() { Name = "Some.Package", Version = "1.1.0", Requirements = [], Directory = desiredDirectory },
         };
 
-        var pullRequest = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: true, treatRefreshDirectoryAsWildcard: true);
+        var pullRequest = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: true, treatEmptyDirectoryAsWildcard: true);
 
         Assert.Equal(expectedMatch, pullRequest is not null);
     }
 
     [Fact]
-    public void GetExistingPullRequestForDependencies_RootWildcardDoesNotReplaceExactDirectoryPullRequest()
+    public void GetExistingPullRequestForDependencies_RefreshDoesNotMatchRootPullRequestForDifferentDirectory()
     {
         var job = new Job()
         {
@@ -143,15 +144,15 @@ public class JobTests
             new ReportedDependencyWithDirectory() { Name = "Some.Package", Version = "2.0.0", Requirements = [], Directory = "/src/client" },
         };
 
-        var sameVersion = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: true, treatRefreshDirectoryAsWildcard: true);
-        var anyVersion = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: false, treatRefreshDirectoryAsWildcard: true);
+        var sameVersion = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: true, treatEmptyDirectoryAsWildcard: true);
+        var anyVersion = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: false, treatEmptyDirectoryAsWildcard: true);
 
         Assert.Null(sameVersion);
         Assert.Equal("1.1.0", anyVersion!.Item2.Single().DependencyVersion!.ToString());
     }
 
     [Fact]
-    public void GetExistingPullRequestForDependencies_RootWildcardStillMatches_WhenOnlyAnOverlappingGroupPullRequestHasExactDirectory()
+    public void GetExistingPullRequestForDependencies_RefreshDoesNotMatchRootPullRequestWhenExactDirectoryGroupOverlaps()
     {
         var job = new Job()
         {
@@ -179,14 +180,13 @@ public class JobTests
             new ReportedDependencyWithDirectory() { Name = "Some.Package", Version = "1.1.0", Requirements = [], Directory = "/src/client" },
         };
 
-        var pullRequest = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: true, treatRefreshDirectoryAsWildcard: true);
+        var pullRequest = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: true, treatEmptyDirectoryAsWildcard: true);
 
-        Assert.NotNull(pullRequest);
-        Assert.Single(pullRequest!.Item2);
+        Assert.Null(pullRequest);
     }
 
     [Fact]
-    public void GetExistingPullRequestForDependencies_RootDirectoryIsLiteral_WhenNotRefreshing()
+    public void GetExistingPullRequestForDependencies_RootDirectoryIsLiteral()
     {
         var job = new Job()
         {
@@ -205,7 +205,7 @@ public class JobTests
             new ReportedDependencyWithDirectory() { Name = "Some.Package", Version = "1.1.0", Requirements = [], Directory = "/src/Project" },
         };
 
-        var pullRequest = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: true, treatRefreshDirectoryAsWildcard: false);
+        var pullRequest = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: true, treatEmptyDirectoryAsWildcard: true);
 
         Assert.Null(pullRequest);
     }

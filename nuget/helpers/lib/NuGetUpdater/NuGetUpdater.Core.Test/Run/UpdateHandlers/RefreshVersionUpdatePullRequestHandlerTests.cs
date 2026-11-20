@@ -14,28 +14,32 @@ namespace NuGetUpdater.Core.Test.Run.UpdateHandlers;
 
 public class RefreshVersionUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
 {
-    [Fact]
-    public async Task GeneratesUpdatePullRequest()
+    [Theory]
+    [InlineData("/src", null)]
+    [InlineData("/src", "")]
+    [InlineData("/src", "/src")]
+    [InlineData("/", "/")]
+    public async Task GeneratesUpdatePullRequest(string jobDirectory, string? existingDirectory)
     {
         await TestAsync(
             job: new Job()
             {
                 Dependencies = ["Some.Dependency"],
-                ExistingPullRequests = [new() { Dependencies = [new() { DependencyName = "Some.Dependency", DependencyVersion = NuGetVersion.Parse("2.0.0") }] }],
-                Source = CreateJobSource("/src"),
+                ExistingPullRequests = [new() { Dependencies = [new() { DependencyName = "Some.Dependency", DependencyVersion = NuGetVersion.Parse("2.0.0"), Directory = existingDirectory }] }],
+                Source = CreateJobSource(jobDirectory),
                 UpdatingAPullRequest = true,
             },
             files: [
                 ("src/project.csproj", "initial contents"),
             ],
             discoveryWorker: TestDiscoveryWorker.FromResults(
-                ("/src", new WorkspaceDiscoveryResult()
+                (jobDirectory, new WorkspaceDiscoveryResult()
                 {
-                    Path = "/src",
+                    Path = jobDirectory,
                     Projects = [
                         new()
                         {
-                            FilePath = "project.csproj",
+                            FilePath = jobDirectory == "/" ? "src/project.csproj" : "project.csproj",
                             Dependencies = [
                                 new("Some.Dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
                                 new("Unrelated.Dependency", "3.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),

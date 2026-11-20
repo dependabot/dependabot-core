@@ -144,9 +144,9 @@ public sealed record Job
     public Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingPullRequestForDependencies(
         IEnumerable<ReportedDependencyWithDirectory> dependencies,
         bool considerVersions,
-        bool treatRefreshDirectoryAsWildcard = false)
+        bool treatEmptyDirectoryAsWildcard = false)
     {
-        return GetExistingPullRequestForDependencies(dependencies, considerVersions, dependencyGroupName: null, matchGroupName: false, treatRefreshDirectoryAsWildcard);
+        return GetExistingPullRequestForDependencies(dependencies, considerVersions, dependencyGroupName: null, matchGroupName: false, treatEmptyDirectoryAsWildcard);
     }
 
     public Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingGroupPullRequestForDependencies(
@@ -154,7 +154,7 @@ public sealed record Job
         bool considerVersions,
         string dependencyGroupName)
     {
-        return GetExistingPullRequestForDependencies(dependencies, considerVersions, dependencyGroupName, matchGroupName: true, treatRefreshDirectoryAsWildcard: false);
+        return GetExistingPullRequestForDependencies(dependencies, considerVersions, dependencyGroupName, matchGroupName: true, treatEmptyDirectoryAsWildcard: false);
     }
 
     private Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingPullRequestForDependencies(
@@ -162,7 +162,7 @@ public sealed record Job
         bool considerVersions,
         string? dependencyGroupName,
         bool matchGroupName,
-        bool treatRefreshDirectoryAsWildcard)
+        bool treatEmptyDirectoryAsWildcard)
     {
         var desiredDependencies = dependencies.ToArray();
         if (desiredDependencies.Any(d => d.Version is null))
@@ -181,29 +181,11 @@ public sealed record Job
         {
             return NamesAndVersionsMatch(desiredDependency, existingDependency) &&
                 (existingDependency.Directory is null ||
-                    (treatRefreshDirectoryAsWildcard && (existingDependency.Directory.Length == 0 || existingDependency.Directory == "/")) ||
+                    (treatEmptyDirectoryAsWildcard && existingDependency.Directory.Length == 0) ||
                     desiredDependency.Directory.Equals(existingDependency.Directory, StringComparison.Ordinal));
         }
 
         var existingPullRequests = GetAllExistingPullRequests();
-
-        // an existing PR for the exact directory is the refresh target, so a wildcard PR must not stand in for it
-        bool ExactDirectoryMatch(ReportedDependencyWithDirectory desired, PullRequestDependency existing)
-        {
-            return desired.Name.Equals(existing.DependencyName, StringComparison.OrdinalIgnoreCase) &&
-                existing.Directory is not null &&
-                desired.Directory.Equals(existing.Directory, StringComparison.Ordinal);
-        }
-
-        if (treatRefreshDirectoryAsWildcard &&
-            existingPullRequests.Any(pr =>
-                (!matchGroupName || string.Equals(pr.Item1, dependencyGroupName, StringComparison.OrdinalIgnoreCase)) &&
-                desiredDependencies.All(desired => pr.Item2.Any(existing => ExactDirectoryMatch(desired, existing))) &&
-                pr.Item2.All(existing => desiredDependencies.Any(desired => ExactDirectoryMatch(desired, existing)))))
-        {
-            treatRefreshDirectoryAsWildcard = false;
-        }
-
         var existingPullRequest = existingPullRequests
             .FirstOrDefault(pr =>
             {
