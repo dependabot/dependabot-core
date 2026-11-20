@@ -71,6 +71,35 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
   let(:repo_contents_path) { nil }
   let(:directory_fetch_errors) { {} }
 
+  shared_context "with the job's package manager as a manifest-set owner" do
+    let(:descriptor) do
+      Dependabot::ManifestSets::Descriptor.absent(
+        ecosystem: "rubygems", directory: ".", owner: "bundler", graph_version: "test-graph-version"
+      )
+    end
+
+    let(:catalog) do
+      Dependabot::ManifestSets::Catalog.parse(
+        JSON.generate(
+          "schema_version" => 1,
+          "ecosystems" => [{
+            "id" => "rubygems",
+            "path_rules" => [{ "id" => "gemfile", "filename_regex" => "\\AGemfile(?:\\.lock)?\\z",
+                               "directory" => "parent" }],
+            "owners" => [{ "id" => "bundler", "otherwise" => true }]
+          }]
+        )
+      )
+    end
+
+    before do
+      Dependabot::Experiments.register(:emit_manifest_set_envelope, true)
+      allow(Dependabot::ManifestSets).to receive(:catalog).and_return(catalog)
+      allow(Dependabot::DependencyGraphers::GraphVersions)
+        .to receive(:for).with("bundler").and_return("test-graph-version")
+    end
+  end
+
   context "with a basic Gemfile project" do
     let(:directories) { [directory] }
     let(:directory) { "/" }
@@ -134,6 +163,54 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       )
 
       update_graph_processor.run
+    end
+
+    it "does not describe the manifest set by default" do
+      expect(service).to receive(:create_dependency_submission) do |args|
+        expect(args[:dependency_submission].manifest_set).to be_nil
+      end
+
+      update_graph_processor.run
+    end
+
+    context "when the manifest-set envelope experiment is enabled" do
+      let(:base_commit_sha) do
+        Dependabot::SharedHelpers.run_shell_command("git -C #{repo_contents_path} rev-parse HEAD").strip
+      end
+
+      before { Dependabot::Experiments.register(:emit_manifest_set_envelope, true) }
+
+      it "does not describe a manifest set for a package manager the catalog does not list as an owner" do
+        expect(Dependabot::ManifestSets::Collector).not_to receive(:describe)
+        expect(service).to receive(:create_dependency_submission) do |args|
+          expect(args[:dependency_submission].manifest_set).to be_nil
+        end
+
+        update_graph_processor.run
+      end
+
+      context "when the catalog lists the package manager as an owner" do
+        include_context "with the job's package manager as a manifest-set owner"
+
+        it "describes the directory from the union of original inputs and hands it to the submission" do
+          expect(Dependabot::ManifestSets::Collector).to receive(:describe) do |args|
+            expect(args).to include(
+              directory: directory,
+              owner_id: "bundler",
+              commit: base_commit_sha,
+              graph_version: "test-graph-version",
+              unresolvable_reason: nil
+            )
+            expect(args[:dependency_files].map(&:name)).to eq(%w(Gemfile Gemfile.lock))
+            descriptor
+          end
+          expect(service).to receive(:create_dependency_submission) do |args|
+            expect(args[:dependency_submission].manifest_set).to be(descriptor)
+          end
+
+          update_graph_processor.run
+        end
+      end
     end
   end
 
@@ -588,6 +665,94 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
 
       update_graph_processor.run
     end
+
+    context "when the catalog lists the package manager as an owner" do
+      include_context "with the job's package manager as a manifest-set owner"
+
+      it "describes the directory with no inputs, so a deleted manifest set can be reported absent" do
+        allow(Dependabot::ManifestSets::Collector).to receive(:describe).and_return(descriptor)
+        expect(service).to receive(:create_dependency_submission) do |args|
+          expect(args[:dependency_submission].manifest_set).to be(descriptor)
+          expect(args[:dependency_submission].payload[:metadata][:manifest_set]).to eq(descriptor.to_json_string)
+        end
+
+        update_graph_processor.run
+
+        expect(Dependabot::ManifestSets::Collector).to have_received(:describe)
+          .with(hash_including(directory: directory, dependency_files: [], unresolvable_reason: nil))
+      end
+    end
+  end
+
+  context "with a grapher that records which manifest-set hooks it is asked for" do
+    let(:directories) { [directory] }
+    let(:directory) { "/" }
+    let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
+    let(:hook_calls) { [] }
+
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: fixture("bundler/original/Gemfile"),
+          directory: directory
+        )
+      ]
+    end
+
+    before do
+      calls = hook_calls
+      snapshots = [
+        Dependabot::DependencyGraphers::ManifestGroupSnapshot.new(
+          manifest_file: dependency_files.first, resolved_dependencies: {}
+        )
+      ]
+      recording_grapher_class = Class.new(Dependabot::DependencyGraphers.for_package_manager(job.package_manager)) do
+        define_method(:manifest_group_snapshots) { snapshots }
+
+        define_method(:manifest_set_input_files) do
+          calls << :manifest_set_input_files
+          []
+        end
+
+        define_method(:manifest_set_unresolvable_reason) do
+          calls << :manifest_set_unresolvable_reason
+          nil
+        end
+      end
+      allow(Dependabot::DependencyGraphers).to receive(:for_package_manager)
+        .with(job.package_manager).and_return(recording_grapher_class)
+      allow(service).to receive(:create_dependency_submission)
+      allow(service).to receive(:record_workflow_result)
+    end
+
+    it "does not ask the grapher for manifest-set inputs when the experiment is off" do
+      update_graph_processor.run
+
+      expect(hook_calls).to be_empty
+    end
+
+    context "when the experiment is on but the catalog does not list the package manager as an owner" do
+      before { Dependabot::Experiments.register(:emit_manifest_set_envelope, true) }
+
+      it "does not ask the grapher for manifest-set inputs" do
+        update_graph_processor.run
+
+        expect(hook_calls).to be_empty
+      end
+    end
+
+    context "when the catalog lists the package manager as an owner" do
+      include_context "with the job's package manager as a manifest-set owner"
+
+      it "asks the grapher for its manifest-set inputs" do
+        allow(Dependabot::ManifestSets::Collector).to receive(:describe).and_return(descriptor)
+
+        update_graph_processor.run
+
+        expect(hook_calls).to contain_exactly(:manifest_set_input_files, :manifest_set_unresolvable_reason)
+      end
+    end
   end
 
   context "with a directory that failed to fetch due to an unreachable path dependency" do
@@ -668,6 +833,26 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
 
       update_graph_processor.run
     end
+
+    context "when the catalog lists the package manager as an owner" do
+      include_context "with the job's package manager as a manifest-set owner"
+
+      it "never reports the directory that failed to fetch as absent" do
+        allow(Dependabot::ManifestSets::Collector).to receive(:describe).and_return(descriptor)
+        submissions = {}
+        allow(service).to receive(:create_dependency_submission) do |args|
+          submission = args[:dependency_submission]
+          submissions[submission.payload[:metadata][:scanned_manifest_path]] = submission
+        end
+
+        update_graph_processor.run
+
+        expect(Dependabot::ManifestSets::Collector).not_to have_received(:describe)
+          .with(hash_including(directory: dir_broken))
+        expect(submissions.fetch("rubygems::/broken").manifest_set).to be_nil
+        expect(submissions.fetch("rubygems::/").manifest_set).to be(descriptor)
+      end
+    end
   end
 
   context "with a directory that failed to fetch due to an unspecified file fetch error" do
@@ -708,6 +893,25 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       end
 
       update_graph_processor.run
+    end
+
+    context "when the catalog lists the package manager as an owner" do
+      include_context "with the job's package manager as a manifest-set owner"
+
+      it "never reports the directory that failed to fetch as absent" do
+        allow(Dependabot::ManifestSets::Collector).to receive(:describe).and_return(descriptor)
+        submissions = {}
+        allow(service).to receive(:create_dependency_submission) do |args|
+          submission = args[:dependency_submission]
+          submissions[submission.payload[:metadata][:scanned_manifest_path]] = submission
+        end
+
+        update_graph_processor.run
+
+        expect(descriptor.to_h["state"]).to eq("absent")
+        expect(submissions.fetch("rubygems::/broken").manifest_set).to be_nil
+        expect(submissions.fetch("rubygems::/broken").payload[:metadata]).not_to have_key(:manifest_set)
+      end
     end
   end
 
@@ -849,6 +1053,20 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         end
 
         update_graph_processor.run
+      end
+
+      context "when the catalog lists the package manager as an owner" do
+        include_context "with the job's package manager as a manifest-set owner"
+
+        it "does not describe the manifest set of a degraded snapshot" do
+          allow(service).to receive(:record_update_job_warning)
+          expect(Dependabot::ManifestSets::Collector).not_to receive(:describe)
+          expect(service).to receive(:create_dependency_submission) do |args|
+            expect(args[:dependency_submission].manifest_set).to be_nil
+          end
+
+          update_graph_processor.run
+        end
       end
     end
 

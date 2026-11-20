@@ -3,6 +3,8 @@
 
 require "dependabot/dependency_graphers"
 require "dependabot/environment"
+require "dependabot/manifest_sets/descriptor"
+require "dependabot/manifest_sets/directory_listing"
 require "github_api/ecosystem_mapper"
 
 # This class provides a data object that can be submitted to a repository's dependency submission
@@ -17,6 +19,11 @@ module GithubApi
     SNAPSHOT_VERSION = 1
     SNAPSHOT_DETECTOR_NAME = "dependabot"
     SNAPSHOT_DETECTOR_URL = "https://github.com/dependabot/dependabot-core"
+
+    # The snapshot metadata map accepts at most this many entries, counting keys added downstream after
+    # the submission leaves Dependabot.
+    MAX_METADATA_ENTRIES = 8
+    DOWNSTREAM_METADATA_KEYS = %w(event_id).freeze
 
     # Expected reasons for empty, skipped or degraded snapshots
     DEGRADED_REASON_SUBDEPENDENCY_ERR = "error fetching sub-dependencies"
@@ -54,6 +61,10 @@ module GithubApi
     sig { returns(T.nilable(String)) }
     attr_reader :reason
 
+    # What the job reports about the directory's manifest set, or nil when it reports nothing.
+    sig { returns(T.nilable(Dependabot::ManifestSets::Descriptor)) }
+    attr_reader :manifest_set
+
     sig do
       params(
         job_id: String,
@@ -62,7 +73,8 @@ module GithubApi
         package_manager: String,
         manifest_snapshots: T::Array[Dependabot::DependencyGraphers::ManifestGroupSnapshot],
         status: SnapshotStatus,
-        reason: T.nilable(String)
+        reason: T.nilable(String),
+        manifest_set: T.nilable(Dependabot::ManifestSets::Descriptor)
       ).void
     end
     def initialize(
@@ -72,7 +84,8 @@ module GithubApi
       package_manager:,
       manifest_snapshots:,
       status: SnapshotStatus::SUCCESS,
-      reason: nil
+      reason: nil,
+      manifest_set: nil
     )
       @job_id = job_id
       @branch = branch
@@ -91,6 +104,8 @@ module GithubApi
 
       @status = status
       @reason = reason
+      @manifest_set = manifest_set
+      validate_manifest_set_identity
     end
 
     # The representative manifest file for the submission, used for the job correlator and scanned path. All
@@ -137,15 +152,43 @@ module GithubApi
         #
         # In future, we should extend the public API schema with a validated object to
         # harden this contract.
-        metadata: {
-          status: status.serialize,
-          reason: reason,
-          scanned_manifest_path: scanned_manifest_path
-        }.compact
+        metadata: metadata
       }
     end
 
     private
+
+    # The manifest-set descriptor travels as a JSON string so the metadata map stays string-to-string.
+    sig { returns(T::Hash[Symbol, String]) }
+    def metadata
+      entries = {
+        status: status.serialize,
+        reason: reason,
+        scanned_manifest_path: scanned_manifest_path,
+        manifest_set: manifest_set&.to_json_string
+      }.compact
+      if entries.size + DOWNSTREAM_METADATA_KEYS.size > MAX_METADATA_ENTRIES
+        raise ArgumentError, "snapshot metadata would exceed #{MAX_METADATA_ENTRIES} entries"
+      end
+
+      entries
+    end
+
+    # The descriptor must name the same set as `scanned_manifest_path`: the job's ecosystem and its
+    # directory in canonical form (`/api/` -> `api`, `/` -> `.`).
+    sig { void }
+    def validate_manifest_set_identity
+      descriptor = manifest_set
+      return if descriptor.nil?
+
+      ecosystem = GithubApi::EcosystemMapper.ecosystem_for(package_manager)
+      directory = Dependabot::ManifestSets::DirectoryListing.normalize(manifest_file.directory)
+      return if descriptor.ecosystem == ecosystem && descriptor.directory == directory
+
+      raise ArgumentError,
+            "manifest_set names #{descriptor.ecosystem}::#{descriptor.directory}, " \
+            "but the submission scans #{scanned_manifest_path}"
+    end
 
     sig { returns(String) }
     def job_correlator
