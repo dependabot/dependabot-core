@@ -14,6 +14,7 @@ require "dependabot/uv/language_version_manager"
 require "dependabot/uv/native_helpers"
 require "dependabot/uv/name_normaliser"
 require "dependabot/uv/authed_url_builder"
+require "dependabot/uv/uv_executable"
 
 module Dependabot
   module Uv
@@ -125,10 +126,10 @@ module Dependabot
           options = compile_options(filename)
           options_fingerprint = compile_options_fingerprint(options)
 
-          name_part = "pyenv exec uv pip compile " \
+          name_part = "pip compile " \
                       "#{options} -P " \
                       "#{T.must(dependency).name}"
-          fingerprint_name_part = "pyenv exec uv pip compile " \
+          fingerprint_name_part = "pip compile " \
                                   "#{options_fingerprint} -P " \
                                   "<dependency_name>"
 
@@ -231,17 +232,20 @@ module Dependabot
           error_handler.handle_uv_error(e)
         end
 
-        sig { params(command: String, fingerprint: String, allow_unsafe_shell_command: T::Boolean).returns(String) }
-        def run_uv_compile_command(command, fingerprint:, allow_unsafe_shell_command: false)
+        # `uv_arguments` follow the uv executable, e.g. "pip compile requirements.in".
+        sig { params(uv_arguments: String, fingerprint: String, allow_unsafe_shell_command: T::Boolean).returns(String) }
+        def run_uv_compile_command(uv_arguments, fingerprint:, allow_unsafe_shell_command: false)
           run_command(
             "pyenv local #{language_version_manager.python_major_minor}",
             fingerprint: "pyenv local <python_major_minor>"
           )
 
+          uv = UvExecutable.resolve(credentials: credentials)
           run_command(
-            command,
+            "#{uv.command} #{uv_arguments}",
             allow_unsafe_shell_command: allow_unsafe_shell_command,
-            fingerprint: fingerprint
+            fingerprint: "#{uv.fingerprint} #{fingerprint}",
+            env: python_env.merge(uv.env)
           )
         end
 

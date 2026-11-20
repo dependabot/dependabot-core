@@ -140,4 +140,68 @@ RSpec.describe Dependabot::Uv::UpdateChecker::PipCompileVersionResolver do
       end
     end
   end
+
+  describe "#latest_resolvable_version" do
+    subject(:latest_resolvable_version) { resolver.latest_resolvable_version }
+
+    context "when the project's required-version needs a uv other than the bundled one" do
+      let(:manifest_file) do
+        # apache-airflow + unidecode makes python_env set AIRFLOW_GPL_UNIDECODE, which must survive the merge.
+        Dependabot::DependencyFile.new(name: "requirements/test.in", content: "attrs\napache-airflow\nunidecode\n")
+      end
+      let(:uv_runs) { [] }
+
+      before do
+        allow(Dependabot::Uv::LanguageVersionManager).to receive(:new).and_return(
+          instance_double(
+            Dependabot::Uv::LanguageVersionManager,
+            install_required_python: nil,
+            python_major_minor: "3.11"
+          )
+        )
+        allow(Dependabot::Uv::UvExecutable).to receive(:resolve).with(credentials: credentials).and_return(
+          Dependabot::Uv::UvExecutable.new(
+            command: "/opt/uv/bin/uv", fingerprint: "<uv_executable>", env: { "PATH" => "/pyenv/bin:/usr/bin" }
+          )
+        )
+        allow(Dependabot::SharedHelpers).to receive(:with_git_configured).and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, fingerprint:, env:, **|
+          next "" if command.start_with?("pyenv local ")
+          raise "Unexpected command: #{command}" unless command.start_with?("/opt/uv/bin/uv pip compile ")
+
+          uv_runs << { fingerprint: fingerprint, env: env }
+          ""
+        end
+        allow(Dependabot::Uv::FileParser).to receive(:new).and_return(
+          instance_double(
+            Dependabot::Uv::FileParser,
+            parse: [Dependabot::Dependency.new(
+              name: "attrs",
+              version: "18.1.0",
+              requirements: [],
+              package_manager: "uv"
+            )]
+          )
+        )
+      end
+
+      it "compiles with that uv, its PATH and the existing Python env" do
+        expect(latest_resolvable_version).to eq(Dependabot::Uv::Version.new("18.1.0"))
+        expect(uv_runs.size).to eq(1)
+        expect(uv_runs.first[:fingerprint]).to start_with("<uv_executable> pip compile -v ")
+        expect(uv_runs.first[:env]).to eq("PATH" => "/pyenv/bin:/usr/bin", "AIRFLOW_GPL_UNIDECODE" => "yes")
+      end
+
+      context "with a transitive dependency, which is compiled a second time" do
+        let(:dependency_requirements) { [] }
+
+        it "uses that uv for both compiles" do
+          expect(latest_resolvable_version).to eq(Dependabot::Uv::Version.new("18.1.0"))
+          expect(uv_runs.map { |run| run[:fingerprint][/\A<uv_executable> pip compile (-v )?/] })
+            .to eq(["<uv_executable> pip compile -v ", "<uv_executable> pip compile "])
+          expect(uv_runs.map { |run| run[:env]["PATH"] }).to all(eq("/pyenv/bin:/usr/bin"))
+        end
+      end
+    end
+  end
 end

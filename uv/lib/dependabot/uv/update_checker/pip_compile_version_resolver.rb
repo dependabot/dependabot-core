@@ -17,6 +17,7 @@ require "dependabot/uv/language_version_manager"
 require "dependabot/uv/native_helpers"
 require "dependabot/uv/name_normaliser"
 require "dependabot/uv/authed_url_builder"
+require "dependabot/uv/uv_executable"
 
 module Dependabot
   module Uv
@@ -129,8 +130,8 @@ module Dependabot
           options_fingerprint = pip_compile_options_fingerprint(options)
 
           run_pip_compile_command(
-            "pyenv exec uv pip compile -v #{options} -P #{dependency.name} #{filename}",
-            fingerprint: "pyenv exec uv pip compile -v #{options_fingerprint} -P <dependency_name> <filename>"
+            "pip compile -v #{options} -P #{dependency.name} #{filename}",
+            fingerprint: "pip compile -v #{options_fingerprint} -P <dependency_name> <filename>"
           )
 
           return true if dependency.top_level?
@@ -144,8 +145,8 @@ module Dependabot
           # update_not_possible.
           write_original_manifest_files
           run_pip_compile_command(
-            "pyenv exec uv pip compile #{options} #{filename}",
-            fingerprint: "pyenv exec uv pip compile #{options_fingerprint} <filename>"
+            "pip compile #{options} #{filename}",
+            fingerprint: "pip compile #{options_fingerprint} <filename>"
           )
 
           true
@@ -238,8 +239,8 @@ module Dependabot
                 options_fingerprint = pip_compile_options_fingerprint(options)
 
                 run_pip_compile_command(
-                  "pyenv exec uv pip compile #{options} #{filename}",
-                  fingerprint: "pyenv exec uv pip compile #{options_fingerprint} <filename>"
+                  "pip compile #{options} #{filename}",
+                  fingerprint: "pip compile #{options_fingerprint} <filename>"
                 )
               end
 
@@ -310,14 +311,20 @@ module Dependabot
             end
         end
 
-        sig { params(command: String, fingerprint: String).void }
-        def run_pip_compile_command(command, fingerprint:)
+        # `uv_arguments` follow the uv executable, e.g. "pip compile requirements.in".
+        sig { params(uv_arguments: String, fingerprint: String).void }
+        def run_pip_compile_command(uv_arguments, fingerprint:)
           run_command(
             "pyenv local #{language_version_manager.python_major_minor}",
             fingerprint: "pyenv local <python_major_minor>"
           )
 
-          run_command(command, fingerprint: fingerprint)
+          uv = UvExecutable.resolve(credentials: credentials)
+          run_command(
+            "#{uv.command} #{uv_arguments}",
+            fingerprint: "#{uv.fingerprint} #{fingerprint}",
+            env: python_env.merge(uv.env)
+          )
         end
 
         # rubocop:disable Metrics/AbcSize

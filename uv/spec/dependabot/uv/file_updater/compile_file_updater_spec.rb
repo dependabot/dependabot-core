@@ -541,6 +541,45 @@ RSpec.describe Dependabot::Uv::FileUpdater::CompileFileUpdater do
         expect(updated_files.first.content).to include("cachecontrol[filecache]==0.12.10")
       end
     end
+
+    context "when the project's required-version needs a uv other than the bundled one" do
+      let(:manifest_file) do
+        # apache-airflow + unidecode makes python_env set AIRFLOW_GPL_UNIDECODE, which must survive the merge.
+        Dependabot::DependencyFile.new(name: "requirements/test.in", content: "attrs\napache-airflow\nunidecode\n")
+      end
+      let(:uv_runs) { [] }
+
+      before do
+        allow(Dependabot::Uv::LanguageVersionManager).to receive(:new).and_return(
+          instance_double(
+            Dependabot::Uv::LanguageVersionManager,
+            install_required_python: nil,
+            python_major_minor: "3.11"
+          )
+        )
+        allow(Dependabot::Uv::UvExecutable).to receive(:resolve).with(credentials: credentials).and_return(
+          Dependabot::Uv::UvExecutable.new(
+            command: "/opt/uv/bin/uv", fingerprint: "<uv_executable>", env: { "PATH" => "/pyenv/bin:/usr/bin" }
+          )
+        )
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, fingerprint:, env:, **|
+          next "" if command.start_with?("pyenv local ")
+          raise "Unexpected command: #{command}" unless command.start_with?("/opt/uv/bin/uv pip compile ")
+
+          uv_runs << { fingerprint: fingerprint, env: env }
+          File.write("requirements/test.txt", generated_file.content.sub("attrs==17.3.0", "attrs==18.1.0"))
+          ""
+        end
+      end
+
+      it "compiles with that uv, its PATH and the existing Python env" do
+        expect(updated_files.map(&:name)).to eq(["requirements/test.txt"])
+        expect(updated_files.first.content).to include("attrs==18.1.0")
+        expect(uv_runs.size).to eq(1)
+        expect(uv_runs.first[:fingerprint]).to start_with("<uv_executable> pip compile ")
+        expect(uv_runs.first[:env]).to eq("PATH" => "/pyenv/bin:/usr/bin", "AIRFLOW_GPL_UNIDECODE" => "yes")
+      end
+    end
   end
 
   describe "#compile_options_fingerprint" do
