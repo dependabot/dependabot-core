@@ -150,6 +150,7 @@ module Dependabot
 
           T.must(dependency).requirements.zip(T.must(T.must(dependency).previous_requirements)).each do |new_r, old_r|
             next unless new_r.file == file.name && T.must(old_r).file == file.name
+            next if new_r.requirement == T.must(old_r).requirement
 
             rewritten = rewrite_requirement(updated_content, new_r, T.must(old_r))
             nothing_to_rewrite = true if rewritten.nil?
