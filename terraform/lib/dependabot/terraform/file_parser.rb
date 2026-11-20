@@ -9,6 +9,7 @@ require "sorbet-runtime"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
+require "dependabot/file_parsers/hcl2_json_document"
 require "dependabot/git_commit_checker"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
@@ -24,6 +25,8 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
 
       include FileSelector
+
+      HclDocument = Dependabot::FileParsers::Hcl2JsonDocument
 
       DEFAULT_REGISTRY = "registry.terraform.io"
       DEFAULT_NAMESPACE = "hashicorp"
@@ -56,58 +59,39 @@ module Dependabot
 
       private
 
-      # rubocop:disable Metrics/PerceivedComplexity
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
       def parse_terraform_files(dependency_set)
         terraform_files.each do |file|
           # Process module declarations only for non-support files
           # (we can't update local path modules in support files)
           unless file.support_file?
-            modules = parsed_file(file).fetch("module", {})
-            # If override.tf files are present, we need to merge the modules
-            if override_terraform_files.any?
-              override_terraform_files.each do |override_file|
-                override_modules = parsed_file(override_file).fetch("module", {})
-                modules = merge_modules(override_modules, modules)
-              end
-            end
-
-            modules.each do |name, details|
-              details = details.first
-
-              source = source_from(details)
+            document = parsed_file(file)
+            overrides = override_terraform_files.map { |override_file| parsed_file(override_file) }
+            document.module_declarations(overrides: overrides).each do |details|
+              source = source_from(details.source)
               # Cannot update local path modules, and `source_from` returns nil for an
               # interpolated source (Terraform >= 1.15 permits a `const` variable there), which
               # has no version to read. Skip both, as the terragrunt path above does, rather
               # than passing the nil to `T.must` and aborting the parse for the whole repo.
               next if source.nil? || source[:type] == "path"
 
-              dependency_set << build_terraform_dependency(file, name, source, details)
+              dependency_set << build_terraform_dependency(file, details.name, source, details)
             end
           end
 
           # Always process provider requirements, even in support files
           # (nested local modules can have their own provider requirements)
-          parsed_file(file).fetch("terraform", []).each do |terraform|
-            required_providers = terraform.fetch("required_providers", {})
-            required_providers.each do |provider|
-              provider.each do |name, details|
-                dependency_set << build_provider_dependency(file, name, details)
-              end
-            end
+          parsed_file(file).provider_declarations.each do |provider|
+            deprecated_provider_error(file) if provider.is_a?(HclDocument::DeprecatedProvider)
+            dependency_set << build_provider_dependency(file, provider.name, provider.source, provider.version)
           end
         end
       end
-      # rubocop:enable Metrics/PerceivedComplexity
-
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
       def parse_terragrunt_files(dependency_set)
         terragrunt_files.each do |file|
-          modules = parsed_file(file).fetch("terraform", [])
-          modules.each do |details|
-            next unless details["source"]
-
-            source = source_from(details)
+          parsed_file(file).terragrunt_sources.each do |raw_source|
+            source = source_from(raw_source)
             # Cannot update nil (interpolation sources) or local path modules, skip
             next if source.nil? || source[:type] == "path"
 
@@ -121,7 +105,7 @@ module Dependabot
           file: Dependabot::DependencyFile,
           name: String,
           source: T::Hash[Symbol, T.untyped],
-          details: T.untyped
+          details: HclDocument::ModuleDeclaration
         )
           .returns(Dependabot::Dependency)
       end
@@ -130,11 +114,11 @@ module Dependabot
         # the source or the source name provides this uniqueness
         dep_name = case source[:type]
                    when "registry" then source[:module_identifier]
-                   when "provider" then details["source"]
+                   when "provider" then details.source
                    when "git" then git_dependency_name(name, source)
                    else name
                    end
-        version_req = details["version"]&.strip
+        version_req = details.version&.strip
         version =
           if source[:type] == "git" then version_from_ref(source[:ref])
           elsif version_req&.match?(/^\d/) then version_req
@@ -157,21 +141,19 @@ module Dependabot
         params(
           file: Dependabot::DependencyFile,
           name: String,
-          details: T.any(String, T::Hash[String, T.untyped])
+          source_address: T.nilable(String),
+          requirement: T.nilable(String)
         )
           .returns(Dependabot::Dependency)
       end
-      def build_provider_dependency(file, name, details = {})
-        deprecated_provider_error(file) if deprecated_provider?(details)
-
-        source_address = T.cast(details, T::Hash[String, T.untyped]).fetch("source", nil)
-        version_req = details["version"]&.strip
+      def build_provider_dependency(file, name, source_address, requirement)
+        version_req = requirement&.strip
         hostname, namespace, name = provider_source_from(source_address, name)
         dependency_name = source_address ? "#{namespace}/#{name}" : name
 
         Dependency.new(
-          name: T.must(dependency_name),
-          version: determine_version_for(T.must(hostname), T.must(namespace), T.must(name), version_req),
+          name: dependency_name,
+          version: determine_version_for(hostname, namespace, name, version_req),
           package_manager: "terraform",
           requirements: [
             { requirement: version_req,
@@ -196,13 +178,6 @@ module Dependabot
         )
       end
 
-      sig { params(details: Object).returns(T::Boolean) }
-      def deprecated_provider?(details)
-        # The old syntax for terraform providers v0.12- looked like
-        # "tls ~> 2.1" which gets parsed as a string instead of a hash
-        details.is_a?(String)
-      end
-
       sig { params(file: Dependabot::DependencyFile, source: T::Hash[Symbol, String]).returns(Dependabot::Dependency) }
       def build_terragrunt_dependency(file, source)
         dep_name = Source.from_url(source[:url]) ? T.must(Source.from_url(source[:url])).repo : source[:url]
@@ -222,9 +197,8 @@ module Dependabot
       end
 
       # Full docs at https://www.terraform.io/docs/modules/sources.html
-      sig { params(details_hash: T::Hash[String, String]).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
-      def source_from(details_hash)
-        raw_source = details_hash.fetch("source")
+      sig { params(raw_source: String).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      def source_from(raw_source)
         bare_source = RegistryClient.get_proxied_source(raw_source)
 
         source_details =
@@ -243,7 +217,7 @@ module Dependabot
         source_details
       end
 
-      sig { params(source_address: T.nilable(String), name: String).returns(T::Array[String]) }
+      sig { params(source_address: T.nilable(String), name: String).returns([String, String, String]) }
       def provider_source_from(source_address, name)
         matches = source_address&.match(PROVIDER_SOURCE_ADDRESS)
         matches = {} if matches.nil?
@@ -354,31 +328,9 @@ module Dependabot
       # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
 
-      # == Returns:
-      # A Hash representing each module found in the specified file
-      #
-      # E.g.
-      # {
-      #   "module" => {
-      #     {
-      #       "consul" => [
-      #         {
-      #           "source"=>"consul/aws",
-      #           "version"=>"0.1.0"
-      #         }
-      #       ]
-      #     }
-      #   },
-      #   "terragrunt"=>[
-      #     {
-      #       "include"=>[{ "path"=>"${find_in_parent_folders()}" }],
-      #       "terraform"=>[{ "source" => "git::git@github.com:gruntwork-io/modules-example.git//consul?ref=v0.0.2" }]
-      #     }
-      #   ],
-      # }
-      sig { params(file: Dependabot::DependencyFile).returns(T::Hash[String, T.untyped]) }
+      sig { params(file: Dependabot::DependencyFile).returns(HclDocument) }
       def parsed_file(file)
-        @parsed_buildfile ||= T.let({}, T.nilable(T::Hash[String, T.untyped]))
+        @parsed_buildfile ||= T.let({}, T.nilable(T::Hash[String, HclDocument]))
         @parsed_buildfile[file.name] ||= SharedHelpers.in_a_temporary_directory do
           File.write("tmp.tf", file.content)
 
@@ -398,7 +350,7 @@ module Dependabot
             )
           end
 
-          JSON.parse(stdout)
+          HclDocument.from_helper_output(stdout, file: file)
         end
       rescue SharedHelpers::HelperSubprocessFailed => e
         msg = e.message.strip
@@ -442,20 +394,19 @@ module Dependabot
       def determine_version_for(hostname, namespace, name, constraint)
         return constraint if constraint&.match?(/\A\d/)
 
-        lockfile_content
-          .dig("provider", "#{hostname}/#{namespace}/#{name}", 0, "version")
+        lockfile_content&.provider_version("#{hostname}/#{namespace}/#{name}")
       end
 
-      sig { returns(T::Hash[String, T.untyped]) }
+      sig { returns(T.nilable(HclDocument)) }
       def lockfile_content
         @lockfile_content ||= T.let(
           begin
             lockfile = dependency_files.find do |file|
               file.name == ".terraform.lock.hcl"
             end
-            lockfile ? parsed_file(lockfile) : {}
+            parsed_file(lockfile) if lockfile
           end,
-          T.nilable(T::Hash[String, T.untyped])
+          T.nilable(HclDocument)
         )
       end
 
