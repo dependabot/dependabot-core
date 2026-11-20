@@ -56,6 +56,21 @@ module Functions
     def run; end
   end
 
+  class LockfileUpdater
+    sig do
+      params(
+        gemfile_name: String,
+        lockfile_name: String,
+        dependencies: T::Array[T::Hash[String, T.anything]],
+        conservative: T::Boolean
+      ).void
+    end
+    def initialize(gemfile_name:, lockfile_name:, dependencies:, conservative: false); end
+
+    sig { returns(String) }
+    def run; end
+  end
+
   class VersionResolver
     sig do
       params(

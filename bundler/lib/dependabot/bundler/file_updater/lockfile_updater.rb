@@ -99,6 +99,12 @@ module Dependabot
         sig { returns(T::Hash[Symbol, T.untyped]) }
         attr_reader :options
 
+        # Opt-in behaviour equivalent to `bundle lock --conservative`.
+        sig { returns(T::Boolean) }
+        def conservative_update?
+          options.fetch(:bundler_conservative_update, false).to_s == "true"
+        end
+
         sig { returns(String) }
         def build_updated_lockfile
           base_dir = T.must(dependency_files.first).directory
@@ -118,7 +124,8 @@ module Dependabot
                   lockfile_name: T.must(lockfile).name,
                   dir: tmp_dir,
                   credentials: credentials,
-                  dependencies: dependencies.map(&:to_h)
+                  dependencies: dependencies.map(&:to_h),
+                  conservative: conservative_update?
                 }
               )
             end
