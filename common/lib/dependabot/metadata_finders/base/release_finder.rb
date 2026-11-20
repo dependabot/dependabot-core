@@ -10,6 +10,7 @@ require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
 require "dependabot/metadata_finders/base"
 require "dependabot/utils"
+require_relative "package_tag_matcher"
 
 module Dependabot
   module MetadataFinders
@@ -125,15 +126,16 @@ module Dependabot
         sig { returns(T::Array[ReleaseType]) }
         def all_dep_releases
           releases = all_releases
-          dep_prefix = dependency.name.downcase
 
           releases_with_dependency_name =
-            releases
-            .select { |r| r.tag_name.start_with?(dep_prefix) }
+            releases.select { |r| PackageTagMatcher.starts_with_dependency?(r.tag_name, dependency.name) }
+          return releases_with_dependency_name if releases_with_dependency_name.any?
 
-          return releases unless releases_with_dependency_name.any?
-
-          releases_with_dependency_name
+          # No release is tagged with the dependency's name, so leave out the releases of other packages
+          # in the repository, unless that would leave nothing.
+          other_releases_removed =
+            releases.reject { |r| PackageTagMatcher.other_package_tag?(r.tag_name, dependency.name) }
+          other_releases_removed.any? ? other_releases_removed : releases
         end
 
         sig { returns(T::Array[ReleaseType]) }
@@ -318,9 +320,11 @@ module Dependabot
           clean_release_names =
             releases.map { |release| release.tag_name.gsub(/^[^0-9\.]*/, "") }
 
+          # The release id breaks ties between releases of the same version, so the order does not
+          # depend on the order the API lists them in.
           if clean_release_names.all? { |nm| version_class.correct?(nm) }
             releases.sort_by do |release|
-              version_class.new(release.tag_name.gsub(/^[^0-9\.]*/, ""))
+              [version_class.new(release.tag_name.gsub(/^[^0-9\.]*/, "")), release.id || 0]
             end.reverse
           else
             releases.sort_by { |release| release.id || 0 }.reverse

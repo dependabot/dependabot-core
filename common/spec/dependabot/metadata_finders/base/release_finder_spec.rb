@@ -561,6 +561,54 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
           end
         end
 
+        # Releases of CLDMV/slothlet: the main package is tagged v<version>, the other packages
+        # <package>@<version>, and their names start with the main package's name.
+        context "when other packages in the repo have names that start with the dependency name" do
+          let(:dependency_name) { "@cldmv/slothlet" }
+          let(:dependency_version) { "3.24.0" }
+          let(:dependency_previous_version) { "3.23.0" }
+          let(:source) { Dependabot::Source.new(provider: "github", repo: "CLDMV/slothlet") }
+          let(:github_url) { "https://api.github.com/repos/CLDMV/slothlet/releases?per_page=100" }
+          let(:github_response) { fixture("github", "releases_monorepo_package_name_prefix.json") }
+
+          it "uses the dependency's own release" do
+            expect(releases_text).to eq("## v3.24.0\n# Slothlet v3.24.0 Changelog")
+          end
+
+          context "when the API lists the releases in a different order" do
+            let(:github_response) do
+              JSON.generate(JSON.parse(fixture("github", "releases_monorepo_package_name_prefix.json")).reverse)
+            end
+
+            it "uses the same release" do
+              expect(releases_text).to eq("## v3.24.0\n# Slothlet v3.24.0 Changelog")
+            end
+          end
+        end
+
+        context "when two releases have the same version" do
+          let(:dependency_version) { "2.0.0" }
+          let(:dependency_previous_version) { "1.9.0" }
+          let(:releases) do
+            [
+              { id: 20, tag_name: "v2.0.0", name: "v2.0.0", body: "Notes for v2.0.0", prerelease: false },
+              { id: 10, tag_name: "2.0.0", name: "2.0.0", body: "Notes for 2.0.0", prerelease: false },
+              { id: 5, tag_name: "v1.9.0", name: "v1.9.0", body: "Notes for v1.9.0", prerelease: false }
+            ]
+          end
+          let(:github_response) { JSON.generate(releases) }
+
+          it "orders them the same way whatever order the API lists them in" do
+            texts = releases.permutation.map do |order|
+              stub_request(:get, github_url)
+                .to_return(status: 200, body: JSON.generate(order), headers: { "Content-Type" => "application/json" })
+              described_class.new(source: source, dependency: dependency, credentials: credentials).releases_text
+            end
+
+            expect(texts.uniq).to eq(["## v2.0.0\nNotes for v2.0.0\n\n## 2.0.0\nNotes for 2.0.0"])
+          end
+        end
+
         context "without GitHub credentials" do
           let(:credentials) do
             [{

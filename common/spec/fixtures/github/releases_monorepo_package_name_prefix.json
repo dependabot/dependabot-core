@@ -1,0 +1,68 @@
+[
+  {
+    "id": 431445278,
+    "tag_name": "v3.24.0",
+    "name": "v3.24.0",
+    "body": "# Slothlet v3.24.0 Changelog",
+    "html_url": "https://github.com/CLDMV/slothlet/releases/tag/v3.24.0",
+    "draft": false,
+    "prerelease": false,
+    "created_at": "2026-11-02T12:36:08Z",
+    "published_at": "2026-11-02T12:37:58Z"
+  },
+  {
+    "id": 431446132,
+    "tag_name": "@cldmv/slothlet-types@3.24.0",
+    "name": "@cldmv/slothlet-types v3.24.0",
+    "body": "Part of [`@cldmv/slothlet` v3.24.0](https://github.com/CLDMV/slothlet/releases/tag/v3.24.0) — built from the same commit and published at the same version.",
+    "html_url": "https://github.com/CLDMV/slothlet/releases/tag/%40cldmv/slothlet-types%403.24.0",
+    "draft": false,
+    "prerelease": false,
+    "created_at": "2026-11-02T12:38:53Z",
+    "published_at": "2026-11-02T12:38:58Z"
+  },
+  {
+    "id": 431446098,
+    "tag_name": "@cldmv/slothlet-i18n@3.24.0",
+    "name": "@cldmv/slothlet-i18n v3.24.0",
+    "body": "Part of [`@cldmv/slothlet` v3.24.0](https://github.com/CLDMV/slothlet/releases/tag/v3.24.0) — built from the same commit and published at the same version.",
+    "html_url": "https://github.com/CLDMV/slothlet/releases/tag/%40cldmv/slothlet-i18n%403.24.0",
+    "draft": false,
+    "prerelease": false,
+    "created_at": "2026-11-02T12:38:51Z",
+    "published_at": "2026-11-02T12:38:55Z"
+  },
+  {
+    "id": 425047298,
+    "tag_name": "v3.23.0",
+    "name": "v3.23.0",
+    "body": "# Slothlet v3.23.0 Changelog",
+    "html_url": "https://github.com/CLDMV/slothlet/releases/tag/v3.23.0",
+    "draft": false,
+    "prerelease": false,
+    "created_at": "2026-10-27T04:51:09Z",
+    "published_at": "2026-10-27T04:52:46Z"
+  },
+  {
+    "id": 425047736,
+    "tag_name": "@cldmv/slothlet-types@3.23.0",
+    "name": "@cldmv/slothlet-types v3.23.0",
+    "body": "Part of [`@cldmv/slothlet` v3.23.0](https://github.com/CLDMV/slothlet/releases/tag/v3.23.0) — built from the same commit and published at the same version.",
+    "html_url": "https://github.com/CLDMV/slothlet/releases/tag/%40cldmv/slothlet-types%403.23.0",
+    "draft": false,
+    "prerelease": false,
+    "created_at": "2026-10-27T04:53:34Z",
+    "published_at": "2026-10-27T04:53:39Z"
+  },
+  {
+    "id": 425047649,
+    "tag_name": "@cldmv/slothlet-i18n@3.23.0",
+    "name": "@cldmv/slothlet-i18n v3.23.0",
+    "body": "Part of [`@cldmv/slothlet` v3.23.0](https://github.com/CLDMV/slothlet/releases/tag/v3.23.0) — built from the same commit and published at the same version.",
+    "html_url": "https://github.com/CLDMV/slothlet/releases/tag/%40cldmv/slothlet-i18n%403.23.0",
+    "draft": false,
+    "prerelease": false,
+    "created_at": "2026-10-27T04:53:25Z",
+    "published_at": "2026-10-27T04:53:29Z"
+  }
+]
