@@ -195,7 +195,9 @@ module Dependabot
             "~> #{major}.#{minor}.0.dev"
           elsif version_parts.length == 3
             major, minor, patch = version_parts
-            "~> #{major}.#{minor}.#{patch}.dev"
+            # `~>` bumps the second-to-last release segment, so a fourth
+            # segment is needed to keep the upper bound at the next patch.
+            "~> #{major}.#{minor}.#{patch}.0.dev"
           else
             "= #{cleaned_version}"
           end

@@ -180,6 +180,16 @@ RSpec.describe Dependabot::Python::Requirement do
       its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.2.0.dev").to_s) }
     end
 
+    context "with a wildcard patch version" do
+      let(:requirement_string) { "== 1.2.3.*" }
+
+      its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.2.3.0.dev").to_s) }
+      it { is_expected.to be_satisfied_by(Gem::Version.new("1.2.3")) }
+      it { is_expected.to be_satisfied_by(Gem::Version.new("1.2.3.post1")) }
+      it { is_expected.not_to be_satisfied_by(Gem::Version.new("1.2.4")) }
+      it { is_expected.not_to be_satisfied_by(Gem::Version.new("1.2.10")) }
+    end
+
     context "with a wildcard major version" do
       let(:requirement_string) { "== 2.*" }
 
