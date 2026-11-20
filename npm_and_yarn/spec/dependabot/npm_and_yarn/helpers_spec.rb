@@ -249,6 +249,76 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
           .with("pnpm install", fingerprint: "pnpm install", env: env)
       end
     end
+
+    # The file fetcher leaves out an ancestor pnpm-workspace.yaml that does not include the job's directory. pnpm 10
+    # and 11 still find that workspace on disk and apply it, which leaves the directory's own lockfile unchanged.
+    context "when the job is in a sub-directory and has no pnpm-workspace.yaml" do
+      let(:lockfile_version) { "9.0" }
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(name: "package.json", content: manifest_content, directory: "/frontend"),
+          Dependabot::DependencyFile.new(
+            name: "pnpm-lock.yaml", content: "lockfileVersion: '9.0'\n", directory: "/frontend"
+          )
+        ]
+      end
+
+      it "runs pnpm without any ancestor workspace" do
+        described_class.run_pnpm_command("install --lockfile-only", fingerprint: "install <args>", env: env)
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          "pnpm install --lockfile-only --ignore-workspace",
+          fingerprint: "pnpm install <args> --ignore-workspace",
+          env: env
+        )
+      end
+
+      it "asks for the version without the flag" do
+        described_class.run_pnpm_command("-v", fingerprint: "-v")
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with("pnpm -v", fingerprint: "pnpm -v", env: nil)
+      end
+
+      context "when the lockfile needs an older pnpm" do
+        let(:files) do
+          [
+            Dependabot::DependencyFile.new(name: "package.json", content: manifest_content, directory: "/frontend"),
+            Dependabot::DependencyFile.new(
+              name: "pnpm-lock.yaml", content: "lockfileVersion: '6.0'\n", directory: "/frontend"
+            )
+          ]
+        end
+
+        it "passes the flag to that pnpm too" do
+          described_class.run_pnpm_command("install", env: env)
+
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+            "corepack pnpm@8 install --ignore-workspace",
+            fingerprint: "corepack pnpm@8 install --ignore-workspace",
+            env: env
+          )
+        end
+      end
+
+      context "when an ancestor pnpm-workspace.yaml includes the directory" do
+        let(:files) do
+          [
+            Dependabot::DependencyFile.new(name: "package.json", content: manifest_content, directory: "/frontend"),
+            Dependabot::DependencyFile.new(
+              name: "../pnpm-workspace.yaml", content: "packages:\n  - frontend\n", directory: "/frontend"
+            )
+          ]
+        end
+
+        it "runs pnpm in that workspace" do
+          described_class.run_pnpm_command("install", env: env)
+
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+            .with("pnpm install", fingerprint: "pnpm install", env: env)
+        end
+      end
+    end
   end
 
   describe "::run_yarn_command" do

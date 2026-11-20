@@ -1,0 +1,8 @@
+{
+  "name": "mono-root",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "etag": "1.8.1"
+  }
+}

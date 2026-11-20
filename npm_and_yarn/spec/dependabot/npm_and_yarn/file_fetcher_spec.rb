@@ -657,6 +657,82 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
   end
 
+  # pnpm 12 treats a directory an ancestor workspace does not include as a standalone project, and pnpm 10 and 11
+  # do so with --ignore-workspace, so that workspace's catalogs and settings are not the project's.
+  context "with a pnpm project in a directory an ancestor pnpm-workspace.yaml does not include" do
+    let(:repo_contents_path) { build_tmp_repo("pnpm/excluded_from_ancestor_workspace") }
+    let(:directory) { "/frontend" }
+    let(:file_fetcher_instance) do
+      described_class.new(source: source, credentials: credentials, repo_contents_path: repo_contents_path)
+    end
+    let(:fetched) { file_fetcher_instance.files.map(&:name) }
+
+    after { FileUtils.rm_rf(repo_contents_path) }
+
+    def workspace_packages(*patterns)
+      content = patterns.empty? ? "catalog: {}\n" : "packages:\n#{patterns.map { |p| "  - '#{p}'\n" }.join}"
+      File.write(File.join(repo_contents_path, "pnpm-workspace.yaml"), content)
+    end
+
+    it "does not fetch the ancestor workspace" do
+      expect(fetched).to match_array(%w(package.json pnpm-lock.yaml))
+    end
+
+    context "when the ancestor workspace includes the directory" do
+      before { workspace_packages("packages/*", "frontend") }
+
+      it "fetches it" do
+        expect(fetched).to include("../pnpm-workspace.yaml")
+      end
+    end
+
+    {
+      "a wildcard" => ["*"],
+      "a leading ./ and a trailing slash" => ["./frontend/"],
+      "a recursive glob" => ["**"]
+    }.each do |description, patterns|
+      context "when the ancestor workspace includes the directory with #{description}" do
+        before { workspace_packages(*patterns) }
+
+        it "fetches it" do
+          expect(fetched).to include("../pnpm-workspace.yaml")
+        end
+      end
+    end
+
+    context "when the ancestor workspace includes the directory and then negates it" do
+      before { workspace_packages("*", "!frontend") }
+
+      it "does not fetch it" do
+        expect(fetched).not_to include("../pnpm-workspace.yaml")
+      end
+    end
+
+    context "when the ancestor workspace has no packages, so it only includes its root" do
+      before { workspace_packages }
+
+      it "does not fetch it" do
+        expect(fetched).not_to include("../pnpm-workspace.yaml")
+      end
+    end
+
+    context "when the ancestor workspace's packages are not a list of patterns" do
+      before { File.write(File.join(repo_contents_path, "pnpm-workspace.yaml"), "packages: frontend\n") }
+
+      it "fetches it, as before" do
+        expect(fetched).to include("../pnpm-workspace.yaml")
+      end
+    end
+
+    context "when the directory is a workspace package" do
+      let(:directory) { "/packages/lib" }
+
+      it "fetches the ancestor workspace" do
+        expect(fetched).to include("../../pnpm-workspace.yaml")
+      end
+    end
+  end
+
   context "with an npm-shrinkwrap.json but no package-lock.json file" do
     before do
       stub_request(:get, url + "?ref=sha")
