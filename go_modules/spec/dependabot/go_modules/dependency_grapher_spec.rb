@@ -4,6 +4,7 @@
 # Sorbet cannot resolve the go_mod fixture defined only in child contexts.
 
 require "spec_helper"
+require "dependabot/dependency_graphers/graph_versions"
 require "dependabot/go_modules"
 
 RSpec.describe Dependabot::GoModules::DependencyGrapher do
@@ -317,6 +318,91 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
           end
         end
       end
+    end
+  end
+
+  describe "#manifest_set_input_files" do
+    let(:go_mod) do
+      Dependabot::DependencyFile.new(
+        name: "go.mod",
+        content: fixture("projects", "graphing_dependencies", "go.mod"),
+        directory: "/"
+      )
+    end
+
+    let(:go_sum) do
+      Dependabot::DependencyFile.new(
+        name: "go.sum",
+        content: fixture("projects", "graphing_dependencies", "go.sum"),
+        directory: "/"
+      )
+    end
+
+    let(:dependency_files) { [go_mod, go_sum] }
+
+    before { allow(parser).to receive(:parse).and_return([]) }
+
+    it "reports only go.mod, as go.sum does not determine the resolved dependencies" do
+      expect(grapher.manifest_set_input_files.map(&:name)).to eq(["go.mod"])
+    end
+  end
+
+  describe "#manifest_set_unresolvable_reason" do
+    def project_file(project, name)
+      Dependabot::DependencyFile.new(name: name, content: fixture("projects", project, name), directory: "/")
+    end
+
+    let(:project_name) { "simple" }
+    let(:dependency_files) { [project_file(project_name, "go.mod")] }
+
+    it "is nil for a module that reads only its go.mod" do
+      expect(grapher.manifest_set_unresolvable_reason).to be_nil
+    end
+
+    context "with a go.work file" do
+      let(:project_name) { "workspace" }
+      let(:dependency_files) { [project_file(project_name, "go.mod"), project_file(project_name, "go.work")] }
+
+      it "is a workspace" do
+        expect(grapher.manifest_set_unresolvable_reason).to eq("workspace")
+      end
+    end
+
+    context "with a relative replace resolving inside the repository" do
+      let(:project_name) { "monorepo" }
+
+      it "is a local replace" do
+        expect(grapher.manifest_set_unresolvable_reason).to eq("local_replace")
+      end
+
+      context "when the checkout is reached through a symlink" do
+        let(:link_dir) { Dir.mktmpdir }
+        let(:repo_contents_path) do
+          File.join(link_dir, "checkout").tap do |link|
+            File.symlink(File.expand_path(build_tmp_repo(project_name)), link)
+          end
+        end
+
+        after { FileUtils.rm_rf(link_dir) }
+
+        it "is still a local replace" do
+          expect(grapher.manifest_set_unresolvable_reason).to eq("local_replace")
+        end
+      end
+    end
+
+    context "with a relative replace resolving outside the repository" do
+      let(:project_name) { "replace" }
+
+      it "is nil, as the target is stubbed and reads nothing" do
+        expect(grapher.manifest_set_unresolvable_reason).to be_nil
+      end
+    end
+  end
+
+  describe "graph version" do
+    it "is locked to the current grapher sources (run bin/update-manifest-set-graph-versions.rb)" do
+      expect(Dependabot::DependencyGraphers::GraphVersions.stale_owners(owners: ["go_modules"])).to be_empty
     end
   end
 end
