@@ -177,10 +177,7 @@ public class ModifiedFilesTracker
 
                 if (restoreOriginalContents)
                 {
-                    var originalRawContent = originalContent
-                        .SetEOL(_originalDependencyFileEOLs[repoFullPath])
-                        .SetBOM(_originalDependencyFileBOMs[repoFullPath]);
-                    await File.WriteAllBytesAsync(localFullPath, originalRawContent);
+                    await RestoreOriginalContentAsync(repoFullPath);
                 }
             }
         }
@@ -258,6 +255,26 @@ public class ModifiedFilesTracker
             .Select(kvp => kvp.Value)
             .ToImmutableArray();
         return updatedDependencyFileList;
+    }
+
+    /// <summary>
+    /// Writes back the contents every tracked file had when <see cref="StartTrackingAsync"/> was called.
+    /// </summary>
+    public async Task RestoreOriginalContentsAsync()
+    {
+        foreach (var repoFullPath in _originalDependencyFileContents.Keys)
+        {
+            await RestoreOriginalContentAsync(repoFullPath);
+        }
+    }
+
+    private async Task RestoreOriginalContentAsync(string repoFullPath)
+    {
+        var localFullPath = Path.GetFullPath(Path.Join(RepoContentsPath.FullName, repoFullPath));
+        var originalRawContent = _originalDependencyFileContents[repoFullPath]
+            .SetEOL(_originalDependencyFileEOLs[repoFullPath])
+            .SetBOM(_originalDependencyFileBOMs[repoFullPath]);
+        await File.WriteAllBytesAsync(localFullPath, originalRawContent);
     }
 
     private static string GetRepoRelativePath(DependencyFile dependencyFile)
