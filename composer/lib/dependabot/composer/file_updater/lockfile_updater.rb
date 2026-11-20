@@ -57,7 +57,7 @@ module Dependabot
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
-          @composer_platform_extensions = T.let(initial_platform, T::Hash[String, T::Array[String]])
+          @composer_platform_extensions = T.let(initial_platform_extensions, T::Hash[String, T::Array[String]])
           @lock_git_deps = T.let(true, T::Boolean)
           @error_handler = T.let(ComposerErrorHandler.new, ComposerErrorHandler)
         end
@@ -177,27 +177,18 @@ module Dependabot
           if error.message.match?(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
             # These errors occur when platform requirements declared explicitly
             # in the composer.json aren't met.
-            missing_extensions =
-              error.message.scan(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
-                   .map do |extension_string|
-                name, requirement = T.cast(extension_string, String).strip.split(" ", 2)
-                { name: name, requirement: requirement }
-              end
+            missing_extensions = Helpers.missing_extensions_from(error.message, MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
+            if missing_extensions.any? { |ext| manifest_document.platform_extension_pinned?(ext.fetch(:name)) }
+              raise DependencyFileNotResolvable, error.message
+            end
+
             raise MissingExtensions, missing_extensions
           elsif error.message.match?(MISSING_IMPLICIT_PLATFORM_REQ_REGEX) &&
                 !library? &&
                 !initial_platform.empty? &&
                 implicit_platform_reqs_satisfiable?(error.message)
-            missing_extensions =
-              error.message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX)
-                   .map do |extension_string|
-                name, requirement = T.cast(extension_string, String).strip.split(" ", 2)
-                { name: name, requirement: requirement }
-              end
-
-            missing_extension = missing_extensions.find do |hash|
-              existing_reqs = composer_platform_extensions[hash[:name]] || []
-              version_for_reqs(existing_reqs + [hash[:requirement]])
+            missing_extension = retryable_missing_extensions(error.message).find do |hash|
+              extension_satisfiable?(hash)
             end
 
             raise(MissingExtensions, T.must(missing_extension).then { |ext| [ext] })
@@ -265,17 +256,21 @@ module Dependabot
 
         sig { params(message: String).returns(T::Boolean) }
         def implicit_platform_reqs_satisfiable?(message)
-          missing_extensions =
-            message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX)
-                   .map do |extension_string|
-              name, requirement = T.cast(extension_string, String).strip.split(" ", 2)
-              { name: name, requirement: requirement }
-            end
+          retryable_missing_extensions(message).any? { |hash| extension_satisfiable?(hash) }
+        end
 
-          missing_extensions.any? do |hash|
-            existing_reqs = composer_platform_extensions[hash[:name]] || []
-            version_for_reqs(existing_reqs + [hash[:requirement]])
-          end
+        # Missing extensions that Dependabot may add to the temporary platform.
+        # Extensions pinned in `config.platform` (including `false`) are excluded.
+        sig { params(message: String).returns(T::Array[T::Hash[Symbol, String]]) }
+        def retryable_missing_extensions(message)
+          Helpers.missing_extensions_from(message, MISSING_IMPLICIT_PLATFORM_REQ_REGEX)
+                 .reject { |hash| manifest_document.platform_extension_pinned?(hash.fetch(:name)) }
+        end
+
+        sig { params(extension: T::Hash[Symbol, String]).returns(T::Boolean) }
+        def extension_satisfiable?(extension)
+          existing_reqs = composer_platform_extensions[extension.fetch(:name)] || []
+          !version_for_reqs(existing_reqs + [extension.fetch(:requirement)]).nil?
         end
 
         sig { void }
@@ -311,10 +306,14 @@ module Dependabot
           json = JSON.parse(content)
 
           composer_platform_extensions.each do |extension, requirements|
+            next if manifest_document.platform_extension_pinned?(extension)
+
             json["config"] ||= {}
             json["config"]["platform"] ||= {}
-            json["config"]["platform"][extension] =
-              version_for_reqs(requirements)
+            version = version_for_reqs(requirements)
+            raise "No matching version for #{requirements}!" unless version
+
+            json["config"]["platform"][extension] = version
           end
 
           JSON.dump(json)
@@ -485,6 +484,9 @@ module Dependabot
         sig { params(additional_extensions: T::Array[T::Hash[Symbol, String]]).void }
         def update_required_extensions(additional_extensions)
           additional_extensions.each do |ext|
+            # Explicitly configured platform extensions are hard constraints
+            next if manifest_document.platform_extension_pinned?(ext.fetch(:name))
+
             composer_platform_extensions[ext.fetch(:name)] ||= []
             existing_reqs = composer_platform_extensions[ext.fetch(:name)]
             composer_platform_extensions[ext.fetch(:name)] =
@@ -536,6 +538,18 @@ module Dependabot
           credentials
             .select { |cred| cred.fetch("type") == PackageManager::REPOSITORY_KEY }
             .select { |cred| cred["password"] }
+        end
+
+        # Seeds the platform with explicitly configured `config.platform.ext-*`
+        # versions so they act as hard constraints when checking whether
+        # missing extension requirements can be satisfied.
+        sig { returns(T::Hash[String, T::Array[String]]) }
+        def initial_platform_extensions
+          platform = initial_platform
+          manifest_document.platform_extension_versions.each do |extension, version|
+            platform[extension] = [version] if requirement_valid?(version)
+          end
+          platform
         end
 
         sig { returns(T::Hash[String, T::Array[String]]) }
