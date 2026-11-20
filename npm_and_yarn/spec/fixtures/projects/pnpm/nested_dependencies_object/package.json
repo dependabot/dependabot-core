@@ -1,0 +1,9 @@
+{
+  "name": "pnpm-nested-dependencies-object",
+  "version": "1.0.0",
+  "pnpm": {"packageExtensions":{"etag@1":{"dependencies":{"is-number":"6.0.0"}}}},
+  "dependencies": {
+    "etag": "1.0.1",
+    "is-number": "6.0.0"
+  }
+}

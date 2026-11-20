@@ -2962,6 +2962,57 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(parsed.dig("overrides", "undici")).to eq("^6.24.1")
         end
       end
+
+      context "with overrides alongside unrelated resolutions" do
+        let(:files) { project_dependency_files("npm8/overrides_with_unrelated_resolutions") }
+
+        let(:dependency_name) { "is-number" }
+        let(:version) { "7.0.0" }
+        let(:previous_version) { "6.0.0" }
+        let(:requirements) do
+          [{ file: "package.json", requirement: "7.0.0", groups: ["dependencies"], source: nil }]
+        end
+        let(:previous_requirements) do
+          [{ file: "package.json", requirement: "6.0.0", groups: ["dependencies"], source: nil }]
+        end
+
+        it "updates the dependencies, the overrides, and the lockfile" do
+          original = files.find { |f| f.name == "package.json" }.content
+          expect(updated_package_json.content).to eq(original.gsub('"is-number": "6.0.0"', '"is-number": "7.0.0"'))
+          parsed_lockfile = JSON.parse(updated_npm_lock.content)
+          expect(parsed_lockfile.dig("packages", "node_modules/is-number", "version")).to eq("7.0.0")
+        end
+      end
+
+      context "with a sub-dependency override alongside unrelated resolutions" do
+        let(:files) { project_dependency_files("npm8/subdep_override_with_unrelated_resolutions") }
+
+        let(:dependency_name) { "undici" }
+        let(:version) { "6.24.1" }
+        let(:previous_version) { "6.23.0" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { [] }
+
+        before do
+          lockfile = files.find { |f| f.name == "package-lock.json" }
+          updated_lockfile = Dependabot::DependencyFile.new(
+            name: lockfile.name,
+            content: lockfile.content.gsub("6.23.0", "6.24.1")
+          )
+          npm_updater = instance_double(
+            Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater,
+            updated_lockfile: updated_lockfile,
+            updated_package_json_files: {}
+          )
+          allow(Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater)
+            .to receive(:new).and_return(npm_updater)
+        end
+
+        it "updates the override in the package.json" do
+          expect(updated_files.map(&:name)).to match_array(%w(package.json package-lock.json))
+          expect(JSON.parse(updated_package_json.content).dig("overrides", "undici")).to eq("6.24.1")
+        end
+      end
     end
 
     #############################
@@ -3320,6 +3371,29 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         it "has details of the updated item" do
           expect(updated_yarn_lock.content).to include("fetch-factory@^0.0.2")
+        end
+
+        context "with a compact resolution keyed by a package path" do
+          let(:files) { project_dependency_files("yarn/resolution_package_path") }
+
+          let(:dependency_name) { "is-number" }
+          let(:version) { "7.0.0" }
+          let(:previous_version) { "6.0.0" }
+          let(:requirements) do
+            [{ file: "package.json", requirement: "^7.0.0", groups: ["dependencies"], source: nil }]
+          end
+          let(:previous_requirements) do
+            [{ file: "package.json", requirement: "^6.0.0", groups: ["dependencies"], source: nil }]
+          end
+
+          it "updates the dependencies, the resolution, and the lockfile" do
+            original = files.find { |f| f.name == "package.json" }.content
+            expect(updated_package_json.content).to eq(
+              original.sub('"is-number": "^6.0.0"', '"is-number": "^7.0.0"')
+                      .sub('"**/is-number":"6.0.0"', '"**/is-number":"7.0.0"')
+            )
+            expect(updated_yarn_lock.content).to include(%(is-number@7.0.0, is-number@^7.0.0:\n  version "7.0.0"))
+          end
         end
 
         context "when a dist-tag is specified" do
@@ -3918,6 +3992,26 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
       let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
       let(:files) { project_dependency_files(project_name) }
+
+      context "with a compact nested dependencies object before the dependencies" do
+        let(:project_name) { "pnpm/nested_dependencies_object" }
+
+        let(:dependency_name) { "is-number" }
+        let(:version) { "7.0.0" }
+        let(:previous_version) { "6.0.0" }
+        let(:requirements) do
+          [{ file: "package.json", requirement: "7.0.0", groups: ["dependencies"], source: nil }]
+        end
+        let(:previous_requirements) do
+          [{ file: "package.json", requirement: "6.0.0", groups: ["dependencies"], source: nil }]
+        end
+
+        it "updates the top-level dependencies and leaves the nested object alone" do
+          original = files.find { |f| f.name == "package.json" }.content
+          expect(updated_package_json.content).to eq(original.sub('"is-number": "6.0.0"', '"is-number": "7.0.0"'))
+          expect(YAML.safe_load(updated_pnpm_lock.content)["packages"].keys).to include("is-number@7.0.0")
+        end
+      end
 
       describe "simple case" do
         let(:project_name) { "pnpm/simple" }

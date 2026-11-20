@@ -1,0 +1,14 @@
+{
+  "name": "bun-overrides-with-resolutions",
+  "packageManager": "bun@1.4.2",
+  "dependencies": {
+    "etag": "1.0.1",
+    "is-number": "^6.0.0"
+  },
+  "resolutions": {
+    "etag": "1.0.1"
+  },
+  "overrides": {
+    "is-number": "6.0.0"
+  }
+}

@@ -326,11 +326,10 @@ module Dependabot
       sig { params(package_json: Dependabot::DependencyFile).returns(T::Boolean) }
       def package_json_has_override_for_deps?(package_json)
         parsed = JSON.parse(T.must(package_json.content))
-        entries = parsed["resolutions"] || parsed["overrides"] || parsed.dig("pnpm", "overrides") || {}
-        return false unless entries.is_a?(Hash)
+        names = PackageJsonUpdater.resolution_entries(parsed).values.flat_map(&:keys)
 
         dependencies.any? do |dep|
-          entries.any? { |k, v| v.is_a?(String) && (k == dep.name || k.end_with?("/#{dep.name}")) }
+          names.any? { |name| name == dep.name || name.end_with?("/#{dep.name}") }
         end
       rescue JSON::ParserError
         false

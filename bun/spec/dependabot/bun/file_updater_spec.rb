@@ -527,6 +527,64 @@ RSpec.describe Dependabot::Bun::FileUpdater do
       end
     end
 
+    context "with entries in several package.json objects" do
+      let(:dependency_name) { "is-number" }
+      let(:previous_version) { "6.0.0" }
+      let(:version) { "7.0.0" }
+      let(:previous_requirements) do
+        [{ file: "package.json", requirement: previous_requirement, groups: ["dependencies"], source: nil }]
+      end
+      let(:requirements) do
+        [{ file: "package.json", requirement: new_requirement, groups: ["dependencies"], source: nil }]
+      end
+      let(:files) { project_dependency_files("bun/#{project}") }
+      let(:repo_contents_path) { build_tmp_repo("bun/#{project}", path: "projects") }
+      let(:original_package_json) { files.find { |file| file.name == "package.json" }.content }
+      let(:updated_lock) { YAML.safe_load(updated_bun_lock.content) }
+
+      context "with a compact nested dependencies object before the dependencies" do
+        let(:project) { "nested_dependencies_object" }
+        let(:previous_requirement) { "6.0.0" }
+        let(:new_requirement) { "7.0.0" }
+
+        it "updates the top-level dependencies and leaves the nested object alone" do
+          expect(updated_package_json.content)
+            .to eq(original_package_json.sub('"is-number": "6.0.0"', '"is-number": "7.0.0"'))
+          expect(updated_lock["packages"]["is-number"].first).to eq("is-number@7.0.0")
+        end
+      end
+
+      context "with a compact catalog entry before the resolutions" do
+        let(:project) { "resolutions_after_catalog" }
+        let(:previous_requirement) { "^6.0.0" }
+        let(:new_requirement) { "^7.0.0" }
+
+        it "updates the dependencies and the resolutions and leaves the catalog alone" do
+          expect(updated_package_json.content).to eq(
+            original_package_json.sub('"is-number": "^6.0.0"', '"is-number": "^7.0.0"')
+                                 .sub('"is-number": "6.0.0"', '"is-number": "7.0.0"')
+          )
+          expect(updated_lock["overrides"]).to eq("is-number" => "7.0.0")
+          expect(updated_lock["packages"]["is-number"].first).to eq("is-number@7.0.0")
+        end
+      end
+
+      context "with overrides alongside unrelated resolutions" do
+        let(:project) { "overrides_with_unrelated_resolutions" }
+        let(:previous_requirement) { "^6.0.0" }
+        let(:new_requirement) { "^7.0.0" }
+
+        it "updates the dependencies and the overrides" do
+          expect(updated_package_json.content).to eq(
+            original_package_json.sub('"is-number": "^6.0.0"', '"is-number": "^7.0.0"')
+                                 .sub('"is-number": "6.0.0"', '"is-number": "7.0.0"')
+          )
+          expect(updated_lock["overrides"]).to eq("is-number" => "7.0.0")
+          expect(updated_lock["packages"]["is-number"].first).to eq("is-number@7.0.0")
+        end
+      end
+    end
+
     context "with multiple dependencies" do
       let(:files) { project_dependency_files("javascript/multiple_updates") }
       let(:repo_contents_path) { build_tmp_repo("javascript/multiple_updates", path: "projects") }
