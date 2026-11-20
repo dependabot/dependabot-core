@@ -177,9 +177,11 @@ module Dependabot
         # version (even for a library) as we rely on a resolvable version being
         # present in other areas
         return unless preferred_resolvable_version
+        return if no_lockfile? && latest_version.nil?
 
-        # No lockfile: target the latest version. With one: the resolvable version.
-        no_lockfile? ? latest_version&.to_s : preferred_resolvable_version.to_s
+        # Target the resolvable version even without a lockfile, so the requirement
+        # matches the version reported in the pull request.
+        preferred_resolvable_version.to_s
       end
 
       sig { returns(T::Boolean) }
