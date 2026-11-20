@@ -182,6 +182,57 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
             fingerprint: "install --lockfile-only --ignore-scripts"
           )
       end
+
+      context "when pnpm-workspace.yaml includes other files" do
+        let(:dependency_files) do
+          project_dependency_files("pnpm/catalog_include").reject { |f| f.name == "pnpm-lock.yaml" }
+        end
+
+        it "writes the included files before running pnpm" do
+          included_content = nil
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do
+            included_content = File.read("pnpm-catalogs.yaml") if File.exist?("pnpm-catalogs.yaml")
+            File.write("pnpm-lock.yaml", "lockfileVersion: '9.0'\n")
+            ""
+          end
+
+          generator.generate
+
+          expect(included_content).to eq(dependency_files.find { |f| f.name == "pnpm-catalogs.yaml" }.content)
+        end
+
+        # An included file can be named pnpm-workspace.yaml too, which the filename allow-list also matches
+        ["../shared/catalog.yaml", "../shared/pnpm-workspace.yaml"].each do |included_path|
+          context "when an included file is outside the project directory (#{included_path})" do
+            let(:dependency_files) do
+              [
+                Dependabot::DependencyFile.new(name: "package.json", content: '{"name":"app","version":"1.0.0"}'),
+                Dependabot::DependencyFile.new(
+                  name: "pnpm-workspace.yaml",
+                  content: "include:\n  #{included_path}: [catalog]\n"
+                ),
+                Dependabot::DependencyFile.new(name: included_path, content: "catalog:\n  a: 1.0.0\n")
+              ]
+            end
+
+            it "does not write it outside the temporary directory" do
+              outside_path = nil
+              allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do
+                outside_path = File.expand_path(included_path)
+                File.write("pnpm-lock.yaml", "lockfileVersion: '9.0'\n")
+                ""
+              end
+
+              generator.generate
+              written = outside_path && File.exist?(outside_path)
+              FileUtils.rm_f(outside_path) if outside_path
+
+              expect(outside_path).not_to be_nil
+              expect(written).to be(false)
+            end
+          end
+        end
+      end
     end
   end
 

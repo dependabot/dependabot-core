@@ -162,6 +162,35 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmWorkspaceUpdater do
       its(:content) { is_expected.to include "react-dom: ^16.2.3" }
     end
 
+    context "with one dependency in catalogs in several included files" do
+      let(:project_name) { "pnpm/catalog_include_multiple" }
+      let(:workspace_file) do
+        project_dependency_files(project_name).find { |f| f.name == "config/pnpm-workspace.yaml" }
+      end
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "is-even",
+            version: "1.0.0",
+            previous_version: "0.1.2",
+            package_manager: "npm_and_yarn",
+            requirements: [
+              { file: "catalogs/legacy.yaml", requirement: "1.0.0", groups: ["dependencies"], source: nil },
+              { file: "config/pnpm-workspace.yaml", requirement: "1.0.0", groups: ["dependencies"], source: nil }
+            ],
+            previous_requirements: [
+              { file: "catalogs/legacy.yaml", requirement: "0.1.1", groups: ["dependencies"], source: nil },
+              { file: "config/pnpm-workspace.yaml", requirement: "0.1.2", groups: ["dependencies"], source: nil }
+            ]
+          )
+        ]
+      end
+
+      it "replaces this file's previous requirement, not the first file's" do
+        expect(updated_package_json.content).to eq("catalogs:\n  current:\n    is-even: 1.0.0\n")
+      end
+    end
+
     context("with a scoped package in catalog") do
       let(:project_name) { "pnpm/catalog_monorepo" }
       let(:dependencies) do

@@ -1,0 +1,6 @@
+packages:
+  - packages/*
+
+include:
+  ./catalogs/legacy.yaml: [catalogs.legacy]
+  ./config/pnpm-workspace.yaml: [catalogs.current]

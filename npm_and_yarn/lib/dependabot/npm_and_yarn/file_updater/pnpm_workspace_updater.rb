@@ -117,7 +117,10 @@ module Dependabot
           ).returns(T.nilable(Dependabot::DependencyRequirement))
         end
         def old_requirement(dependency, new_requirement)
-          T.must(dependency.previous_requirements).find { |r| r.groups == new_requirement.groups }
+          previous = T.must(dependency.previous_requirements)
+          # A dependency can be in catalogs in several files that pnpm-workspace.yaml includes
+          previous.find { |r| r.file == new_requirement.file && r.groups == new_requirement.groups } ||
+            previous.find { |r| r.groups == new_requirement.groups }
         end
       end
     end

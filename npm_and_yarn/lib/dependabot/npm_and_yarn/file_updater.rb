@@ -9,6 +9,7 @@ require "dependabot/errors"
 require "dependabot/package/release_cooldown_options"
 require "dependabot/update_checkers/cooldown_calculation"
 require "dependabot/npm_and_yarn/dependency_files_filterer"
+require "dependabot/npm_and_yarn/pnpm_workspace_includes"
 require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
 require "dependabot/npm_and_yarn/version"
 require "sorbet-runtime"
@@ -269,11 +270,19 @@ module Dependabot
         )
       end
 
+      # pnpm-workspace.yaml and the files it includes, which can own its catalogs. The workspace file is kept when
+      # only an included file needs updating, so the lockfile update still writes it next to that file.
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def pnpm_workspace
         @pnpm_workspace ||= T.let(
-          filtered_dependency_files
-          .select { |f| f.name.end_with?("pnpm-workspace.yaml") },
+          begin
+            included = PnpmWorkspaceIncludes.included_files(dependency_files)
+            files = filtered_dependency_files.select do |f|
+              f.name.end_with?("pnpm-workspace.yaml") || included.include?(f)
+            end
+            files += original_pnpm_workspace if files.intersect?(included)
+            files.uniq
+          end,
           T.nilable(T::Array[Dependabot::DependencyFile])
         )
       end

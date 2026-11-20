@@ -4,6 +4,7 @@
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package/registry_finder"
 require "dependabot/npm_and_yarn/pnpm_error_message"
+require "dependabot/npm_and_yarn/pnpm_workspace_includes"
 require "dependabot/npm_and_yarn/registry_parser"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/shared_helpers"
@@ -282,6 +283,7 @@ module Dependabot
 
               if updated_pnpm_workspace_content
                 File.write("pnpm-workspace.yaml", updated_pnpm_workspace_content["pnpm-workspace.yaml"])
+                write_included_pnpm_workspace_files(updated_pnpm_workspace_content)
               else
                 run_pnpm_update_packages
               end
@@ -308,6 +310,15 @@ module Dependabot
               verify_release_age_of_added_entries!(pnpm_lock, updated_content, updated_pnpm_workspace_content)
               updated_content
             end
+          end
+        end
+
+        # Files that pnpm-workspace.yaml includes can own its catalogs, and pnpm reads them from disk.
+        sig { params(updated_contents: T::Hash[String, T.nilable(String)]).void }
+        def write_included_pnpm_workspace_files(updated_contents)
+          PnpmWorkspaceIncludes.included_files(dependency_files).each do |file|
+            content = updated_contents[file.name]
+            File.write(file.name, content) if content
           end
         end
 
