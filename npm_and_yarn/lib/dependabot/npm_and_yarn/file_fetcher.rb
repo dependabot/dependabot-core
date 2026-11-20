@@ -659,11 +659,43 @@ module Dependabot
 
       sig { returns(T::Array[DependencyFile]) }
       def fetch_pnpm_workspace_package_jsons
-        return [] unless parsed_pnpm_workspace_yaml["packages"]
+        packages = parsed_pnpm_workspace_yaml["packages"]
+        return [] unless packages
 
-        workspace_paths(parsed_pnpm_workspace_yaml["packages"]).filter_map do |workspace|
+        # pnpm treats `!`-prefixed entries as exclusions rather than workspace members
+        included_patterns = packages
+        excluded_patterns = T.let([], T::Array[String])
+        if packages.is_a?(Array)
+          negated, included_patterns = packages.partition { |p| p.is_a?(String) && p.start_with?("!") }
+          excluded_patterns = negated.map { |pattern| pattern.delete_prefix("!") }
+        end
+
+        workspace_paths(included_patterns).filter_map do |workspace|
+          next if pnpm_workspace_excluded?(workspace, excluded_patterns)
+
           fetch_package_json_if_present(workspace)
         end
+      end
+
+      # pnpm appends `/package.json` to each workspace pattern before globbing, so a
+      # directory is excluded when its manifest path matches a negated pattern
+      sig { params(workspace: String, excluded_patterns: T::Array[String]).returns(T::Boolean) }
+      def pnpm_workspace_excluded?(workspace, excluded_patterns)
+        return false if excluded_patterns.empty?
+
+        manifest_path = File.join(normalize_workspace_glob(workspace), MANIFEST_FILENAME)
+        excluded_patterns.any? do |pattern|
+          File.fnmatch?(
+            File.join(normalize_workspace_glob(pattern), MANIFEST_FILENAME),
+            manifest_path,
+            File::FNM_PATHNAME | File::FNM_EXTGLOB
+          )
+        end
+      end
+
+      sig { params(glob: String).returns(String) }
+      def normalize_workspace_glob(glob)
+        glob.delete_prefix("./").chomp("/")
       end
 
       sig { params(path: String).returns(T::Array[T.nilable(DependencyFile)]) }

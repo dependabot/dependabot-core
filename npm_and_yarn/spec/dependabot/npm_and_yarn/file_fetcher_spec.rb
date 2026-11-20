@@ -2292,6 +2292,59 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         end.to raise_error(Dependabot::DependencyFileNotParseable)
       end
     end
+
+    context "when packages contain `!`-negated entries" do
+      let(:directory_entry) { Data.define(:type, :path) }
+      let(:app_dirs) { %w(apps/web apps/marketing apps/web-legacy) }
+
+      before do
+        allow(file_fetcher).to receive(:repo_contents)
+          .with(dir: "apps/", raise_errors: false)
+          .and_return(app_dirs.map { |path| directory_entry.new("dir", path) })
+        allow(file_fetcher).to receive(:fetch_package_json_if_present).and_return(nil)
+      end
+
+      context "with a literal exclusion" do
+        let(:content) { "packages:\n  - 'apps/*'\n  - '!apps/marketing'\n" }
+
+        it "does not fetch the excluded workspace" do
+          file_fetcher.send(:fetch_pnpm_workspace_package_jsons)
+
+          expect(file_fetcher).to have_received(:fetch_package_json_if_present).with("apps/web")
+          expect(file_fetcher).to have_received(:fetch_package_json_if_present).with("apps/web-legacy")
+          expect(file_fetcher).not_to have_received(:fetch_package_json_if_present).with("apps/marketing")
+        end
+
+        it "does not treat the negated entry as a workspace path" do
+          file_fetcher.send(:fetch_pnpm_workspace_package_jsons)
+
+          expect(file_fetcher).not_to have_received(:fetch_package_json_if_present).with("!apps/marketing")
+        end
+      end
+
+      context "with a glob exclusion listed before the inclusion" do
+        let(:content) { "packages:\n  - '!apps/*-legacy'\n  - './apps/*'\n" }
+
+        it "applies the exclusion regardless of order or a leading ./" do
+          file_fetcher.send(:fetch_pnpm_workspace_package_jsons)
+
+          expect(file_fetcher).to have_received(:fetch_package_json_if_present).with("apps/web")
+          expect(file_fetcher).to have_received(:fetch_package_json_if_present).with("apps/marketing")
+          expect(file_fetcher).not_to have_received(:fetch_package_json_if_present).with("apps/web-legacy")
+        end
+      end
+
+      context "with a recursive exclusion" do
+        let(:content) { "packages:\n  - 'apps/*'\n  - '!**/marketing/**'\n" }
+
+        it "excludes matching workspaces at any depth" do
+          file_fetcher.send(:fetch_pnpm_workspace_package_jsons)
+
+          expect(file_fetcher).to have_received(:fetch_package_json_if_present).with("apps/web")
+          expect(file_fetcher).not_to have_received(:fetch_package_json_if_present).with("apps/marketing")
+        end
+      end
+    end
   end
 
   context "with package.json file just including a dummy string" do
