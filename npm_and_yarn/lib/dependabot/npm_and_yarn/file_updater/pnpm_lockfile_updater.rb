@@ -326,9 +326,32 @@ module Dependabot
             "retrying the update without a version for them"
           )
           @unpinned_dependency_names = indirect
-          run_pnpm_update_specs(
-            dependencies.map { |d| indirect.include?(d.name) ? d.name : "#{d.name}@#{d.version}" }
+          specs = dependencies.map { |d| indirect.include?(d.name) ? d.name : "#{d.name}@#{d.version}" }
+          return run_pnpm_update_specs(specs) unless security_updates_only?
+
+          run_unpinned_security_update_specs(specs)
+        end
+
+        # The update checker chose each unpinned version by running this same
+        # update without a version under the repo's own `minimumReleaseAge`
+        # (`PnpmTransitiveUpdate`). Resolving it here with the security override
+        # (`minimum-release-age=0`) instead lets pnpm take a newer release still
+        # inside the repo's window, which `verify_unpinned_updates!` then refuses
+        # as above the requested version. So the retry resolves under the same
+        # gate as the checker. Strict mode stays off for `--no-save`, so a fix
+        # with no release outside the window is still taken rather than blocked.
+        # If the repo's gate cannot be applied, the security override is used
+        # as before.
+        sig { params(specs: T::Array[String]).returns(T.nilable(String)) }
+        def run_unpinned_security_update_specs(specs)
+          cmd = "update #{specs.join(' ')}  --lockfile-only --no-save -r"
+          run_pnpm_command_under_user_gate(cmd, "update <dependency_updates>  --lockfile-only --no-save -r")
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          Dependabot.logger.info(
+            "pnpm could not resolve the unpinned security update under the repo's own release-age gate " \
+            "(#{e.message.lines.first&.strip}); retrying with the security override"
           )
+          run_pnpm_update_specs(specs)
         end
 
         # An update retried without a version resolves whatever a fresh install
