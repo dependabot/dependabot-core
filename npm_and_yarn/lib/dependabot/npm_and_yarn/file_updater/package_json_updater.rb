@@ -387,8 +387,10 @@ module Dependabot
           end
 
           declaration_blocks.reduce(content.dup) do |new_content, block|
-            updated_block = block.sub(old_line, new_line)
-            new_content.sub(block, updated_block)
+            # Block form: a String replacement treats backslashes as escapes, which would turn a JSON-escaped
+            # "\\" in the section (for example a Windows path) into a single, invalid "\"
+            updated_block = block.sub(old_line) { new_line }
+            new_content.sub(block) { updated_block }
           end
         end
 
