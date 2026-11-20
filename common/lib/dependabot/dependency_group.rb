@@ -64,9 +64,11 @@ module Dependabot
     sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
     def contains?(dependency)
       return true if @dependencies.include?(dependency)
-      return false if matches_excluded_pattern?(dependency.name)
 
-      matches_pattern?(dependency.name) && matches_dependency_type?(dependency)
+      names = dependency.names_for_matching
+      return false if names.any? { |name| matches_excluded_pattern?(name) }
+
+      names.any? { |name| matches_pattern?(name) } && matches_dependency_type?(dependency)
     end
 
     sig { returns(T::Boolean) }

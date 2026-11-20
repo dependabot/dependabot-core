@@ -530,15 +530,38 @@ RSpec.describe Dependabot::Updater::PatternSpecificityCalculator do
         expect(result).to be false
       end
     end
+
+    context "when a group pattern matches a registry-qualified alias" do
+      let(:dotnet_dep) { create_dependency("dotnet/sdk", "10.0.401", aliases: ["mcr.microsoft.com/dotnet/sdk"]) }
+      let(:registry_group) do
+        group_double(
+          name: "dotnet-toolchain",
+          dependencies: [],
+          rules: { "patterns" => ["mcr.microsoft.com/dotnet/*"] },
+          applies_to: "version-updates"
+        )
+      end
+      let(:alias_contains_checker) do
+        proc { |group, _dep, _directory| [generic_group, registry_group].include?(group) }
+      end
+
+      it "treats the alias pattern as more specific than a universal wildcard" do
+        result = calculator.dependency_belongs_to_more_specific_group?(
+          generic_group, dotnet_dep, [generic_group, registry_group], alias_contains_checker, directory
+        )
+        expect(result).to be true
+      end
+    end
   end
 
   private
 
-  def create_dependency(name, version)
+  def create_dependency(name, version, aliases: [])
     instance_double(
       Dependabot::Dependency,
       name: name,
-      version: version
+      version: version,
+      names_for_matching: [name, *aliases]
     )
   end
 end

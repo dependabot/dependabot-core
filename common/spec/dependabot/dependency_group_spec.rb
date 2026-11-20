@@ -251,6 +251,68 @@ RSpec.describe Dependabot::DependencyGroup do
         expect(dependency_group.contains?(test_dependency2)).to be(false)
       end
     end
+
+    context "when the package manager registers name aliases" do
+      sig { returns(Dependabot::Dependency) }
+      let(:aliased_dependency) do
+        Dependabot::Dependency.new(
+          name: "dotnet/sdk",
+          package_manager: "group-alias-test",
+          version: "10.0.401",
+          requirements: [
+            {
+              file: "Dockerfile",
+              requirement: nil,
+              groups: [],
+              source: { registry: "mcr.microsoft.com" }
+            }
+          ]
+        )
+      end
+
+      before do
+        Dependabot::Dependency.register_name_aliases_builder(
+          "group-alias-test",
+          ->(dep) { ["mcr.microsoft.com/#{dep.name}"] }
+        )
+      end
+
+      context "when a pattern matches an alias" do
+        sig { override.returns(T::Hash[String, T.any(String, T::Array[String])]) }
+        let(:rules) { { "patterns" => ["mcr.microsoft.com/dotnet/*"] } }
+
+        it "returns true" do
+          expect(dependency_group.contains?(aliased_dependency)).to be(true)
+        end
+      end
+
+      context "when a pattern matches the plain name" do
+        sig { override.returns(T::Hash[String, T.any(String, T::Array[String])]) }
+        let(:rules) { { "patterns" => ["dotnet/*"] } }
+
+        it "returns true" do
+          expect(dependency_group.contains?(aliased_dependency)).to be(true)
+        end
+      end
+
+      context "when an exclude pattern matches an alias" do
+        sig { override.returns(T::Hash[String, T.any(String, T::Array[String])]) }
+        let(:rules) { { "patterns" => ["dotnet/*"], "exclude-patterns" => ["mcr.microsoft.com/*"] } }
+
+        it "returns false" do
+          expect(dependency_group.contains?(aliased_dependency)).to be(false)
+        end
+      end
+
+      context "when no pattern matches any name" do
+        sig { override.returns(T::Hash[String, T.any(String, T::Array[String])]) }
+        let(:rules) { { "patterns" => ["ghcr.io/dotnet/*"] } }
+
+        it "returns false" do
+          expect(dependency_group.contains?(aliased_dependency)).to be(false)
+        end
+      end
+    end
   end
 
   describe "#to_config_yaml" do
