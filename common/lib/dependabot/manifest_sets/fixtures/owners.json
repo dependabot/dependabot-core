@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "ecosystem": "pypi",
+      "basenames": [
+        "uv.lock",
+        "pyproject.toml"
+      ],
+      "owner": "uv"
+    },
+    {
+      "ecosystem": "pypi",
+      "basenames": [
+        "requirements.txt",
+        "uv.lock"
+      ],
+      "owner": "uv"
+    },
+    {
+      "ecosystem": "pypi",
+      "basenames": [
+        "pyproject.toml"
+      ],
+      "owner": "pip"
+    },
+    {
+      "ecosystem": "pypi",
+      "basenames": [
+        "requirements.txt",
+        "requirements.in"
+      ],
+      "owner": "pip"
+    },
+    {
+      "ecosystem": "pypi",
+      "basenames": [],
+      "owner": "pip"
+    },
+    {
+      "ecosystem": "pypi",
+      "basenames": [
+        "UV.lock",
+        "pyproject.toml"
+      ],
+      "owner": "pip"
+    },
+    {
+      "ecosystem": "pypi",
+      "basenames": [
+        "uv.lock.bak"
+      ],
+      "owner": "pip"
+    },
+    {
+      "ecosystem": "golang",
+      "basenames": [
+        "go.mod"
+      ],
+      "owner": "go_modules"
+    },
+    {
+      "ecosystem": "golang",
+      "basenames": [
+        "go.mod",
+        "go.sum"
+      ],
+      "owner": "go_modules"
+    },
+    {
+      "name": "two presence owners match",
+      "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"r\", \"filename_regex\": \"\\\\Arequirements\\\\.txt\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"uv\", \"when_any_basename\": [\"uv.lock\"]}, {\"id\": \"poetry\", \"when_any_basename\": [\"poetry.lock\"]}, {\"id\": \"pip\", \"otherwise\": true}]}]}",
+      "ecosystem": "pypi",
+      "basenames": [
+        "uv.lock",
+        "poetry.lock",
+        "requirements.txt"
+      ],
+      "ambiguous": true
+    },
+    {
+      "name": "two presence owners match in reverse basename order",
+      "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"r\", \"filename_regex\": \"\\\\Arequirements\\\\.txt\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"uv\", \"when_any_basename\": [\"uv.lock\"]}, {\"id\": \"poetry\", \"when_any_basename\": [\"poetry.lock\"]}, {\"id\": \"pip\", \"otherwise\": true}]}]}",
+      "ecosystem": "pypi",
+      "basenames": [
+        "poetry.lock",
+        "uv.lock"
+      ],
+      "ambiguous": true
+    },
+    {
+      "name": "one of two presence owners matches",
+      "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"r\", \"filename_regex\": \"\\\\Arequirements\\\\.txt\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"uv\", \"when_any_basename\": [\"uv.lock\"]}, {\"id\": \"poetry\", \"when_any_basename\": [\"poetry.lock\"]}, {\"id\": \"pip\", \"otherwise\": true}]}]}",
+      "ecosystem": "pypi",
+      "basenames": [
+        "poetry.lock",
+        "requirements.txt"
+      ],
+      "owner": "poetry"
+    },
+    {
+      "name": "no presence owner matches",
+      "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"r\", \"filename_regex\": \"\\\\Arequirements\\\\.txt\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"uv\", \"when_any_basename\": [\"uv.lock\"]}, {\"id\": \"poetry\", \"when_any_basename\": [\"poetry.lock\"]}, {\"id\": \"pip\", \"otherwise\": true}]}]}",
+      "ecosystem": "pypi",
+      "basenames": [
+        "requirements.txt"
+      ],
+      "owner": "pip"
+    }
+  ]
+}
