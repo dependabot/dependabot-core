@@ -751,10 +751,7 @@ module Dependabot
 
     sig { params(tag_name: String).returns(T::Boolean) }
     def github_release_prerelease?(tag_name)
-      return false unless listing_source_url
-
-      source = Source.from_url(listing_source_url)
-      return false unless source&.provider == "github"
+      return false unless release_source&.provider == "github"
 
       release = github_releases.find { |r| r.tag_name == tag_name }
       return false unless release
@@ -765,13 +762,24 @@ module Dependabot
       false
     end
 
+    # The listing can point at the configured GitHub host (e.g. GHES for GitHub Actions), so it goes first.
+    # A git dependency that is not published to the registry has no listing, so fall back to its git source.
+    # `defined?` memoizes nil too: `listing_source_url` and `Source.from_url` can hit the network on every call.
+    sig { returns(T.nilable(Dependabot::Source)) }
+    def release_source
+      return @release_source if defined?(@release_source)
+
+      @release_source = T.let(
+        Source.from_url(listing_source_url || dependency_source_details&.url),
+        T.nilable(Dependabot::Source)
+      )
+    end
+
     sig { returns(T::Array[Dependabot::Clients::GithubRelease]) }
     def github_releases
       @github_releases ||= T.let(
         begin
-          return [] unless listing_source_url
-
-          source = Source.from_url(listing_source_url)
+          source = release_source
           return [] unless source&.provider == "github"
 
           client = Dependabot::Clients::GithubWithRetries.for_source(
