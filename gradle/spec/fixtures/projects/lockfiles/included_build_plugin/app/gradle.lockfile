@@ -1,0 +1,2 @@
+com.example:alpha:1.0=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+empty=annotationProcessor,testAnnotationProcessor
