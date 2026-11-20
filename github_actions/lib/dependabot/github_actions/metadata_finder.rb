@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/github_actions/constants"
+require "dependabot/github_actions/runner_label"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 
@@ -10,6 +11,13 @@ module Dependabot
   module GithubActions
     class MetadataFinder < Dependabot::MetadataFinders::Base
       extend T::Sig
+
+      # runner-images tags look like `xcode-27-arm64/20261023.0307`, not `26.04`, so
+      # runner PRs link to the image table instead of release notes.
+      sig { returns(T.nilable(String)) }
+      def homepage_url
+        RunnerLabel.dependency?(dependency) ? RunnerLabel::RUNNER_IMAGES_URL : super
+      end
 
       private
 

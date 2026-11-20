@@ -164,5 +164,18 @@ RSpec.describe Dependabot::GithubActions::MetadataFinder do
 
       it { is_expected.to eq("https://mycompany.com/actions/checkout") }
     end
+
+    context "when dealing with a GitHub-hosted runner label" do
+      let(:dependency_name) { "ubuntu" }
+      let(:dependency_source) { { type: "runner" } }
+
+      it "has no source, so no unrelated runner-images releases end up in the PR" do
+        expect(source_url).to be_nil
+      end
+
+      it "links to the table of available runner images instead" do
+        expect(finder.homepage_url).to eq("https://github.com/actions/runner-images#available-images")
+      end
+    end
   end
 end
