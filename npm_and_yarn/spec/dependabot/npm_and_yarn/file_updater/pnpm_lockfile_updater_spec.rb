@@ -527,6 +527,38 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
+    # Real pnpm 12 output for a project whose engines.node excludes the Node Dependabot runs, with engineStrict on.
+    # pnpm 12 reports it as `wanted: {...} (current: {...})` instead of pnpm 8-11's `Expected version:`/`Got:`.
+    context "when pnpm 12 reports an unsupported Node engine for the project" do
+      let(:project_name) { "pnpm/simple" }
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: fixture("pnpm_errors", "pnpm12", error_fixture),
+            error_context: {}
+          )
+        )
+      end
+
+      {
+        "unsupported_engine_node.txt" => ">=26.7.0",
+        "unsupported_engine_node_wrapped.txt" => ">=26.13.0 <27"
+      }.each do |fixture_name, requirement|
+        context "with #{fixture_name}" do
+          let(:error_fixture) { fixture_name }
+
+          it "raises a Node tool version error with the project's requirement" do
+            expect { updated_pnpm_lock_content }.to raise_error(Dependabot::ToolVersionNotSupported) do |error|
+              expect(error.tool_name).to eq("Node")
+              expect(error.detected_version).to eq(requirement)
+              expect(error.supported_versions).to eq("24.22.3")
+            end
+          end
+        end
+      end
+    end
+
     context "when pnpm 8 reports an unsupported engine with an old lockfile" do
       let(:project_name) { "pnpm/simple" }
       let(:error_fixture) { "unsupported_engine.txt" }
