@@ -16,9 +16,59 @@ defmodule Parser do
           build_dependency(expanded_dep.opts[:lock], expanded_dep)
         end
 
-      {:ok, result}
+      {:ok, result ++ transitive_dependencies(result)}
     end
   end
+
+  # Dependencies that are only present in the lockfile, found by walking the
+  # lockfile from the declared dependencies. Entries that are no longer
+  # reachable (e.g. left behind after removing a dependency) are skipped.
+  defp transitive_dependencies(declared) do
+    lock = Mix.Dep.Lock.read()
+    declared_apps = MapSet.new(declared, & &1.name)
+
+    declared_apps
+    |> MapSet.to_list()
+    |> reachable_apps(lock, declared_apps)
+    |> MapSet.difference(declared_apps)
+    |> Enum.sort()
+    |> Enum.flat_map(&build_transitive_dependency(&1, lock[&1]))
+  end
+
+  defp reachable_apps([], _lock, seen), do: seen
+
+  defp reachable_apps([app | rest], lock, seen) do
+    children =
+      for {child, _requirement, _opts} <- locked_children(lock[app]),
+          not MapSet.member?(seen, child),
+          do: child
+
+    reachable_apps(children ++ rest, lock, MapSet.union(seen, MapSet.new(children)))
+  end
+
+  defp locked_children(lock) when elem(lock, 0) == :hex and tuple_size(lock) >= 6,
+    do: elem(lock, 5)
+
+  defp locked_children(_lock), do: []
+
+  defp build_transitive_dependency(app, lock) when elem(lock, 0) == :hex do
+    {version, checksum, source} = parse_lock(lock)
+
+    [
+      %{
+        name: app,
+        package_name: elem(lock, 1),
+        version: version,
+        groups: [],
+        checksum: checksum,
+        requirement: nil,
+        source: source,
+        top_level: false
+      }
+    ]
+  end
+
+  defp build_transitive_dependency(_app, _lock), do: []
 
   defp converge_deps do
     {:ok, Mix.Dep.Converger.converge()}
