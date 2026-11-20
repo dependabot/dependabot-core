@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/dependency_graphers/graph_versions"
 require "dependabot/uv"
 
 RSpec.describe Dependabot::Uv::DependencyGrapher do
@@ -456,6 +457,12 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
         expect(grapher.errored_fetching_subdependencies).to be(true)
         expect(grapher.subdependency_error).to be_a(StandardError)
       end
+    end
+  end
+
+  describe "graph version" do
+    it "is locked to the current grapher sources (run bin/update-manifest-set-graph-versions.rb)" do
+      expect(Dependabot::DependencyGraphers::GraphVersions.stale_owners(owners: ["uv"])).to be_empty
     end
   end
 end
