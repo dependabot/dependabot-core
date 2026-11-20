@@ -122,7 +122,24 @@ module Dependabot
         fetched_npm_files << package_lock if package_lock && !skip_package_lock?
         fetched_npm_files << shrinkwrap if shrinkwrap
         fetched_npm_files << inferred_npmrc if inferred_npmrc
+        fetched_npm_files += patched_dependency_files
         fetched_npm_files
+      end
+
+      # npm 12 reads the patch files `patchedDependencies` names on every install, and records each one's integrity
+      # in the lockfile, so the lockfile cannot be updated without them. A path outside the project directory is not
+      # fetched, since the updater writes these files relative to the directory it runs npm in.
+      sig { returns(T::Array[DependencyFile]) }
+      def patched_dependency_files
+        patches = parsed_package_json["patchedDependencies"]
+        return [] unless patches.is_a?(Hash)
+
+        patches.values.grep(String).uniq.filter_map do |path|
+          clean = Pathname.new(path).cleanpath
+          next if clean.absolute? || clean.to_path.start_with?("../") || clean.to_path == ".."
+
+          fetch_support_file(clean.to_path)
+        end
       end
 
       sig { returns(T::Array[DependencyFile]) }

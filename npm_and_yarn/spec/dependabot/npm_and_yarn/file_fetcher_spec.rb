@@ -710,6 +710,48 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
   end
 
+  context "with npm patchedDependencies" do
+    let(:repo_contents_path) { build_tmp_repo("npm/patched_dependencies") }
+    let(:file_fetcher_instance) do
+      described_class.new(source: source, credentials: credentials, repo_contents_path: repo_contents_path)
+    end
+
+    after { FileUtils.rm_rf(repo_contents_path) }
+
+    it "fetches the patch files as support files" do
+      patch = file_fetcher_instance.files.find { |f| f.name == "patches/etag@1.8.1.patch" }
+
+      expect(patch).not_to be_nil
+      expect(patch.support_file?).to be(true)
+      expect(patch.content).to include("+module.exports = etag // patched")
+    end
+
+    context "when a patch file is missing" do
+      before { FileUtils.rm_rf(File.join(repo_contents_path, "patches")) }
+
+      it "fetches the other files" do
+        expect(file_fetcher_instance.files.map(&:name)).to match_array(%w(package.json package-lock.json))
+      end
+    end
+
+    context "when a patch path leaves the project directory" do
+      let(:directory) { "/app" }
+
+      before do
+        app = File.join(repo_contents_path, "app")
+        FileUtils.mkdir_p(app)
+        FileUtils.mv(%w(package.json package-lock.json).map { |f| File.join(repo_contents_path, f) }, app)
+        manifest = JSON.parse(File.read(File.join(app, "package.json")))
+        manifest["patchedDependencies"] = { "etag@1.8.1" => "../patches/etag@1.8.1.patch" }
+        File.write(File.join(app, "package.json"), JSON.generate(manifest))
+      end
+
+      it "does not fetch it" do
+        expect(file_fetcher_instance.files.map(&:name)).to match_array(%w(package.json package-lock.json))
+      end
+    end
+  end
+
   context "with both a package-lock.json file and a yarn.lock" do
     before do
       stub_request(:get, url + "?ref=sha")

@@ -1,0 +1,13 @@
+--- a/index.js	
++++ b/index.js	
+@@ -10,9 +10,9 @@
+  * Module exports.
+  * @public
+  */
+ 
+-module.exports = etag
++module.exports = etag // patched
+ 
+ /**
+  * Module dependencies.
+  * @private
