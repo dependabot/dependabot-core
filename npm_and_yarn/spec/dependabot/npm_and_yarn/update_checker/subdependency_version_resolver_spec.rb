@@ -437,6 +437,24 @@ RSpec.describe namespace::SubdependencyVersionResolver do
         expect(latest_resolvable_version).to eq(Gem::Version.new("5.7.4"))
       end
 
+      context "when a cooldown applies and the newer release is old enough" do
+        let(:resolver) do
+          described_class.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            latest_allowable_version: latest_allowable_version,
+            repo_contents_path: nil,
+            update_cooldown: Dependabot::Package::ReleaseCooldownOptions.new(default_days: 3)
+          )
+        end
+
+        it "still resolves the update" do
+          expect(latest_resolvable_version).to eq(Gem::Version.new("5.7.4"))
+        end
+      end
+
       context "when resolving a security update" do
         let(:resolver) do
           described_class.new(
@@ -465,6 +483,80 @@ RSpec.describe namespace::SubdependencyVersionResolver do
           expect(Dependabot::NpmAndYarn::NativeHelpers)
             .to have_received(:run_npm8_subdependency_update_command)
             .with(["acorn"], min_release_age_arg: "--min-release-age=0")
+        end
+      end
+
+      # The file updater gates the same npm command with the cooldown, so an ungated resolution can propose a
+      # version that the update then refuses (NoChangeError)
+      context "when a cooldown applies" do
+        let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 3) }
+        let(:resolver) do
+          described_class.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            latest_allowable_version: latest_allowable_version,
+            repo_contents_path: nil,
+            update_cooldown: update_cooldown
+          )
+        end
+        let(:npm_supports_min_release_age) { true }
+
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers)
+            .to receive(:npm_supports_min_release_age?).and_return(npm_supports_min_release_age)
+          allow(Dependabot::NpmAndYarn::NativeHelpers)
+            .to receive_messages(run_npm8_subdependency_update_command: "", run_npm_audit_fix_command: "")
+        end
+
+        it "resolves under the same release-age gate as the update" do
+          latest_resolvable_version
+
+          expect(Dependabot::NpmAndYarn::NativeHelpers)
+            .to have_received(:run_npm8_subdependency_update_command)
+            .with(["acorn"], min_release_age_arg: "--min-release-age=3")
+          expect(Dependabot::NpmAndYarn::NativeHelpers)
+            .to have_received(:run_npm_audit_fix_command).with(min_release_age_arg: "--min-release-age=3")
+        end
+
+        context "with a shorter semver-specific cooldown" do
+          # The update's gate is at most `default_days`, so a version old enough for it is never refused
+          let(:update_cooldown) do
+            Dependabot::Package::ReleaseCooldownOptions.new(default_days: 3, semver_patch_days: 1)
+          end
+
+          it "uses the default cooldown" do
+            latest_resolvable_version
+
+            expect(Dependabot::NpmAndYarn::NativeHelpers)
+              .to have_received(:run_npm8_subdependency_update_command)
+              .with(["acorn"], min_release_age_arg: "--min-release-age=3")
+          end
+        end
+
+        context "when the cooldown excludes the dependency" do
+          let(:update_cooldown) do
+            Dependabot::Package::ReleaseCooldownOptions.new(default_days: 3, exclude: ["acorn"])
+          end
+
+          it "does not gate the resolution" do
+            latest_resolvable_version
+
+            expect(Dependabot::NpmAndYarn::NativeHelpers)
+              .to have_received(:run_npm8_subdependency_update_command).with(["acorn"], min_release_age_arg: nil)
+          end
+        end
+
+        context "when the running npm does not support --min-release-age" do
+          let(:npm_supports_min_release_age) { false }
+
+          it "does not gate the resolution" do
+            latest_resolvable_version
+
+            expect(Dependabot::NpmAndYarn::NativeHelpers)
+              .to have_received(:run_npm8_subdependency_update_command).with(["acorn"], min_release_age_arg: nil)
+          end
         end
       end
 
