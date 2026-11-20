@@ -349,16 +349,58 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
     end
 
     context "with a non-plugin dependency" do
-      it "does not attempt pom last-modified fallback when release date is missing" do
-        release = Dependabot::Package::PackageRelease.new(
+      let(:release) do
+        Dependabot::Package::PackageRelease.new(
           version: version_class.new("23.3-jre"),
           url: "https://repo.maven.apache.org/maven2"
+        )
+      end
+      let(:guava_pom_url) do
+        "https://repo.maven.apache.org/maven2/com/google/guava/guava/23.3-jre/guava-23.3-jre.pom"
+      end
+
+      it "uses pom last-modified fallback when release date is missing" do
+        stub_request(:head, guava_pom_url).to_return(
+          status: 200,
+          headers: { "Last-Modified" => "Mon, 11 May 2026 10:08:43 GMT" }
+        )
+
+        hydrated_release = packagedetailsfetcher.fetch_release_metadata(release: release)
+
+        expect(hydrated_release.released_at).to eq(Time.utc(2026, 5, 11, 10, 8, 43))
+      end
+
+      it "uses pom fallback when the registry does not support directory listing" do
+        stub_request(:get, maven_central_metadata_url).to_return(status: 404)
+        stub_request(:get, "https://repo.maven.apache.org/maven2/com/google/guava/guava/")
+          .to_return(status: 404)
+        stub_request(:head, guava_pom_url).to_return(
+          status: 200,
+          headers: { "Last-Modified" => "Mon, 11 May 2026 10:08:43 GMT" }
+        )
+
+        hydrated_release = packagedetailsfetcher.fetch_release_metadata(release: release)
+
+        expect(hydrated_release.released_at).to eq(Time.utc(2026, 5, 11, 10, 8, 43))
+      end
+
+      it "leaves released_at nil when the pom request fails" do
+        stub_request(:head, guava_pom_url).to_return(status: 404)
+
+        hydrated_release = packagedetailsfetcher.fetch_release_metadata(release: release)
+
+        expect(hydrated_release.released_at).to be_nil
+      end
+
+      it "ignores a Last-Modified header on a failed pom response" do
+        stub_request(:head, guava_pom_url).to_return(
+          status: 404,
+          headers: { "Last-Modified" => "Mon, 11 May 2026 10:08:43 GMT" }
         )
 
         hydrated_release = packagedetailsfetcher.fetch_release_metadata(release: release)
 
         expect(hydrated_release.released_at).to be_nil
-        expect(WebMock).not_to have_requested(:head, /.*/)
       end
     end
 
