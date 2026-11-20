@@ -7,7 +7,9 @@ require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/dependency"
+require "dependabot/go_modules/file_fetcher"
 require "dependabot/go_modules/file_parser"
+require "dependabot/go_modules/file_updater"
 require "dependabot/go_modules/go_mod_manifest"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
@@ -721,6 +723,59 @@ RSpec.describe Dependabot::GoModules::FileParser do
         expect(top_level_names).to include("github.com/fatih/color")
         expect(top_level_names).to include("rsc.io/quote")
         expect(top_level_names).to include("golang.org/x/tools")
+      end
+
+      context "with non-canonical paths in the fetched workspace" do
+        let(:repo_contents_path) do
+          path = build_tmp_repo(project_name)
+          File.write(
+            File.join(path, "go.work"),
+            "go 1.21\n\nuse (\n\t\"././\"\n\t\"./libs/\"\n\t\"./services//./\"\n)\n"
+          )
+          Dir.chdir(path) do
+            Dependabot::SharedHelpers.run_shell_command("git add go.work")
+            Dependabot::SharedHelpers.run_shell_command("git commit -m workspace-paths")
+          end
+          path
+        end
+        let(:files) do
+          fetcher = Dependabot::GoModules::FileFetcher.new(
+            source: source, credentials: [], repo_contents_path: repo_contents_path
+          )
+          allow(fetcher).to receive(:clone_repo_contents).and_return(repo_contents_path)
+          fetcher.files
+        end
+        let(:manifest_names) { %w(go.mod libs/go.mod services/go.mod) }
+
+        before { Dependabot::Experiments.register(:enable_go_work_version_sync, true) }
+
+        after { FileUtils.rm_rf(repo_contents_path) }
+
+        it "parses requirements from every fetched canonical manifest" do
+          expect(files.select { |file| file.name.end_with?("go.mod") }.map(&:name)).to match_array(manifest_names)
+          color = dependencies.find { |dependency| dependency.name == "github.com/fatih/color" }
+
+          expect(color).not_to be_nil
+          expect(color.requirements.map(&:file)).to match_array(manifest_names)
+        end
+
+        it "updates every fetched canonical manifest" do
+          dependency = Dependabot::Dependency.new(
+            name: "github.com/fatih/color",
+            version: "1.16.0",
+            previous_version: "1.7.0",
+            requirements: [],
+            previous_requirements: [],
+            package_manager: "go_modules"
+          )
+          updater = Dependabot::GoModules::FileUpdater.new(
+            dependencies: [dependency], dependency_files: files, credentials: [], repo_contents_path: repo_contents_path
+          )
+          manifests = updater.updated_dependency_files.select { |file| file.name.end_with?("go.mod") }
+
+          expect(manifests.map(&:name)).to match_array(manifest_names)
+          expect(manifests).to all(have_attributes(content: include("github.com/fatih/color v1.16.0")))
+        end
       end
 
       context "when a workspace module returns malformed output" do
