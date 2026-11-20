@@ -53,6 +53,30 @@ module Dependabot
       @production_checks[package_manager] = production_check
     end
 
+    # Metadata flags that stay true once any source sets them.
+    ANY_TRUE_METADATA_KEYS = [:reachable_from_production].freeze
+
+    # Merges `extra` metadata over `base`. Flags in ANY_TRUE_METADATA_KEYS are combined
+    # instead: they are true when either side sets them, so a later source can add them
+    # but never drop them.
+    sig do
+      params(
+        base: T::Hash[T.any(Symbol, String), Object],
+        extra: T::Hash[T.any(Symbol, String), Object]
+      ).returns(Metadata)
+    end
+    def self.combine_metadata(base, extra)
+      symbolized_base = base.transform_keys(&:to_sym)
+      symbolized_extra = extra.transform_keys(&:to_sym)
+      combined = symbolized_base.merge(symbolized_extra)
+
+      ANY_TRUE_METADATA_KEYS.each do |key|
+        combined[key] = true if symbolized_base[key] == true || symbolized_extra[key] == true
+      end
+
+      combined
+    end
+
     sig { params(package_manager: String).returns(T.nilable(T.proc.params(arg0: String).returns(String))) }
     def self.display_name_builder_for_package_manager(package_manager)
       @display_name_builders[package_manager]
@@ -240,6 +264,10 @@ module Dependabot
     sig { returns(T::Boolean) }
     def production?
       return subdependency_production_check unless top_level?
+      # A lockfile can show that a dependency declared only for development is also
+      # installed through a production dependency, so it ships to production anyway.
+      # Ecosystems that can tell set this flag, because requirement groups cannot say so.
+      return true if metadata[:reachable_from_production] == true
 
       groups = requirements.flat_map do |requirement|
         requirement_groups = requirement.groups

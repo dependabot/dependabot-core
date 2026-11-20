@@ -155,7 +155,11 @@ module Dependabot
               version: version,
               requirements: requirements,
               package_manager: old_dep.package_manager,
-              metadata: old_dep.metadata,
+              # Keep the first dependency's metadata, but combine flags that any declaration can set.
+              metadata: Dependency.combine_metadata(
+                old_dep.metadata,
+                new_dep.metadata.slice(*Dependency::ANY_TRUE_METADATA_KEYS)
+              ),
               subdependency_metadata: subdependency_metadata
             )
           end

@@ -1,0 +1,49 @@
+{
+  "lockfileVersion": 1,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "root",
+      "dependencies": {
+        "debug": "4.3.4",
+      },
+      "devDependencies": {
+        "ms": "0.7.1",
+      },
+    },
+    "packages/app": {
+      "name": "app",
+      "version": "1.0.0",
+      "dependencies": {
+        "ms": "2.0.0",
+      },
+      "devDependencies": {
+        "is-number": "7.0.0",
+      },
+    },
+    "packages/tool": {
+      "name": "tool",
+      "version": "1.0.0",
+      "dependencies": {
+        "is-number": "6.0.0",
+      },
+    },
+  },
+  "packages": {
+    "app": ["app@workspace:packages/app"],
+
+    "debug": ["debug@4.3.4", "", { "dependencies": { "ms": "2.1.2" }, "peerDependencies": { "supports-color": "*" }, "optionalPeers": ["supports-color"] }, "sha512-PRWFHuSU3eDtQJPvnNY7Jcket1j0t5OuOsFzPPzsekD52Zl8qUfFIPEiswXqIvHWGVHOgX+7G/vCNNhehwxfkQ=="],
+
+    "is-number": ["is-number@7.0.0", "", {}, "sha512-41Cifkg6e8TylSpdtTpeLVMqvSBEVzTttHvERD741+pnZ8ANv0004MRL43QKPDlK9cGvNp6NZWZUBlbGXYxxng=="],
+
+    "ms": ["ms@0.7.1", "", {}, "sha512-lRLiIR9fSNpnP6TC4v8+4OU7oStC01esuNowdQ34L+Gk8e5Puoc88IqJ+XAY/B3Mn2ZKis8l8HX90oU8ivzUHg=="],
+
+    "tool": ["tool@workspace:packages/tool"],
+
+    "app/ms": ["ms@2.0.0", "", {}, "sha512-Tpp60P6IUJDTuOq/5Z8cdskzJujfwqfOTkrwIwj7IRISpnkJnT6SyJ4PCPnGMoFjC9ddhal5KVIYtAt97ix05A=="],
+
+    "debug/ms": ["ms@2.1.2", "", {}, "sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w=="],
+
+    "tool/is-number": ["is-number@6.0.0", "", {}, "sha512-Wu1VHeILBK8KAWJUAiSZQX94GmOE45Rg6/538fKwiloUu21KncEkYGPqob2oSZ5mUT73vLGrHQjKw3KMPwfDzg=="],
+  }
+}
