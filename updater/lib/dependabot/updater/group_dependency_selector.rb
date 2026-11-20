@@ -360,7 +360,12 @@ module Dependabot
         other = T.must(grouped_deps[:other])
 
         log_dependency_group(not_in_group, "not in group") if not_in_group.any?
-        log_dependency_group(filtered_by_config, "filtered by dependabot.yml config") if filtered_by_config.any?
+        if filtered_by_config.any?
+          log_dependency_group(
+            filtered_by_config,
+            "not allowed by job update rules (ignore conditions, allowed-updates, or no matching security advisory)"
+          )
+        end
         if belongs_to_more_specific_group.any?
           log_dependency_group(
             belongs_to_more_specific_group,

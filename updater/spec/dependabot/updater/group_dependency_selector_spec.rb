@@ -268,6 +268,16 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
 
         selector.filter_to_group!(dependency_change)
       end
+
+      it "does not blame dependabot.yml when the job rejects a dependency" do
+        allow(job).to receive(:allowed_update?).with(rails_dep, check_previous_version: true).and_return(false)
+        allow(job).to receive(:allowed_update?).with(redis_dep, check_previous_version: true).and_return(true)
+
+        selector.filter_to_group!(dependency_change)
+
+        expect(Dependabot.logger).to have_received(:info).with(a_string_matching(/not allowed by job update rules/))
+        expect(Dependabot.logger).not_to have_received(:info).with(a_string_matching(/dependabot\.yml/))
+      end
     end
 
     context "with fallback group membership logic" do
