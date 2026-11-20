@@ -524,6 +524,79 @@ RSpec.describe Dependabot::Conda::FileUpdater do
         expect(updated_content).not_to include("conda-anaconda-telemetry>=")
       end
     end
+
+    context "when the dependency list is not indented" do
+      let(:environment_content) do
+        <<~YAML
+          name: base
+          channels:
+          - conda-forge
+          dependencies:
+          - jupyter
+          - numpy>2,<3
+          - conda-forge::scipy>=1.10  # pinned
+          - pip:
+            - requests==2.31.0
+        YAML
+      end
+      let(:dependencies) do
+        [Dependabot::Dependency.new(
+          name: "numpy",
+          version: "2.1.0",
+          previous_version: "2.0.0",
+          package_manager: "conda",
+          requirements: [{
+            requirement: ">2.1,<3",
+            file: "environment.yml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: ">2,<3",
+            file: "environment.yml",
+            source: nil,
+            groups: ["dependencies"]
+          }]
+        )]
+      end
+
+      it "updates the dependency in place" do
+        updated_files = updater.updated_dependency_files
+
+        expect(updated_files.first.content).to include("\n- numpy>2.1,<3\n")
+        expect(updated_files.first.content).not_to include("numpy>2,<3")
+        expect(updated_files.first.content).to include("- jupyter\n")
+      end
+
+      context "when the dependency has a channel prefix" do
+        let(:dependencies) do
+          [Dependabot::Dependency.new(
+            name: "scipy",
+            version: "1.11.0",
+            previous_version: "1.10.0",
+            package_manager: "conda",
+            requirements: [{
+              requirement: ">=1.11",
+              file: "environment.yml",
+              source: nil,
+              groups: ["dependencies"]
+            }],
+            previous_requirements: [{
+              requirement: ">=1.10",
+              file: "environment.yml",
+              source: nil,
+              groups: ["dependencies"]
+            }]
+          )]
+        end
+
+        it "keeps the channel and the comment" do
+          updated_files = updater.updated_dependency_files
+
+          expect(updated_files.first.content).to include("\n- conda-forge::scipy>=1.11  # pinned\n")
+        end
+      end
+    end
   end
 
   describe "#check_required_files" do

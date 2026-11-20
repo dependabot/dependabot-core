@@ -18,14 +18,14 @@ module Dependabot
       # Regex patterns for dependency matching
       CONDA_CHANNEL_PATTERN = T.let(
         lambda do |name|
-          /^(\s{2,4}-\s+[a-zA-Z0-9_.-]+::)(#{Regexp.escape(name)})#{VERSION_CONSTRAINT_PATTERN}(\s*)(#.*)?$/
+          /^(\s{0,4}-\s+[a-zA-Z0-9_.-]+::)(#{Regexp.escape(name)})#{VERSION_CONSTRAINT_PATTERN}(\s*)(#.*)?$/
         end,
         T.proc.params(arg0: String).returns(Regexp)
       )
 
       CONDA_SIMPLE_PATTERN = T.let(
         lambda do |name|
-          /^(\s{2,4}-\s+)(#{Regexp.escape(name)})#{VERSION_CONSTRAINT_PATTERN}(\s*)(#.*)?$/
+          /^(\s{0,4}-\s+)(#{Regexp.escape(name)})#{VERSION_CONSTRAINT_PATTERN}(\s*)(#.*)?$/
         end,
         T.proc.params(arg0: String).returns(Regexp)
       )
@@ -33,14 +33,14 @@ module Dependabot
       # Bracket syntax: package[version='>=1.0']
       CONDA_BRACKET_PATTERN = T.let(
         lambda do |name|
-          /^(\s{2,4}-\s+)(#{Regexp.escape(name)})(\[version=['"])[^'"]+(['"]\])(\s*)(#.*)?$/
+          /^(\s{0,4}-\s+)(#{Regexp.escape(name)})(\[version=['"])[^'"]+(['"]\])(\s*)(#.*)?$/
         end,
         T.proc.params(arg0: String).returns(Regexp)
       )
 
       CONDA_CHANNEL_BRACKET_PATTERN = T.let(
         lambda do |name|
-          /^(\s{2,4}-\s+[a-zA-Z0-9_.-]+::)(#{Regexp.escape(name)})(\[version=['"])[^'"]+(['"]\])(\s*)(#.*)?$/
+          /^(\s{0,4}-\s+[a-zA-Z0-9_.-]+::)(#{Regexp.escape(name)})(\[version=['"])[^'"]+(['"]\])(\s*)(#.*)?$/
         end,
         T.proc.params(arg0: String).returns(Regexp)
       )
