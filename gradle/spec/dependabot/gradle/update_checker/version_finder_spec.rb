@@ -676,6 +676,12 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
           expect(in_cooldown).to be true
         end
 
+        it "marks the dependency so the missing date is reported" do
+          expect { in_cooldown }
+            .to change { Dependabot::UpdateCheckers::CooldownCalculation.cooldown_date_unavailable?(dependency) }
+            .from(false).to(true)
+        end
+
         it "logs that release date is not available and filtering out" do
           expect(Dependabot.logger).to receive(:info)
             .with("Release date not available for version 1.0.0 - filtering out")
