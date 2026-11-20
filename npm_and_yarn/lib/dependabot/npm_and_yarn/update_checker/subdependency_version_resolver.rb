@@ -314,10 +314,8 @@ module Dependabot
 
           begin
             NativeHelpers.run_pnpm_audit_fix_command
-            Helpers.run_pnpm_command(
-              "install --lockfile-only",
-              fingerprint: "install --lockfile-only"
-            )
+            command = "install --lockfile-only #{Helpers::PNPM_NO_FROZEN_LOCKFILE}"
+            Helpers.run_pnpm_command(command, fingerprint: command)
 
             manifest_changed = package_json_snapshots.any? { |f, c| File.read(f) != c }
             if manifest_changed

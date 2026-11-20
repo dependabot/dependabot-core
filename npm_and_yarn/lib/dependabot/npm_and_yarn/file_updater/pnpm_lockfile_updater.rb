@@ -516,7 +516,7 @@ module Dependabot
           # `install --lockfile-only` has no dynamic content, so it needs no
           # fingerprint of its own. Passing nil lets the release-age gate handle
           # fingerprinting only when it appends the (dynamic) minimumReleaseAge.
-          run_pnpm_command_with_release_age_gate("install --lockfile-only")
+          run_pnpm_command_with_release_age_gate("install --lockfile-only #{Helpers::PNPM_NO_FROZEN_LOCKFILE}")
         end
 
         # Failures that mean the cooldown gate cannot be applied to this repo,

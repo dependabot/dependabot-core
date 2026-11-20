@@ -3931,6 +3931,43 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
       end
 
+      context "when pnpm-workspace.yaml sets frozenLockfile: true" do
+        let(:project_name) { "pnpm/frozen_lockfile_workspace_setting" }
+        let(:dependency_name) { "zod" }
+        let(:previous_version) { "3.25.76" }
+        let(:version) { "4.6.6" }
+        let(:previous_requirements) do
+          [{ file: "package.json", requirement: "3.25.76", groups: ["dependencies"], source: nil }]
+        end
+        let(:requirements) do
+          [{ file: "package.json", requirement: "4.6.6", groups: ["dependencies"], source: nil }]
+        end
+
+        it "still updates the lockfile and leaves the setting in place" do
+          expect(updated_pnpm_lock.content).to include("zod@4.6.6")
+          expect(updated_pnpm_lock.content).not_to include("zod@3.25.76")
+          expect(updated_files.map(&:name)).not_to include("pnpm-workspace.yaml")
+        end
+      end
+
+      context "when .npmrc sets frozen-lockfile=true" do
+        let(:project_name) { "pnpm/frozen_lockfile_npmrc" }
+        let(:dependency_name) { "zod" }
+        let(:previous_version) { "3.25.76" }
+        let(:version) { "4.6.6" }
+        let(:previous_requirements) do
+          [{ file: "package.json", requirement: "3.25.76", groups: ["dependencies"], source: nil }]
+        end
+        let(:requirements) do
+          [{ file: "package.json", requirement: "4.6.6", groups: ["dependencies"], source: nil }]
+        end
+
+        it "still updates the lockfile" do
+          expect(updated_pnpm_lock.content).to include("zod@4.6.6")
+          expect(updated_pnpm_lock.content).not_to include("zod@3.25.76")
+        end
+      end
+
       context "when updating only the lockfile" do
         let(:project_name) { "pnpm/lockfile_only_change" }
 
@@ -4431,7 +4468,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                 .with(/update.*--lockfile-only/)
 
               expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
-                .with("install --lockfile-only")
+                .with("install --lockfile-only --no-frozen-lockfile")
 
               updated_files
             end
