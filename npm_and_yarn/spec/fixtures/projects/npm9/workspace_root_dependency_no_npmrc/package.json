@@ -1,0 +1,11 @@
+{
+  "name": "workspace-root",
+  "version": "1.0.0",
+  "workspaces": [
+    "packages/app"
+  ],
+  "dependencies": {
+    "app": "^1.0.0",
+    "etag": "^1.0.0"
+  }
+}
