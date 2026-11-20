@@ -47,9 +47,12 @@ module Dependabot
         # Examples: depend.txt, depends.txt, depend-test.txt, py3-depends.txt
         DEPEND_TXT_REGEX = %r{(?:[-._]|^|/)depend(?:s)?(?:[-_/][^\s.]*)?\.txt$}i
 
-        # Whether a .txt filename looks like a real pip manifest rather than an unrelated .txt file.
-        sig { params(path: String).returns(T::Boolean) }
-        def self.manifest_txt_filename?(path)
+        # Use the repository path so `requirements/base.txt` is classified the same from either scan directory.
+        sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
+        def self.manifest_txt_file?(file)
+          return false unless file.name.end_with?(".txt")
+
+          path = file.path
           path.match?(REQUIREMENTS_TXT_REGEX) ||
             path.match?(REQUIRE_TXT_REGEX) ||
             path.match?(DEPENDENCIES_TXT_REGEX) ||
@@ -84,9 +87,7 @@ module Dependabot
         # like a real manifest, plus any `.in` file that has no compiled `.txt` counterpart.
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def layer_primaries
-          txt_primaries = requirement_family_files.select do |f|
-            f.name.end_with?(".txt") && self.class.manifest_txt_filename?(f.name)
-          end
+          txt_primaries = requirement_family_files.select { |file| self.class.manifest_txt_file?(file) }
           compiled_stems = txt_primaries.map { |f| requirements_stem(f.name) }
 
           in_primaries = requirement_family_files.select do |f|

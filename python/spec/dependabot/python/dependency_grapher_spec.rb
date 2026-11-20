@@ -1330,6 +1330,59 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
     end
   end
 
+  describe "graphing a requirements directory with generic layer filenames" do
+    let(:layers) do
+      {
+        "base.txt" => "requests==2.32.5\n",
+        "local.txt" => "-r ./base.txt\ncolorama==0.4.6\n",
+        "production.txt" => "-r ./base.txt\ngunicorn==23.0.0\n"
+      }
+    end
+    let(:scan_directory) { "/requirements" }
+    let(:dependency_files) do
+      layers.map do |name, content|
+        name = "requirements/#{name}" if scan_directory == "/"
+        Dependabot::DependencyFile.new(name: name, content: content, directory: scan_directory)
+      end
+    end
+
+    def layer_dependencies
+      grapher.manifest_group_snapshots.to_h do |snapshot|
+        [snapshot.manifest_file.path, snapshot.resolved_dependencies.keys.sort]
+      end
+    end
+
+    shared_examples "graphs the same requirements files" do
+      it "attributes each layer to its repository path and includes its referenced dependencies" do
+        expect(layer_dependencies).to include(
+          "/requirements/base.txt" => ["pkg:pypi/requests@2.32.5"],
+          "/requirements/local.txt" => ["pkg:pypi/colorama@0.4.6", "pkg:pypi/requests@2.32.5"],
+          "/requirements/production.txt" => ["pkg:pypi/gunicorn@23.0.0", "pkg:pypi/requests@2.32.5"]
+        )
+      end
+    end
+
+    include_examples "graphs the same requirements files"
+
+    context "when scanned from the repository root with a tool-only pyproject.toml" do
+      let(:scan_directory) { "/" }
+      let(:dependency_files) do
+        super() + [Dependabot::DependencyFile.new(name: "pyproject.toml", content: "[tool.black]\nline-length = 88\n",
+                                                  directory: "/")]
+      end
+
+      include_examples "graphs the same requirements files"
+    end
+
+    context "when there is just one layer" do
+      let(:layers) { { "base.txt" => "requests==2.32.5\n" } }
+
+      it "selects the requirements file for the single-manifest fallback" do
+        expect(layer_dependencies).to eq("/requirements/base.txt" => ["pkg:pypi/requests@2.32.5"])
+      end
+    end
+  end
+
   # A pip/pip-compile directory can hold requirements layers AND a non-requirements manifest
   # (setup.py/setup.cfg/pyproject.toml).
   #
