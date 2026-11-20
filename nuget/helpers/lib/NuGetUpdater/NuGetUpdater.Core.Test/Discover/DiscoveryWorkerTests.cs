@@ -2062,6 +2062,11 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             Error = null,
             TargetFrameworks = ["net8.0"],
             ReferencedProjectPaths = ["referenced/a.csproj"],
+            TargetFrameworkFallbacks = ImmutableDictionary<string, TargetFrameworkFallback>.Empty.Add("net8.0", new(["net461"], AssetTargetFallback: false)),
+            CentralPackageVersions = ImmutableDictionary<string, ImmutableDictionary<string, string>>.Empty
+                .Add("net8.0", ImmutableDictionary<string, string>.Empty.Add("Package.A", "[1.0.0,2.0.0)")),
+            PackageReferenceVersionOverrides = ImmutableDictionary<string, ImmutableDictionary<string, string>>.Empty
+                .Add("net8.0", ImmutableDictionary<string, string>.Empty.Add("Package.A", "1.0.0")),
             ImportedFiles = ["imported/a.props"],
             AdditionalFiles = ["a/packages.config"],
             PackageManagementKind = PackageManagementKind.Default,
@@ -2079,6 +2084,13 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             Error = null,
             TargetFrameworks = ["net9.0"],
             ReferencedProjectPaths = ["referenced/b.csproj"],
+            TargetFrameworkFallbacks = ImmutableDictionary<string, TargetFrameworkFallback>.Empty.Add("net9.0", new(["net472"], AssetTargetFallback: true)),
+            CentralPackageVersions = ImmutableDictionary<string, ImmutableDictionary<string, string>>.Empty
+                .Add("net8.0", ImmutableDictionary<string, string>.Empty.Add("Package.A", "[2.0.0,3.0.0)"))
+                .Add("net9.0", ImmutableDictionary<string, string>.Empty.Add("Package.B", "3.0.0")),
+            PackageReferenceVersionOverrides = ImmutableDictionary<string, ImmutableDictionary<string, string>>.Empty
+                .Add("net8.0", ImmutableDictionary<string, string>.Empty.Add("Package.A", "2.0.0"))
+                .Add("net9.0", ImmutableDictionary<string, string>.Empty.Add("Package.B", "4.0.0")),
             ImportedFiles = ["imported/b.props"],
             AdditionalFiles = ["b/app.config"],
             PackageManagementKind = PackageManagementKind.CentralPackageManagement,
@@ -2107,6 +2119,14 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         Assert.Null(merged.Error);
 
         AssertEx.Equal(["net8.0", "net9.0"], merged.TargetFrameworks);
+        AssertEx.Equal(["net461"], merged.TargetFrameworkFallbacks["net8.0"].Imports);
+        Assert.False(merged.TargetFrameworkFallbacks["net8.0"].AssetTargetFallback);
+        AssertEx.Equal(["net472"], merged.TargetFrameworkFallbacks["net9.0"].Imports);
+        Assert.True(merged.TargetFrameworkFallbacks["net9.0"].AssetTargetFallback);
+        Assert.Equal("[2.0.0,3.0.0)", merged.CentralPackageVersions["net8.0"]["Package.A"]);
+        Assert.Equal("3.0.0", merged.CentralPackageVersions["net9.0"]["Package.B"]);
+        Assert.Equal("2.0.0", merged.PackageReferenceVersionOverrides["net8.0"]["Package.A"]);
+        Assert.Equal("4.0.0", merged.PackageReferenceVersionOverrides["net9.0"]["Package.B"]);
         AssertEx.Equal(["referenced/a.csproj", "referenced/b.csproj"], merged.ReferencedProjectPaths);
         AssertEx.Equal(["imported/a.props", "imported/b.props"], merged.ImportedFiles);
         AssertEx.Equal(["a/packages.config", "b/app.config"], merged.AdditionalFiles);

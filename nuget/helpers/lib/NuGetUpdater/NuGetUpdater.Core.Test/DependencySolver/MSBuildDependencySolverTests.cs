@@ -1,5 +1,7 @@
 using System.Collections.Immutable;
 
+using NuGet.Frameworks;
+
 using NuGetUpdater.Core.DependencySolver;
 using NuGetUpdater.Core.Test.Utilities;
 
@@ -9,6 +11,58 @@ namespace NuGetUpdater.Core.Test.DependencySolver;
 
 public class MSBuildDependencySolverTests : TestBase
 {
+    [Fact]
+    public async Task PrefersFallbackDependencyGroupsWithPackageTargetFallback()
+    {
+        await TestAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "netstandard2.0",
+                    [("", [("Other.Package", "[1.0.0]")]), ("net461", [("Other.Package", "[1.0.0]")])]),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "netstandard2.0",
+                    [("", [("Other.Package", "[2.0.0]")]), ("net461", [("Other.Package", "[3.0.0]")])]),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "1.0.0", "netstandard2.0"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "2.0.0", "netstandard2.0"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "3.0.0", "netstandard2.0"),
+            ],
+            existingTopLevelDependencies: ["Some.Package/1.0.0", "Other.Package/1.0.0"],
+            desiredDependencies: ["Some.Package/2.0.0"],
+            targetFramework: "net10.0-windows",
+            targetFrameworkFallbacks: ["net461"],
+            expectedResolvedDependencies: ["Some.Package/2.0.0", "Other.Package/3.0.0"]
+        );
+    }
+
+    [Fact]
+    public async Task ResolvesUpdatesUsingCustomFrameworkFallbacks()
+    {
+        await TestAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net35"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net35"),
+            ],
+            existingTopLevelDependencies: ["Some.Package/1.0.0"],
+            desiredDependencies: ["Some.Package/2.0.0"],
+            targetFramework: "net10.0-windows",
+            targetFrameworkFallbacks: ["net35"],
+            expectedResolvedDependencies: ["Some.Package/2.0.0"]
+        );
+    }
+
+    [Fact]
+    public async Task DoesNotUseImplicitFallbacksWhenFrameworkFallbacksAreDisabled()
+    {
+        await TestAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net10.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net35"),
+            ],
+            existingTopLevelDependencies: ["Some.Package/1.0.0"],
+            desiredDependencies: ["Some.Package/2.0.0"],
+            targetFramework: "net10.0-windows",
+            expectedResolvedDependencies: ["Some.Package/1.0.0"]
+        );
+    }
+
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewUpdatingTopLevelPackage()
     {
@@ -594,7 +648,8 @@ public class MSBuildDependencySolverTests : TestBase
         ImmutableArray<string> desiredDependencies,
         string targetFramework,
         ImmutableArray<string> expectedResolvedDependencies,
-        MockNuGetPackage[]? packages = null
+        MockNuGetPackage[]? packages = null,
+        ImmutableArray<string> targetFrameworkFallbacks = default
     )
     {
         // arrange
@@ -618,10 +673,16 @@ public class MSBuildDependencySolverTests : TestBase
         var msbuildDepSolver = new MSBuildDependencySolver(repoContentsPath, projectPath, logger);
 
         // act
+        var framework = NuGetFramework.Parse(targetFramework);
+        if (!targetFrameworkFallbacks.IsDefaultOrEmpty)
+        {
+            framework = new FallbackFramework(framework, targetFrameworkFallbacks.Select(NuGetFramework.Parse).ToArray());
+        }
+
         var resolvedDependencies = await msbuildDepSolver.SolveAsync(
             [.. existingTopLevelDependencies.Select(d => new Dependency(d.Split('/')[0], d.Split('/')[1], DependencyType.PackageReference))],
             [.. desiredDependencies.Select(d => new Dependency(d.Split('/')[0], d.Split('/')[1], DependencyType.PackageReference))],
-            targetFramework
+            framework
         );
 
         // assert
