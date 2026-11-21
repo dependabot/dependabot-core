@@ -198,6 +198,18 @@ RSpec.describe Dependabot::CommandHelpers do
         expect(logger).to have_received(:info).with(a_string_including("Process PID"))
         expect(logger).to have_received(:info).with(a_string_including("Total execution time"))
       end
+
+      it "uses the fingerprint without logging command arguments or environment" do
+        described_class.capture3_with_timeout(
+          [{ "HEX_API_KEY" => "secret-key" }, success_cmd, "secret-argument"],
+          timeout: timeout,
+          fingerprint: "safe-command <argument>"
+        )
+
+        expect(logger).to have_received(:info).with(a_string_including("safe-command <argument>"))
+        expect(logger).not_to have_received(:info).with(a_string_including("secret-key"))
+        expect(logger).not_to have_received(:info).with(a_string_including("secret-argument"))
+      end
     end
 
     context "when the wait thread reports no process status (child reaped externally)" do
