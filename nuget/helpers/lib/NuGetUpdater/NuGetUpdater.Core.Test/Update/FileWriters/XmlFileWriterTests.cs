@@ -2855,4 +2855,325 @@ public class XmlFileWriterTests : FileWriterTestsBase
             ]
         );
     }
+
+    [Fact]
+    public async Task SdkAttribute_WithEmbeddedVersion_UpdatesVersion()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Aspire.AppHost.Sdk/9.0.0">
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/9.0.0"],
+            requiredDependencyStrings: ["Aspire.AppHost.Sdk/13.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Aspire.AppHost.Sdk/13.0.0">
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SdkAttribute_WithEmbeddedVersion_AndOtherSdkFirst_UpdatesVersion()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk;Aspire.AppHost.Sdk/9.0.0">
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/9.0.0"],
+            requiredDependencyStrings: ["Aspire.AppHost.Sdk/13.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk;Aspire.AppHost.Sdk/13.0.0">
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SdkAttribute_WithWhitespaceBetweenSemicolonEntries_PreservesWhitespace()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk; Aspire.AppHost.Sdk/9.0.0">
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/9.0.0"],
+            requiredDependencyStrings: ["Aspire.AppHost.Sdk/13.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk; Aspire.AppHost.Sdk/13.0.0">
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SdkAttribute_WithTrailingWhitespaceAfterVersion_PreservesWhitespace()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Aspire.AppHost.Sdk/9.0.0 ;Microsoft.NET.Sdk">
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/9.0.0"],
+            requiredDependencyStrings: ["Aspire.AppHost.Sdk/13.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Aspire.AppHost.Sdk/13.0.0 ;Microsoft.NET.Sdk">
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SdkAttribute_WithWhitespaceAroundSlash_UpdatesVersion()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk; Aspire.AppHost.Sdk / 9.0.0 ">
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/9.0.0"],
+            requiredDependencyStrings: ["Aspire.AppHost.Sdk/13.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk; Aspire.AppHost.Sdk / 13.0.0 ">
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SdkAttribute_WithMinimumVersion_UpdatesMinimumVersion()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Aspire.AppHost.Sdk/min=9.0.0">
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/9.0.0"],
+            requiredDependencyStrings: ["Aspire.AppHost.Sdk/13.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Aspire.AppHost.Sdk/min=13.0.0">
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SdkAttribute_WithDuplicateSdkEntries_UpdatesEveryVersion()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Aspire.AppHost.Sdk/9.0.0;Aspire.AppHost.Sdk/9.0.0">
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/9.0.0"],
+            requiredDependencyStrings: ["Aspire.AppHost.Sdk/13.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Aspire.AppHost.Sdk/13.0.0;Aspire.AppHost.Sdk/13.0.0">
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SdkChildElement_InImportedFile_UpdatesVersion()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                    </Project>
+                    """),
+                ("build/sdk.proj", """
+                    <Project>
+                      <Sdk Name="Aspire.AppHost.Sdk" Version="9.0.0" />
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/9.0.0"],
+            requiredDependencyStrings: ["Aspire.AppHost.Sdk/13.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                    </Project>
+                    """),
+                ("build/sdk.proj", """
+                    <Project>
+                      <Sdk Name="Aspire.AppHost.Sdk" Version="13.0.0" />
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SdkAndPackageReference_WithMismatchedPackageVersion_DoesNotWritePartialUpdate()
+    {
+        await TestNoChangeAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Aspire.AppHost.Sdk/9.0.0">
+                      <ItemGroup>
+                        <PackageReference Include="Aspire.AppHost.Sdk" Version="10.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/9.0.0"],
+            requiredDependencyStrings: ["Aspire.AppHost.Sdk/13.0.0"]
+        );
+    }
+
+    [Fact]
+    public async Task SdkAndPackageReference_WithMismatchedSdkVersion_DoesNotWritePartialUpdate()
+    {
+        await TestNoChangeAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Aspire.AppHost.Sdk/8.0.0">
+                      <ItemGroup>
+                        <PackageReference Include="Aspire.AppHost.Sdk" Version="9.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/9.0.0"],
+            requiredDependencyStrings: ["Aspire.AppHost.Sdk/13.0.0"]
+        );
+    }
+
+    [Fact]
+    public async Task SdkAndCentralPackageVersion_AreBothUpdated()
+    {
+        await TestAsync(
+            packageManagementKind: PackageManagementKind.CentralPackageVersions,
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Aspire.AppHost.Sdk/9.0.0" />
+                    """),
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Aspire.AppHost.Sdk" Version="9.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/9.0.0"],
+            requiredDependencyStrings: ["Aspire.AppHost.Sdk/13.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Aspire.AppHost.Sdk/13.0.0" />
+                    """),
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Aspire.AppHost.Sdk" Version="13.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SdkChildElement_WithVersionAttribute_UpdatesVersion()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <Sdk Name="Aspire.AppHost.Sdk" Version="9.0.0" />
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/9.0.0"],
+            requiredDependencyStrings: ["Aspire.AppHost.Sdk/13.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <Sdk Name="Aspire.AppHost.Sdk" Version="13.0.0" />
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task ImportElement_WithSdkNameAndSeparateVersionAttribute_UpdatesVersion()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project>
+                      <Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="9.0.0" />
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/9.0.0"],
+            requiredDependencyStrings: ["Aspire.AppHost.Sdk/13.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project>
+                      <Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="13.0.0" />
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task ImportElement_InsideImportGroup_UpdatesVersion()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project>
+                      <ImportGroup>
+                        <Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="9.0.0" />
+                      </ImportGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/9.0.0"],
+            requiredDependencyStrings: ["Aspire.AppHost.Sdk/13.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project>
+                      <ImportGroup>
+                        <Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="13.0.0" />
+                      </ImportGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
 }
