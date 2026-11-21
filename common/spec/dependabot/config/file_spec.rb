@@ -46,6 +46,54 @@ RSpec.describe Dependabot::Config::File do
         expect(update_config).to be_a(Dependabot::Config::UpdateConfig)
         expect(update_config.commit_message_options.prefix).to be_nil
       end
+
+      context "with advanced target-branch patterns" do
+        let(:yaml) do
+          <<~YAML
+            version: 2
+            updates:
+              - package-ecosystem: "npm"
+                directory: "/target"
+                target-branch: ["branch-a", "branch-b"]
+                commit-message:
+                  prefix: "array match"
+              - package-ecosystem: "npm"
+                directory: "/target"
+                target-branch: "features/*"
+                commit-message:
+                  prefix: "glob match"
+              - package-ecosystem: "npm"
+                directory: "/target"
+                target-branch: "${{ github.event.repository.default_branch }}"
+                commit-message:
+                  prefix: "variable match"
+          YAML
+        end
+        let(:advanced_config) { described_class.parse(yaml) }
+
+        it "matches an array of branches" do
+          update_config = advanced_config.update_config("npm_and_yarn", directory: "/target", target_branch: "branch-b")
+          expect(update_config.commit_message_options.prefix).to eq("array match")
+        end
+
+        it "matches a glob pattern" do
+          update_config = advanced_config.update_config(
+            "npm_and_yarn",
+            directory: "/target",
+            target_branch: "features/new-thing"
+          )
+          expect(update_config.commit_message_options.prefix).to eq("glob match")
+        end
+
+        it "matches a gh variable automatically" do
+          update_config = advanced_config.update_config(
+            "npm_and_yarn",
+            directory: "/target",
+            target_branch: "any-branch-at-all"
+          )
+          expect(update_config.commit_message_options.prefix).to eq("variable match")
+        end
+      end
     end
 
     describe "#parse" do
