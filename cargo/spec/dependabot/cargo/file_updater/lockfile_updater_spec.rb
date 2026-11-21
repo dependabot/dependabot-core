@@ -433,6 +433,85 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           expect(updated_getrandom_versions).not_to include(Gem::Version.new("0.4.2"))
         end
 
+        context "when the selected target is already locked" do
+          let(:lockfile_body) do
+            initial_lockfile = fixture("lockfiles", lockfile_fixture_name)
+            old_entry = initial_lockfile.match(
+              /\[\[package\]\]\nname = "getrandom"\nversion = "0\.4\.2".*?(?=\n\[\[package\]\]|\z)/m
+            ).to_s
+            existing_target = old_entry.sub('version = "0.4.2"', 'version = "0.4.3"')
+            initial_lockfile.sub(old_entry, "#{old_entry}\n#{existing_target}")
+          end
+
+          before do
+            allow(updater).to receive(:run_cargo_command) do |command, **|
+              next unless command.include?("getrandom:0.4.2")
+
+              content = File.read("Cargo.lock")
+              old_entry = content.match(
+                /\[\[package\]\]\nname = "getrandom"\nversion = "0\.4\.2".*?(?=\n\[\[package\]\]|\z)/m
+              ).to_s
+              File.write("Cargo.lock", content.sub(old_entry, ""))
+            end
+          end
+
+          it "accepts consolidation into the existing target" do
+            expect(updated_getrandom_versions).to include(Gem::Version.new("0.4.3"))
+            expect(updated_getrandom_versions).not_to include(Gem::Version.new("0.4.2"))
+          end
+
+          context "when another newer version is also already locked" do
+            let(:lockfile_body) do
+              initial_lockfile = super()
+              target_entry = initial_lockfile.match(
+                /\[\[package\]\]\nname = "getrandom"\nversion = "0\.4\.3".*?(?=\n\[\[package\]\]|\z)/m
+              ).to_s
+              newer_entry = target_entry.sub('version = "0.4.3"', 'version = "0.4.4"')
+              initial_lockfile.sub(target_entry, "#{target_entry}\n#{newer_entry}")
+            end
+
+            it "rejects the ambiguous consolidation" do
+              expect { updated_lockfile_content }.to raise_error("Failed to update getrandom!")
+            end
+          end
+
+          context "when a lower target-line version is also already locked" do
+            let(:dependency_version) { "0.4.4" }
+            let(:lockfile_body) do
+              initial_lockfile = fixture("lockfiles", lockfile_fixture_name)
+              old_entry = initial_lockfile.match(
+                /\[\[package\]\]\nname = "getrandom"\nversion = "0\.4\.2".*?(?=\n\[\[package\]\]|\z)/m
+              ).to_s
+              lower_entry = old_entry.sub('version = "0.4.2"', 'version = "0.4.3"')
+              target_entry = old_entry.sub('version = "0.4.2"', 'version = "0.4.4"')
+              initial_lockfile.sub(old_entry, "#{old_entry}\n#{lower_entry}\n#{target_entry}")
+            end
+
+            it "rejects the retained lower destination" do
+              expect { updated_lockfile_content }.to raise_error("Failed to update getrandom!")
+            end
+          end
+
+          context "when the update introduces a downgrade" do
+            before do
+              allow(updater).to receive(:run_cargo_command) do |command, **|
+                next unless command.include?("getrandom:0.4.2")
+
+                content = File.read("Cargo.lock")
+                old_entry = content.match(
+                  /\[\[package\]\]\nname = "getrandom"\nversion = "0\.4\.2".*?(?=\n\[\[package\]\]|\z)/m
+                ).to_s
+                downgraded_entry = old_entry.sub('version = "0.4.2"', 'version = "0.4.1"')
+                File.write("Cargo.lock", content.sub(old_entry, downgraded_entry))
+              end
+            end
+
+            it "rejects consolidation through the introduced lower version" do
+              expect { updated_lockfile_content }.to raise_error("Failed to update getrandom!")
+            end
+          end
+        end
+
         context "when an exact update also introduces an unselected newer version" do
           before do
             allow(updater).to receive(:run_cargo_command) do |command, **|
@@ -524,6 +603,123 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
               expect(updated_lockfile_content).to include(%(name = "getrandom"\nversion = "0.2.18"))
               expect(updated_lockfile_content).to include(%(name = "getrandom"\nversion = "0.4.3"))
               expect(commands).to eq(["cargo update -p getrandom:0.2.17 --precise 0.2.18"])
+            end
+          end
+
+          context "when the first command consolidates the second line into an existing target" do
+            let(:lockfile_body) do
+              initial_lockfile = fixture("lockfiles", lockfile_fixture_name)
+              old_entry = initial_lockfile.match(
+                /\[\[package\]\]\nname = "getrandom"\nversion = "0\.4\.2".*?(?=\n\[\[package\]\]|\z)/m
+              ).to_s
+              existing_target = old_entry.sub('version = "0.4.2"', 'version = "0.4.3"')
+              initial_lockfile.sub(old_entry, "#{old_entry}\n#{existing_target}")
+            end
+
+            before do
+              allow(updater).to receive(:run_cargo_command) do |command, **|
+                commands << command
+                next unless command.include?("getrandom:0.2.17")
+
+                content = File.read("Cargo.lock")
+                content = content.sub(
+                  %(name = "getrandom"\nversion = "0.2.17"),
+                  %(name = "getrandom"\nversion = "0.2.18")
+                )
+                old_entry = content.match(
+                  /\[\[package\]\]\nname = "getrandom"\nversion = "0\.4\.2".*?(?=\n\[\[package\]\]|\z)/m
+                ).to_s
+                File.write("Cargo.lock", content.sub(old_entry, ""))
+              end
+            end
+
+            it "skips the completed consolidation" do
+              expect(updated_getrandom_versions).to include(Gem::Version.new("0.4.3"))
+              expect(updated_getrandom_versions).not_to include(Gem::Version.new("0.4.2"))
+              expect(commands).to eq(["cargo update -p getrandom:0.2.17 --precise 0.2.18"])
+            end
+
+            context "when another newer version is also already locked" do
+              let(:lockfile_body) do
+                initial_lockfile = super()
+                target_entry = initial_lockfile.match(
+                  /\[\[package\]\]\nname = "getrandom"\nversion = "0\.4\.3".*?(?=\n\[\[package\]\]|\z)/m
+                ).to_s
+                newer_entry = target_entry.sub('version = "0.4.3"', 'version = "0.4.4"')
+                initial_lockfile.sub(target_entry, "#{target_entry}\n#{newer_entry}")
+              end
+
+              it "does not skip the ambiguous grouped consolidation" do
+                expect { updated_lockfile_content }
+                  .to raise_error("Failed to identify the current locked version for getrandom!")
+                expect(commands).to eq(["cargo update -p getrandom:0.2.17 --precise 0.2.18"])
+              end
+            end
+
+            context "when the grouped update introduces a lower target-line version" do
+              let(:dependency_version) { "0.4.4" }
+              let(:lockfile_body) do
+                initial_lockfile = fixture("lockfiles", lockfile_fixture_name)
+                old_entry = initial_lockfile.match(
+                  /\[\[package\]\]\nname = "getrandom"\nversion = "0\.4\.2".*?(?=\n\[\[package\]\]|\z)/m
+                ).to_s
+                target_entry = old_entry.sub('version = "0.4.2"', 'version = "0.4.4"')
+                initial_lockfile.sub(old_entry, "#{old_entry}\n#{target_entry}")
+              end
+
+              before do
+                allow(updater).to receive(:run_cargo_command) do |command, **|
+                  commands << command
+                  next unless command.include?("getrandom:0.2.17")
+
+                  content = File.read("Cargo.lock")
+                  content = content.sub(
+                    %(name = "getrandom"\nversion = "0.2.17"),
+                    %(name = "getrandom"\nversion = "0.2.18")
+                  )
+                  old_entry = content.match(
+                    /\[\[package\]\]\nname = "getrandom"\nversion = "0\.4\.2".*?(?=\n\[\[package\]\]|\z)/m
+                  ).to_s
+                  lower_entry = old_entry.sub('version = "0.4.2"', 'version = "0.4.3"')
+                  File.write("Cargo.lock", content.sub(old_entry, lower_entry))
+                end
+              end
+
+              it "does not accept the introduced lower destination" do
+                expect { updated_lockfile_content }.to raise_error("Failed to update getrandom!")
+                expect(commands).to eq(
+                  [
+                    "cargo update -p getrandom:0.2.17 --precise 0.2.18",
+                    "cargo update -p getrandom:0.4.3 --precise 0.4.4"
+                  ]
+                )
+              end
+            end
+
+            context "when the grouped update introduces a downgrade" do
+              before do
+                allow(updater).to receive(:run_cargo_command) do |command, **|
+                  commands << command
+                  next unless command.include?("getrandom:0.2.17")
+
+                  content = File.read("Cargo.lock")
+                  content = content.sub(
+                    %(name = "getrandom"\nversion = "0.2.17"),
+                    %(name = "getrandom"\nversion = "0.2.18")
+                  )
+                  old_entry = content.match(
+                    /\[\[package\]\]\nname = "getrandom"\nversion = "0\.4\.2".*?(?=\n\[\[package\]\]|\z)/m
+                  ).to_s
+                  downgraded_entry = old_entry.sub('version = "0.4.2"', 'version = "0.4.1"')
+                  File.write("Cargo.lock", content.sub(old_entry, downgraded_entry))
+                end
+              end
+
+              it "does not accept consolidation through the introduced lower version" do
+                expect { updated_lockfile_content }
+                  .to raise_error("Failed to identify the current locked version for getrandom!")
+                expect(commands).to eq(["cargo update -p getrandom:0.2.17 --precise 0.2.18"])
+              end
             end
           end
 

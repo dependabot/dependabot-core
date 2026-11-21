@@ -128,7 +128,11 @@ module Dependabot
               fingerprint: "cargo update -p <dependency_spec>"
             )
 
-            return if valid_transitive_result?(lockfile_before, File.read("Cargo.lock"))
+            return if valid_transitive_result?(
+              lockfile_before,
+              File.read("Cargo.lock"),
+              allow_existing_target: false
+            )
 
             File.write("Cargo.lock", lockfile_before)
             raise e
@@ -169,15 +173,26 @@ module Dependabot
           error.message.include?("failed to select a version")
         end
 
-        sig { params(lockfile_before: String, lockfile_after: String).returns(T::Boolean) }
-        def valid_transitive_result?(lockfile_before, lockfile_after)
+        sig do
+          params(
+            lockfile_before: String,
+            lockfile_after: String,
+            allow_existing_target: T::Boolean
+          ).returns(T::Boolean)
+        end
+        def valid_transitive_result?(lockfile_before, lockfile_after, allow_existing_target:)
           target = dependency.version
           return false unless target && version_class.correct?(target)
 
           versions_before = registry_package_versions(lockfile_before)
           versions_after = registry_package_versions(lockfile_after)
-          return false if versions_before.include?(target)
           return false unless versions_after.include?(target)
+          return false unless existing_target_valid?(
+            versions_before,
+            versions_after,
+            target,
+            allow_existing_target
+          )
 
           target_version = version_class.new(target)
           selected_versions = selected_registry_versions
@@ -186,6 +201,70 @@ module Dependabot
 
             version_class.new(version) <= target_version || selected_versions.include?(version)
           end
+        end
+
+        sig do
+          params(
+            versions_before: T::Array[String],
+            versions_after: T::Array[String],
+            target: String,
+            allow_existing_target: T::Boolean
+          ).returns(T::Boolean)
+        end
+        def existing_target_valid?(
+          versions_before,
+          versions_after,
+          target,
+          allow_existing_target
+        )
+          return true unless versions_before.include?(target)
+          return false unless allow_existing_target
+          return false unless previous_version_removed?(versions_before, versions_after)
+          return false if unselected_version_introduced?(versions_before, versions_after)
+
+          !ambiguous_existing_target?(versions_after, target)
+        end
+
+        sig do
+          params(
+            versions_before: T::Array[String],
+            versions_after: T::Array[String]
+          ).returns(T::Boolean)
+        end
+        def unselected_version_introduced?(versions_before, versions_after)
+          (versions_after - versions_before - selected_registry_versions).any?
+        end
+
+        sig do
+          params(
+            versions_after: T::Array[String],
+            target: String
+          ).returns(T::Boolean)
+        end
+        def ambiguous_existing_target?(versions_after, target)
+          previous_version = dependency.previous_version
+          return true unless previous_version && version_class.correct?(previous_version)
+
+          previous = version_class.new(previous_version)
+          versions_after.any? do |version|
+            next false if version == previous_version || version == target
+            next false unless version_class.correct?(version)
+
+            version_class.new(version) > previous
+          end
+        end
+
+        sig do
+          params(
+            versions_before: T::Array[String],
+            versions_after: T::Array[String]
+          ).returns(T::Boolean)
+        end
+        def previous_version_removed?(versions_before, versions_after)
+          previous_version = dependency.previous_version
+          return false unless previous_version && version_class.correct?(previous_version)
+
+          versions_before.include?(previous_version) && !versions_after.include?(previous_version)
         end
 
         sig { returns(T::Array[String]) }
@@ -230,7 +309,13 @@ module Dependabot
           return false unless version_class.correct?(previous_version)
 
           lockfile_content = File.read("Cargo.lock")
-          return valid_transitive_result?(T.must(lockfile.content), lockfile_content) if transitive_registry_dependency?
+          if transitive_registry_dependency?
+            return valid_transitive_result?(
+              T.must(lockfile.content),
+              lockfile_content,
+              allow_existing_target: true
+            )
+          end
 
           return false if package_version_count(lockfile_content, dependency, previous_version).positive?
 
@@ -250,7 +335,11 @@ module Dependabot
         sig { params(updated_lockfile: String).void }
         def validate_dependency_update(updated_lockfile)
           if transitive_registry_dependency?
-            return if valid_transitive_result?(T.must(lockfile.content), updated_lockfile)
+            return if valid_transitive_result?(
+              T.must(lockfile.content),
+              updated_lockfile,
+              allow_existing_target: true
+            )
 
             raise "Failed to update #{dependency.name}!"
           end
