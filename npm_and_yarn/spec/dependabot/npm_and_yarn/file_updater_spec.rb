@@ -3012,6 +3012,28 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
       end
 
+      describe "with a requirement that keeps a zero patch" do
+        let(:project_name) { "yarn_berry/tilde_zero_patch" }
+        let(:files) { project_dependency_files(project_name) }
+        let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+        let(:dependency_name) { "etag" }
+        let(:previous_version) { "1.7.0" }
+        let(:version) { "1.8.1" }
+        let(:previous_requirements) do
+          [{ file: "package.json", requirement: "~1.7.0", groups: ["dependencies"], source: nil }]
+        end
+        let(:requirements) do
+          [{ file: "package.json", requirement: "~1.8.0", groups: ["dependencies"], source: nil }]
+        end
+
+        it "keeps the zero patch in package.json and locks the new patch release" do
+          expect(JSON.parse(updated_package_json.content).dig("dependencies", "etag")).to eq("~1.8.0")
+          expect(updated_yarn_lock.content).to include(
+            "\"etag@npm:~1.8.0\":\n  version: 1.8.1\n  resolution: \"etag@npm:1.8.1\""
+          )
+        end
+      end
+
       describe "with offline cache the updated yarn_lock" do
         let(:project_name) { "yarn_berry/simple_node_modules" }
         let(:files) { project_dependency_files(project_name) }

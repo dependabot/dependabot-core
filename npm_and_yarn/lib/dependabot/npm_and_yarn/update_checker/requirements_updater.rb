@@ -37,17 +37,25 @@ module Dependabot
             requirements: T::Array[Dependabot::DependencyRequirement],
             updated_source: T.nilable(Dependabot::DependencyRequirement::ObjectHash),
             update_strategy: Dependabot::RequirementsUpdateStrategy,
-            latest_resolvable_version: T.nilable(T.any(String, Gem::Version))
+            latest_resolvable_version: T.nilable(T.any(String, Gem::Version)),
+            preserve_zero_patch: T::Boolean
           )
             .void
         end
-        def initialize(requirements:, updated_source:, update_strategy:, latest_resolvable_version:)
+        def initialize(
+          requirements:,
+          updated_source:,
+          update_strategy:,
+          latest_resolvable_version:,
+          preserve_zero_patch: false
+        )
           @requirements = T.let(
             requirements.map { |req| Dependabot::DependencyRequirement.create(req) },
             T::Array[Dependabot::DependencyRequirement]
           )
           @updated_source = updated_source
           @update_strategy = update_strategy
+          @preserve_zero_patch = preserve_zero_patch
 
           check_update_strategy
 
@@ -93,6 +101,9 @@ module Dependabot
 
         sig { returns(T.nilable(NpmAndYarn::Version)) }
         attr_reader :latest_resolvable_version
+
+        sig { returns(T::Boolean) }
+        attr_reader :preserve_zero_patch
 
         sig { void }
         def check_update_strategy
@@ -209,11 +220,25 @@ module Dependabot
                 old_parts = old_version.split(".")
                 new_parts = T.must(latest_resolvable_version).to_s.split(".")
                              .first(old_parts.count)
+                new_parts[2] = "0" if keep_zero_patch?(req_string, old_parts)
                 new_parts.map.with_index do |part, i|
                   old_parts[i]&.match?(/^x\b/) ? "x" : part
                 end.join(".")
               end
             end
+        end
+
+        # A `~X.Y.0` / `^X.Y.0` requirement written with a `.0` patch leaves the
+        # exact patch to the lockfile, so keep the `.0` instead of pinning the
+        # floor to the new patch (`~5.3.0` -> `~6.8.0`, not `~6.8.1`). Only done
+        # when there is a lockfile: without one, nothing would record the patch
+        # (e.g. a security fix). See dependabot/dependabot-core#10968.
+        sig { params(req_string: String, old_parts: T::Array[String]).returns(T::Boolean) }
+        def keep_zero_patch?(req_string, old_parts)
+          return false unless preserve_zero_patch
+          return false unless old_parts.count == 3 && old_parts[2] == "0"
+
+          req_string.sub(NpmAndYarn::Requirement::JSR_PREFIX, "").lstrip.start_with?("~", "^")
         end
 
         sig { params(old_version: String, version_to_be_permitted: NpmAndYarn::Version).returns(String) }
