@@ -131,32 +131,19 @@ module Dependabot
 
       sig { override.params(version: Gem::Version).returns(T::Boolean) }
       def satisfied_by?(version)
-        version = Cargo::Version.new(version.to_s)
-
-        prerelease_allowed?(version) && comparators_satisfied_by?(version)
+        prerelease_opted_in?(version) && bounds_satisfied_by?(version)
       end
-
-      sig do
-        params(
-          version: Gem::Version,
-          prerelease_requirement: Requirement
-        ).returns(T::Boolean)
-      end
-      def satisfied_by_with_prerelease_context?(version, prerelease_requirement)
-        version = Cargo::Version.new(version.to_s)
-
-        prerelease_requirement.prerelease_allowed?(version) && comparators_satisfied_by?(version)
-      end
-
-      sig { override.params(version: Gem::Version).returns(T::Boolean) }
-      def satisfied_by_range?(version)
-        requirements_satisfied_by?(gem_version(version))
-      end
-
-      protected
 
       sig { params(version: Gem::Version).returns(T::Boolean) }
-      def prerelease_allowed?(version)
+      def bounds_satisfied_by?(version)
+        version = Cargo::Version.new(version.to_s)
+
+        comparators.all? { |comparator| comparator_satisfied_by?(comparator, version) }
+      end
+
+      sig { params(version: Gem::Version).returns(T::Boolean) }
+      def prerelease_opted_in?(version)
+        version = Cargo::Version.new(version.to_s)
         return true unless version.prerelease?
 
         major, minor, patch = version_parts(version)
@@ -168,12 +155,12 @@ module Dependabot
         end
       end
 
-      private
-
-      sig { params(version: Gem::Version).returns(T::Boolean) }
-      def comparators_satisfied_by?(version)
-        comparators.all? { |comparator| comparator_satisfied_by?(comparator, version) }
+      sig { override.params(version: Gem::Version).returns(T::Boolean) }
+      def satisfied_by_range?(version)
+        requirements_satisfied_by?(gem_version(version))
       end
+
+      private
 
       sig { returns(T::Array[Comparator]) }
       def comparators

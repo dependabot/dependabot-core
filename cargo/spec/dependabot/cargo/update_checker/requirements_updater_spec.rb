@@ -218,6 +218,27 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
               its([:requirement]) { is_expected.to eq(req_string) }
             end
 
+            context "when an existing prerelease lower bound needs a new release opt-in" do
+              let(:req_string) { ">=1.0.0-beta, <2.0.0" }
+              let(:target_version) { "1.1.0-beta" }
+
+              its([:requirement]) { is_expected.to eq(">=1.1.0-beta, <2.0.0") }
+            end
+
+            context "when a stable lower bound would need a prerelease opt-in" do
+              let(:req_string) { ">=1.0.0, <2.0.0" }
+              let(:target_version) { "1.1.0-beta" }
+
+              its([:requirement]) { is_expected.to eq(:unfixable) }
+            end
+
+            context "when an upper-only range would need a prerelease opt-in" do
+              let(:req_string) { "<1.5.0" }
+              let(:target_version) { "1.1.0-beta" }
+
+              its([:requirement]) { is_expected.to eq(:unfixable) }
+            end
+
             context "when patch version is missing" do
               let(:req_string) { "> 1.0, < 1.2" }
 
@@ -442,6 +463,27 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
             let(:target_version) { "1.3.0-beta" }
 
             its([:requirement]) { is_expected.to eq(req_string) }
+          end
+
+          context "when an existing prerelease lower bound needs a new release opt-in" do
+            let(:req_string) { ">=1.0.0-beta, <2.0.0" }
+            let(:target_version) { "1.1.0-beta" }
+
+            its([:requirement]) { is_expected.to eq(">=1.1.0-beta, <2.0.0") }
+          end
+
+          context "when a stable lower bound would need a prerelease opt-in" do
+            let(:req_string) { ">=1.0.0, <2.0.0" }
+            let(:target_version) { "1.1.0-beta" }
+
+            its([:requirement]) { is_expected.to eq(:unfixable) }
+          end
+
+          context "when an upper-only range would need a prerelease opt-in" do
+            let(:req_string) { "<1.5.0" }
+            let(:target_version) { "1.1.0-beta" }
+
+            its([:requirement]) { is_expected.to eq(:unfixable) }
           end
         end
 
