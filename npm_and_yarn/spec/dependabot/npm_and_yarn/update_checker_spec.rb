@@ -1080,7 +1080,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           requirements: dependency_requirements,
           updated_source: nil,
           latest_resolvable_version: "1.7.0",
-          update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions
+          update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions,
+          preserve_zero_patch: true
         )
         .and_call_original
       expect(checker.updated_requirements)
@@ -1114,14 +1115,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             requirements: dependency_requirements,
             updated_source: nil,
             latest_resolvable_version: "1.2.1",
-            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions
+            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions,
+            preserve_zero_patch: true
           )
           .and_call_original
         expect(checker.updated_requirements)
           .to eq(
             [{
               file: "package.json",
-              requirement: "^1.2.1",
+              requirement: "^1.2.0",
               groups: [],
               source: nil
             }]
@@ -1148,7 +1150,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             requirements: dependency_requirements,
             updated_source: nil,
             latest_resolvable_version: "1.7.0",
-            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary
+            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary,
+            preserve_zero_patch: true
           )
           .and_call_original
         expect(checker.updated_requirements)
@@ -1175,7 +1178,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             requirements: dependency_requirements,
             updated_source: nil,
             latest_resolvable_version: "1.7.0",
-            update_strategy: Dependabot::RequirementsUpdateStrategy::WidenRanges
+            update_strategy: Dependabot::RequirementsUpdateStrategy::WidenRanges,
+            preserve_zero_patch: true
           )
           .and_call_original
         expect(checker.updated_requirements)
@@ -1256,7 +1260,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               ref: "master"
             },
             latest_resolvable_version: "4.0.0",
-            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions
+            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions,
+            preserve_zero_patch: true
           )
           .and_call_original
         expect(checker.updated_requirements)
@@ -1290,7 +1295,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                 ref: "master"
               },
               latest_resolvable_version: "4.0.0",
-              update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions
+              update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions,
+              preserve_zero_patch: true
             )
             .and_call_original
           expect(checker.updated_requirements)
@@ -1348,7 +1354,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             requirements: dependency_requirements,
             updated_source: nil,
             latest_resolvable_version: "16.3.1",
-            update_strategy: Dependabot::RequirementsUpdateStrategy::WidenRanges
+            update_strategy: Dependabot::RequirementsUpdateStrategy::WidenRanges,
+            preserve_zero_patch: true
           )
           .and_call_original
 
@@ -1358,7 +1365,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           .to eq(
             [{
               file: "package.json",
-              requirement: "^16.3.1",
+              requirement: "^16.3.0",
               groups: ["dependencies"],
               source: nil
             }]
