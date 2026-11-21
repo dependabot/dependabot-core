@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# Detects Dockerfiles that have changed between the current branch and a base branch.
+# Outputs a JSON array of changed Dockerfiles for use in GitHub Actions matrix.
+#
+# Usage: docker-layer-count-detect <base_ref>
+#
+# Arguments:
+#   base_ref: The base branch to compare against (e.g., "main", "origin/main")
+#
+# Outputs (via GITHUB_OUTPUT if set, otherwise stdout):
+#   dockerfiles: JSON array of changed Dockerfiles
+#   has-changes: "true" if changes found, "false" otherwise
+
+set -euo pipefail
+
+# Pattern to match ecosystem Dockerfiles (in ecosystem directories and root)
+DOCKERFILE_PATTERN='^[^/]+/Dockerfile$|^Dockerfile\.updater-core$'
+
+BASE_REF="${1:-}"
+
+if [ -z "$BASE_REF" ]; then
+  echo "Usage: $0 <base_ref>" >&2
+  exit 1
+fi
+
+# Get changed files between base and head
+CHANGED_FILES=$(git diff --name-only "origin/${BASE_REF}...HEAD")
+
+# Filter for Dockerfiles
+CHANGED_DOCKERFILES=$(echo "$CHANGED_FILES" | grep -E "$DOCKERFILE_PATTERN" || true)
+
+if [ -z "$CHANGED_DOCKERFILES" ]; then
+  echo "No Dockerfile changes detected" >&2
+  if [ -n "${GITHUB_OUTPUT:-}" ]; then
+    echo "has-changes=false" >> "$GITHUB_OUTPUT"
+    echo "dockerfiles=[]" >> "$GITHUB_OUTPUT"
+  else
+    echo "has-changes=false"
+    echo "dockerfiles=[]"
+  fi
+else
+  echo "Changed Dockerfiles:" >&2
+  echo "$CHANGED_DOCKERFILES" >&2
+
+  # Build JSON array of changed Dockerfiles
+  # Format: [{"path": "bundler/Dockerfile", "ecosystem": "bundler"}, ...]
+  JSON_ARRAY="["
+  FIRST=true
+  while IFS= read -r dockerfile; do
+    if [ -n "$dockerfile" ]; then
+      # Extract ecosystem name from path
+      if [ "$dockerfile" = "Dockerfile.updater-core" ]; then
+        ECOSYSTEM="updater-core"
+      else
+        ECOSYSTEM=$(dirname "$dockerfile")
+      fi
+
+      if [ "$FIRST" = true ]; then
+        FIRST=false
+      else
+        JSON_ARRAY="$JSON_ARRAY,"
+      fi
+      JSON_ARRAY="$JSON_ARRAY{\"path\":\"$dockerfile\",\"ecosystem\":\"$ECOSYSTEM\"}"
+    fi
+  done <<< "$CHANGED_DOCKERFILES"
+  JSON_ARRAY="$JSON_ARRAY]"
+
+  if [ -n "${GITHUB_OUTPUT:-}" ]; then
+    echo "dockerfiles=$JSON_ARRAY" >> "$GITHUB_OUTPUT"
+    echo "has-changes=true" >> "$GITHUB_OUTPUT"
+  else
+    echo "dockerfiles=$JSON_ARRAY"
+    echo "has-changes=true"
+  fi
+fi
