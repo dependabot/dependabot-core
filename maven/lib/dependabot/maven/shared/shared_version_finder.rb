@@ -204,7 +204,7 @@ module Dependabot
         def git_sha?(version)
           return false unless version
 
-          normalized = version.start_with?("v") ? version[1..-1] : version
+          normalized = version.start_with?("v", "V", "g", "G") ? version[1..-1] : version
           !!T.must(normalized).match?(GIT_COMMIT)
         end
 
