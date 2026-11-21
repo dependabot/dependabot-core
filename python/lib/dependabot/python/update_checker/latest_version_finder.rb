@@ -32,6 +32,35 @@ module Dependabot
           ).fetch
         end
 
+        sig do
+          params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+            .returns(T::Array[Dependabot::Version])
+        end
+        def eligible_versions(language_version: nil)
+          releases = available_versions || []
+          releases = filter_yanked_versions(releases)
+          releases = cooldown_tracker.filter(language_version:, requirements: false) do
+            filtered = filter_by_cooldown(releases)
+            filtered = filter_unsupported_versions(filtered, language_version)
+            filtered = filter_prerelease_versions(filtered)
+            filtered = filter_ignored_versions(filtered)
+            apply_post_fetch_latest_versions_filter(filtered)
+          end
+          releases.map(&:version).uniq
+        end
+
+        sig do
+          params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+            .returns(T::Array[Dependabot::Version])
+        end
+        def resolver_excluded_versions(language_version: nil)
+          releases = available_versions || []
+          filtered_releases = cooldown_tracker.filter(language_version:, requirements: false) do
+            filter_by_cooldown(filter_ignored_versions(releases))
+          end
+          (releases.map(&:version) - filtered_releases.map(&:version)).uniq
+        end
+
         sig { override.returns(T::Boolean) }
         def cooldown_enabled?
           return false if cooldown_options.nil?

@@ -9,6 +9,18 @@ require "dependabot/python/update_checker/pip_version_resolver"
 require_relative "shared_examples_for_pip_pyproject_reads"
 
 RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
+  def stub_pip_report(version)
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_wrap_original do |method, command, **args|
+      next method.call(command, **args) unless command.include?("pip install")
+
+      File.write(
+        "dependabot-pip-report.json",
+        JSON.dump("install" => [{ "metadata" => { "name" => "Django", "version" => version } }])
+      )
+      ""
+    end
+  end
+
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
   end
@@ -77,6 +89,615 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { resolver.latest_resolvable_version }
 
+    before { stub_pip_report("3.2.4") }
+
+    context "when the latest version conflicts with another requirement" do
+      let(:rewritten_requirements) { [] }
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "django==1.2.4\ndjango-filter==23.5\n"
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command) do |command, **_args|
+          next "" unless command.include?("pip install")
+
+          rewritten_requirements << File.read("requirements.txt")
+          File.write(
+            "dependabot-pip-report.json",
+            JSON.dump(
+              "install" => [{ "metadata" => { "name" => "Django", "version" => "3.2.3" } }]
+            )
+          )
+          ""
+        end
+      end
+
+      it "returns the newest version selected by pip" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.3"))
+        expect(rewritten_requirements).to contain_exactly(include("django>=1.2.4,<=3.2.4,!=1.2.4"))
+      end
+    end
+
+    context "when a version below the policy ceiling is ignored" do
+      let(:ignored_versions) { ["==3.2.3"] }
+      let(:rewritten_requirements) { [] }
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "django==1.2.4\ndjango-filter==23.5\n"
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command) do |command, **_args|
+          next "" unless command.include?("pip install")
+
+          rewritten_requirements << File.read("requirements.txt")
+          File.write(
+            "dependabot-pip-report.json",
+            JSON.dump(
+              "install" => [{ "metadata" => { "name" => "Django", "version" => "3.2.2" } }]
+            )
+          )
+          ""
+        end
+      end
+
+      it "excludes the ignored version from pip's candidate range" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.2"))
+        expect(rewritten_requirements).to contain_exactly(include("!=3.2.3"))
+      end
+    end
+
+    context "when the existing requirement has a lower bound" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{
+          file: "requirements.txt",
+          requirement: ">=2.0,<3.0",
+          groups: [],
+          source: nil
+        }]
+      end
+      let(:rewritten_requirements) { [] }
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "django>=2.0,<3.0\ndjango-filter==23.5\n"
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command) do |command, **_args|
+          next "" unless command.include?("pip install")
+
+          rewritten_requirements << File.read("requirements.txt")
+          File.write(
+            "dependabot-pip-report.json",
+            JSON.dump(
+              "install" => [{ "metadata" => { "name" => "Django", "version" => "3.2.3" } }]
+            )
+          )
+          ""
+        end
+      end
+
+      it "does not allow pip to select a downgrade" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.3"))
+        expect(rewritten_requirements).to contain_exactly(include("django>=2.0,<=3.2.4"))
+      end
+    end
+
+    context "when the existing requirement excludes a version" do
+      let(:excluded_requirement) { "!=3.2.3" }
+      let(:resolved_version) { "3.2.2" }
+      let(:dependency_requirements) do
+        [{
+          file: "requirements.txt",
+          requirement: ">=1.2.4,#{excluded_requirement}",
+          groups: [],
+          source: nil
+        }]
+      end
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "django>=1.2.4,#{excluded_requirement}\n"
+        )
+      end
+      let(:rewritten_requirements) { [] }
+
+      before do
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command) do |command, **_args|
+          next "" unless command.include?("pip install")
+
+          rewritten_requirements << File.read("requirements.txt")
+          File.write(
+            "dependabot-pip-report.json",
+            JSON.dump(
+              "install" => [{ "metadata" => { "name" => "Django", "version" => resolved_version } }]
+            )
+          )
+          ""
+        end
+      end
+
+      it "keeps the exclusion in the resolver range" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new(resolved_version))
+        expect(rewritten_requirements).to contain_exactly(include(excluded_requirement))
+      end
+
+      context "when the exclusion contains a wildcard" do
+        let(:excluded_requirement) { "!=3.2.*" }
+        let(:resolved_version) { "2.2.10" }
+
+        it "keeps the wildcard exclusion in the resolver range" do
+          expect(latest_resolvable_version).to eq(Gem::Version.new(resolved_version))
+          expect(rewritten_requirements).to contain_exactly(include(excluded_requirement))
+        end
+      end
+    end
+
+    context "when no policy-eligible version resolves" do
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "django==1.2.4\ndjango-filter==23.5\n"
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command) do |command, **_args|
+          next "" unless command.include?("pip install")
+
+          raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: "ERROR: ResolutionImpossible",
+            error_context: {}
+          )
+        end
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when the target has a non-Python environment marker" do
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "django==1.2.4; sys_platform == 'win32'\n"
+        )
+      end
+
+      it "uses the static fallback" do
+        expect(Dependabot::SharedHelpers)
+          .not_to receive(:run_shell_command).with(a_string_including("pip install"), any_args)
+
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+      end
+    end
+
+    context "when a peer has a non-Python environment marker" do
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "django==1.2.4\ndjango-filter==23.5; platform_system == 'Windows'\n"
+        )
+      end
+
+      it "uses the static fallback" do
+        expect(Dependabot::SharedHelpers)
+          .not_to receive(:run_shell_command).with(a_string_including("pip install"), any_args)
+
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+      end
+    end
+
+    context "when the requirement file contains an editable dependency" do
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "django==1.2.4\n-e ./local-package\n"
+        )
+      end
+
+      it "uses the static fallback" do
+        expect(Dependabot::SharedHelpers)
+          .not_to receive(:run_shell_command).with(a_string_including("pip install"), any_args)
+
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+      end
+    end
+
+    context "when the requirement file contains an uneditable local dependency" do
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "django==1.2.4\n./local-package\n"
+        )
+      end
+
+      it "uses the static fallback" do
+        expect(Dependabot::SharedHelpers)
+          .not_to receive(:run_shell_command).with(a_string_including("pip install"), any_args)
+
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+      end
+    end
+
+    context "when a referenced requirement file contains hashes" do
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "django==1.2.4\n-r pinned.txt\n"
+        )
+      end
+      let(:dependency_files) do
+        [
+          requirements_file,
+          Dependabot::DependencyFile.new(
+            name: "pinned.txt",
+            content: "urllib3==1.26.20 --hash=sha256:abc123\n"
+          )
+        ]
+      end
+
+      it "uses the static fallback" do
+        expect(Dependabot::SharedHelpers)
+          .not_to receive(:run_shell_command).with(a_string_including("pip install"), any_args)
+
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+      end
+    end
+
+    context "when a fetched file path escapes the temporary directory" do
+      let(:dependency_files) do
+        [
+          requirements_file,
+          Dependabot::DependencyFile.new(
+            name: "../local-project/setup.py",
+            content: "from setuptools import setup\nsetup()\n",
+            support_file: true
+          )
+        ]
+      end
+
+      it "uses the static fallback" do
+        expect(Dependabot::SharedHelpers)
+          .not_to receive(:run_shell_command).with(a_string_including("pip install"), any_args)
+
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+      end
+    end
+
+    context "when the current version has a local label" do
+      let(:dependency_version) { "1.2.4+gc.1" }
+      let(:dependency_requirements) do
+        [{
+          file: "requirements.txt",
+          requirement: "==1.2.4+gc.1",
+          groups: [],
+          source: nil
+        }]
+      end
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "django==1.2.4+gc.1\n"
+        )
+      end
+
+      it "uses the static fallback instead of creating an invalid ordered bound" do
+        expect(Dependabot::SharedHelpers)
+          .not_to receive(:run_shell_command).with(a_string_including("pip install"), any_args)
+
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+      end
+    end
+
+    context "when the declaration clauses are normalized into a different order" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{
+          file: "requirements.txt",
+          requirement: "<3.0,>=2.0",
+          groups: [],
+          source: nil
+        }]
+      end
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "django>=2.0,<3.0\n"
+        )
+      end
+      let(:rewritten_requirements) { [] }
+
+      before do
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command) do |command, **_args|
+          next "" unless command.include?("pip install")
+
+          rewritten_requirements << File.read("requirements.txt")
+          File.write(
+            "dependabot-pip-report.json",
+            JSON.dump(
+              "install" => [{ "metadata" => { "name" => "Django", "version" => "3.2.4" } }]
+            )
+          )
+          ""
+        end
+      end
+
+      it "uses pip resolution" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+        expect(rewritten_requirements).to contain_exactly(include("django>=2.0,<=3.2.4"))
+      end
+    end
+
+    context "when prereleases are eligible below a stable policy ceiling" do
+      let(:pip_commands) { [] }
+      let(:rewritten_requirements) { [] }
+      let(:dependency_version) { "1.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "requirements.txt",
+          requirement: "==1.0",
+          groups: [],
+          source: nil
+        }]
+      end
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "django==1.0\n"
+        )
+      end
+
+      before do
+        finder = resolver.send(:latest_version_finder)
+        allow(finder).to receive_messages(
+          eligible_versions: [
+            Dependabot::Python::Version.new("2.5rc1"),
+            Dependabot::Python::Version.new("3.0")
+          ],
+          resolver_excluded_versions: []
+        )
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command) do |command, **_args|
+          next "" unless command.include?("pip install")
+
+          pip_commands << command
+          rewritten_requirements << File.read("requirements.txt")
+          File.write(
+            "dependabot-pip-report.json",
+            JSON.dump(
+              "install" => [{ "metadata" => { "name" => "Django", "version" => "2.5rc1" } }]
+            )
+          )
+          ""
+        end
+      end
+
+      it "allows a target prerelease without enabling prereleases for peer dependencies" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("2.5rc1"))
+        expect(rewritten_requirements).to contain_exactly(include("django", ">=0.0.dev0"))
+        expect(pip_commands.length).to eq(1)
+        expect(pip_commands.first).not_to include(" --pre ")
+      end
+    end
+
+    context "when a post-release is the newest eligible version" do
+      let(:dependency_version) { "1.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "requirements.txt",
+          requirement: "==1.0",
+          groups: [],
+          source: nil
+        }]
+      end
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "django==1.0\n"
+        )
+      end
+      let(:rewritten_requirements) { [] }
+
+      before do
+        finder = resolver.send(:latest_version_finder)
+        allow(finder).to receive_messages(
+          eligible_versions: [Dependabot::Python::Version.new("1.0.post1")],
+          resolver_excluded_versions: []
+        )
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command) do |command, **_args|
+          next "" unless command.include?("pip install")
+
+          rewritten_requirements << File.read("requirements.txt")
+          File.write(
+            "dependabot-pip-report.json",
+            JSON.dump(
+              "install" => [{ "metadata" => { "name" => "Django", "version" => "1.0.post1" } }]
+            )
+          )
+          ""
+        end
+      end
+
+      it "does not exclude the post-release with a strict lower bound" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("1.0.post1"))
+        expect(rewritten_requirements).to contain_exactly(include("django>=1.0,<=1.0.post1,!=1.0"))
+      end
+    end
+
+    context "when the requirement file is referenced by a parent file" do
+      let(:dependency_requirements) do
+        [{
+          file: "requirements/base.txt",
+          requirement: "==1.2.4",
+          groups: [],
+          source: nil
+        }]
+      end
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/base.txt",
+          content: "django==1.2.4\n"
+        )
+      end
+      let(:dependency_files) do
+        [
+          requirements_file,
+          Dependabot::DependencyFile.new(
+            name: "requirements/development.txt",
+            content: "-r base.txt\ndjango-filter==23.5\n"
+          )
+        ]
+      end
+
+      it "uses the static fallback" do
+        expect(Dependabot::SharedHelpers)
+          .not_to receive(:run_shell_command).with(a_string_including("pip install"), any_args)
+
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+      end
+    end
+
+    context "with authenticated Python indexes" do
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://private.example.com/simple",
+              "token" => "private-user:private-password",
+              "replaces-base" => true
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://extra.example.com/simple",
+              "token" => "extra-user:extra-password"
+            }
+          )
+        ]
+      end
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "django==1.2.4\n"
+        )
+      end
+      let(:pip_commands) { [] }
+      let(:pip_environments) { [] }
+
+      before do
+        %w(private extra).each do |index|
+          stub_request(:get, %r{https://#{index}\.example\.com/(?:pypi/django/json|simple/django/)})
+            .to_return(status: 200, body: pypi_response)
+        end
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command) do |command, **args|
+          next "" unless command.include?("pip install")
+
+          pip_commands << command
+          pip_environments << args.fetch(:env)
+          File.write(
+            "dependabot-pip-report.json",
+            JSON.dump(
+              "install" => [{ "metadata" => { "name" => "Django", "version" => "3.2.4" } }]
+            )
+          )
+          ""
+        end
+      end
+
+      it "passes index credentials outside the logged command" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+        expect(pip_commands.length).to eq(1)
+        expect(pip_commands.first).not_to include("private-user", "private-password")
+        expect(pip_environments).to contain_exactly(
+          include(
+            "PIP_INDEX_URL" => "https://private-user:private-password@private.example.com/simple",
+            "PIP_EXTRA_INDEX_URL" => "https://extra-user:extra-password@extra.example.com/simple"
+          )
+        )
+      end
+    end
+
+    context "with pip configuration" do
+      let(:dependency_files) { [requirements_file, pip_config] }
+      let(:pip_config) do
+        Dependabot::DependencyFile.new(
+          name: "pip.conf",
+          content: "[global]\nindex-url = https://registry.example.com/simple\n",
+          support_file: true
+        )
+      end
+
+      before do
+        stub_request(:get, %r{https://registry\.example\.com/(?:pypi/django/json|simple/django/)})
+          .to_return(status: 200, body: pypi_response)
+      end
+
+      it "points pip at the copied configuration file" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+        expect(resolver.send(:pip_environment).fetch("PIP_CONFIG_FILE")).to end_with("/pip.conf")
+      end
+    end
+
+    context "when the requirement file contains hashes" do
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "django==1.2.4 --hash=sha256:abc123\n"
+        )
+      end
+
+      before { allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original }
+
+      it "uses the policy candidate without invoking pip" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+        expect(Dependabot::SharedHelpers)
+          .not_to have_received(:run_shell_command)
+          .with(a_string_matching(/pip install/), any_args)
+      end
+    end
+
+    context "when the dependency has declarations in multiple files" do
+      let(:dependency_requirements) do
+        [
+          { file: "requirements.txt", requirement: "==1.2.4", groups: [], source: nil },
+          { file: "constraints.txt", requirement: "==1.2.4", groups: [], source: nil }
+        ]
+      end
+      let(:dependency_files) do
+        [
+          requirements_file,
+          Dependabot::DependencyFile.new(name: "constraints.txt", content: "django==1.2.4\n")
+        ]
+      end
+
+      before { allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original }
+
+      it "uses the policy candidate without invoking pip" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+        expect(Dependabot::SharedHelpers)
+          .not_to have_received(:run_shell_command)
+          .with(a_string_matching(/pip install/), any_args)
+      end
+    end
+
     context "with no indication of the Python version" do
       let(:dependency_files) { [requirements_file] }
 
@@ -118,6 +739,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
   describe "#lowest_resolvable_security_fix_version" do
     subject(:lowest_resolvable_security_fix_version) { resolver.lowest_resolvable_security_fix_version }
 
+    before { stub_pip_report("2.1.1") }
+
     let(:security_advisories) do
       [
         Dependabot::SecurityAdvisory.new(
@@ -126,6 +749,37 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
           vulnerable_versions: [Dependabot::Python::Requirement.new("<= 2.1.0")]
         )
       ]
+    end
+
+    context "when the lowest safe version is resolvable" do
+      let(:rewritten_requirements) { [] }
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "django==1.2.4\n"
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command) do |command, **_args|
+          next "" unless command.include?("pip install")
+
+          rewritten_requirements << File.read("requirements.txt")
+          File.write(
+            "dependabot-pip-report.json",
+            JSON.dump(
+              "install" => [{ "metadata" => { "name" => "Django", "version" => "2.1.1" } }]
+            )
+          )
+          ""
+        end
+      end
+
+      it "checks the exact lowest safe version" do
+        expect(lowest_resolvable_security_fix_version).to eq(Gem::Version.new("2.1.1"))
+        expect(rewritten_requirements).to contain_exactly(include("django==2.1.1"))
+      end
     end
 
     it { is_expected.to eq(Gem::Version.new("2.1.1")) }
