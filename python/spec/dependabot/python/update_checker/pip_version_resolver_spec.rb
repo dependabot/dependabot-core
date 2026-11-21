@@ -539,6 +539,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
     end
 
     context "when the requirement file is referenced by a parent file" do
+      let(:pip_commands) { [] }
       let(:dependency_requirements) do
         [{
           file: "requirements/base.txt",
@@ -563,11 +564,27 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
         ]
       end
 
-      it "uses the static fallback" do
-        expect(Dependabot::SharedHelpers)
-          .not_to receive(:run_shell_command).with(a_string_including("pip install"), any_args)
+      before do
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command) do |command, **_args|
+          next "" unless command.include?("pip install")
 
+          pip_commands << command
+          File.write(
+            "dependabot-pip-report.json",
+            JSON.dump(
+              "install" => [{ "metadata" => { "name" => "Django", "version" => "3.2.4" } }]
+            )
+          )
+          ""
+        end
+      end
+
+      it "resolves the complete graph from the parent file" do
         expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+        expect(pip_commands).to contain_exactly(
+          a_string_ending_with("-r requirements/development.txt")
+        )
       end
     end
 
@@ -722,12 +739,173 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
       end
     end
 
-    context "when the dependency has declarations in multiple files" do
+    context "when the dependency has declarations in connected requirement files" do
       let(:dependency_requirements) do
         [
           { file: "requirements.txt", requirement: "==1.2.4", groups: [], source: nil },
           { file: "constraints.txt", requirement: "==1.2.4", groups: [], source: nil }
         ]
+      end
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "-c constraints.txt\ndjango==1.2.4\n"
+        )
+      end
+      let(:dependency_files) do
+        [
+          requirements_file,
+          Dependabot::DependencyFile.new(name: "constraints.txt", content: "django==1.2.4\n")
+        ]
+      end
+      let(:resolver_files) { [] }
+
+      before do
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command) do |command, **_args|
+          next "" unless command.include?("pip install")
+
+          resolver_files << {
+            command: command,
+            requirements: File.read("requirements.txt"),
+            constraints: File.read("constraints.txt")
+          }
+          File.write(
+            "dependabot-pip-report.json",
+            JSON.dump(
+              "install" => [{ "metadata" => { "name" => "Django", "version" => "3.2.3" } }]
+            )
+          )
+          ""
+        end
+      end
+
+      it "resolves from their shared root with each declaration relaxed" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.3"))
+        expect(resolver_files).to contain_exactly(
+          {
+            command: include("-r requirements.txt"),
+            requirements: "-c constraints.txt\ndjango>=1.2.4,<=3.2.4,!=1.2.4\n",
+            constraints: "django>=1.2.4,<=3.2.4,!=1.2.4\n"
+          }
+        )
+      end
+    end
+
+    context "when the target is an unused constraint" do
+      let(:dependency_requirements) do
+        [{ file: "pins.txt", requirement: "==1.2.4", groups: [], source: nil }]
+      end
+      let(:constraint_reference) { "-c pins.txt" }
+      let(:requirements_file_content) { "#{constraint_reference}\nrequests==2.32.4\n" }
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "prod.txt",
+          content: requirements_file_content
+        )
+      end
+      let(:dependency_files) do
+        [
+          requirements_file,
+          Dependabot::DependencyFile.new(name: "pins.txt", content: "django==1.2.4\n")
+        ]
+      end
+      let(:pip_commands) { [] }
+      let(:pip_report) do
+        {
+          "install" => [{ "metadata" => { "name" => "requests", "version" => "2.32.4" } }]
+        }
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command) do |command, **_args|
+          next "" unless command.include?("pip install")
+
+          pip_commands << command
+          File.write("dependabot-pip-report.json", JSON.dump(pip_report))
+          ""
+        end
+      end
+
+      it "uses the policy candidate after a valid report omits the constraint" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+        expect(pip_commands).to contain_exactly(a_string_ending_with("-r prod.txt"))
+      end
+
+      context "when the report is malformed" do
+        let(:pip_report) do
+          {
+            "install" => [{ "metadata" => { "name" => "requests" } }]
+          }
+        end
+
+        it "does not use the policy candidate" do
+          expect(latest_resolvable_version).to be_nil
+        end
+      end
+
+      context "when the constraint reference uses the compact form" do
+        let(:constraint_reference) { "-cpins.txt" }
+
+        it "uses the policy candidate after a valid report omits the constraint" do
+          expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+        end
+      end
+
+      context "when the target file is also included as a requirement" do
+        let(:requirements_file_content) do
+          "-c pins.txt\n-r pins.txt\nrequests==2.32.4\n"
+        end
+
+        it "does not use the policy candidate when the valid report omits the requirement" do
+          expect(latest_resolvable_version).to be_nil
+        end
+      end
+    end
+
+    context "when the dependency has declarations in independent requirement files" do
+      let(:dependency_requirements) do
+        [
+          { file: "requirements.txt", requirement: "==1.2.4", groups: [], source: nil },
+          { file: "requirements-dev.txt", requirement: "==1.2.4", groups: [], source: nil }
+        ]
+      end
+      let(:dependency_files) do
+        [
+          requirements_file,
+          Dependabot::DependencyFile.new(name: "requirements-dev.txt", content: "django==1.2.4\n")
+        ]
+      end
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(name: "requirements.txt", content: "django==1.2.4\n")
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, **_args|
+          raise "unexpected pip call: #{command}" if command.include?("pip install")
+
+          ""
+        end
+      end
+
+      it "retains the existing candidate selection" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+        expect(Dependabot::SharedHelpers)
+          .not_to have_received(:run_shell_command)
+          .with(a_string_matching(/pip install/), any_args)
+      end
+    end
+
+    context "when a connected requirement file has a non-Python environment marker" do
+      let(:dependency_requirements) do
+        [{ file: "constraints.txt", requirement: "==1.2.4", groups: [], source: nil }]
+      end
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "-c constraints.txt\nrequests==2.32.4; sys_platform == 'win32'\n"
+        )
       end
       let(:dependency_files) do
         [
@@ -736,13 +914,137 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
         ]
       end
 
-      before { allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original }
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, **_args|
+          raise "unexpected pip call: #{command}" if command.include?("pip install")
 
-      it "uses the policy candidate without invoking pip" do
+          ""
+        end
+      end
+
+      it "retains the existing candidate selection" do
         expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
         expect(Dependabot::SharedHelpers)
           .not_to have_received(:run_shell_command)
           .with(a_string_matching(/pip install/), any_args)
+      end
+    end
+
+    context "when a connected requirement file has an editable dependency" do
+      let(:dependency_requirements) do
+        [{ file: "constraints.txt", requirement: "==1.2.4", groups: [], source: nil }]
+      end
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "-c constraints.txt\n-e ./local-package\n"
+        )
+      end
+      let(:dependency_files) do
+        [
+          requirements_file,
+          Dependabot::DependencyFile.new(name: "constraints.txt", content: "django==1.2.4\n")
+        ]
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, **_args|
+          raise "unexpected pip call: #{command}" if command.include?("pip install")
+
+          ""
+        end
+      end
+
+      it "retains the existing candidate selection" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+        expect(Dependabot::SharedHelpers)
+          .not_to have_received(:run_shell_command)
+          .with(a_string_matching(/pip install/), any_args)
+      end
+    end
+
+    context "when independent requirement roots share the target constraint" do
+      let(:dependency_requirements) do
+        [{ file: "constraints.txt", requirement: "==1.2.4", groups: [], source: nil }]
+      end
+      let(:development_constraint_reference) { "-cconstraints.txt" }
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(name: "requirements.txt", content: "-c constraints.txt\nrequests==2.32.4\n")
+      end
+      let(:dependency_files) do
+        [
+          requirements_file,
+          Dependabot::DependencyFile.new(
+            name: "requirements-dev.txt",
+            content: "#{development_constraint_reference}\npytest==8.4.1\n"
+          ),
+          Dependabot::DependencyFile.new(name: "constraints.txt", content: "django==1.2.4\n")
+        ]
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, **_args|
+          raise "unexpected pip call: #{command}" if command.include?("pip install")
+
+          ""
+        end
+      end
+
+      it "does not choose one root over the other" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+        expect(Dependabot::SharedHelpers)
+          .not_to have_received(:run_shell_command)
+          .with(a_string_matching(/pip install/), any_args)
+      end
+
+      context "when a constraint reference uses a continuation line" do
+        let(:development_constraint_reference) { "-c \\\n  constraints.txt" }
+
+        it "does not choose one root over the other" do
+          expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+          expect(Dependabot::SharedHelpers)
+            .not_to have_received(:run_shell_command)
+            .with(a_string_matching(/pip install/), any_args)
+        end
+      end
+    end
+
+    context "when a requirement file uses a quoted long-form reference" do
+      let(:dependency_requirements) do
+        [{ file: "constraints.txt", requirement: "==1.2.4", groups: [], source: nil }]
+      end
+      let(:constraint_reference) { '--constraint "constraints.txt"' }
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "#{constraint_reference}\nrequests==2.32.4\n"
+        )
+      end
+      let(:dependency_files) do
+        [
+          requirements_file,
+          Dependabot::DependencyFile.new(name: "constraints.txt", content: "django==1.2.4\n")
+        ]
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, **_args|
+          raise "unexpected pip call: #{command}" if command.include?("pip install")
+
+          ""
+        end
+      end
+
+      it "retains the existing candidate selection" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+      end
+
+      context "when the quoted reference uses a continuation line" do
+        let(:constraint_reference) { "--constraint \\\n  \"constraints.txt\"" }
+
+        it "retains the existing candidate selection" do
+          expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+        end
       end
     end
 
