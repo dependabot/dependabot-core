@@ -973,6 +973,191 @@ public class FileWriterWorkerTests : TestBase
         );
     }
 
+    [Fact]
+    public async Task EndToEnd_CSharpFileBasedAppVersionedPackageDirective()
+    {
+        var targetFramework = await GetFileBasedAppDefaultTargetFrameworkAsync();
+
+        await TestAsync(
+            dependencyName: "FileApp.Versioned.Dependency",
+            oldDependencyVersion: "1.0.0",
+            newDependencyVersion: "2.0.0",
+            projectName: "app.cs",
+            projectContents: """
+                #:package FileApp.Versioned.Dependency@1.0.0
+
+                Console.WriteLine("Hello");
+                """,
+            additionalFiles: [],
+            discoveryWorker: null,
+            dependencySolver: null,
+            fileWriter: null,
+            expectedProjectContents: """
+                #:package FileApp.Versioned.Dependency@2.0.0
+
+                Console.WriteLine("Hello");
+                """,
+            expectedAdditionalFiles: [],
+            expectedOperations: [
+                new DirectUpdate() { DependencyName = "FileApp.Versioned.Dependency", NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = ["/app.cs"] }
+            ],
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("FileApp.Versioned.Dependency", "1.0.0", targetFramework),
+                MockNuGetPackage.CreateSimplePackage("FileApp.Versioned.Dependency", "2.0.0", targetFramework),
+            ],
+            experimentsManager: new() { UpdateFileBasedApps = true }
+        );
+    }
+
+    [Fact]
+    public async Task EndToEnd_CSharpFileBasedAppWildcardPackageDirective()
+    {
+        var targetFramework = await GetFileBasedAppDefaultTargetFrameworkAsync();
+
+        await TestAsync(
+            dependencyName: "FileApp.Wildcard.Dependency",
+            oldDependencyVersion: "1.0.0",
+            newDependencyVersion: "2.0.0",
+            projectName: "app.cs",
+            projectContents: """
+                #:package FileApp.Wildcard.Dependency@1.*
+
+                Console.WriteLine("Hello");
+                """,
+            additionalFiles: [],
+            discoveryWorker: null,
+            dependencySolver: null,
+            fileWriter: null,
+            expectedProjectContents: """
+                #:package FileApp.Wildcard.Dependency@2.*
+
+                Console.WriteLine("Hello");
+                """,
+            expectedAdditionalFiles: [],
+            expectedOperations: [
+                new DirectUpdate() { DependencyName = "FileApp.Wildcard.Dependency", NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = ["/app.cs"] }
+            ],
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("FileApp.Wildcard.Dependency", "1.0.0", targetFramework),
+                MockNuGetPackage.CreateSimplePackage("FileApp.Wildcard.Dependency", "2.0.0", targetFramework),
+            ],
+            experimentsManager: new() { UpdateFileBasedApps = true }
+        );
+    }
+
+    [Fact]
+    public async Task EndToEnd_CSharpFileBasedAppAddsSolverRequiredPin()
+    {
+        var targetFramework = await GetFileBasedAppDefaultTargetFrameworkAsync();
+
+        await TestAsync(
+            dependencyName: "FileApp.Pinned.Dependency",
+            oldDependencyVersion: "1.0.0",
+            newDependencyVersion: "2.0.0",
+            projectName: "app.cs",
+            projectContents: """
+                #:package FileApp.Parent.Package@1.0.0
+
+                Console.WriteLine("Hello");
+                """,
+            additionalFiles: [],
+            discoveryWorker: null,
+            dependencySolver: null,
+            fileWriter: null,
+            expectedProjectContents: """
+                #:package FileApp.Parent.Package@1.0.0
+                #:package FileApp.Pinned.Dependency@2.0.0
+
+                Console.WriteLine("Hello");
+                """,
+            expectedAdditionalFiles: [],
+            expectedOperations:
+            [
+                new PinnedUpdate() { DependencyName = "FileApp.Pinned.Dependency", NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = ["/app.cs"] },
+            ],
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage(
+                    "FileApp.Parent.Package",
+                    "1.0.0",
+                    targetFramework,
+                    [(null, [("FileApp.Pinned.Dependency", "1.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("FileApp.Pinned.Dependency", "1.0.0", targetFramework),
+                MockNuGetPackage.CreateSimplePackage("FileApp.Pinned.Dependency", "2.0.0", targetFramework),
+            ],
+            experimentsManager: new() { UpdateFileBasedApps = true }
+        );
+    }
+
+    [Fact]
+    public async Task EndToEnd_CSharpFileBasedAppWithPackageLockJson()
+    {
+        var targetFramework = await GetFileBasedAppDefaultTargetFrameworkAsync();
+
+        // The isolated test feed does not contain the runtime and AOT packs required by the file-app default.
+        await TestAsync(
+            dependencyName: "FileApp.Locked.Dependency",
+            oldDependencyVersion: "1.0.0",
+            newDependencyVersion: "2.0.0",
+            projectName: "app.cs",
+            projectContents: """
+                #:property RestorePackagesWithLockFile=true
+                #:property PublishAot=false
+                #:package FileApp.Locked.Dependency@1.0.0
+
+                Console.WriteLine("Hello");
+                """,
+            additionalFiles: [
+                ("packages.lock.json", "{}")
+            ],
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("FileApp.Locked.Dependency", "1.0.0", targetFramework),
+                MockNuGetPackage.CreateSimplePackage("FileApp.Locked.Dependency", "2.0.0", targetFramework),
+            ],
+            experimentsManager: new() { UpdateFileBasedApps = true },
+            discoveryWorker: null,
+            dependencySolver: null,
+            fileWriter: null,
+            expectedProjectContents: """
+                #:property RestorePackagesWithLockFile=true
+                #:property PublishAot=false
+                #:package FileApp.Locked.Dependency@2.0.0
+
+                Console.WriteLine("Hello");
+                """,
+            expectedAdditionalFiles: [],
+            expectedOperations: [
+                new DirectUpdate() { DependencyName = "FileApp.Locked.Dependency", NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = ["/app.cs", "/packages.lock.json"] }
+            ],
+            additionalChecks: (repoContentsPath) =>
+            {
+                var lockFilePath = Path.Join(repoContentsPath.FullName, "packages.lock.json");
+                var lockFileContent = File.ReadAllText(lockFilePath);
+                Assert.Contains("\"resolved\": \"2.0.0\"", lockFileContent);
+            }
+        );
+    }
+
+    [Fact]
+    public async Task FileBasedAppLockFileRestoreFailureIsReported()
+    {
+        using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync();
+        var result = await LockFileUpdater.UpdateLockFileAsync(
+            tempDirectory.DirectoryPath,
+            Path.Combine(tempDirectory.DirectoryPath, "missing.cs"),
+            new TestLogger());
+
+        Assert.False(result);
+    }
+
+    private static async Task<string> GetFileBasedAppDefaultTargetFrameworkAsync()
+    {
+        using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync();
+        return await CSharpFileBasedAppDiscovery.GetDefaultTargetFrameworkAsync(tempDirectory.DirectoryPath, new TestLogger());
+    }
+
     private static async Task TestAsync(
         string dependencyName,
         string oldDependencyVersion,
@@ -1039,7 +1224,7 @@ public class FileWriterWorkerTests : TestBase
         var repoContentsPath = new DirectoryInfo(tempDir.DirectoryPath);
         var projectPath = new FileInfo(Path.Combine(tempDir.DirectoryPath, files.First().name));
         dependencySolver ??= new MSBuildDependencySolver(repoContentsPath, projectPath, logger);
-        fileWriter ??= new XmlFileWriter(logger);
+        fileWriter ??= new NuGetFileWriter(logger);
 
         var fileWriterWorker = new FileWriterWorker(discoveryWorker, dependencySolver, fileWriter, logger);
 
