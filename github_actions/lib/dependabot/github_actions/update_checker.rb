@@ -212,7 +212,9 @@ module Dependabot
       def active_advisories
         security_advisories.select do |advisory|
           version = git_commit_checker.most_specific_tag_equivalent_to_pinned_ref
-          version.nil? ? false : advisory.vulnerable?(version_class.new(version))
+          next false unless version && version_class.correct?(version)
+
+          advisory.vulnerable?(version_class.new(version))
         end
       end
 
