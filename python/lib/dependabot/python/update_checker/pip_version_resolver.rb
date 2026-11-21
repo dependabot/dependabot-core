@@ -42,6 +42,9 @@ module Dependabot
         EDITABLE_REQUIREMENT_PATTERN = /^\s*(?:-e|--editable)(?:\s+|=)/
         LOCAL_PATH_REQUIREMENT_PATTERN =
           %r{^\s*(?:(?:[A-Za-z0-9][A-Za-z0-9._\-]*(?:\[[^\]]+\])?\s*@\s*)?["']?(?:file:)?(?:\.{1,2}/|/))}
+        PIP_REQUIREMENT_FILE_EXTENSIONS = %w(.txt .in).freeze
+        HASH_OPTION_PATTERN = /(?:[ \t]*\\[ \t]*\r?\n[ \t]*|[ \t]+)--hash(?:=|[ \t]+)[^\s\\]+/
+        REQUIRE_HASHES_PATTERN = /(?:^|[ \t]+)--require-hashes(?=[ \t]*(?:--|#|\\|\r?$))/
         LowerBound = T.type_alias { [String, Gem::Version] }
         sig do
           params(
@@ -340,7 +343,6 @@ module Dependabot
           return false if reachable_requirement_files(file).any? do |requirement_file|
             content = T.must(requirement_file.content)
             [
-              content.match?(/(?:^|\s)--hash(?:\s+|=)/),
               content.match?(/^\s*-(?:r|c|requirement|constraint)(?:\s+|=)["']/),
               content.match?(EDITABLE_REQUIREMENT_PATTERN),
               content.match?(LOCAL_PATH_REQUIREMENT_PATTERN),
@@ -403,26 +405,35 @@ module Dependabot
             next unless file.content
 
             FileUtils.mkdir_p(File.dirname(file.name))
+            resolver_content = resolver_file_content(file)
             content = if file.name == requirement.file
-                        updated_requirement_content(file, requirement, requirement_string)
+                        updated_requirement_content(resolver_content, requirement, requirement_string)
                       else
-                        file.content
+                        resolver_content
                       end
             File.write(file.name, content)
           end
           File.write(".python-version", language_version_manager.python_major_minor)
         end
 
+        sig { params(file: Dependabot::DependencyFile).returns(String) }
+        def resolver_file_content(file)
+          content = T.must(file.content)
+          return content unless file.name.end_with?(*PIP_REQUIREMENT_FILE_EXTENSIONS)
+
+          content.gsub(HASH_OPTION_PATTERN, "").gsub(REQUIRE_HASHES_PATTERN, "")
+        end
+
         sig do
           params(
-            file: Dependabot::DependencyFile,
+            content: String,
             requirement: Dependabot::DependencyRequirement,
             requirement_string: String
           ).returns(String)
         end
-        def updated_requirement_content(file, requirement, requirement_string)
+        def updated_requirement_content(content, requirement, requirement_string)
           FileUpdater::RequirementReplacer.new(
-            content: T.must(file.content),
+            content: content,
             dependency_name: dependency.name,
             old_requirement: requirement.requirement_string,
             new_requirement: requirement_string
@@ -478,6 +489,7 @@ module Dependabot
             AuthedUrlBuilder.authed_url(credential: credential)
           end
           environment["PIP_EXTRA_INDEX_URL"] = extra_index_urls.join(" ") if extra_index_urls.any?
+          environment["PIP_REQUIRE_HASHES"] = "0"
           if dependency_files.any? { |file| file.name == "pip.conf" }
             environment["PIP_CONFIG_FILE"] = File.expand_path("pip.conf")
           end
