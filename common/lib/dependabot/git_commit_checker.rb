@@ -738,7 +738,7 @@ module Dependabot
     sig { params(tag: Dependabot::GitRef).returns(T::Boolean) }
     def tag_included_in_ignore_requirements?(tag)
       version = version_from_tag(tag)
-      ignore_requirements.any? { |r| r.satisfied_by?(version) }
+      ignore_requirements.any? { |r| r.satisfied_by_range?(version) }
     end
 
     sig { params(tag: Dependabot::GitRef).returns(T::Boolean) }

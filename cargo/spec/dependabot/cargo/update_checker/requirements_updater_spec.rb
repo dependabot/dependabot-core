@@ -111,6 +111,12 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
           its([:requirement]) { is_expected.to eq("=1.5.0") }
         end
 
+        context "when a partial equality requirement was previously specified" do
+          let(:req_string) { "=0.1" }
+
+          its([:requirement]) { is_expected.to eq("=1.5") }
+        end
+
         context "when a partial version was previously specified" do
           let(:req_string) { "0.1" }
 
@@ -196,6 +202,41 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
               let(:req_string) { ">=1.2.0, <1.4.0-dev" }
 
               its([:requirement]) { is_expected.to eq(">=1.2.0, <1.6.0") }
+            end
+
+            context "when another comparator opts into the target pre-release" do
+              let(:req_string) { ">=1.0.0, <1.1.0-beta.3" }
+              let(:target_version) { "1.1.0-beta.2" }
+
+              its([:requirement]) { is_expected.to eq(req_string) }
+            end
+
+            context "when a partial comparator permits the opted-in pre-release" do
+              let(:req_string) { ">1.2, >=1.3.0-beta" }
+              let(:target_version) { "1.3.0-beta" }
+
+              its([:requirement]) { is_expected.to eq(req_string) }
+            end
+
+            context "when an existing prerelease lower bound needs a new release opt-in" do
+              let(:req_string) { ">=1.0.0-beta, <2.0.0" }
+              let(:target_version) { "1.1.0-beta" }
+
+              its([:requirement]) { is_expected.to eq(">=1.1.0-beta, <2.0.0") }
+            end
+
+            context "when a stable lower bound would need a prerelease opt-in" do
+              let(:req_string) { ">=1.0.0, <2.0.0" }
+              let(:target_version) { "1.1.0-beta" }
+
+              its([:requirement]) { is_expected.to eq(:unfixable) }
+            end
+
+            context "when an upper-only range would need a prerelease opt-in" do
+              let(:req_string) { "<1.5.0" }
+              let(:target_version) { "1.1.0-beta" }
+
+              its([:requirement]) { is_expected.to eq(:unfixable) }
             end
 
             context "when patch version is missing" do
@@ -311,6 +352,19 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
           its([:requirement]) { is_expected.to eq("=1.5.0") }
         end
 
+        context "when a partial equality requirement was previously specified" do
+          let(:req_string) { "=0.1" }
+          let(:target_version) { "0.1.9" }
+
+          its([:requirement]) { is_expected.to eq(req_string) }
+
+          context "when needing an update" do
+            let(:target_version) { "0.2.3" }
+
+            its([:requirement]) { is_expected.to eq("=0.2") }
+          end
+        end
+
         context "when a partial version was previously specified" do
           let(:req_string) { "0.1" }
 
@@ -395,6 +449,41 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
             let(:req_string) { ">=1.2.0, <1.4.0-dev" }
 
             its([:requirement]) { is_expected.to eq(">=1.2.0, <1.6.0") }
+          end
+
+          context "when another comparator opts into the target pre-release" do
+            let(:req_string) { ">=1.0.0, <1.1.0-beta.3" }
+            let(:target_version) { "1.1.0-beta.2" }
+
+            its([:requirement]) { is_expected.to eq(req_string) }
+          end
+
+          context "when a partial comparator permits the opted-in pre-release" do
+            let(:req_string) { ">1.2, >=1.3.0-beta" }
+            let(:target_version) { "1.3.0-beta" }
+
+            its([:requirement]) { is_expected.to eq(req_string) }
+          end
+
+          context "when an existing prerelease lower bound needs a new release opt-in" do
+            let(:req_string) { ">=1.0.0-beta, <2.0.0" }
+            let(:target_version) { "1.1.0-beta" }
+
+            its([:requirement]) { is_expected.to eq(">=1.1.0-beta, <2.0.0") }
+          end
+
+          context "when a stable lower bound would need a prerelease opt-in" do
+            let(:req_string) { ">=1.0.0, <2.0.0" }
+            let(:target_version) { "1.1.0-beta" }
+
+            its([:requirement]) { is_expected.to eq(:unfixable) }
+          end
+
+          context "when an upper-only range would need a prerelease opt-in" do
+            let(:req_string) { "<1.5.0" }
+            let(:target_version) { "1.1.0-beta" }
+
+            its([:requirement]) { is_expected.to eq(:unfixable) }
           end
         end
 

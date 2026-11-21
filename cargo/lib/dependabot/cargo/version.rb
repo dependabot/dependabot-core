@@ -37,6 +37,20 @@ module Dependabot
         "#<#{self.class} #{@version_string}>"
       end
 
+      sig { params(other: Object).returns(T.nilable(Integer)) }
+      def <=>(other)
+        return super unless other.is_a?(Cargo::Version)
+
+        version_parts = semantic_version_parts(to_s)
+        other_parts = semantic_version_parts(other.to_s)
+        return super unless version_parts && other_parts
+
+        release_comparison = compare_release(version_parts.first, other_parts.first)
+        return release_comparison unless release_comparison.zero?
+
+        compare_prerelease(version_parts.last, other_parts.last)
+      end
+
       sig { override.params(version: VersionParameter).returns(T::Boolean) }
       def self.correct?(version)
         return false if version.nil?
@@ -191,6 +205,62 @@ module Dependabot
         "patch"
       end
       # rubocop:enable Metrics/ParameterLists
+
+      private
+
+      sig { params(version_string: String).returns(T.nilable([T::Array[Integer], T.nilable(T::Array[String])])) }
+      def semantic_version_parts(version_string)
+        matches = SEMVER_REGEX.match(version_string)
+        return unless matches
+
+        release = [T.must(matches[1]).to_i, T.must(matches[2]).to_i, T.must(matches[3]).to_i]
+        prerelease = matches[4]&.split(".")
+        [release, prerelease]
+      end
+
+      sig { params(left: T::Array[Integer], right: T::Array[Integer]).returns(Integer) }
+      def compare_release(left, right)
+        left.each_with_index do |component, index|
+          comparison = component <=> T.must(right[index])
+          return comparison unless comparison.zero?
+        end
+
+        0
+      end
+
+      sig do
+        params(
+          left: T.nilable(T::Array[String]),
+          right: T.nilable(T::Array[String])
+        ).returns(Integer)
+      end
+      def compare_prerelease(left, right)
+        return 0 unless left || right
+        return 1 unless left
+        return -1 unless right
+
+        left.each_with_index do |identifier, index|
+          right_identifier = right[index]
+          return 1 unless right_identifier
+
+          comparison = compare_prerelease_identifier(identifier, right_identifier)
+          return comparison unless comparison.zero?
+        end
+
+        left.length <=> right.length
+      end
+
+      sig { params(left: String, right: String).returns(Integer) }
+      def compare_prerelease_identifier(left, right)
+        left_numeric = left.match?(/\A\d+\z/)
+        right_numeric = right.match?(/\A\d+\z/)
+
+        return left.to_i <=> right.to_i if left_numeric && right_numeric
+        return -1 if left_numeric
+        return 1 if right_numeric
+
+        T.must(left <=> right)
+      end
     end
   end
 end

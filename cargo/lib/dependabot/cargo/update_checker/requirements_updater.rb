@@ -24,6 +24,7 @@ module Dependabot
         class UnfixableRequirement < StandardError; end
 
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-*]+)*/
+        PARTIAL_EQUALITY_REQUIREMENT = /\A\s*=\s*\d+(?:\.\d+)?\s*\z/
         ALLOWED_UPDATE_STRATEGIES = T.let(
           [
             Dependabot::RequirementsUpdateStrategy::LockfileOnly,
@@ -129,10 +130,12 @@ module Dependabot
         sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def update_version_requirement_if_needed(req)
           string_reqs = T.must(req.requirement_string).split(",").map(&:strip)
-          ruby_reqs = string_reqs.map { |r| Dependabot::Cargo::Requirement.new(r) }
+          ruby_req = Dependabot::Cargo::Requirement.new(string_reqs)
 
-          return req if ruby_reqs.all? { |r| r.satisfied_by?(target_version) }
+          return req if ruby_req.satisfied_by?(T.must(target_version))
 
+          update_version_requirement(req)
+        rescue Gem::Requirement::BadRequirementError
           update_version_requirement(req)
         end
 
@@ -158,16 +161,25 @@ module Dependabot
 
         sig { params(string_reqs: T::Array[String]).returns(T.nilable(String)) }
         def exact_req(string_reqs)
-          string_reqs.find { |r| Dependabot::Cargo::Requirement.new(r).exact? }
+          string_reqs.find do |req|
+            req.match?(PARTIAL_EQUALITY_REQUIREMENT) || exact_requirement?(req)
+          end
+        end
+
+        sig { params(req: String).returns(T::Boolean) }
+        def exact_requirement?(req)
+          Dependabot::Cargo::Requirement.new(req).exact?
+        rescue Gem::Requirement::BadRequirementError
+          false
         end
 
         sig { params(string_reqs: T::Array[String]).returns(T.any(String, Symbol)) }
         def update_range_requirements(string_reqs)
-          string_reqs.map do |req|
+          updated_reqs = string_reqs.map do |req|
             next req unless req.match?(/[<>]/)
 
             ruby_req = Dependabot::Cargo::Requirement.new(req)
-            next req if ruby_req.satisfied_by?(target_version)
+            next req if ruby_req.bounds_satisfied_by?(T.must(target_version))
 
             raise UnfixableRequirement if req.start_with?(">")
 
@@ -178,9 +190,34 @@ module Dependabot
                 update_greatest_version(old_version, T.must(target_version))
               end
             end
-          end.join(", ")
-        rescue UnfixableRequirement
+          end
+
+          updated_reqs = add_prerelease_opt_in(updated_reqs)
+          updated_requirement = updated_reqs.join(", ")
+          raise UnfixableRequirement unless Dependabot::Cargo::Requirement
+                                            .new(updated_reqs)
+                                            .satisfied_by?(T.must(target_version))
+
+          updated_requirement
+        rescue Gem::Requirement::BadRequirementError, UnfixableRequirement
           :unfixable
+        end
+
+        sig { params(string_reqs: T::Array[String]).returns(T::Array[String]) }
+        def add_prerelease_opt_in(string_reqs)
+          version = T.must(target_version)
+          return string_reqs unless version.prerelease?
+
+          requirement = Dependabot::Cargo::Requirement.new(string_reqs)
+          return string_reqs if requirement.prerelease_opted_in?(version)
+
+          lower_bound_index = string_reqs.index do |req|
+            req.start_with?(">") && req.match?(/\d-[0-9A-Za-z-]/)
+          end
+          raise UnfixableRequirement unless lower_bound_index
+
+          target = version.to_s.split("+", 2).first
+          string_reqs.dup.tap { |reqs| reqs[lower_bound_index] = ">=#{target}" }
         end
 
         sig { params(old_version: String, version_to_be_permitted: Gem::Version).returns(String) }

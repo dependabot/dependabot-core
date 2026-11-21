@@ -122,7 +122,7 @@ module Dependabot
         requirements = ignored_versions.flat_map do |requirement|
           dependency.requirement_class.requirements_array(requirement)
         end
-        requirements.any? { |requirement| requirement.satisfied_by?(release.version) }
+        requirements.any? { |requirement| requirement.satisfied_by_range?(release.version) }
       end
 
       sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
