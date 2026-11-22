@@ -5,6 +5,7 @@ require "excon"
 require "sorbet-runtime"
 
 require "dependabot/clients/json_response_parser"
+require "dependabot/clients/comparison_commit"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -309,24 +310,22 @@ module Dependabot
         object_array_field(root, "values", "tags")
       end
 
-      sig do
-        params(
-          repo: String,
-          previous_tag: String,
-          new_tag: String
-        )
-          .returns(JsonObjects)
-      end
+      sig { params(repo: String, previous_tag: String, new_tag: String).returns(T::Array[ComparisonCommit]) }
       def compare(repo, previous_tag, new_tag)
         path = "#{repo}/commits/?include=#{new_tag}&exclude=#{previous_tag}"
         response = get(base_url + path)
 
         root = parse_json_object(response.body, "commit comparison")
-        commits = object_array_field(root, "values", "commit comparison")
-        commits.each do |commit|
-          validate_string_paths(commit, "commit comparison", [%w(hash), %w(summary raw), %w(links html href)])
+        object_array_field(root, "values", "commit comparison").map do |commit|
+          summary = object_field(commit, "summary", "commit comparison")
+          links = object_field(commit, "links", "commit comparison")
+          html = object_field(links, "html", "commit comparison")
+          ComparisonCommit.new(
+            sha: string_field(commit, "hash", "commit comparison"),
+            message: string_field(summary, "raw", "commit comparison"),
+            html_url: string_field(html, "href", "commit comparison")
+          )
         end
-        commits
       end
 
       sig { params(url: String).returns(Excon::Response) }

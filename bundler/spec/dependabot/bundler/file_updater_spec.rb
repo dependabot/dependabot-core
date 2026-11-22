@@ -1222,8 +1222,13 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             )
           end
 
-          it "raises an error" do
-            expect { updated_files }.to raise_error("No files have changed!")
+          it "raises an error with error report context attached" do
+            expect { updated_files }.to raise_error(RuntimeError, "No files have changed!") do |error|
+              expect(Dependabot::ErrorReportContext.build(error: error)).to eq(
+                "dependency-names" => ["octokit"],
+                "dependency-files" => ["example.gemspec"]
+              )
+            end
           end
         end
 

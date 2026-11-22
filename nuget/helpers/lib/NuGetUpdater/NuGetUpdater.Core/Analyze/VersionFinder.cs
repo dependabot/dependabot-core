@@ -329,15 +329,20 @@ internal static class VersionFinder
                 var isMajorBump = version.Major > currentVersion.Major;
                 var isMinorBump = version.Major == currentVersion.Major && version.Minor > currentVersion.Minor;
                 var isPatchBump = version.Major == currentVersion.Major && version.Minor == currentVersion.Minor && version.Patch > currentVersion.Patch;
+
+                // each ignored update type only rejects bumps of exactly that type, e.g., ignoring `semver-patch`
+                // still allows minor and major bumps; this matches the ignore ranges of the other ecosystems and is
+                // required for groups, whose `update-types` are forwarded as the ignored complement (a group with
+                // `update-types: [major]` ignores `semver-minor` and `semver-patch`, but must still find major bumps)
                 foreach (var ignoreType in dependencyInfo.IgnoredUpdateTypes)
                 {
                     switch (ignoreType)
                     {
                         case ConditionUpdateType.SemVerPatch:
-                            isIgnoredByType = isIgnoredByType || isPatchBump || isMinorBump || isMajorBump;
+                            isIgnoredByType = isIgnoredByType || isPatchBump;
                             break;
                         case ConditionUpdateType.SemVerMinor:
-                            isIgnoredByType = isIgnoredByType || isMinorBump || isMajorBump;
+                            isIgnoredByType = isIgnoredByType || isMinorBump;
                             break;
                         case ConditionUpdateType.SemVerMajor:
                             isIgnoredByType = isIgnoredByType || isMajorBump;

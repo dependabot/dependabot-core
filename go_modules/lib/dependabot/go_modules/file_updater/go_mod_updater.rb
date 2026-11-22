@@ -343,6 +343,7 @@ module Dependabot
             results[key] = File.read(sum_file)
           end
 
+          results["go.work"] = File.read("go.work")
           results["go.work.sum"] = File.read("go.work.sum") if File.exist?("go.work.sum")
 
           results

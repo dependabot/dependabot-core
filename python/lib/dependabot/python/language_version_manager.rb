@@ -10,9 +10,12 @@ module Dependabot
     class LanguageVersionManager
       extend T::Sig
 
-      sig { params(python_requirement_parser: T.untyped).void }
-      def initialize(python_requirement_parser:)
+      # Pipenv builds its virtualenv on the newest Python that matches a major-only `python_version` (such as "3"),
+      # so Pipenv callers set `highest_for_major_version` to run Pipenv on that same Python.
+      sig { params(python_requirement_parser: T.untyped, highest_for_major_version: T::Boolean).void }
+      def initialize(python_requirement_parser:, highest_for_major_version: false)
         @python_requirement_parser = python_requirement_parser
+        @highest_for_major_version = highest_for_major_version
       end
 
       sig { returns(T.nilable(String)) }
@@ -105,12 +108,19 @@ module Dependabot
         # Try to match one of our pre-installed Python versions
         requirement = T.must(Python::Requirement.requirements_array(requirement_string).first)
 
-        version = Language::PRE_INSTALLED_PYTHON_VERSIONS.find { |v| requirement.satisfied_by?(v) }
+        candidates = Language::PRE_INSTALLED_PYTHON_VERSIONS
+        candidates = candidates.reverse if highest_for_major_version?
+        version = candidates.find { |v| requirement.satisfied_by?(v) }
         return version.to_s if version
 
         # Otherwise we have to raise an error
         supported_versions = Language::SUPPORTED_VERSIONS.map { |v| "#{v}.*" }.join(", ")
         raise ToolVersionNotSupported.new("Python", python_requirement_string, supported_versions)
+      end
+
+      sig { returns(T::Boolean) }
+      def highest_for_major_version?
+        @highest_for_major_version && user_specified_python_version.to_s.match?(/\A\d+\z/)
       end
 
       sig { returns(T.untyped) }

@@ -162,6 +162,85 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       end
     end
 
+    context "with a yarn berry lockfile where the vulnerable copy is not the lowest copy" do
+      let(:dependency_files) { project_dependency_files("yarn_berry/subdependency_not_lowest_copy") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "brace-expansion",
+          version: "2.0.2",
+          requirements: [],
+          package_manager: "npm_and_yarn"
+        )
+      end
+      # The lockfile has brace-expansion 1.1.21 (^1.1.7), 2.0.2 (^2.0.1) and 5.0.12 (^5.0.2), and the latest
+      # release overall is 5.x, which is what a security update is allowed to move to.
+      let(:latest_allowable_version) { "5.0.12" }
+
+      it "returns the version the vulnerable copy moves to, not the lowest or the highest copy" do
+        expect(latest_resolvable_version.to_s).to start_with("2.")
+        expect(latest_resolvable_version).to be > Gem::Version.new("2.0.2")
+      end
+
+      context "when the audit fix experiment is disabled" do
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:enable_audit_fix_fallback).and_return(false)
+        end
+
+        it "returns the version the vulnerable copy moves to, not the lowest copy" do
+          expect(latest_resolvable_version.to_s).to start_with("2.")
+          expect(latest_resolvable_version).to be > Gem::Version.new("2.0.2")
+        end
+      end
+
+      context "when the lockfile after the update has the replaced copy and unrelated copies" do
+        let(:parsed_dep) do
+          Dependabot::Dependency.new(
+            name: "brace-expansion",
+            version: "1.1.21",
+            requirements: [],
+            package_manager: "npm_and_yarn",
+            metadata: {
+              all_versions: %w(1.1.21 2.1.7 5.0.12).map do |version|
+                Dependabot::Dependency.new(
+                  name: "brace-expansion", version: version, requirements: [], package_manager: "npm_and_yarn"
+                )
+              end
+            }
+          )
+        end
+
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_command).and_return("")
+          allow(Dependabot::NpmAndYarn::NativeHelpers).to receive(:run_yarn_audit_fix_command).and_return("")
+          parser = instance_double(Dependabot::NpmAndYarn::FileParser, parse: [parsed_dep])
+          allow(Dependabot::NpmAndYarn::FileParser).to receive(:new).and_return(parser)
+        end
+
+        it { is_expected.to eq(Gem::Version.new("2.1.7")) }
+
+        context "when the vulnerable copy is still in the lockfile" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "brace-expansion",
+              version: "1.1.21",
+              requirements: [],
+              package_manager: "npm_and_yarn"
+            )
+          end
+
+          before do
+            allow(Dependabot::Experiments).to receive(:enabled?)
+              .with(:enable_audit_fix_fallback).and_return(false)
+          end
+
+          it "keeps the existing result, the version of the lowest copy" do
+            expect(latest_resolvable_version).to eq(Gem::Version.new("1.1.21"))
+          end
+        end
+      end
+    end
+
     context "with a pnpm-lock.yaml" do
       let(:dependency_files) { project_dependency_files("pnpm/no_lockfile_change") }
 

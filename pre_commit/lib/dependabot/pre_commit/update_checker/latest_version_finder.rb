@@ -50,7 +50,7 @@ module Dependabot
           @raise_on_ignored    = raise_on_ignored
           @options             = options
           @cooldown_options = cooldown_options
-          @cooldown_selected_tag = T.let(nil, T.nilable(T::Hash[Symbol, Object]))
+          @cooldown_selected_tag = T.let(nil, T.nilable(Dependabot::GitTagDetails))
           @cooldown_rejected_all = T.let(false, T::Boolean)
 
           @git_helper = T.let(git_helper, Dependabot::PreCommit::Helpers::Githelper)
@@ -94,7 +94,7 @@ module Dependabot
           filter_release_with_cooldown(release)
         end
 
-        sig { returns(T.nilable(T::Hash[Symbol, Object])) }
+        sig { returns(T.nilable(Dependabot::GitTagDetails)) }
         def latest_version_tag
           return nil if @cooldown_rejected_all
 
@@ -155,11 +155,11 @@ module Dependabot
           )
         end
 
-        sig { returns(T.nilable(T::Hash[Symbol, Object])) }
+        sig { returns(T.nilable(Dependabot::GitTagDetails)) }
         def available_latest_version_tag
           @latest_version_tag = T.let(
             T.must(package_details_fetcher).latest_version_tag,
-            T.nilable(T::Hash[Symbol, Object])
+            T.nilable(Dependabot::GitTagDetails)
           )
         end
 
@@ -193,7 +193,7 @@ module Dependabot
         # - current_version when ALL candidates have releases and all are in cooldown
         # - nil when no releases exist or some candidates lack releases (triggers git fallback)
         sig do
-          params(candidates: T::Array[T::Hash[Symbol, Object]])
+          params(candidates: T::Array[Dependabot::GitTagDetails])
             .returns(T.nilable(Dependabot::Version))
         end
         def check_candidates_via_github_releases(candidates)
@@ -204,7 +204,7 @@ module Dependabot
           all_have_releases = T.let(true, T::Boolean)
 
           candidates.each do |tag|
-            tag_name = normalize_tag_name((tag[:tag] || "v#{tag[:version]}").to_s)
+            tag_name = normalize_tag_name(tag.tag)
             release = releases.find { |r| r.tag_name == tag_name }
             published_at = release&.published_at
 
@@ -214,7 +214,7 @@ module Dependabot
             end
 
             unless release_in_cooldown_period?(published_at)
-              log_cooldown_result(filtered_count, tag[:version], published_at)
+              log_cooldown_result(filtered_count, tag.version, published_at)
               @cooldown_selected_tag = tag
               return version_from_tag(tag)
             end
@@ -239,7 +239,7 @@ module Dependabot
         # Checks candidate tags inside a bare clone directory, returning the first
         # version whose tag creation date falls outside the cooldown window.
         sig do
-          params(candidates: T::Array[T::Hash[Symbol, Object]])
+          params(candidates: T::Array[Dependabot::GitTagDetails])
             .returns(T.nilable(Dependabot::Version))
         end
         def check_candidates_via_git_clone(candidates)
@@ -261,23 +261,23 @@ module Dependabot
         # Prefers GitHub Release published_at when available for a candidate,
         # falling back to tag creation date from the cloned repo.
         sig do
-          params(candidates: T::Array[T::Hash[Symbol, Object]])
+          params(candidates: T::Array[Dependabot::GitTagDetails])
             .returns(T.nilable(Dependabot::Version))
         end
         def check_candidates_cooldown(candidates)
           filtered_count = 0
 
           candidates.each do |tag|
-            commit_sha = tag[:commit_sha]
-            next unless commit_sha.is_a?(String)
+            commit_sha = tag.commit_sha
+            next unless commit_sha
 
-            tag_name = normalize_tag_name((tag[:tag] || "v#{tag[:version]}").to_s)
+            tag_name = normalize_tag_name(tag.tag)
             release_date = resolve_candidate_date(tag_name, commit_sha)
 
             if release_in_cooldown_period?(release_date)
               filtered_count += 1
             else
-              log_cooldown_result(filtered_count, tag[:version], release_date)
+              log_cooldown_result(filtered_count, tag.version, release_date)
               @cooldown_selected_tag = tag
               return version_from_tag(tag)
             end
@@ -302,17 +302,17 @@ module Dependabot
           Dependabot.logger.info("Selected version #{version} (released #{release_date})")
         end
 
-        sig { params(tag: T::Hash[Symbol, Object]).returns(T.nilable(Dependabot::Version)) }
+        sig { params(tag: Dependabot::GitTagDetails).returns(T.nilable(Dependabot::Version)) }
         def version_from_tag(tag)
-          version = tag[:version]
-          return unless version.is_a?(String) || version.is_a?(Gem::Version)
+          version = tag.version
+          return unless version
 
           Dependabot::PreCommit::Version.new(version.to_s)
         end
 
         # Returns all version tags > current_version, sorted descending (latest first).
         # This ensures we evaluate from the newest candidate downward.
-        sig { returns(T::Array[T::Hash[Symbol, Object]]) }
+        sig { returns(T::Array[Dependabot::GitTagDetails]) }
         def version_candidates_descending
           # When pinned to a SHA, precision matching against the SHA is meaningless
           # (a SHA has no dots, so precision=1 matches nothing useful).

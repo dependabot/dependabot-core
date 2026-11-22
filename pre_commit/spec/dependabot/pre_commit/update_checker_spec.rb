@@ -178,11 +178,11 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
 
         recent_date = Time.now.utc.strftime("%Y-%m-%d %H:%M:%S %z")
 
-        v6_tag = {
+        v6_tag = Dependabot::GitTagDetails.new(
           tag: "v6.0.0",
           version: Dependabot::PreCommit::Version.new("6.0.0"),
           commit_sha: "3e8a8703264a2f4a69428a0aa4dcb512790b2c8c"
-        }
+        )
 
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:local_tags_for_allowed_versions)

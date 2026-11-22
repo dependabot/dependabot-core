@@ -893,6 +893,83 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
           .to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
       end
     end
+
+    context "when the central repo is rate limited" do
+      before do
+        stub_request(:get, metadata_url).to_return(status: 429, body: "Too Many Requests")
+      end
+
+      it "raises a RegistryError instead of returning no versions" do
+        expect { client.versions_details_from_xml }
+          .to raise_error(Dependabot::RegistryError) { |e| expect(e.status).to eq(429) }
+      end
+    end
+
+    context "when the central repo returns a server error" do
+      before do
+        stub_request(:get, metadata_url).to_return(status: 503, body: "Service Unavailable")
+      end
+
+      it "raises a RegistryError instead of returning no versions" do
+        expect { client.versions_details_from_xml }
+          .to raise_error(Dependabot::RegistryError) { |e| expect(e.status).to eq(503) }
+      end
+    end
+
+    context "when the central repo returns a 404" do
+      before do
+        stub_request(:get, metadata_url).to_return(status: 404)
+      end
+
+      it "returns no versions" do
+        expect(client.versions_details_from_xml).to eq([])
+      end
+    end
+
+    context "when a private repo returns a server error" do
+      let(:private_repo) { "https://private.repo.example.com/maven2" }
+      let(:private_metadata_url) { "#{private_repo}/com/google/guava/guava/maven-metadata.xml" }
+
+      before do
+        stub_request(:get, private_metadata_url).to_return(status: 502, body: "Bad Gateway")
+      end
+
+      context "when no other repo has versions" do
+        let(:repositories) do
+          [
+            { "url" => private_repo, "auth_headers" => {} },
+            { "url" => maven_central, "auth_headers" => {} }
+          ]
+        end
+
+        before do
+          stub_request(:get, metadata_url).to_return(status: 404)
+        end
+
+        it "raises PrivateSourceBadResponse" do
+          expect { client.versions_details_from_xml }
+            .to raise_error(Dependabot::PrivateSourceBadResponse) { |e| expect(e.source).to eq(private_repo) }
+        end
+      end
+
+      context "when another repo has versions" do
+        let(:repositories) do
+          [
+            { "url" => private_repo, "auth_headers" => {} },
+            { "url" => maven_central, "auth_headers" => {} }
+          ]
+        end
+
+        before do
+          stub_request(:get, metadata_url)
+            .to_return(status: 200, body: fixture("maven_central_metadata", "with_release.xml"))
+        end
+
+        it "returns the versions from the other repo" do
+          expect(client.versions_details_from_xml).not_to be_empty
+        end
+      end
+    end
   end
 
   describe "#versions_details_hash_from_html" do

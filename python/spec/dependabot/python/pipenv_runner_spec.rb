@@ -66,6 +66,86 @@ RSpec.describe Dependabot::Python::PipenvRunner do
   let(:dependency_files) { nil }
   let(:repo_contents_path) { nil }
 
+  describe "#run_upgrade" do
+    let(:requirements) { [] }
+    let(:lockfile_content) do
+      JSON.generate(
+        "default" => { "requests" => { "version" => "==2.19.0" } },
+        "develop" => { "requests" => { "version" => "==2.18.0" } }
+      )
+    end
+
+    before do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("")
+    end
+
+    it "upgrades the section containing the dependency's current version" do
+      runner.run_upgrade("==2.19.0")
+
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+        .with("pyenv exec pipenv upgrade --verbose requests==2.19.0 --dev", anything)
+    end
+
+    context "when generating updated dependency files" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.19.0",
+          previous_version: "2.18.0",
+          requirements: [],
+          previous_requirements: [],
+          package_manager: "pip"
+        )
+      end
+
+      it "selects the section using the previous version rather than the target version" do
+        runner.run_upgrade("==2.19.0")
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with("pyenv exec pipenv upgrade --verbose requests==2.19.0 --dev", anything)
+      end
+    end
+
+    context "when the pipenv command fails" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "failed", error_context: {})
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(start_with("pyenv exec pipenv upgrade"), anything)
+          .and_raise(error)
+      end
+
+      it "attaches the command name and index host without the command line" do
+        expect { runner.run_upgrade("==2.19.0") }.to raise_error(error)
+
+        context = Dependabot::ErrorReportContext.build(error: error)
+        expect(context).to include("command-name" => "pipenv upgrade", "index-hosts" => ["pypi.org"])
+        expect(context.values.flatten.join(" ")).not_to include("requests", "--verbose")
+      end
+
+      context "when the index is configured only in the Pipfile" do
+        let(:dependency_files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "Pipfile",
+              content: "[[source]]\nname = \"internal\"\nurl = \"https://pipfile.example.com/simple\"\n"
+            ),
+            lockfile
+          ]
+        end
+
+        it "reports the Pipfile index host" do
+          expect { runner.run_upgrade("==2.19.0") }.to raise_error(error)
+
+          expect(Dependabot::ErrorReportContext.build(error: error))
+            .to include("index-hosts" => ["pipfile.example.com"])
+        end
+      end
+    end
+  end
+
   describe "#run_upgrade_and_fetch_version" do
     before do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("")

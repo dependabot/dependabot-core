@@ -11,7 +11,8 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementReplacer do
       content: requirement_content,
       dependency_name: dependency_name,
       old_requirement: old_requirement,
-      new_requirement: new_requirement
+      new_requirement: new_requirement,
+      dependency_file_name: "requirements/bounded.in"
     )
   end
 
@@ -30,6 +31,21 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementReplacer do
       let(:new_requirement) { old_requirement }
 
       it { is_expected.to eq(requirement_content) }
+    end
+
+    context "when the old requirement is not declared in the file" do
+      let(:old_requirement) { "==1.0.0" }
+
+      it "raises with the file and requirements attached as error report context" do
+        expect { updated_content }.to raise_error(RuntimeError, "Declaration not found for attrs!") do |error|
+          expect(Dependabot::ErrorReportContext.build(error: error)).to eq(
+            "dependency-file" => "requirements/bounded.in",
+            "dependency-name" => "attrs",
+            "old-requirement" => "==1.0.0",
+            "new-requirement" => ">=17.3.0"
+          )
+        end
+      end
     end
 
     context "with multiple requirements" do

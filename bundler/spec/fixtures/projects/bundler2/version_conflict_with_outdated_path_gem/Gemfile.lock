@@ -1,0 +1,25 @@
+PATH
+  remote: plugins/example
+  specs:
+    example (0.9.3)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    diff-lcs (1.2.0)
+    rspec-mocks (3.5.0)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.5.0)
+    rspec-support (3.5.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  diff-lcs (= 1.2.0)
+  example!
+  rspec-mocks (= 3.5.0)
+  rspec-support (= 3.5.0)
+
+BUNDLED WITH
+   2.0.0.dev
