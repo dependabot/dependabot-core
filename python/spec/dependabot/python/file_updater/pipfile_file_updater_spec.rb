@@ -147,12 +147,23 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         json_lockfile = JSON.parse(updated_lockfile.content)
 
         expect(updated_pipfile.content)
-          .to include('python_full_version = "3.10.20"')
+          .to include('python_full_version = "3.10.22"')
         expect(json_lockfile["default"]["requests"]["version"])
           .to eq("==2.18.4")
         expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==3.4.0")
         expect(json_lockfile["_meta"]["requires"])
           .to eq(JSON.parse(lockfile.content)["_meta"]["requires"])
+      end
+
+      context "when it names only the major version" do
+        let(:pipfile_fixture_name) { "required_python_major_only" }
+        let(:lockfile_fixture_name) { "exact_version.lock" }
+
+        it "updates the lockfile" do
+          updated_lockfile = updated_files.find { |f| f.name == "Pipfile.lock" }
+
+          expect(JSON.parse(updated_lockfile.content)["default"]["requests"]["version"]).to eq("==2.18.4")
+        end
       end
 
       context "when from a Poetry file and including || logic" do
@@ -175,7 +186,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         let(:python_version_file) do
           Dependabot::DependencyFile.new(
             name: ".python-version",
-            content: "3.10.20\n"
+            content: "3.10.22\n"
           )
         end
 
@@ -743,7 +754,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
               [dev-packages]
 
               [requires]
-              python_version = "3.10.20"
+              python_version = "3.10.22"
             PIPFILE
           )
         end
@@ -759,7 +770,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
                       },
                       "pipfile-spec": 6,
                       "requires": {
-                          "python_version": "3.10.20"
+                          "python_version": "3.10.22"
                       },
                       "sources": [
                           {

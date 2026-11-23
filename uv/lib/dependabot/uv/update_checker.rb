@@ -34,6 +34,8 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
+        return updated_git_requirements if git_dependency?
+
         RequirementsUpdater.new(
           requirements: dependency.requirements,
           latest_resolvable_version: preferred_resolvable_version&.to_s,

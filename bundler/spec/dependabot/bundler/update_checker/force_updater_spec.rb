@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only lock_name fixture.
+
 require "spec_helper"
 require "shared_contexts"
 
@@ -103,6 +105,55 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
             )
           ]
         )
+      end
+    end
+
+    context "when a top-level gem that Dependabot does not track also changes version" do
+      let(:target_version) { "3.6.0" }
+      let(:dependency_name) { "rspec-mocks" }
+      let(:requirements) do
+        [{
+          file: "Gemfile",
+          requirement: "3.5.0",
+          groups: [:default],
+          source: nil
+        }]
+      end
+      let(:expected_requirements) do
+        [{
+          file: "Gemfile",
+          requirement: "3.6.0",
+          groups: [:default],
+          source: nil
+        }]
+      end
+      let(:expected_dependencies) do
+        %w(rspec-mocks rspec-support).map do |name|
+          Dependabot::Dependency.new(
+            name: name,
+            version: "3.6.0",
+            previous_version: "3.5.0",
+            requirements: expected_requirements,
+            previous_requirements: requirements,
+            package_manager: "bundler"
+          )
+        end
+      end
+
+      context "when a path gem is newer than its lockfile entry" do
+        let(:dependency_files) { bundler_project_dependency_files("version_conflict_with_outdated_path_gem") }
+
+        it "returns only the dependencies Dependabot tracks" do
+          expect(updated_dependencies).to eq(expected_dependencies)
+        end
+      end
+
+      context "when a gem for another platform was never locked" do
+        let(:dependency_files) { bundler_project_dependency_files("version_conflict_with_unlocked_platform_gem") }
+
+        it "returns only the dependencies Dependabot tracks" do
+          expect(updated_dependencies).to eq(expected_dependencies)
+        end
       end
     end
 

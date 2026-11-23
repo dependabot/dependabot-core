@@ -12,8 +12,8 @@
       "support-phase": "go-live",
       "eol-date": "2026-05-11",
       "release-type": "sts",
-      "releases.json": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/9.0/releases.json",
-      "supported-os.json": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/9.0/supported-os.json"
+      "releases.json": "https://builds.dotnet.microsoft.com/dotnet/release-metadata/9.0/releases.json",
+      "supported-os.json": "https://builds.dotnet.microsoft.com/dotnet/release-metadata/9.0/supported-os.json"
     },
     {
       "channel-version": "8.0",
@@ -26,8 +26,8 @@
       "support-phase": "active",
       "eol-date": "2026-11-10",
       "release-type": "lts",
-      "releases.json": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/8.0/releases.json",
-      "supported-os.json": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/8.0/supported-os.json"
+      "releases.json": "https://builds.dotnet.microsoft.com/dotnet/release-metadata/8.0/releases.json",
+      "supported-os.json": "https://builds.dotnet.microsoft.com/dotnet/release-metadata/8.0/supported-os.json"
     }
   ]
 }

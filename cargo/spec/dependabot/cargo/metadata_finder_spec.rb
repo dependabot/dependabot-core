@@ -73,6 +73,20 @@ RSpec.describe Dependabot::Cargo::MetadataFinder do
       end
     end
 
+    context "when crates.io returns an unparseable response" do
+      before do
+        stub_request(:get, crates_url).to_return(status: 502, body: "Bad Gateway")
+      end
+
+      it "attaches only the registry host to the parse error" do
+        expect { source_url }.to raise_error(JSON::ParserError) do |error|
+          context = T.must(Dependabot::ErrorReportContext.build(error: error))
+          expect(context).to include("host" => "crates.io", "http-status" => 502)
+          expect(context.values.join).not_to include("bitflags")
+        end
+      end
+    end
+
     context "when there is no recognised source link in the response" do
       let(:crates_response) do
         fixture("crates_io_responses", crates_fixture_name).gsub!("github.com", "example.com")

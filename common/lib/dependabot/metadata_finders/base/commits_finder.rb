@@ -310,16 +310,7 @@ module Dependabot
         def fetch_bitbucket_commits
           bitbucket_client
             .compare(T.must(source).repo, T.must(previous_tag), T.must(new_tag))
-            .map do |commit|
-            summary = T.cast(commit.fetch("summary"), Dependabot::Clients::Bitbucket::JsonObject)
-            links = T.cast(commit.fetch("links"), Dependabot::Clients::Bitbucket::JsonObject)
-            html = T.cast(links.fetch("html"), Dependabot::Clients::Bitbucket::JsonObject)
-            {
-              message: T.cast(summary.fetch("raw"), String),
-              sha: T.cast(commit.fetch("hash"), String),
-              html_url: T.cast(html.fetch("href"), String)
-            }
-          end
+            .map(&:to_h)
         rescue Dependabot::Clients::Bitbucket::NotFound,
                Dependabot::Clients::Bitbucket::Unauthorized,
                Dependabot::Clients::Bitbucket::Forbidden,
@@ -356,13 +347,7 @@ module Dependabot
           type = git_sha?(new_tag) ? "commit" : "tag"
           azure_client
             .compare(previous_tag, new_tag, type)
-            .map do |commit|
-            {
-              message: commit_response_parser.object_string(commit, "comment", "commit"),
-              sha: commit_response_parser.object_string(commit, "commitId", "commit"),
-              html_url: commit_response_parser.object_string(commit, "remoteUrl", "commit")
-            }
-          end
+            .map(&:to_h)
         rescue Dependabot::Clients::Azure::NotFound,
                Dependabot::Clients::Azure::Unauthorized,
                Dependabot::Clients::Azure::Forbidden,

@@ -68,6 +68,50 @@ RSpec.describe Dependabot::Maven::Package::PackageDetailsFetcher do
     end
   end
 
+  describe "#fetch when a registry that replaces Maven Central is rate limited" do
+    let(:credentials) do
+      [
+        Dependabot::Credential.new({ "type" => "maven_repository", "url" => "https://other.example.com/maven" }),
+        Dependabot::Credential.new(
+          { "type" => "maven_repository", "url" => "https://registry.example.com/maven/", "replaces-base" => true }
+        )
+      ]
+    end
+
+    before do
+      stub_request(:get, "https://registry.example.com/maven/com/google/guava/guava/maven-metadata.xml")
+        .to_return(status: 429, body: "Too Many Requests")
+      stub_request(:get, "https://other.example.com/maven/com/google/guava/guava/maven-metadata.xml")
+        .to_return(status: 200, body: fixture("maven_central_metadata", "with_release.xml"))
+    end
+
+    it "raises a RegistryError even when another repository has versions" do
+      expect { fetcher.fetch }.to raise_error(Dependabot::RegistryError) { |e| expect(e.status).to eq(429) }
+    end
+  end
+
+  describe "#fetch when Maven Central is rate limited and a replacement registry has versions" do
+    let(:credentials) do
+      [
+        Dependabot::Credential.new({ "type" => "maven_repository", "url" => "https://repo.maven.apache.org/maven2" }),
+        Dependabot::Credential.new(
+          { "type" => "maven_repository", "url" => "https://registry.example.com/maven", "replaces-base" => true }
+        )
+      ]
+    end
+
+    before do
+      stub_request(:get, "https://repo.maven.apache.org/maven2/com/google/guava/guava/maven-metadata.xml")
+        .to_return(status: 429, body: "Too Many Requests")
+      stub_request(:get, "https://registry.example.com/maven/com/google/guava/guava/maven-metadata.xml")
+        .to_return(status: 200, body: fixture("maven_central_metadata", "with_release.xml"))
+    end
+
+    it "raises a RegistryError for Maven Central" do
+      expect { fetcher.fetch }.to raise_error(Dependabot::RegistryError) { |e| expect(e.status).to eq(429) }
+    end
+  end
+
   describe "#releases" do
     subject(:releases) { fetcher.releases }
 

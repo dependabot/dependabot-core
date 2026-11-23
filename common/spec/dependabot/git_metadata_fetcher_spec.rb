@@ -1,7 +1,11 @@
 # typed: false
 # frozen_string_literal: true
 
+require "fileutils"
+require "open3"
+require "shellwords"
 require "spec_helper"
+require "tmpdir"
 require "dependabot/dependency"
 require "dependabot/git_metadata_fetcher"
 require "dependabot/git_ref"
@@ -370,6 +374,27 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       end
     end
 
+    context "when the release dates include a time" do
+      let(:upload_tag_with_detail) do
+        <<~TAGS
+          v1.0.0 2023-01-01 13:11:08 +0000
+          v1.1.0 2023-02-01 16:49:16 -0700
+        TAGS
+      end
+
+      before do
+        allow(checker).to receive(:upload_tag_with_detail).and_return(upload_tag_with_detail)
+      end
+
+      it "keeps the time and the offset, so a cooldown counts from the time of the release" do
+        result = checker.refs_for_tag_with_detail
+
+        expect(result.map(&:tag)).to eq(%w(v1.0.0 v1.1.0))
+        expect(result.map(&:release_date)).to eq(["2023-01-01 13:11:08 +0000", "2023-02-01 16:49:16 -0700"])
+        expect(Time.parse(result.last.release_date)).to eq(Time.utc(2023, 2, 1, 23, 49, 16))
+      end
+    end
+
     context "when upload_tag_with_detail is empty" do
       before do
         allow(checker).to receive(:upload_tag_with_detail).and_return("")
@@ -425,6 +450,102 @@ RSpec.describe Dependabot::GitMetadataFetcher do
           result = fetcher.send(:fetch_tags_with_detail_from_git_for, url)
           expect(result.status).to eq(500)
           expect(result.body).to eq("No such file or directory - No such file or directory - git")
+        end
+      end
+
+      context "with a local repository" do
+        let(:workspace) { Dir.mktmpdir("git-metadata-fetcher") }
+        # Ends in .git so the fetcher does not append another suffix.
+        let(:source_path) { File.join(workspace, "source.git") }
+        let(:url) { "file://#{source_path}" }
+        let(:partial_clone_prefix) { "git clone --bare --filter\\=tree:0 " }
+        let(:full_clone_prefix) { "git clone --bare file://" }
+        let(:expected_tags) { "v1.0.0 2024-01-02 03:04:05 +0000\nv1.1.0 2024-03-04 03:04:05 +0000" }
+
+        def git(*args, env: {})
+          git_env = {
+            # Ignore the machine's git config (for example tag.gpgSign) so the examples are reproducible.
+            "GIT_CONFIG_GLOBAL" => File::NULL,
+            "GIT_CONFIG_NOSYSTEM" => "1",
+            "GIT_AUTHOR_NAME" => "Dependabot",
+            "GIT_AUTHOR_EMAIL" => "dependabot@example.com",
+            "GIT_COMMITTER_NAME" => "Dependabot",
+            "GIT_COMMITTER_EMAIL" => "dependabot@example.com"
+          }.merge(env)
+          _stdout, stderr, status = Open3.capture3(git_env, "git", *args, chdir: source_path)
+          raise "git #{args.join(' ')} failed: #{stderr}" unless status.success?
+        end
+
+        before do
+          FileUtils.mkdir_p(source_path)
+          git("init", "--initial-branch=main")
+          git("config", "uploadpack.allowFilter", "true")
+          File.write(File.join(source_path, "README.md"), "one\n")
+          git("add", ".")
+          git("commit", "-m", "one", env: { "GIT_COMMITTER_DATE" => "2024-01-02T03:04:05Z" })
+          # A lightweight tag reports the commit date.
+          git("tag", "v1.0.0")
+          File.write(File.join(source_path, "README.md"), "two\n")
+          git("commit", "-am", "two", env: { "GIT_COMMITTER_DATE" => "2024-02-03T03:04:05Z" })
+          # An annotated tag reports its own date.
+          git("tag", "-a", "v1.1.0", "-m", "v1.1.0", env: { "GIT_COMMITTER_DATE" => "2024-03-04T03:04:05Z" })
+
+          allow(Open3).to receive(:capture3).and_call_original
+        end
+
+        after { FileUtils.rm_rf(workspace) }
+
+        it "reads the tag dates from a clone without trees or blobs" do
+          result = fetcher.fetch_tags_with_detail(url)
+
+          expect(result).to eq(expected_tags)
+          expect(Open3).to have_received(:capture3).with(anything, a_string_starting_with(partial_clone_prefix))
+          expect(Open3).not_to have_received(:capture3).with(anything, a_string_starting_with(full_clone_prefix))
+        end
+
+        it "reads the tag dates without contacting the remote after cloning" do
+          allow(Open3).to receive(:capture3)
+            .with(anything, a_string_starting_with("git for-each-ref"))
+            .and_wrap_original do |original, *args|
+              FileUtils.mv(source_path, "#{source_path}.offline")
+              original.call(*args)
+            end
+
+          result = fetcher.send(:fetch_tags_with_detail_from_git_for, url)
+
+          expect(result.status).to eq(200)
+          expect(result.body).to eq(expected_tags)
+        end
+
+        context "when the partial clone fails" do
+          before do
+            allow(Open3).to receive(:capture3)
+              .with(anything, a_string_starting_with(partial_clone_prefix))
+              .and_wrap_original do |_original, _env, command|
+                # Leave files behind, as an interrupted clone can, so the fallback must clear them.
+                FileUtils.mkdir_p(File.join(Shellwords.split(command).last, "objects"))
+                ["", "fatal: the remote end hung up unexpectedly\n", instance_double(Process::Status, success?: false)]
+              end
+          end
+
+          it "falls back to a full clone" do
+            result = fetcher.fetch_tags_with_detail(url)
+
+            expect(result).to eq(expected_tags)
+            expect(Open3).to have_received(:capture3).with(anything, a_string_starting_with(partial_clone_prefix))
+            expect(Open3).to have_received(:capture3).with(anything, a_string_starting_with(full_clone_prefix))
+          end
+        end
+
+        context "when the repository does not exist" do
+          let(:url) { "file://#{File.join(workspace, 'missing.git')}" }
+
+          it "raises GitDependenciesNotReachable after both clone attempts fail" do
+            expect { fetcher.fetch_tags_with_detail(url) }
+              .to raise_error(Dependabot::GitDependenciesNotReachable)
+            expect(Open3).to have_received(:capture3).with(anything, a_string_starting_with(partial_clone_prefix))
+            expect(Open3).to have_received(:capture3).with(anything, a_string_starting_with(full_clone_prefix))
+          end
         end
       end
     end

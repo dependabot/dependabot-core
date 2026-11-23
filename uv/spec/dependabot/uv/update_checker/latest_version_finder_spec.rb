@@ -785,6 +785,60 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LatestVersionFinder do
     end
   end
 
+  describe "cooldown with an extra index that serves only HTML" do
+    let(:finder) do
+      described_class.new(
+        dependency: dependency,
+        dependency_files: dependency_files,
+        credentials: credentials,
+        ignored_versions: ignored_versions,
+        raise_on_ignored: raise_on_ignored,
+        security_advisories: security_advisories,
+        cooldown_options: Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+      )
+    end
+    let(:dependency_name) { "demo" }
+    let(:dependency_version) { "1.0.0" }
+    let(:dependency_requirements) { [{ file: "requirements.txt", requirement: "==1.0.0", groups: [], source: nil }] }
+    let(:dependency_files) do
+      [Dependabot::DependencyFile.new(name: "requirements.txt", content: "demo==1.0.0\n")]
+    end
+    let(:credentials) do
+      [Dependabot::Credential.new(
+        { "type" => "python_index", "index-url" => "https://mirror.example.test/simple" }
+      )]
+    end
+
+    before do
+      allow(Time).to receive(:now).and_return(Time.utc(2024, 6, 15))
+      stub_request(:get, "https://pypi.org/pypi/demo/json").to_return(
+        status: 200,
+        body: JSON.generate(
+          "releases" => {
+            "1.0.0" => [{ "upload_time" => "2024-01-01T00:00:00Z" }],
+            "1.1.0" => [{ "upload_time" => "2024-05-01T00:00:00Z" }],
+            "1.2.0rc1" => [{ "upload_time" => "2024-05-20T00:00:00Z" }],
+            "1.2.0" => [{ "upload_time" => "2024-06-14T00:00:00Z" }]
+          }
+        )
+      )
+      stub_request(:get, "https://mirror.example.test/simple/demo/").to_return(
+        status: 200,
+        headers: { "Content-Type" => "text/html" },
+        body: '<a href="demo-1.0.0.tar.gz">demo-1.0.0.tar.gz</a>' \
+              '<a href="demo-1.1.0.tar.gz">demo-1.1.0.tar.gz</a>' \
+              '<a href="demo-1.2.0.tar.gz">demo-1.2.0.tar.gz</a>'
+      )
+    end
+
+    it "holds back a version in cooldown even though the mirror has no date for it" do
+      expect(finder.latest_version).to eq(Dependabot::Uv::Version.new("1.1.0"))
+      expect(finder.eligible_releases(language_version: nil)&.map(&:version))
+        .not_to include(Dependabot::Uv::Version.new("1.2.0"))
+      expect(dependency.metadata[:cooldown_date_unavailable]).to be_nil
+    end
+  end
+
   describe "#lowest_security_fix_version" do
     subject(:lowest_security_fix_version) { finder.lowest_security_fix_version }
 

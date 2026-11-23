@@ -108,6 +108,27 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
     end
   end
 
+  describe "#registry_url" do
+    it "returns the normalized registry from npmrc" do
+      expect(described_class.new({ npmrc: npmrc_file }, []).registry_url).to eq("https://custom-registry.com")
+    end
+
+    it "returns a replaces-base credential registry without fetching integrity keys" do
+      credentials = [
+        Dependabot::Credential.new(
+          { "type" => "npm_registry", "registry" => "artifactory.example.com/npm", "replaces-base" => true }
+        )
+      ]
+
+      expect(described_class.new({}, credentials).registry_url).to eq("https://artifactory.example.com/npm")
+      expect(a_request(:any, /artifactory|registry\.npmjs\.org/)).not_to have_been_made
+    end
+
+    it "falls back to the public npm registry" do
+      expect(described_class.new({ npmrc: empty_npmrc_file }, []).registry_url).to eq("https://registry.npmjs.org")
+    end
+  end
+
   describe "#find_corepack_env_variables" do
     let(:npm_signing_keys) do
       [{

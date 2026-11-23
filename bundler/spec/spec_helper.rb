@@ -1,10 +1,16 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
+extend T::Sig # rubocop:disable Style/MixinUsage
+
+sig { returns(String) }
 def common_dir
-  @common_dir ||= Gem::Specification.find_by_name("dependabot-common").gem_dir
+  @common_dir ||= T.let(Gem::Specification.find_by_name("dependabot-common").gem_dir, T.nilable(String))
 end
 
+sig { params(path: String).returns(T::Boolean) }
 def require_common_spec(path)
   require "#{common_dir}/spec/dependabot/#{path}"
 end
@@ -12,6 +18,9 @@ end
 require "#{common_dir}/spec/spec_helper.rb"
 
 module PackageManagerHelper
+  extend T::Sig
+
+  sig { returns(String) }
   def self.bundler_version
     "2"
   end
@@ -20,23 +29,26 @@ module PackageManagerHelper
   # GEM_HOME, or nil when no helper-installed Bundler can be found. Lets specs
   # gate behavior on the actual helper runtime instead of hard-coded paths or
   # exact patch versions.
+  sig { returns(T.nilable(Integer)) }
   def self.helper_bundler_major_version
     helpers_root = ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", "/opt")
     gemspecs = Dir.glob("#{helpers_root}/bundler/v#{bundler_version}/.bundle/specifications/bundler-*.gemspec")
     return nil if gemspecs.empty?
 
-    versions = gemspecs.map { |f| Gem::Version.new(File.basename(f).match(/bundler-(.*)\.gemspec/)[1]) }
-    versions.max.segments.first
+    versions = gemspecs.map { |f| Gem::Version.new(T.must(File.basename(f).match(/bundler-(.*)\.gemspec/)).captures.fetch(0)) }
+    T.must(versions.max).segments.fetch(0).to_i
   end
 
   # True when the native helper's runtime Bundler is a major version that
   # cannot resolve `bundler < 3` constraints (i.e. Bundler 4+).
+  sig { returns(T::Boolean) }
   def self.helper_running_bundler_v4?
     major = helper_bundler_major_version
     !major.nil? && major >= 4
   end
 end
 
+sig { params(project: String, directory: String).returns(T::Array[Dependabot::DependencyFile]) }
 def bundler_project_dependency_files(project, directory: "/")
   project_dependency_files(File.join("bundler#{PackageManagerHelper.bundler_version}", project), directory: directory)
     .each do |dep|
@@ -44,6 +56,7 @@ def bundler_project_dependency_files(project, directory: "/")
     end
 end
 
+sig { params(project: String, filename: String).returns(Dependabot::DependencyFile) }
 def bundler_project_dependency_file(project, filename:)
   project_dependency_files = bundler_project_dependency_files(project)
   dependency_file = project_dependency_files.find { |file| file.name == filename }
@@ -56,11 +69,17 @@ def bundler_project_dependency_file(project, filename:)
   dependency_file
 end
 
+sig { params(project: String).returns(String) }
 def bundler_build_tmp_repo(project)
   build_tmp_repo(project, path: "projects/bundler2")
 end
 
-def suppress_output
+sig do
+  type_parameters(:Result)
+    .params(block: T.proc.returns(T.type_parameter(:Result)))
+    .returns(T.type_parameter(:Result))
+end
+def suppress_output(&block)
   original_stderr = $stderr.clone
   original_stdout = $stdout.clone
   $stderr.reopen(File.new(File::NULL, "w"))

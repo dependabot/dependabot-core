@@ -1,11 +1,15 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "native_spec_helper"
 
 RSpec.describe BundlerEndpointSpecificationMetadataPatch do
+  extend T::Sig
+
+  sig { returns(Bundler::Fetcher) }
   let(:spec_fetcher) { instance_double(Bundler::Fetcher, uri: URI("https://example.com")) }
 
+  sig { params(metadata: T::Array[T::Array[T.anything]]).returns(Bundler::EndpointSpecification) }
   def build_spec(metadata)
     Bundler::EndpointSpecification.new("failbot", "2.0.1", "ruby", spec_fetcher, [], metadata)
   end

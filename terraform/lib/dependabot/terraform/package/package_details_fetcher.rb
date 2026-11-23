@@ -6,6 +6,8 @@ require "time"
 require "excon"
 require "sorbet-runtime"
 require "dependabot/swift"
+require "dependabot/error_report_context"
+require "dependabot/registry_client"
 
 module Dependabot
   module Terraform
@@ -51,13 +53,15 @@ module Dependabot
           Dependabot.logger.info("Fetching provider release details from URL: #{url}")
           result_lines = T.let([], T::Array[GitTagWithDetail])
           # Fetch the releases from the provider API
-          response = Excon.get(url, headers: { "Accept" => "application/vnd.github.v3+json" })
+          response = Dependabot::RegistryClient.get(url: url, headers: { "Accept" => "application/vnd.github.v3+json" })
           Dependabot.logger.error("Failed call details: #{response.body}") unless response.status == 200
           return result_lines unless response.status == 200
 
           # Parse the JSON response
-          releases = JSON.parse(response.body).fetch("included", [])
-                         .select { |item| item["type"] == "provider-versions" }
+          releases = with_parse_error_context(response, url) do
+            JSON.parse(response.body).fetch("included", [])
+                .select { |item| item["type"] == "provider-versions" }
+          end
           releases = releases.map { |release| release.fetch("attributes", {}) }
           # Check if releases is an array and not empty
           return result_lines unless releases.is_a?(Array) && !releases.empty?
@@ -81,13 +85,15 @@ module Dependabot
           Dependabot.logger.info("Fetching provider release details from URL: #{url}")
           result_lines = T.let([], T::Array[GitTagWithDetail])
           # Fetch the releases from the provider API
-          response = Excon.get(url, headers: { "Accept" => "application/vnd.github.v3+json" })
+          response = Dependabot::RegistryClient.get(url: url, headers: { "Accept" => "application/vnd.github.v3+json" })
           Dependabot.logger.error("Failed call details: #{response.body}") unless response.status == 200
           return result_lines unless response.status == 200
 
           # Parse the JSON response
-          releases = JSON.parse(response.body).fetch("included", [])
-                         .select { |item| item["type"] == "module-versions" }
+          releases = with_parse_error_context(response, url) do
+            JSON.parse(response.body).fetch("included", [])
+                .select { |item| item["type"] == "module-versions" }
+          end
           releases = releases.map { |release| release.fetch("attributes", {}) }
 
           # Extract version names and release dates into result_lines
@@ -99,6 +105,21 @@ module Dependabot
           end
           # Sort the result lines by tag in descending order
           result_lines.sort_by(&:tag).reverse
+        end
+
+        sig do
+          type_parameters(:R)
+            .params(response: Excon::Response, url: String, blk: T.proc.returns(T.type_parameter(:R)))
+            .returns(T.type_parameter(:R))
+        end
+        def with_parse_error_context(response, url, &blk)
+          yield
+        rescue JSON::ParserError => e
+          ErrorReportContext.attach(
+            e,
+            { http_method: "GET", host: ErrorReportContext.host_for(url), http_status: response.status }
+          )
+          raise
         end
 
         sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.untyped])) }

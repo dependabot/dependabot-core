@@ -1245,5 +1245,38 @@ public class MiscellaneousTests
                 IgnoredUpdateTypes = [ConditionUpdateType.SemVerMajor, ConditionUpdateType.SemVerMinor],
             },
         ];
+
+        // with limited group update types; only major is explicitly allowed => minor and patch are ignored
+        yield return
+        [
+            // job
+            new Job()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "some/repo"
+                },
+            },
+            // dependency
+            new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // groupMatcher
+            new GroupMatcher()
+            {
+                Patterns = ["Some.*"],
+                ExcludePatterns = [],
+                UpdateTypes = [GroupUpdateType.Major],
+            },
+            // expectedDependencyInfo
+            new DependencyInfo()
+            {
+                Name = "Some.Dependency",
+                Version = "1.0.0",
+                IsVulnerable = false,
+                IgnoredVersions = [],
+                Vulnerabilities = [],
+                IgnoredUpdateTypes = [ConditionUpdateType.SemVerMinor, ConditionUpdateType.SemVerPatch],
+            },
+        ];
     }
 }

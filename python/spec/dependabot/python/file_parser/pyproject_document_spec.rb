@@ -69,6 +69,49 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectDocument do
     expect(document.workspace_globs("exclude")).to eq(["packages/ignored"])
   end
 
+  describe "#uv_git_tag_sources" do
+    let(:content) do
+      <<~TOML
+        [tool.uv.sources]
+        tagged = { git = "https://example.com/tagged.git", tag = "1.2.3" }
+        Odd_Key = { git = "https://example.com/odd.git", tag = "4.5.6" }
+        branch-only = { git = "https://example.com/branch.git", branch = "main" }
+        no-ref = { git = "https://example.com/no-ref.git" }
+        path-only = { path = "./local" }
+        arrayed = [{ git = "https://example.com/arrayed.git", tag = "7.8.9" }]
+        bad-tag = { git = "https://example.com/bad.git", tag = 1.2 }
+        bad-git = { git = { url = "https://example.com/bad.git" }, tag = "1.0.0" }
+      TOML
+    end
+
+    it "returns only the git-and-tag entries, keyed as the author wrote them" do
+      expect(document.uv_git_tag_sources).to eq(
+        "tagged" => { url: "https://example.com/tagged.git", ref: "1.2.3" },
+        "Odd_Key" => { url: "https://example.com/odd.git", ref: "4.5.6" }
+      )
+    end
+
+    context "without a [tool.uv.sources] table" do
+      let(:content) { "[project]\nname = \"x\"\n" }
+
+      it { expect(document.uv_git_tag_sources).to eq({}) }
+    end
+
+    # This runs for every PEP 621 manifest, so a table it cannot read has to yield nothing rather
+    # than stop every dependency in the repository being updated
+    [
+      ["an array of tables", "[[tool.uv.sources]]\nname = \"x\"\n"],
+      ["a string where the table belongs", "[tool.uv]\nsources = \"nope\"\n"],
+      ["a string where tool.uv belongs", "[tool]\nuv = \"nope\"\n"]
+    ].each do |shape, toml|
+      context "with #{shape}" do
+        let(:content) { toml }
+
+        it { expect(document.uv_git_tag_sources).to eq({}) }
+      end
+    end
+  end
+
   context "with Poetry's reserved PyPI source" do
     let(:content) do
       <<~TOML
@@ -292,6 +335,43 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectDocument do
     it "preserves native duplicate-key errors" do
       expect { described_class.from_content("[project]\nname = \"one\"\nname = \"two\"") }
         .to raise_error(TomlRB::ValueOverwriteError)
+    end
+  end
+
+  describe "scratch document mutation" do
+    it "writes changed and new Poetry tables back without dropping unrelated data" do
+      document.set_poetry_requirement(name: "requests", requirement: "==2.32.0")
+      document.add_poetry_dependency(name: "new-package", requirement: "3.0", production: false)
+      parsed = TomlRB.parse(document.to_toml)
+
+      expect(parsed.dig("tool", "poetry", "dependencies", "requests")).to eq("==2.32.0")
+      expect(parsed.dig("tool", "poetry", "dev-dependencies", "new-package")).to eq("3.0")
+      expect(parsed.dig("tool", "uv", "workspace", "members")).to eq(["packages/*"])
+      expect(parsed.dig("tool", "poetry", "dependencies", "attrs")).to eq([{ "version" => "^24.0" }])
+    end
+
+    it "updates PEP 621 declarations and appends scoped pins using declared group spelling" do
+      expect(document.replace_pep621_requirement(name: "requests", requirement: "==2.32.0")).to eq(1)
+      document.append_pep621_pins(main: nil, extras: { "TEST" => "certifi==1" }, groups: { "lint" => "attrs==2" })
+      parsed = TomlRB.parse(document.to_toml)
+
+      expect(parsed.dig("project", "dependencies")).to eq(["requests==2.32.0"])
+      expect(parsed.dig("project", "optional-dependencies")).to eq("test" => ["pytest", "certifi==1"])
+      expect(parsed.dig("dependency-groups", "lint")).to eq(["ruff", "attrs==2"])
+    end
+
+    context "with an enrichment-only Poetry declaration" do
+      let(:content) { super().sub('requests = "^2.0"', 'requests = { source = "private", extras = ["socks"] }') }
+
+      it "keeps enrichment-only entries when pinning but permits resolver target constraints" do
+        document.pin_poetry_requirement(name: "requests", requirement: "2.32.0")
+        entry = TomlRB.parse(document.to_toml).dig("tool", "poetry", "dependencies", "requests")
+        expect(entry).to eq("source" => "private", "extras" => ["socks"])
+
+        document.set_poetry_requirement(name: "requests", requirement: "==2.32.0")
+        expect(TomlRB.parse(document.to_toml).dig("tool", "poetry", "dependencies", "requests"))
+          .to eq("source" => "private", "extras" => ["socks"], "version" => "==2.32.0")
+      end
     end
   end
 end

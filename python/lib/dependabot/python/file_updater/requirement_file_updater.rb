@@ -141,7 +141,8 @@ module Dependabot
             old_requirement: old_req&.requirement_string,
             new_requirement: new_requirement,
             new_hash_version: dependency.version,
-            index_urls: @index_urls
+            index_urls: @index_urls,
+            dependency_file_name: new_req.file
           ).updated_content
         end
 
