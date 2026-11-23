@@ -327,6 +327,44 @@ RSpec.describe Dependabot::Composer::Helpers do
       end
     end
 
+    context "with Composer repositories" do
+      let(:content) do
+        {
+          "repositories" => [
+            { "type" => "composer", "url" => "https://satis.example.test" },
+            { "type" => "composer", "url" => "https://strict.example.test", "require-published-time" => true },
+            { "type" => "vcs", "url" => "https://github.com/a/b" },
+            { "packagist.org" => false }
+          ]
+        }.to_json
+      end
+
+      it "lets them fall back to time unless the project says otherwise" do
+        repositories = JSON.parse(described_class.with_cooldown_policy(content, cooldown, ["a/b"]))["repositories"]
+        expect(repositories.map { |repository| repository["require-published-time"] }).to eq([false, true, nil, nil])
+      end
+
+      it "handles repositories declared as a map" do
+        map = { "repositories" => { "satis" => { "type" => "composer", "url" => "https://satis.example.test" } } }
+        parsed = JSON.parse(described_class.with_cooldown_policy(map.to_json, cooldown, ["a/b"]))
+        expect(parsed.dig("repositories", "satis", "require-published-time")).to be(false)
+        expect(parsed.dig("repositories", "packagist.org", "require-published-time")).to be(false)
+      end
+
+      it "configures the implicit packagist.org repository to fall back to time" do
+        parsed = JSON.parse(described_class.with_cooldown_policy({}.to_json, cooldown, ["a/b"]))
+        expect(parsed["repositories"]).to eq(
+          [
+            {
+              "type" => "composer",
+              "url" => "https://repo.packagist.org",
+              "require-published-time" => false
+            }
+          ]
+        )
+      end
+    end
+
     context "when the project already configures a cooldown" do
       let(:content) { { "config" => { "policy" => { "cooldown" => { "period" => "1 day" } } } }.to_json }
 

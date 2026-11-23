@@ -20,6 +20,7 @@ module Dependabot
 
       REQUIRE_KEY = "require"
       CONFIG_KEY = "config"
+      REPOSITORIES_KEY = "repositories"
       PLATFORM_KEY = "platform"
       POLICY_KEY = "policy"
       COOLDOWN_KEY = "cooldown"

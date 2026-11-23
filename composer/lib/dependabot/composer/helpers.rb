@@ -106,9 +106,81 @@ module Dependabot
         policy[PackageManager::COOLDOWN_KEY] = { "period" => "#{cooldown.default_days} days", "ignore" => ignored }
         config[PackageManager::POLICY_KEY] = policy
         json[PackageManager::CONFIG_KEY] = config
+        allow_undated_releases(json)
 
         JSON.dump(json)
       end
+
+      # Composer fails when a Composer repository provides no published-time. Let those repositories fall back to the
+      # release's time, as the version finder does.
+      sig { params(json: T::Hash[String, Object]).void }
+      def self.allow_undated_releases(json)
+        repositories = json[PackageManager::REPOSITORIES_KEY]
+
+        case repositories
+        when Hash
+          configure_hash_repositories(repositories)
+        when Array
+          configure_array_repositories(repositories)
+        else
+          json[PackageManager::REPOSITORIES_KEY] = [default_packagist_repository]
+        end
+      end
+      private_class_method :allow_undated_releases
+
+      sig { params(repositories: T::Hash[String, Object]).void }
+      def self.configure_hash_repositories(repositories)
+        repositories.each_value do |repo|
+          disable_require_published_time(repo) if repo.is_a?(Hash) && repo["type"] == PackageManager::NAME
+        end
+
+        packagist_disabled = repositories["packagist.org"] == false || repositories["packagist"] == false
+        has_packagist = packagist_disabled || repositories.any? do |name, repo|
+          name == "packagist.org" || name == "packagist" || packagist_repo?(repo)
+        end
+
+        repositories["packagist.org"] = default_packagist_repository unless has_packagist
+      end
+      private_class_method :configure_hash_repositories
+
+      sig { params(repositories: T::Array[Object]).void }
+      def self.configure_array_repositories(repositories)
+        repositories.each do |repo|
+          disable_require_published_time(repo) if repo.is_a?(Hash) && repo["type"] == PackageManager::NAME
+        end
+
+        packagist_disabled = repositories.any? do |repo|
+          repo.is_a?(Hash) && (repo["packagist.org"] == false || repo["packagist"] == false)
+        end
+        has_packagist = packagist_disabled || repositories.any? { |repo| packagist_repo?(repo) }
+
+        repositories << default_packagist_repository unless has_packagist
+      end
+      private_class_method :configure_array_repositories
+
+      sig { params(repo: Object).returns(T::Boolean) }
+      def self.packagist_repo?(repo)
+        return false unless repo.is_a?(Hash) && repo["type"] == PackageManager::NAME
+
+        repo["url"].to_s.match?(%r{^https?://(?:[a-z0-9.-]+\.)?packagist\.org(/|$)}i)
+      end
+      private_class_method :packagist_repo?
+
+      sig { params(repo: T::Hash[String, Object]).void }
+      def self.disable_require_published_time(repo)
+        repo["require-published-time"] = false unless repo.key?("require-published-time")
+      end
+      private_class_method :disable_require_published_time
+
+      sig { returns(T::Hash[String, Object]) }
+      def self.default_packagist_repository
+        {
+          "type" => PackageManager::NAME,
+          "url" => "https://repo.packagist.org",
+          "require-published-time" => false
+        }
+      end
+      private_class_method :default_packagist_repository
 
       sig { params(message: String).returns(T::Boolean) }
       def self.out_of_memory_error?(message)
