@@ -1,0 +1,7 @@
+{
+  "name": "child",
+  "version": "1.0.0",
+  "dependencies": {
+    "ms": "2.1.3"
+  }
+}

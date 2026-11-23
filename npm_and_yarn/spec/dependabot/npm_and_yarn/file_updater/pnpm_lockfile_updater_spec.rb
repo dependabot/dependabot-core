@@ -1421,6 +1421,26 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     end
   end
 
+  # Runs pnpm: the retry uses the same `update -r` command as the first update, which also moves the root importer
+  describe "when a widened requirement is in the root package.json of a workspace" do
+    let(:project_name) { "pnpm/widened_root_requirement_workspace" }
+    let(:dependency_name) { "semver" }
+    let(:version) { "7.7.2" }
+    let(:previous_version) { "6.3.2" }
+    let(:requirements) do
+      [{ file: "package.json", requirement: "^5.7.0 || ^6.3.0 || ^7.7.2", groups: ["dependencies"], source: nil }]
+    end
+    let(:previous_requirements) do
+      [{ file: "package.json", requirement: "^5.7.0 || ^6.3.0", groups: ["dependencies"], source: nil }]
+    end
+
+    it "locks the root importer to the new version" do
+      root = YAML.safe_load_stream(updated_pnpm_lock_content).last.dig("importers", ".", "dependencies", "semver")
+
+      expect(root).to eq("specifier" => "^5.7.0 || ^6.3.0 || ^7.7.2", "version" => "7.7.2")
+    end
+  end
+
   describe "when the lockfile has an environment document before the project document" do
     let(:project_name) { "pnpm/simple" }
     let(:version) { "0.0.2" }
