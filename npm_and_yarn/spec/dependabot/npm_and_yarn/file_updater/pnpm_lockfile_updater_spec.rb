@@ -876,9 +876,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     context "with an err_pnpm_meta_fetch_fail response" do
       let(:project_name) { "pnpm/meta_fetch_fail" }
 
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: fixture("pnpm_errors", "pnpm11", "network_error.txt"),
+            error_context: {}
+          )
+        )
+      end
+
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
-          .to raise_error(Dependabot::DependencyFileNotResolvable)
+          .to raise_error(Dependabot::DependencyFileNotResolvable, /fetch failed/)
       end
     end
 
