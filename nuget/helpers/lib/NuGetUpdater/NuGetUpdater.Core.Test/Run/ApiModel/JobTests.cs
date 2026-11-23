@@ -89,6 +89,7 @@ public class JobTests
     [InlineData(null, "/src/Project", true)]
     [InlineData("", "/src/Project", true)]
     [InlineData("/", "/src/Project", false)]
+    [InlineData("/", "/", true)]
     [InlineData("/src/Project", "/src/Project", true)]
     [InlineData("/src/Other", "/src/Project", false)]
     public void GetExistingPullRequestForDependencies_DirectoryMatching_Refresh(string? existingDirectory, string desiredDirectory, bool expectedMatch)
@@ -113,6 +114,75 @@ public class JobTests
         var pullRequest = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: true, treatEmptyDirectoryAsWildcard: true);
 
         Assert.Equal(expectedMatch, pullRequest is not null);
+    }
+
+    [Fact]
+    public void GetExistingPullRequestForDependencies_RefreshDoesNotMatchRootPullRequestForDifferentDirectory()
+    {
+        var job = new Job()
+        {
+            Source = new JobSource() { Provider = "github", Repo = "some/repo" },
+            ExistingPullRequests = [
+                new PullRequest()
+                {
+                    PrNumber = 1,
+                    Dependencies = [
+                        new PullRequestDependency() { DependencyName = "Some.Package", DependencyVersion = NuGetVersion.Parse("1.1.0"), Directory = "/src/client" }
+                    ],
+                },
+                new PullRequest()
+                {
+                    PrNumber = 2,
+                    Dependencies = [
+                        new PullRequestDependency() { DependencyName = "Some.Package", DependencyVersion = NuGetVersion.Parse("2.0.0"), Directory = "/" }
+                    ],
+                },
+            ],
+        };
+        var dependencies = new[]
+        {
+            new ReportedDependencyWithDirectory() { Name = "Some.Package", Version = "2.0.0", Requirements = [], Directory = "/src/client" },
+        };
+
+        var sameVersion = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: true, treatEmptyDirectoryAsWildcard: true);
+        var anyVersion = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: false, treatEmptyDirectoryAsWildcard: true);
+
+        Assert.Null(sameVersion);
+        Assert.Equal("1.1.0", anyVersion!.Item2.Single().DependencyVersion!.ToString());
+    }
+
+    [Fact]
+    public void GetExistingPullRequestForDependencies_RefreshDoesNotMatchRootPullRequestWhenExactDirectoryGroupOverlaps()
+    {
+        var job = new Job()
+        {
+            Source = new JobSource() { Provider = "github", Repo = "some/repo" },
+            ExistingPullRequests = [
+                new PullRequest()
+                {
+                    PrNumber = 1,
+                    Dependencies = [
+                        new PullRequestDependency() { DependencyName = "Some.Package", DependencyVersion = NuGetVersion.Parse("1.1.0"), Directory = "/src/client" },
+                        new PullRequestDependency() { DependencyName = "Other.Package", DependencyVersion = NuGetVersion.Parse("3.0.0"), Directory = "/src/client" },
+                    ],
+                },
+                new PullRequest()
+                {
+                    PrNumber = 2,
+                    Dependencies = [
+                        new PullRequestDependency() { DependencyName = "Some.Package", DependencyVersion = NuGetVersion.Parse("1.1.0"), Directory = "/" }
+                    ],
+                },
+            ],
+        };
+        var dependencies = new[]
+        {
+            new ReportedDependencyWithDirectory() { Name = "Some.Package", Version = "1.1.0", Requirements = [], Directory = "/src/client" },
+        };
+
+        var pullRequest = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: true, treatEmptyDirectoryAsWildcard: true);
+
+        Assert.Null(pullRequest);
     }
 
     [Fact]
