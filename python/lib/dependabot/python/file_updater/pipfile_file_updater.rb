@@ -368,7 +368,7 @@ module Dependabot
         def language_version_manager
           @language_version_manager ||=
             LanguageVersionManager.new(
-              python_requirement_parser: python_requirement_parser
+              python_requirement_parser: python_requirement_parser, highest_for_major_version: true
             )
         end
 

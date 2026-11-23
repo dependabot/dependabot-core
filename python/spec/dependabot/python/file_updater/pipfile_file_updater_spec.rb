@@ -155,6 +155,17 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
           .to eq(JSON.parse(lockfile.content)["_meta"]["requires"])
       end
 
+      context "when it names only the major version" do
+        let(:pipfile_fixture_name) { "required_python_major_only" }
+        let(:lockfile_fixture_name) { "exact_version.lock" }
+
+        it "updates the lockfile" do
+          updated_lockfile = updated_files.find { |f| f.name == "Pipfile.lock" }
+
+          expect(JSON.parse(updated_lockfile.content)["default"]["requests"]["version"]).to eq("==2.18.4")
+        end
+      end
+
       context "when from a Poetry file and including || logic" do
         let(:pipfile_fixture_name) { "exact_version" }
         let(:dependency_files) { [pipfile, lockfile, pyproject] }
