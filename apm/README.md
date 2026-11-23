@@ -96,19 +96,14 @@ Each `apm install` passes `--no-frozen`. When the `CI` environment variable is
 set, APM otherwise verifies a committed lockfile as `apm install --frozen` does,
 which fails on the manifest Dependabot has just edited.
 
-Before `apm install`, Dependabot removes each committed deployed file that still
-matches the digest the lockfile recorded, so APM can deploy the new version. This
-works around [microsoft/apm#3625](https://github.com/microsoft/apm/issues/3625):
-without the local deployment receipts a fresh checkout lacks, APM won't replace
-the committed deployed files of a package whose version changes, and the
-install fails. APM would refuse a file edited since it deployed it too, so when
-any committed deployed file no longer matches its recorded digest, the update
-fails before `apm install` with a message naming the edited files, and nothing
-is removed. The digests are compared the way APM computes them, with CRLF line
+A fresh checkout has none of the local deployment receipts APM keeps outside
+the repository, so `apm install` refuses every committed file of a package with
+a file edited since APM deployed it, and fails with one error per file. So when
+any committed deployed file no longer matches the digest the lockfile recorded,
+the update fails before `apm install` with a message naming only the edited
+files. The digests are compared the way APM computes them, with CRLF line
 endings in text files read as LF, so a checkout with CRLF line endings isn't
-mistaken for edited. APM fixed #3625 only for `apm update`, so the workaround
-stays until `apm install` also deploys a changed package over its committed
-files.
+mistaken for edited.
 
 When the repository commits its deployed files, the pull request carries the
 changes `apm install` made to them alongside `apm.yml` and `apm.lock.yaml`: the
@@ -117,8 +112,7 @@ files the new version adds, changes and removes. Dependabot reads them from
 (`deployed_files`, `deployed_file_hashes` and the project's `deployments`), so
 other files APM writes, such as MCP configuration, are left out. Git doesn't
 report ignored files, so a repository that ignores its deployed files gets only
-`apm.yml` and `apm.lock.yaml`, as does any update that runs `apm lock`. A file
-the workaround above removed and APM wrote back unchanged doesn't appear.
+`apm.yml` and `apm.lock.yaml`, as does any update that runs `apm lock`.
 
 The files APM writes are removed after each update. A grouped update keeps the
 files it returns as added, as it commits each update's changes before the next

@@ -345,18 +345,20 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
     context "when apm install runs" do
       let(:apm_command) { "install --no-frozen" }
 
-      it "removes only the unmodified deployed files inside the checkout before installing" do
+      it "leaves the unmodified deployed files in place for apm install" do
         expect(updated_lockfile_content).to eq("lockfile_version: '2'\n")
-        expect(present_during_apm).to eq(%w(.claude/skills/edge-ai/linked.md))
+        expect(present_during_apm).to eq(
+          %w(.claude/skills/edge-ai/SKILL.md .claude/skills/edge-ai/linked.md .claude/skills/edge-ai/reference.md)
+        )
         expect(File.read(outside_file)).to eq(skill)
       end
 
       context "when a deployed file is checked out with CRLF line endings" do
         let(:reference) { "# Reference\r\n" }
 
-        it "matches it against the LF digest APM records and removes it" do
+        it "matches it against the LF digest APM records and runs apm install" do
           expect(updated_lockfile_content).to eq("lockfile_version: '2'\n")
-          expect(present_during_apm).to eq(%w(.claude/skills/edge-ai/linked.md))
+          expect(Dependabot::Apm::NativeHelpers).to have_received(:run_apm_command).with("install --no-frozen")
         end
       end
 
@@ -380,10 +382,10 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
       context "when a deployed file has been edited" do
         let(:reference) { "# Reference\nlocal note\n" }
 
-        it "fails before installing, naming the edited file and removing nothing" do
+        it "fails before installing, naming only the edited file" do
           expect { updated_lockfile_content }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).to include(".claude/skills/edge-ai/reference.md")
-            expect(error.message).to include("microsoft/apm#3625")
+            expect(error.message).to include("no local deployment receipt")
             expect(error.message).not_to include("SKILL.md")
           end
           expect(Dependabot::Apm::NativeHelpers).not_to have_received(:run_apm_command).with("install --no-frozen")

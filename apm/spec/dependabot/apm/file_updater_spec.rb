@@ -241,9 +241,8 @@ RSpec.describe Dependabot::Apm::FileUpdater do
           )
         end
 
-        # Mimics APM deploying v1.2.0: it rewrites SKILL.md and reference.md
-        # (the workaround for microsoft/apm#3625 removed both, as they match
-        # their recorded digests), deploys added.md, leaves retired.md removed,
+        # Mimics APM deploying v1.2.0: it updates SKILL.md, rewrites
+        # reference.md unchanged, deploys added.md, removes retired.md,
         # downloads into apm_modules and writes an MCP config it doesn't record
         # as deployed.
         allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("install --no-frozen") do
@@ -251,6 +250,7 @@ RSpec.describe Dependabot::Apm::FileUpdater do
           File.write(".claude/skills/edge-ai/SKILL.md", skill_v2)
           File.write(".claude/skills/edge-ai/reference.md", reference)
           File.write(".claude/skills/edge-ai/added.md", added)
+          FileUtils.rm_f(".claude/skills/edge-ai/retired.md")
           FileUtils.mkdir_p("apm_modules/microsoft/edge-ai")
           File.write("apm_modules/microsoft/edge-ai/apm.yml", "name: edge-ai\n")
           File.write(".mcp.json", "{}\n")
@@ -318,8 +318,8 @@ RSpec.describe Dependabot::Apm::FileUpdater do
           expect(File.exist?(File.join(repo_contents_path, ".mcp.json"))).to be(false)
           Dependabot::Workspace.store_change(memo: "Update microsoft/edge-ai")
 
-          # Mimics APM deploying every file the lockfile records, as the
-          # workaround removed the unmodified ones, while bumping the extras.
+          # Mimics APM rewriting every file the lockfile records while bumping
+          # the extras.
           allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("install --no-frozen") do
             File.write(".claude/skills/edge-ai/SKILL.md", skill_v2)
             File.write(".claude/skills/edge-ai/reference.md", reference)
@@ -371,6 +371,26 @@ RSpec.describe Dependabot::Apm::FileUpdater do
             script => Dependabot::DependencyFile::Mode::EXECUTABLE,
             added_script => Dependabot::DependencyFile::Mode::EXECUTABLE
           )
+        end
+      end
+
+      context "when the lockfile records another target's files that apm install doesn't deploy" do
+        let(:other_target_file) { ".agents/skills/edge-ai/SKILL.md" }
+        let(:other_target_hash) { "  deployed_file_hashes:\n    #{other_target_file}: #{digest.call(skill_v1)}\n" }
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "apm.lock.yaml",
+            content: super().content.sub("  deployed_file_hashes:\n", other_target_hash)
+          )
+        end
+        let(:new_lockfile_content) { super().sub("  deployed_file_hashes:\n", other_target_hash) }
+        let(:deployed_files) { super().merge(other_target_file => skill_v1) }
+
+        it "keeps those files rather than returning them as deleted" do
+          expect(deployed_changes.keys).to contain_exactly(
+            ".claude/skills/edge-ai/SKILL.md", ".claude/skills/edge-ai/added.md", ".claude/skills/edge-ai/retired.md"
+          )
+          expect(File.read(File.join(repo_contents_path, other_target_file))).to eq(skill_v1)
         end
       end
 

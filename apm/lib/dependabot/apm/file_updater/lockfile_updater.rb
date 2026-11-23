@@ -126,7 +126,7 @@ module Dependabot
 
             command = apm_command
             install = command.start_with?("install")
-            remove_unmodified_deployed_files if install
+            check_deployed_files_unedited if install
 
             SharedHelpers.with_git_configured(credentials: credentials) do
               NativeHelpers.run_apm_command(command)
@@ -191,30 +191,22 @@ module Dependabot
           []
         end
 
-        # Workaround for microsoft/apm#3625: without the local deployment
-        # receipts APM keeps outside the repository, `apm install` won't
-        # replace the committed deployed files of a package whose version
-        # changes, and fails. (microsoft/apm#3564 fixed the unchanged-package
-        # case, #3391.) Removing each file that still matches the digest the
-        # lockfile recorded lets APM deploy the new version. APM would refuse
-        # an edited file too, so the update fails first, naming the edited
-        # files, and removes nothing.
-        # APM fixed #3625 only for `apm update`. Remove this once `apm install`
-        # also deploys a changed package over its committed files.
+        # A fresh checkout has none of the local deployment receipts APM keeps
+        # outside the repository, so `apm install` can't tell a committed
+        # deployed file that was edited from one it may overwrite. It refuses
+        # every file of a package with an edited file, even a package whose
+        # version doesn't change, and fails with one error per file. The
+        # update fails first instead, naming only the edited files.
         sig { void }
-        def remove_unmodified_deployed_files
+        def check_deployed_files_unedited
           root = File.realpath(Dir.pwd)
-          unmodified = T.let([], T::Array[String])
           edited = T.let([], T::Array[String])
           Lockfile.new(lockfile).deployed_file_hashes.each do |path, digest|
             next unless digest.start_with?(SHA256_PREFIX) && file_in_checkout?(path, root)
 
-            matches = apm_file_digest(path) == digest.delete_prefix(SHA256_PREFIX)
-            (matches ? unmodified : edited) << path
+            edited << path unless apm_file_digest(path) == digest.delete_prefix(SHA256_PREFIX)
           end
           raise Dependabot::DependencyFileNotResolvable, edited_files_message(edited) if edited.any?
-
-          unmodified.each { |path| File.delete(path) }
         end
 
         # Hashes a deployed file the way APM's compute_file_hash
@@ -232,9 +224,9 @@ module Dependabot
         sig { params(paths: T::Array[String]).returns(String) }
         def edited_files_message(paths)
           "These committed deployed files have been edited since APM deployed them: #{paths.sort.join(', ')}. " \
-            "On a fresh checkout APM can't overwrite an edited deployed file, because it has no local deployment " \
-            "receipt for it (microsoft/apm#3625). Revert the edits, or move the edited files out of the deployed " \
-            "directories, so Dependabot can update the package."
+            "On a fresh checkout APM has no local deployment receipt for them, so `apm install` refuses to " \
+            "overwrite them or any other file of their package. Revert the edits, or move the edited files out of " \
+            "the deployed directories, so Dependabot can update the package."
         end
 
         sig { params(path: String, root: String).returns(T::Boolean) }
@@ -249,10 +241,9 @@ module Dependabot
         # adds is recorded only in the new lockfile, and one it drops only in
         # the old. They're flagged as vendored, so a grouped update carries
         # them to the pull request without handing them to the next update as
-        # dependency files. A file the #3625 workaround removed and APM wrote
-        # back unchanged shows no change. Git status doesn't give each file's
-        # mode, and the pull request writes a file without one as 100644, so
-        # each written file's mode is read from disk to keep scripts executable.
+        # dependency files. Git status doesn't give each file's mode, and the
+        # pull request writes a file without one as 100644, so each written
+        # file's mode is read from disk to keep scripts executable.
         sig { params(new_lockfile_content: String).returns(T::Array[Dependabot::DependencyFile]) }
         def changed_deployed_files(new_lockfile_content)
           project_root = repo_contents_path
