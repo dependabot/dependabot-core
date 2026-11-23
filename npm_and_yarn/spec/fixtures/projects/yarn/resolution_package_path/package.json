@@ -1,0 +1,9 @@
+{
+  "name": "resolution-package-path",
+  "version": "1.0.0",
+  "dependencies": {
+    "etag": "1.0.1",
+    "is-number": "^6.0.0"
+  },
+  "resolutions": {"**/is-number":"6.0.0"}
+}
