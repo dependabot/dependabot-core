@@ -27,6 +27,10 @@ module Dependabot
       {},
       T::Hash[String, T.proc.params(arg0: Dependency).returns(T.nilable(String))]
     )
+    @name_aliases_builders = T.let(
+      {},
+      T::Hash[String, T.proc.params(arg0: Dependency).returns(T::Array[String])]
+    )
     IDENTITY_NAME_NORMALISER = T.let(
       ->(name) { name },
       T.proc.params(name: String).returns(String)
@@ -95,6 +99,28 @@ module Dependabot
     end
     def self.register_humanized_previous_version_builder(package_manager, builder)
       @humanized_previous_version_builders[package_manager] = builder
+    end
+
+    sig do
+      params(
+        package_manager: String
+      ).returns(T.nilable(T.proc.params(arg0: Dependency).returns(T::Array[String])))
+    end
+    def self.name_aliases_builder_for_package_manager(package_manager)
+      @name_aliases_builders[package_manager]
+    end
+
+    # Registers a builder returning alternative names a dependency can be
+    # matched by in user-supplied patterns (groups, allow and ignore rules),
+    # e.g. a registry-qualified Docker image name.
+    sig do
+      params(
+        package_manager: String,
+        builder: T.proc.params(arg0: Dependency).returns(T::Array[String])
+      ).void
+    end
+    def self.register_name_aliases_builder(package_manager, builder)
+      @name_aliases_builders[package_manager] = builder
     end
 
     sig { returns(String) }
@@ -256,6 +282,16 @@ module Dependabot
     sig { returns(T::Boolean) }
     def subdependency_production_check
       !subdependency_metadata&.all? { |h| h[:production] == false }
+    end
+
+    # All names this dependency can be matched by in user-supplied patterns.
+    # Always starts with the dependency's name.
+    sig { returns(T::Array[String]) }
+    def names_for_matching
+      builder = self.class.name_aliases_builder_for_package_manager(package_manager)
+      return [name] unless builder
+
+      [name, *builder.call(self)].uniq
     end
 
     sig { returns(String) }

@@ -181,15 +181,20 @@ module Dependabot
       sig { params(group: Dependabot::DependencyGroup, dep: Dependabot::Dependency).returns(Integer) }
       def calculate_group_specificity_for_dependency(group, dep)
         return EXPLICIT_MEMBER_SCORE if group.dependencies.include?(dep)
-        return 0 if excluded_by_group?(group, dep.name)
+
+        names = dep.names_for_matching
+        return 0 if names.any? { |name| excluded_by_group?(group, name) }
 
         patterns = group.patterns
         return NO_PATTERNS_SCORE unless patterns
 
-        matching_patterns = patterns.select { |pattern| WildcardMatcher.match?(pattern, dep.name) }
-        return 0 if matching_patterns.empty?
+        scores = names.flat_map do |name|
+          patterns
+            .select { |pattern| WildcardMatcher.match?(pattern, name) }
+            .map { |pattern| calculate_pattern_specificity(pattern, name) }
+        end
 
-        matching_patterns.map { |pattern| calculate_pattern_specificity(pattern, dep.name) }.max || 0
+        scores.max || 0
       end
 
       sig { params(pattern: String, dep_name: String).returns(Integer) }

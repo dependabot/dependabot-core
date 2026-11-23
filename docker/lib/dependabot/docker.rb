@@ -17,3 +17,6 @@ Dependabot::PullRequestCreator::Labeler
 
 require "dependabot/dependency"
 Dependabot::Dependency.register_production_check("docker", ->(_) { true })
+
+require "dependabot/docker/registry_qualified_names"
+Dependabot::Dependency.register_name_aliases_builder("docker", Dependabot::Docker::RegistryQualifiedNames::BUILDER)
