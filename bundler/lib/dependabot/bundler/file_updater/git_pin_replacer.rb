@@ -39,6 +39,7 @@ module Dependabot
           extend T::Sig
 
           PIN_KEYS = %i(ref tag).freeze
+          GIT_BLOCK_METHODS = %i(git github).freeze
 
           sig { returns(Dependabot::Dependency) }
           attr_reader :dependency
@@ -56,9 +57,24 @@ module Dependabot
           sig { params(node: Parser::AST::Node).void }
           def on_send(node)
             return unless declares_targeted_gem?(node)
-            return unless node.children.last.type == :hash
 
+            update_pins(node)
+          end
+
+          sig { params(node: Parser::AST::Node).void }
+          def on_block(node)
+            update_pins(node.children.first) if git_block_declaring_targeted_gem?(node)
+
+            super
+          end
+
+          private
+
+          sig { params(node: Parser::AST::Node).void }
+          def update_pins(node)
             kwargs_node = node.children.last
+            return unless kwargs_node.is_a?(Parser::AST::Node) && kwargs_node.type == :hash
+
             kwargs_node.children.each do |hash_pair|
               next unless PIN_KEYS.include?(key_from_hash_pair(hash_pair))
 
@@ -66,13 +82,30 @@ module Dependabot
             end
           end
 
-          private
-
           sig { params(node: Parser::AST::Node).returns(T::Boolean) }
           def declares_targeted_gem?(node)
             return false unless node.children[1] == :gem
 
             node.children[2].children.first == dependency.name
+          end
+
+          sig { params(node: Parser::AST::Node).returns(T::Boolean) }
+          def git_block_declaring_targeted_gem?(node)
+            send_node, _args, body = node.children
+            return false unless send_node.type == :send
+            return false unless send_node.children[0].nil? && GIT_BLOCK_METHODS.include?(send_node.children[1])
+
+            block_statements(body).any? do |statement|
+              statement.type == :send && declares_targeted_gem?(statement)
+            end
+          end
+
+          sig { params(body: T.nilable(Parser::AST::Node)).returns(T::Array[Parser::AST::Node]) }
+          def block_statements(body)
+            return [] if body.nil?
+            return body.children.grep(Parser::AST::Node) if body.type == :begin
+
+            [body]
           end
 
           sig { params(node: Parser::AST::Node).returns(Symbol) }
