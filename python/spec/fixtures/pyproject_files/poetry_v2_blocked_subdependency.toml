@@ -1,0 +1,12 @@
+[project]
+name = "poetry-blocked-subdependency"
+version = "0.1.0"
+description = "A Poetry v2 project with a locked transitive dependency constraint"
+requires-python = ">=3.7"
+dependencies = [
+    "requests==2.18.4",
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

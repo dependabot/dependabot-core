@@ -41,10 +41,20 @@ module Dependabot
           sig { params(dep: Dependabot::Dependency).returns(T::Boolean) }
           def target_version_required?(dep)
             return false if dep.removed? || git_dependency_being_updated?(dep)
-            return false unless dep.version
-            return false if dep.version == dep.previous_version
 
-            Python::Version.correct?(dep.version)
+            version = dep.version
+            return false unless version
+            return false if same_python_version?(version, dep.previous_version)
+
+            Python::Version.correct?(version)
+          end
+
+          sig { params(version: String, previous_version: T.nilable(String)).returns(T::Boolean) }
+          def same_python_version?(version, previous_version)
+            return false unless previous_version
+            return false unless Python::Version.correct?(version) && Python::Version.correct?(previous_version)
+
+            Python::Version.new(version) == Python::Version.new(previous_version)
           end
 
           sig do
