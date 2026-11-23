@@ -454,17 +454,21 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
         YAML
       )
     end
+    let(:branch_name) { "acme/skills/review" }
+    let(:branch_url) { "https://github.com/acme/skills" }
+    let(:branch_declaration) { "acme/skills/review#main" }
+    let(:branch_lockfile_key) { "acme/skills//review" }
     let(:branch_dependency) do
       requirement = {
         file: "apm.yml",
         requirement: nil,
         groups: [],
-        source: { type: "git", url: "https://github.com/acme/skills", ref: "main", branch: "main" },
-        metadata: { declaration_string: "acme/skills/review#main", lockfile_key: "acme/skills//review" }
+        source: { type: "git", url: branch_url, ref: "main", branch: "main" },
+        metadata: { declaration_string: branch_declaration, lockfile_key: branch_lockfile_key }
       }
 
       Dependabot::Dependency.new(
-        name: "acme/skills/review",
+        name: branch_name,
         version: new_commit,
         previous_version: old_commit,
         requirements: [requirement],
@@ -535,6 +539,89 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
       it "passes apm update the same targets" do
         updated_lockfile_content
         expect(locked_commits).to eq([old_commit])
+      end
+    end
+
+    context "when it is on a host with a non-default port" do
+      let(:branch_name) { "ghe.example.com:8443/Acme/Prompts" }
+      let(:branch_url) { "https://ghe.example.com:8443/Acme/Prompts" }
+      let(:branch_declaration) { "https://ghe.example.com:8443/Acme/Prompts.git#main" }
+      let(:branch_lockfile_key) { "ghe.example.com/Acme/Prompts" }
+      let(:manifest_content) { "targets: [claude]\ndependencies:\n  apm:\n    - #{branch_declaration}\n" }
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "apm.lock.yaml",
+          content: <<~YAML
+            lockfile_version: '2'
+            dependencies:
+            - repo_url: Acme/Prompts
+              host: ghe.example.com
+              port: 8443
+              resolved_commit: #{old_commit}
+              resolved_ref: main
+          YAML
+        )
+      end
+
+      before do
+        allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command)
+          .with("update --yes ghe.example.com:8443/Acme/Prompts") do
+          locked_commits << File.read("apm.lock.yaml")[/resolved_commit: (\h+)/, 1]
+          ""
+        end
+      end
+
+      it "names the package with its port, as APM does" do
+        updated_lockfile_content
+        expect(locked_commits).to eq([old_commit])
+      end
+    end
+
+    context "when it is cloned over SSH on a non-default port" do
+      let(:branch_name) { "git.example.com/acme/prompts" }
+      let(:branch_url) { "https://git.example.com/acme/prompts" }
+      let(:branch_declaration) { "ssh://git@git.example.com:2222/acme/prompts.git#main" }
+      let(:branch_lockfile_key) { "git.example.com/acme/prompts" }
+      let(:manifest_content) { "targets: [claude]\ndependencies:\n  apm:\n    - #{branch_declaration}\n" }
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "apm.lock.yaml",
+          content: <<~YAML
+            lockfile_version: '2'
+            dependencies:
+            - repo_url: acme/prompts
+              host: git.example.com
+              port: 2222
+              resolved_commit: #{old_commit}
+              resolved_ref: main
+          YAML
+        )
+      end
+
+      before do
+        allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command)
+          .with("update --yes git.example.com:2222/acme/prompts") do
+          locked_commits << File.read("apm.lock.yaml")[/resolved_commit: (\h+)/, 1]
+          ""
+        end
+      end
+
+      it "names the package with the SSH port APM records" do
+        updated_lockfile_content
+        expect(locked_commits).to eq([old_commit])
+      end
+    end
+
+    context "when it is declared in object form" do
+      let(:branch_declaration) { "git: https://github.com/acme/skills.git, path: review, ref: main" }
+      let(:manifest_content) do
+        "targets: [claude]\ndependencies:\n  apm:\n    - git: https://github.com/acme/skills.git\n" \
+          "      path: review\n      ref: main\n"
+      end
+
+      it "names the package by its repository and path" do
+        expect(updated_lockfile_content).to end_with("# update --yes acme/skills/review\n")
+        expect(locked_commits).to eq([["update --yes acme/skills/review", old_commit]])
       end
     end
 

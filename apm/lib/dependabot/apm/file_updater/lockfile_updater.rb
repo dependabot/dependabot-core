@@ -205,11 +205,15 @@ module Dependabot
         end
 
         # `apm update` takes the install's targets, `--yes` because it
-        # otherwise asks for confirmation, and APM's name for each package:
-        # its lockfile identity with the virtual path joined by `/`.
+        # otherwise asks for confirmation, and APM's name for each package,
+        # which it reads from the package's lock entry (see
+        # Lockfile#package_name). Dependabot's lockfile key drops the port, so
+        # it only stands in, with the virtual path joined by `/`, for a
+        # package that isn't locked yet.
         sig { params(install_command: String, keys: T::Array[String]).returns(String) }
         def branch_update_command(install_command, keys)
-          packages = keys.map { |key| Shellwords.escape(key.sub("//", "/")) }
+          recorded = Lockfile.new(lockfile)
+          packages = keys.map { |key| Shellwords.escape(recorded.package_name(key) || key.sub("//", "/")) }
           "update --yes#{install_command.delete_prefix(INSTALL_COMMAND)} #{packages.join(' ')}"
         end
 

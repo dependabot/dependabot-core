@@ -50,6 +50,30 @@ module Dependabot
         entry.delete("content_hash")
       end
 
+      # APM's name for the package locked as `key`, which `apm update` matches
+      # its operands against: the unique key APM builds from the entry's
+      # `host`, `port`, `repo_url` and `virtual_path` (build_dependency_unique_key
+      # in apm_cli/models/dependency/identity.py). Unlike `key`, it keeps a
+      # non-default port, HTTPS or SSH, which APM records as part of the
+      # identity, and joins a virtual path with `/`. github.com is the only
+      # host it leaves off.
+      sig { params(key: String).returns(T.nilable(String)) }
+      def package_name(key)
+        entry = entry_for(key)
+        return unless entry
+
+        repo_url = entry["repo_url"]
+        host = entry["host"]
+        port = entry["port"]
+        virtual_path = entry["virtual_path"]
+        hostname = host.is_a?(String) && !host.empty? ? host.downcase : PackageSpecifier::DEFAULT_HOST
+        repo_url = T.cast(repo_url, String)
+        repo_url = repo_url.downcase if PackageSpecifier.github_family?(hostname)
+        authority = port.is_a?(Integer) ? "#{hostname}:#{port}" : hostname
+        name = authority == PackageSpecifier::DEFAULT_HOST ? repo_url : "#{authority}/#{repo_url}"
+        virtual_path.is_a?(String) && !virtual_path.empty? ? "#{name}/#{virtual_path}" : name
+      end
+
       # The targets the lockfile records project files as deployed to, from its
       # `deployments` entries. MCP and LSP servers are `uri` entries whose
       # target (`mcp`, `lsp`) isn't a harness, so they are skipped. Not every
