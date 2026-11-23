@@ -225,8 +225,10 @@ module Dependabot
         def edited_files_message(paths)
           "These committed deployed files have been edited since APM deployed them: #{paths.sort.join(', ')}. " \
             "On a fresh checkout APM has no local deployment receipt for them, so `apm install` refuses to " \
-            "overwrite them or any other file of their package. Revert the edits, or move the edited files out of " \
-            "the deployed directories, so Dependabot can update the package."
+            "overwrite them or any other file of their package. Revert the edits, or move the whole deployed " \
+            "directory that holds each edited file (for a skill, its skill directory) out of the checkout, " \
+            "so Dependabot can update the package. Moving only the edited files leaves a partial deployment " \
+            "that APM still refuses."
         end
 
         sig { params(path: String, root: String).returns(T::Boolean) }
