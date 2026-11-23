@@ -246,7 +246,7 @@ RSpec.describe Dependabot::Apm::FileUpdater do
         # their recorded digests), deploys added.md, leaves retired.md removed,
         # downloads into apm_modules and writes an MCP config it doesn't record
         # as deployed.
-        allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("install") do
+        allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("install --no-frozen") do
           FileUtils.mkdir_p(".claude/skills/edge-ai")
           File.write(".claude/skills/edge-ai/SKILL.md", skill_v2)
           File.write(".claude/skills/edge-ai/reference.md", reference)
@@ -320,7 +320,7 @@ RSpec.describe Dependabot::Apm::FileUpdater do
 
           # Mimics APM deploying every file the lockfile records, as the
           # workaround removed the unmodified ones, while bumping the extras.
-          allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("install") do
+          allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("install --no-frozen") do
             File.write(".claude/skills/edge-ai/SKILL.md", skill_v2)
             File.write(".claude/skills/edge-ai/reference.md", reference)
             File.write(".claude/skills/edge-ai/added.md", added)
@@ -353,7 +353,7 @@ RSpec.describe Dependabot::Apm::FileUpdater do
               exception: true
             )
           end
-          allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("install") do
+          allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("install --no-frozen") do
             File.write(".claude/skills/edge-ai/SKILL.md", skill_v2)
             File.write(script, "#!/bin/sh\necho v1.2.0\n")
             File.write(added_script, "#!/bin/sh\necho setup\n")

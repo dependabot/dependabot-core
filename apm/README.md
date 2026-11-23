@@ -92,6 +92,10 @@ whenever it can tell which harnesses to deploy to:
    those harnesses, it runs `apm lock`, which resolves the updated manifest
    without deploying anything.
 
+Each `apm install` passes `--no-frozen`. When the `CI` environment variable is
+set, APM otherwise verifies a committed lockfile as `apm install --frozen` does,
+which fails on the manifest Dependabot has just edited.
+
 Before `apm install`, Dependabot removes each committed deployed file that still
 matches the digest the lockfile recorded, so APM can deploy the new version. This
 works around [microsoft/apm#3625](https://github.com/microsoft/apm/issues/3625):

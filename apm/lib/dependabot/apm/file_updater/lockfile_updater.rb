@@ -39,6 +39,9 @@ module Dependabot
         end
 
         APM_MODULES_DIRECTORY = "apm_modules"
+        # With the CI variable set, APM verifies a committed lockfile as if
+        # `--frozen` were passed, which fails on the manifest just edited.
+        INSTALL_COMMAND = "install --no-frozen"
         SHA256_PREFIX = "sha256:"
 
         AUTHENTICATION_FAILED_REGEX = /Authentication failed for '(?<url>[^']+)'/
@@ -166,7 +169,7 @@ module Dependabot
         # service runtime outside the recorded targets falls back to `apm lock`.
         sig { returns(String) }
         def apm_command
-          return "install" if Targets.declared_in_manifest?(manifest_content)
+          return INSTALL_COMMAND if Targets.declared_in_manifest?(manifest_content)
 
           recorded = Lockfile.new(lockfile)
           targets = recorded.deployment_targets
@@ -175,7 +178,7 @@ module Dependabot
           targets &= supported_targets
           return "lock" if targets.empty? || (recorded.service_runtimes - targets).any?
 
-          "install --target #{targets.join(',')}"
+          "#{INSTALL_COMMAND} --target #{targets.join(',')}"
         end
 
         # The harnesses the installed APM CLI supports, so a new APM release

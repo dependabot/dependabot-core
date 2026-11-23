@@ -109,13 +109,14 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
     before do
       allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command)
         .with("targets --json --all", stderr_to_stdout: false).and_return(apm_targets_output)
-      allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("install --target claude,copilot") do
+      allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command)
+        .with("install --no-frozen --target claude,copilot") do
         File.write("apm.lock.yaml", "lockfile_version: '2'\n# #{File.read('apm.yml').lines.fetch(-1).strip}\n")
         ""
       end
     end
 
-    it "runs apm install for each supported harness with project files" do
+    it "runs apm install --no-frozen for each supported harness with project files" do
       expect(updated_lockfile_content).to eq("lockfile_version: '2'\n# - microsoft/edge-ai#v1.2.0\n")
     end
 
@@ -182,13 +183,13 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
       end
 
       before do
-        allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("install") do
+        allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("install --no-frozen") do
           File.write("apm.lock.yaml", "lockfile_version: '2'\n# installed for the manifest's targets\n")
           ""
         end
       end
 
-      it "runs apm install and lets APM use the manifest's targets" do
+      it "runs apm install --no-frozen and lets APM use the manifest's targets" do
         expect(updated_lockfile_content).to eq("lockfile_version: '2'\n# installed for the manifest's targets\n")
       end
 
@@ -250,7 +251,7 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
 
     context "when the install succeeds" do
       before do
-        allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("install") do
+        allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("install --no-frozen") do
           FileUtils.mkdir_p(".claude/skills/edge-ai")
           File.write(".claude/skills/edge-ai/SKILL.md", "skill")
           File.write("apm.lock.yaml", "lockfile_version: '2'\n")
@@ -267,7 +268,7 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
 
     context "when the install fails after deploying files" do
       before do
-        allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("install") do
+        allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("install --no-frozen") do
           FileUtils.mkdir_p(".claude/skills/edge-ai")
           File.write(".claude/skills/edge-ai/SKILL.md", "skill")
           raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "boom", error_context: {})
@@ -342,7 +343,7 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
     end
 
     context "when apm install runs" do
-      let(:apm_command) { "install" }
+      let(:apm_command) { "install --no-frozen" }
 
       it "removes only the unmodified deployed files inside the checkout before installing" do
         expect(updated_lockfile_content).to eq("lockfile_version: '2'\n")
@@ -385,7 +386,7 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
             expect(error.message).to include("microsoft/apm#3625")
             expect(error.message).not_to include("SKILL.md")
           end
-          expect(Dependabot::Apm::NativeHelpers).not_to have_received(:run_apm_command).with("install")
+          expect(Dependabot::Apm::NativeHelpers).not_to have_received(:run_apm_command).with("install --no-frozen")
           expect(File.exist?(File.join(repo_contents_path, ".claude/skills/edge-ai/SKILL.md"))).to be(true)
         end
       end
