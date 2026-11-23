@@ -38,7 +38,8 @@ module Dependabot
             dependency: dependency,
             dependency_files: dependency_files,
             latest_allowable_version: latest_version_from_registry,
-            requirements_to_unlock: :own
+            requirements_to_unlock: :own,
+            update_cooldown: update_cooldown
           ).latest_resolvable_version,
           T.nilable(Dependabot::Version)
         )
@@ -69,7 +70,8 @@ module Dependabot
             dependency: dependency,
             dependency_files: dependency_files,
             latest_allowable_version: latest_version_from_registry,
-            requirements_to_unlock: :none
+            requirements_to_unlock: :none,
+            update_cooldown: update_cooldown
           ).latest_resolvable_version,
           T.nilable(Dependabot::Version)
         )
@@ -146,7 +148,8 @@ module Dependabot
           dependency: dependency,
           dependency_files: dependency_files,
           latest_allowable_version: fix_version,
-          requirements_to_unlock: :own
+          requirements_to_unlock: :own,
+          update_cooldown: update_cooldown
         ).latest_resolvable_version
 
         return fix_version if fix_version == resolved_fix_version

@@ -21,6 +21,8 @@ module Dependabot
       REQUIRE_KEY = "require"
       CONFIG_KEY = "config"
       PLATFORM_KEY = "platform"
+      POLICY_KEY = "policy"
+      COOLDOWN_KEY = "cooldown"
       PLUGIN_API_VERSION_KEY = "plugin-api-version"
       REPOSITORY_KEY = "composer_repository"
 

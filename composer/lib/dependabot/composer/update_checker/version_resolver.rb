@@ -53,7 +53,8 @@ module Dependabot
             dependency: Dependabot::Dependency,
             dependency_files: T::Array[Dependabot::DependencyFile],
             requirements_to_unlock: Symbol,
-            latest_allowable_version: T.nilable(Gem::Version)
+            latest_allowable_version: T.nilable(Gem::Version),
+            update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
         def initialize(
@@ -61,8 +62,10 @@ module Dependabot
           dependency:,
           dependency_files:,
           requirements_to_unlock:,
-          latest_allowable_version:
+          latest_allowable_version:,
+          update_cooldown: nil
         )
+          @update_cooldown              = update_cooldown
           @credentials                  = credentials
           @dependency                   = dependency
           @dependency_files             = dependency_files
@@ -97,6 +100,9 @@ module Dependabot
 
         sig { returns(T.nilable(Gem::Version)) }
         attr_reader :latest_allowable_version
+
+        sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
+        attr_reader :update_cooldown
 
         sig { returns(T::Hash[String, T::Array[String]]) }
         attr_reader :composer_platform_extensions
@@ -213,7 +219,7 @@ module Dependabot
           content = unlock_dep_being_updated(content) if unlock_requirement
           content = lock_git_dependencies(content) if lockfile
           content = add_temporary_platform_extensions(content)
-          content
+          Helpers.with_cooldown_policy(content, update_cooldown, [dependency.name])
         end
 
         sig { params(content: String).returns(String) }

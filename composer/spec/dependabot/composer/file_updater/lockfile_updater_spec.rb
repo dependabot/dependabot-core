@@ -879,4 +879,52 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
   end
+
+  describe "the composer.json handed to the composer helper" do
+    subject(:policy) do
+      updater.updated_lockfile_content
+      update_composer_json.dig("config", "policy")
+    end
+
+    let(:update_composer_json) { {} }
+    let(:update_cooldown) { nil }
+    let(:updater) do
+      described_class.new(
+        dependency_files: files,
+        dependencies: [dependency],
+        credentials: credentials,
+        update_cooldown: update_cooldown
+      )
+    end
+
+    before do
+      allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess) do |function:, **|
+        case function
+        when "update"
+          update_composer_json.replace(JSON.parse(File.read("composer.json")))
+          { "composer.lock" => JSON.parse(files.find { |f| f.name == "composer.lock" }.content)
+                                   .merge("content-hash" => "old-hash").to_json }
+        else
+          "new-hash"
+        end
+      end
+    end
+
+    context "with a cooldown" do
+      let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+
+      it "applies the cooldown to everything composer touches except the dependency being updated" do
+        expect(policy).to eq(
+          "cooldown" => {
+            "period" => "7 days",
+            "ignore" => { "monolog/monolog" => "Handled by Dependabot's cooldown settings" }
+          }
+        )
+      end
+    end
+
+    context "without a cooldown" do
+      it { is_expected.to be_nil }
+    end
+  end
 end

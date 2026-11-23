@@ -287,6 +287,71 @@ RSpec.describe Dependabot::Composer::Helpers do
     end
   end
 
+  describe ".with_cooldown_policy" do
+    subject(:policy) do
+      JSON.parse(described_class.with_cooldown_policy(content, cooldown, ["Laravel/Tinker"])).dig("config", "policy")
+    end
+
+    let(:content) { { "require" => { "laravel/tinker" => "^3.0" } }.to_json }
+    let(:cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+
+    it "sets the period and ignores the dependency being updated" do
+      expect(policy).to eq(
+        "cooldown" => {
+          "period" => "7 days",
+          "ignore" => { "laravel/tinker" => "Handled by Dependabot's cooldown settings" }
+        }
+      )
+    end
+
+    context "with excluded dependencies" do
+      let(:cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7, exclude: ["symfony/*"])
+      end
+
+      it "ignores them as well" do
+        expect(policy.dig("cooldown", "ignore").keys).to contain_exactly("laravel/tinker", "symfony/*")
+      end
+    end
+
+    context "with existing config" do
+      let(:content) do
+        { "config" => { "platform" => { "php" => "8.2" }, "policy" => { "audit" => {} } } }.to_json
+      end
+
+      it "keeps the other settings" do
+        parsed = JSON.parse(described_class.with_cooldown_policy(content, cooldown, ["a/b"]))
+        expect(parsed["config"]["platform"]).to eq("php" => "8.2")
+        expect(parsed["config"]["policy"]).to include("audit" => {})
+        expect(parsed.dig("config", "policy", "cooldown", "period")).to eq("7 days")
+      end
+    end
+
+    context "when the project already configures a cooldown" do
+      let(:content) { { "config" => { "policy" => { "cooldown" => { "period" => "1 day" } } } }.to_json }
+
+      it "leaves the content untouched" do
+        expect(described_class.with_cooldown_policy(content, cooldown, ["a/b"])).to eq(content)
+      end
+    end
+
+    {
+      "without a cooldown" => nil,
+      "with a zero day cooldown" =>
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 0, semver_patch_days: 3),
+      "with an include list" =>
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7, include: ["a/*"])
+    }.each do |description, options|
+      context description do
+        let(:cooldown) { options }
+
+        it "leaves the content untouched" do
+          expect(described_class.with_cooldown_policy(content, cooldown, ["a/b"])).to eq(content)
+        end
+      end
+    end
+  end
+
   describe ".out_of_memory_error?" do
     it "detects PHP's memory limit error" do
       message = "Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes)"

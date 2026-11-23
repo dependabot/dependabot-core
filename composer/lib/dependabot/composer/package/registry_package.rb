@@ -121,8 +121,7 @@ module Dependabot
         end
         private_class_method :parse_release
 
-        # Composer's cooldown policy judges a version by the registry's published-time, so use the same date.
-        # Registries that do not provide it (e.g. Satis) fall back to the package's own time field.
+        # Same date Composer's cooldown policy uses; registries without it fall back to time.
         sig { params(fields: DocumentValueParser::ObjectHash, context: String).returns(T.nilable(Time)) }
         def self.parse_released_at(fields, context)
           return parse_time(fields["published-time"], "#{context}.published-time") if fields["published-time"]

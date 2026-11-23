@@ -4,6 +4,7 @@
 require "dependabot/composer/version"
 require "dependabot/composer/manifest_document"
 require "dependabot/composer/lockfile_document"
+require "dependabot/package/release_cooldown_options"
 require "sorbet-runtime"
 
 module Dependabot
@@ -77,6 +78,36 @@ module Dependabot
 
         # If no conditions are met return V2 by default.
         V2
+      end
+
+      # Passes the cooldown to Composer's policy (2.11+; older versions ignore it) so packages the resolver pulls in
+      # respect it. The dependencies being updated are ignored: the version finder already cooled them per semver.
+      sig do
+        params(
+          content: String,
+          cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
+          dependency_names: T::Array[String]
+        ).returns(String)
+      end
+      def self.with_cooldown_policy(content, cooldown, dependency_names)
+        # Composer cannot express "only these packages", so an include list is left to the version finder.
+        return content if cooldown.nil? || !cooldown.default_days.positive? || cooldown.include.any?
+
+        json = JSON.parse(content)
+        config = json.fetch(PackageManager::CONFIG_KEY, {})
+        return content unless config.is_a?(Hash)
+
+        policy = config.fetch(PackageManager::POLICY_KEY, {})
+        return content if !policy.is_a?(Hash) || policy.key?(PackageManager::COOLDOWN_KEY)
+
+        ignored = (dependency_names + cooldown.exclude.to_a).to_h do |name|
+          [name.downcase, "Handled by Dependabot's cooldown settings"]
+        end
+        policy[PackageManager::COOLDOWN_KEY] = { "period" => "#{cooldown.default_days} days", "ignore" => ignored }
+        config[PackageManager::POLICY_KEY] = policy
+        json[PackageManager::CONFIG_KEY] = config
+
+        JSON.dump(json)
       end
 
       sig { params(message: String).returns(T::Boolean) }
