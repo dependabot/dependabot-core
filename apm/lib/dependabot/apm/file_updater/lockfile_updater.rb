@@ -4,6 +4,7 @@
 require "digest"
 require "fileutils"
 require "pathname"
+require "shellwords"
 require "sorbet-runtime"
 
 require "dependabot/errors"
@@ -26,8 +27,11 @@ module Dependabot
       # re-resolves the entries whose manifest ref changed, keeping every other
       # entry on its locked commit, so tag and SHA updates are picked up from
       # the manifest.
-      # A branch pin's ref doesn't change, so its lock entry is first moved to
-      # the branch's new head commit for APM to verify and re-hash.
+      # A branch pin's ref doesn't change, so `apm install` keeps its locked
+      # commit. When installing, the branch is then moved the way APM moves
+      # one, with `apm update` for that package (see #install_commands). For
+      # `apm lock`, which deploys nothing, its lock entry is first moved to the
+      # branch's new head commit for APM to verify and re-hash.
       class LockfileUpdater
         extend T::Sig
 
@@ -122,14 +126,16 @@ module Dependabot
             # to keep one update's packages from leaking into the next.
             FileUtils.rm_rf(APM_MODULES_DIRECTORY)
             File.write(FileUpdater::MANIFEST_FILENAME, manifest_content)
-            File.write(FileUpdater::LOCKFILE_FILENAME, prepared_lockfile_content)
 
             command = apm_command
             install = command.start_with?("install")
+            File.write(FileUpdater::LOCKFILE_FILENAME, install ? T.must(lockfile.content) : prepared_lockfile_content)
             check_deployed_files_unedited if install
 
             SharedHelpers.with_git_configured(credentials: credentials) do
-              NativeHelpers.run_apm_command(command)
+              (install ? install_commands(command) : [command]).each do |apm_args|
+                NativeHelpers.run_apm_command(apm_args)
+              end
             end
 
             content = File.read(FileUpdater::LOCKFILE_FILENAME)
@@ -179,6 +185,32 @@ module Dependabot
           return "lock" if targets.empty? || (recorded.service_runtimes - targets).any?
 
           "#{INSTALL_COMMAND} --target #{targets.join(',')}"
+        end
+
+        # `apm install` re-resolves only the entries whose manifest ref changed,
+        # so updated branch pins are then moved by `apm update`, as APM moves a
+        # branch. That needs the lockfile to still name the commit the
+        # committed files were deployed from: on a fresh checkout, with no
+        # deployment receipts, APM only replaces a deployed skill whose whole
+        # tree matches the locked commit's output or the new one's. The install
+        # is skipped when every update is a branch pin.
+        sig { params(install_command: String).returns(T::Array[String]) }
+        def install_commands(install_command)
+          branch_pins = updated_branch_pins
+          return [install_command] if branch_pins.empty?
+
+          commands = [branch_update_command(install_command, branch_pins.keys)]
+          commands.unshift(install_command) unless dependencies.all? { |dependency| branch_pin_update?(dependency) }
+          commands
+        end
+
+        # `apm update` takes the install's targets, `--yes` because it
+        # otherwise asks for confirmation, and APM's name for each package:
+        # its lockfile identity with the virtual path joined by `/`.
+        sig { params(install_command: String, keys: T::Array[String]).returns(String) }
+        def branch_update_command(install_command, keys)
+          packages = keys.map { |key| Shellwords.escape(key.sub("//", "/")) }
+          "update --yes#{install_command.delete_prefix(INSTALL_COMMAND)} #{packages.join(' ')}"
         end
 
         # The harnesses the installed APM CLI supports, so a new APM release
@@ -346,6 +378,16 @@ module Dependabot
               key = requirement.metadata_string("lockfile_key")
               pins[key] = new_commit if key && requirement.source_string("branch")
             end
+          end
+        end
+
+        sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+        def branch_pin_update?(dependency)
+          new_commit = dependency.version
+          return false if new_commit.nil? || new_commit == dependency.previous_version
+
+          dependency.requirements.all? do |requirement|
+            !requirement.metadata_string("lockfile_key").nil? && !requirement.source_string("branch").nil?
           end
         end
 

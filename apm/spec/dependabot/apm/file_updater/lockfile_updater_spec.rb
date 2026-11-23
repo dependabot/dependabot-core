@@ -433,6 +433,137 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
     end
   end
 
+  context "when a branch pin moves to a new head commit" do
+    let(:old_commit) { "1a" * 20 }
+    let(:new_commit) { "2b" * 20 }
+    let(:manifest_content) do
+      "targets: [claude]\ndependencies:\n  apm:\n    - acme/skills/review#main\n    - microsoft/edge-ai#v1.2.0\n"
+    end
+    let(:lockfile) do
+      Dependabot::DependencyFile.new(
+        name: "apm.lock.yaml",
+        content: <<~YAML
+          lockfile_version: '2'
+          dependencies:
+          - repo_url: acme/skills
+            host: github.com
+            virtual_path: review
+            resolved_commit: #{old_commit}
+            resolved_ref: main
+            content_hash: sha256:abc
+        YAML
+      )
+    end
+    let(:branch_dependency) do
+      requirement = {
+        file: "apm.yml",
+        requirement: nil,
+        groups: [],
+        source: { type: "git", url: "https://github.com/acme/skills", ref: "main", branch: "main" },
+        metadata: { declaration_string: "acme/skills/review#main", lockfile_key: "acme/skills//review" }
+      }
+
+      Dependabot::Dependency.new(
+        name: "acme/skills/review",
+        version: new_commit,
+        previous_version: old_commit,
+        requirements: [requirement],
+        previous_requirements: [requirement],
+        package_manager: "apm"
+      )
+    end
+    let(:dependencies) { [branch_dependency] }
+    let(:lockfile_updater) do
+      described_class.new(
+        dependencies: dependencies,
+        lockfile: lockfile,
+        manifest_content: manifest_content,
+        credentials: [],
+        repo_contents_path: nil
+      )
+    end
+    let(:locked_commits) { [] }
+
+    before do
+      ["install --no-frozen", "update --yes acme/skills/review"].each do |command|
+        allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with(command) do
+          locked_commits << [command, File.read("apm.lock.yaml")[/resolved_commit: (\h+)/, 1]]
+          File.write("apm.lock.yaml", "#{File.read('apm.lock.yaml')}# #{command}\n")
+          ""
+        end
+      end
+    end
+
+    it "moves it with apm update while the lockfile still names the deployed commit" do
+      expect(updated_lockfile_content).to end_with("# update --yes acme/skills/review\n")
+      expect(locked_commits).to eq([["update --yes acme/skills/review", old_commit]])
+    end
+
+    context "when the lockfile records its targets" do
+      let(:manifest_content) { "dependencies:\n  apm:\n    - acme/skills/review#main\n" }
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "apm.lock.yaml",
+          content: <<~YAML
+            lockfile_version: '2'
+            dependencies:
+            - repo_url: acme/skills
+              host: github.com
+              virtual_path: review
+              resolved_commit: #{old_commit}
+              resolved_ref: main
+            deployments:
+            - kind: project-relative
+              target: claude
+              value: .claude/skills/review/SKILL.md
+              scope: project
+          YAML
+        )
+      end
+
+      before do
+        allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command)
+          .with("targets --json --all", stderr_to_stdout: false)
+          .and_return(JSON.generate([{ target: "claude", status: "inactive" }]))
+        allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command)
+          .with("update --yes --target claude acme/skills/review") do
+          locked_commits << File.read("apm.lock.yaml")[/resolved_commit: (\h+)/, 1]
+          ""
+        end
+      end
+
+      it "passes apm update the same targets" do
+        updated_lockfile_content
+        expect(locked_commits).to eq([old_commit])
+      end
+    end
+
+    context "when it is updated alongside a tag pin" do
+      let(:dependencies) { [branch_dependency, dependency] }
+
+      it "installs the tag first, then moves the branch, both from the deployed commit" do
+        expect(updated_lockfile_content).to end_with("# install --no-frozen\n# update --yes acme/skills/review\n")
+        expect(locked_commits.map(&:last)).to eq([old_commit, old_commit])
+      end
+    end
+
+    context "when APM only locks the manifest" do
+      let(:manifest_content) { "dependencies:\n  apm:\n    - acme/skills/review#main\n" }
+
+      before do
+        allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("lock") do
+          locked_commits << File.read("apm.lock.yaml")[/resolved_commit: (\h+)/, 1]
+          ""
+        end
+      end
+
+      it "moves the lock entry to the new commit for apm lock" do
+        updated_lockfile_content
+        expect(locked_commits).to eq([new_commit])
+      end
+    end
+  end
+
   context "when a previous update left packages in apm_modules" do
     let(:repo_contents_path) { Dir.mktmpdir }
     let(:stale_package) { File.join(repo_contents_path, "apm_modules", "microsoft", "edge-ai", "apm.yml") }

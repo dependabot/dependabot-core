@@ -118,9 +118,14 @@ The files APM writes are removed after each update. A grouped update keeps the
 files it returns as added, as it commits each update's changes before the next
 one runs, so the next update doesn't report them again. APM only re-resolves the
 entries whose manifest ref changed, so every other entry keeps its locked
-commit. A branch pin's lock entry is first
-moved to the branch's new head commit (dropping its now stale `content_hash`)
-for APM to verify and re-hash. APM rewrites the whole file, so its
+commit. A branch pin's ref doesn't change, so after `apm install` Dependabot
+moves it the way APM does, with `apm update --yes` for that package (and the
+install's `--target`), skipping the install when only branch pins are updated.
+The lockfile still names the commit the committed files were deployed from, so
+on a fresh checkout APM can match them against that commit's output before
+replacing them. With `apm lock`, the branch pin's lock entry is instead moved
+to the branch's new head commit (dropping its now stale `content_hash`) for APM
+to verify and re-hash. APM rewrites the whole file, so its
 `apm_version` also changes to the version of the CLI Dependabot runs. A missing
 lockfile is never created.
 
