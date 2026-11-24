@@ -10,9 +10,15 @@ module Dependabot
     class Tag
       extend T::Sig
 
-      WORDS_WITH_BUILD = /(?:(?:-[a-z]+)+-[0-9]+)+/
-      VERSION_REGEX = /v?(?<version>[0-9]+(?:[_.][0-9]+)*(?:\.[a-z0-9]+|#{WORDS_WITH_BUILD}|-(?:kb)?[0-9]+)*)/i
-      VERSION_WITH_SFX = /^(?<operator>[~^<>=]*)#{VERSION_REGEX}(?<suffix>-[a-z][a-z0-9.\-]*)?$/i
+      # VERSION_REGEX repeats its own group, so it embeds the single-word form to avoid nested repeats (ReDoS).
+      WORD_WITH_BUILD = /(?:-[a-z]+)+-[0-9]+/
+      WORDS_WITH_BUILD = /(?:#{WORD_WITH_BUILD})+/
+      # "386" is the linux/386 architecture, not a build number, so it is matched as a suffix instead.
+      NUMERIC_ARCH = /386(?![0-9])/
+      VERSION_REGEX =
+        /v?(?<version>[0-9]+(?:[_.][0-9]+)*(?:\.[a-z0-9]+|#{WORD_WITH_BUILD}|-(?!#{NUMERIC_ARCH})(?:kb)?[0-9]+)*)/i
+      VERSION_WITH_SFX =
+        /^(?<operator>[~^<>=]*)#{VERSION_REGEX}(?<suffix>-(?:[a-z]|#{NUMERIC_ARCH})[a-z0-9.\-]*)?$/i
       VERSION_WITH_PFX = /^(?<prefix>[a-z][a-z0-9.\-_]*-)?#{VERSION_REGEX}$/i
       VERSION_WITH_PFX_AND_SFX = /^(?<prefix>[a-z\-_]+-)?#{VERSION_REGEX}(?<suffix>-[a-z\-]+)?$/i
       NAME_WITH_VERSION =

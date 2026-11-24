@@ -9,6 +9,7 @@ require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
 require "dependabot/npm_and_yarn/pnpm_error_message"
 require "dependabot/npm_and_yarn/registry_helper"
+require "dependabot/npm_and_yarn/subprocess_error_context"
 require "dependabot/experiments"
 require "dependabot/package/release_cooldown_options"
 require "dependabot/package/npm_package_json"
@@ -70,7 +71,37 @@ module Dependabot
           self.npm_version_selector = manifest && npm_version_selector_for(manifest.directory)
         end
 
+        # A version a package manager printed for `-v`, reported with later failures of the same runnable name. It
+        # is scoped to the working directory and project, since `yarnPath`, `packageManager` and Corepack can make
+        # the same name run a different version elsewhere.
+        sig { params(name: String, version: String).void }
+        def register_package_manager_version(name, version)
+          return unless SubprocessErrorContext.valid_version?(version)
+
+          package_manager_versions[package_manager_version_key(name)] = version
+        end
+
+        sig { params(name: String).returns(T.nilable(String)) }
+        def package_manager_version_for(name)
+          package_manager_versions[package_manager_version_key(name)]
+        end
+
         private
+
+        sig { params(name: String).returns(T::Array[T.nilable(String)]) }
+        def package_manager_version_key(name)
+          manifest = dependency_files&.find { |file| file.name == "package.json" && !file.support_file }
+          [Dir.pwd, manifest&.directory, name]
+        end
+
+        sig { returns(T::Hash[T::Array[T.nilable(String)], String]) }
+        def package_manager_versions
+          Thread.current[:npm_and_yarn_package_manager_versions] ||= {}
+          T.cast(
+            Thread.current[:npm_and_yarn_package_manager_versions],
+            T::Hash[T::Array[T.nilable(String)], String]
+          )
+        end
 
         sig { returns(T::Hash[String, T.nilable(String)]) }
         def npm_version_selectors
@@ -122,6 +153,9 @@ module Dependabot
       # corepack supported package managers
       SUPPORTED_COREPACK_PACKAGE_MANAGERS = %w(npm yarn pnpm).freeze
       COREPACK_SIGNATURE_METADATA_ERROR = "No compatible signature found in package metadata"
+
+      # Commands whose output is recorded as the version for later subprocess error context.
+      VERSION_COMMANDS = %w(-v --version).freeze
 
       # pnpm's `minimumReleaseAge` and yarn's `npmMinimalAgeGate` are expressed in
       # minutes, whereas dependabot.yml cooldown and npm's `min-release-age` use
@@ -723,12 +757,14 @@ module Dependabot
       end
       def self.run_npm_command(command, fingerprint: command, env: nil)
         unless npm_version_selector
-          return Dependabot::SharedHelpers.run_shell_command(
-            "#{NpmPackageManager::NAME} #{command}",
-            fingerprint: "#{NpmPackageManager::NAME} #{fingerprint || command}",
-            output_observer: ->(output) { command_observer(output) },
-            env: env
-          )
+          return with_subprocess_error_context(NpmPackageManager::NAME, command, env) do
+            Dependabot::SharedHelpers.run_shell_command(
+              "#{NpmPackageManager::NAME} #{command}",
+              fingerprint: "#{NpmPackageManager::NAME} #{fingerprint || command}",
+              output_observer: ->(output) { command_observer(output) },
+              env: env
+            )
+          end
         end
 
         package_manager_run_command(
@@ -839,11 +875,13 @@ module Dependabot
           )
         end
 
-        Dependabot::SharedHelpers.run_shell_command(
-          "pnpm #{command}",
-          fingerprint: "pnpm #{fingerprint || command}",
-          env: env
-        )
+        with_subprocess_error_context(PNPMPackageManager::NAME, command, env) do
+          Dependabot::SharedHelpers.run_shell_command(
+            "pnpm #{command}",
+            fingerprint: "pnpm #{fingerprint || command}",
+            env: env
+          )
+        end
       end
 
       # The pnpm major to run for a repository whose lockfile is older than the default pnpm reads (5.4 is pnpm 7,
@@ -904,11 +942,13 @@ module Dependabot
         ).returns(String)
       end
       def self.run_single_yarn_command(command, fingerprint: nil, env: nil)
-        Dependabot::SharedHelpers.run_shell_command(
-          "yarn #{command}",
-          fingerprint: "yarn #{fingerprint || command}",
-          env: env
-        )
+        with_subprocess_error_context(YarnPackageManager::NAME, command, env) do
+          Dependabot::SharedHelpers.run_shell_command(
+            "yarn #{command}",
+            fingerprint: "yarn #{fingerprint || command}",
+            env: env
+          )
+        end
       end
 
       # Activate the package manager for specified version by using corepack
@@ -997,10 +1037,12 @@ module Dependabot
       # from the system without involving Corepack
       sig { params(name: String).returns(String) }
       def self.local_package_manager_version(name)
-        Dependabot::SharedHelpers.run_shell_command(
+        version = Dependabot::SharedHelpers.run_shell_command(
           "#{name} -v",
           fingerprint: "#{name} -v"
         ).strip
+        register_package_manager_version(name, version)
+        version
       end
 
       # Corepack can't provide the requested npm, so the image's npm would be used. Fail instead of silently
@@ -1057,12 +1099,14 @@ module Dependabot
         output_observer: nil,
         env: nil
       )
-        run_corepack_command(
-          "corepack #{name} #{command}",
-          fingerprint: "corepack #{name} #{fingerprint || command}",
-          output_observer: output_observer,
-          env: env
-        )
+        with_subprocess_error_context(name, command, env) do
+          run_corepack_command(
+            "corepack #{name} #{command}",
+            fingerprint: "corepack #{name} #{fingerprint || command}",
+            output_observer: output_observer,
+            env: env
+          )
+        end
       end
 
       # Run a corepack shell command, retrying once with signature verification
@@ -1120,12 +1164,16 @@ module Dependabot
 
       sig { returns(T.nilable(T::Hash[String, String])) }
       def self.build_corepack_env_variables
-        return nil if dependency_files.nil? || credentials.nil?
+        registry_helper&.find_corepack_env_variables
+      end
 
-        files = T.must(dependency_files)
-        creds = T.must(credentials)
+      sig { returns(T.nilable(RegistryHelper)) }
+      def self.registry_helper
+        files = dependency_files
+        creds = credentials
+        return nil if files.nil? || creds.nil?
 
-        registry_helper = RegistryHelper.new(
+        RegistryHelper.new(
           {
             npmrc: files.find { |f| f.name.end_with?(".npmrc") },
             yarnrc: files.find { |f| f.name.end_with?(".yarnrc") && !f.name.end_with?(".yarnrc.yml") },
@@ -1133,9 +1181,59 @@ module Dependabot
           },
           creds
         )
-
-        registry_helper.find_corepack_env_variables
       end
+      private_class_method :registry_helper
+
+      # Runs a package manager subprocess, attaching safe `error-context` (the subcommand, package manager
+      # version and registry host) to a failure before re-raising it. The fingerprint is unchanged.
+      sig do
+        params(
+          package_manager: String,
+          command: String,
+          env: T.nilable(T::Hash[String, String]),
+          block: T.proc.returns(String)
+        ).returns(String)
+      end
+      def self.with_subprocess_error_context(package_manager, command, env, &block)
+        output = yield
+        if VERSION_COMMANDS.include?(command)
+          register_package_manager_version(package_manager, version_from_output(output))
+        end
+        output
+      rescue SharedHelpers::HelperSubprocessFailed => e
+        attach_subprocess_error_context(e, package_manager, command, env)
+        raise
+      end
+      private_class_method :with_subprocess_error_context
+
+      sig do
+        params(
+          error: SharedHelpers::HelperSubprocessFailed,
+          package_manager: String,
+          command: String,
+          env: T.nilable(T::Hash[String, String])
+        ).void
+      end
+      def self.attach_subprocess_error_context(error, package_manager, command, env)
+        name, selector = package_manager.split("@", 2)
+        SubprocessErrorContext.attach(
+          error,
+          package_manager: T.must(name),
+          command: command,
+          # An exact Corepack selector is the version that ran; otherwise use a version the same runnable name
+          # (e.g. `pnpm@8`) printed for `-v` in this directory and project. Omitted when there is none.
+          version: if SubprocessErrorContext.valid_version?(selector)
+                     selector
+                   else
+                     package_manager_version_for(package_manager)
+                   end,
+          registry: env&.fetch(RegistryHelper::NPM_CONFIG_REGISTRY_ENV, nil) || registry_helper&.registry_url
+        )
+      rescue StandardError => e
+        # Diagnostics must never replace the original failure.
+        Dependabot.logger.warn("Could not attach subprocess error context (#{e.class})")
+      end
+      private_class_method :attach_subprocess_error_context
 
       sig do
         params(

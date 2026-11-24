@@ -73,6 +73,8 @@ module Dependabot
         @latest_resolvable_version_with_no_unlock ||= T.let(
           if resolver_type == :requirements
             resolver.latest_resolvable_version_with_no_unlock
+          elsif resolver_type == :poetry
+            resolver.latest_resolvable_version(requirement: nil)
           else
             resolver.latest_resolvable_version(
               requirement: current_requirement_string
@@ -404,7 +406,12 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def poetry_based?
-        updating_pyproject? && pyproject_document.poetry?
+        updating_pyproject? && (pyproject_document.poetry? || locked_poetry_build_backend?)
+      end
+
+      sig { returns(T::Boolean) }
+      def locked_poetry_build_backend?
+        !poetry_lock.nil? && pyproject_document.poetry_build_backend?
       end
 
       sig { returns(T::Boolean) }

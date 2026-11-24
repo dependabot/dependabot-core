@@ -1,0 +1,15 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+    maven { url = uri('repository') }
+}
+
+dependencies {
+    implementation 'org.example:parent:1.0'
+}
+
+dependencyLocking {
+    lockAllConfigurations()
+}

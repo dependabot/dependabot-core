@@ -1,5 +1,7 @@
 using System.Collections.Immutable;
 
+using NuGet.Frameworks;
+
 using NuGetUpdater.Core.DependencySolver;
 using NuGetUpdater.Core.Test.Utilities;
 
@@ -9,6 +11,58 @@ namespace NuGetUpdater.Core.Test.DependencySolver;
 
 public class MSBuildDependencySolverTests : TestBase
 {
+    [Fact]
+    public async Task PrefersFallbackDependencyGroupsWithPackageTargetFallback()
+    {
+        await TestAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "netstandard2.0",
+                    [("", [("Other.Package", "[1.0.0]")]), ("net461", [("Other.Package", "[1.0.0]")])]),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "netstandard2.0",
+                    [("", [("Other.Package", "[2.0.0]")]), ("net461", [("Other.Package", "[3.0.0]")])]),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "1.0.0", "netstandard2.0"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "2.0.0", "netstandard2.0"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "3.0.0", "netstandard2.0"),
+            ],
+            existingTopLevelDependencies: ["Some.Package/1.0.0", "Other.Package/1.0.0"],
+            desiredDependencies: ["Some.Package/2.0.0"],
+            targetFramework: "net10.0-windows",
+            targetFrameworkFallbacks: ["net461"],
+            expectedResolvedDependencies: ["Some.Package/2.0.0", "Other.Package/3.0.0"]
+        );
+    }
+
+    [Fact]
+    public async Task ResolvesUpdatesUsingCustomFrameworkFallbacks()
+    {
+        await TestAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net35"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net35"),
+            ],
+            existingTopLevelDependencies: ["Some.Package/1.0.0"],
+            desiredDependencies: ["Some.Package/2.0.0"],
+            targetFramework: "net10.0-windows",
+            targetFrameworkFallbacks: ["net35"],
+            expectedResolvedDependencies: ["Some.Package/2.0.0"]
+        );
+    }
+
+    [Fact]
+    public async Task DoesNotUseImplicitFallbacksWhenFrameworkFallbacksAreDisabled()
+    {
+        await TestAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net10.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net35"),
+            ],
+            existingTopLevelDependencies: ["Some.Package/1.0.0"],
+            desiredDependencies: ["Some.Package/2.0.0"],
+            targetFramework: "net10.0-windows",
+            expectedResolvedDependencies: ["Some.Package/1.0.0"]
+        );
+    }
+
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewUpdatingTopLevelPackage()
     {
@@ -39,6 +93,141 @@ public class MSBuildDependencySolverTests : TestBase
                 "Microsoft.CodeAnalysis.Scripting.Common/3.6.0",
                 "Microsoft.CodeAnalysis.Common/3.6.0",
             ]
+        );
+    }
+
+    [Fact]
+    public async Task DependencyConflictsCanBeResolvedWhenUnchangedTransitivePackageIsIncompatible()
+    {
+        await TestAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.0.0", "net9.0", [(null, [("Pinned.Dependency", "1.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "2.0.0", "net9.0", [(null, [("Pinned.Dependency", "1.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("Pinned.Dependency", "1.0.0", "net6.0-windows8.0"),
+            ],
+            existingTopLevelDependencies: [
+                "Some.Dependency/1.0.0",
+                "Pinned.Dependency/1.0.0",
+            ],
+            desiredDependencies: [
+                "Some.Dependency/2.0.0",
+            ],
+            targetFramework: "net9.0",
+            expectedResolvedDependencies: [
+                "Some.Dependency/2.0.0",
+                "Pinned.Dependency/1.0.0",
+            ],
+            transitivePins: ["Pinned.Dependency"]
+        );
+    }
+
+    [Fact]
+    public async Task DependencyConflictsCannotBeResolvedWhenUpdatedTransitivePackageIsIncompatible()
+    {
+        await TestAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.0.0", "net9.0", [(null, [("Pinned.Dependency", "1.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "2.0.0", "net9.0", [(null, [("Pinned.Dependency", "2.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("Pinned.Dependency", "1.0.0", "net6.0-windows8.0"),
+                MockNuGetPackage.CreateSimplePackage("Pinned.Dependency", "2.0.0", "net6.0-windows8.0"),
+            ],
+            existingTopLevelDependencies: [
+                "Some.Dependency/1.0.0",
+                "Pinned.Dependency/1.0.0",
+            ],
+            desiredDependencies: [
+                "Some.Dependency/2.0.0",
+            ],
+            targetFramework: "net9.0",
+            expectedResolvedDependencies: [
+                "Some.Dependency/1.0.0",
+                "Pinned.Dependency/1.0.0",
+            ],
+            transitivePins: ["Pinned.Dependency"]
+        );
+    }
+
+    [Fact]
+    public async Task CentralPinRespectsSharedConstraintsThroughNewIntermediatePackages()
+    {
+        await TestAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("MockBranch.Root", "1.0.0", "net8.0", [(null, [("MockBranch.Old", "1.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("MockBranch.Root", "2.0.0", "net8.0", [(null, [("MockBranch.Low", "2.0.0"), ("MockBranch.High", "2.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("MockBranch.Old", "1.0.0", "net8.0", [(null, [("MockBranch.Pin", "1.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("MockBranch.Low", "2.0.0", "net8.0", [(null, [("MockBranch.Pin", "[2.0.0,4.0.0)")])]),
+                MockNuGetPackage.CreateSimplePackage("MockBranch.High", "2.0.0", "net8.0", [(null, [("MockBranch.Pin", "(3.0.0,4.0.0)")])]),
+                MockNuGetPackage.CreateSimplePackage("MockBranch.Pin", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("MockBranch.Pin", "2.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("MockBranch.Pin", "3.2.0", "net8.0"),
+            ],
+            existingTopLevelDependencies: ["MockBranch.Root/1.0.0", "MockBranch.Pin/1.0.0"],
+            desiredDependencies: ["MockBranch.Root/2.0.0"],
+            targetFramework: "net8.0",
+            expectedResolvedDependencies: ["MockBranch.Root/2.0.0", "MockBranch.Pin/3.2.0"],
+            transitivePins: ["MockBranch.Pin"]
+        );
+    }
+
+    [Fact]
+    public async Task CentralPinsAreUpdatedAcrossMultipleGraphLevels()
+    {
+        await TestAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("MockCascade.Root", "1.0.0", "net8.0", [(null, [("MockCascade.Middle", "1.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("MockCascade.Root", "2.0.0", "net8.0", [(null, [("MockCascade.Middle", "2.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("MockCascade.Middle", "1.0.0", "net8.0", [(null, [("MockCascade.First", "1.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("MockCascade.Middle", "2.0.0", "net8.0", [(null, [("MockCascade.First", "2.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("MockCascade.First", "1.0.0", "net8.0", [(null, [("MockCascade.Second", "1.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("MockCascade.First", "2.0.0", "net8.0", [(null, [("MockCascade.Second", "2.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("MockCascade.Second", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("MockCascade.Second", "2.0.0", "net8.0"),
+            ],
+            existingTopLevelDependencies: ["MockCascade.Root/1.0.0", "MockCascade.First/1.0.0", "MockCascade.Second/1.0.0"],
+            desiredDependencies: ["MockCascade.Root/2.0.0"],
+            targetFramework: "net8.0",
+            expectedResolvedDependencies: ["MockCascade.Root/2.0.0", "MockCascade.First/2.0.0", "MockCascade.Second/2.0.0"],
+            transitivePins: ["MockCascade.First", "MockCascade.Second"]
+        );
+    }
+
+    [Fact]
+    public async Task CentralPinWithConflictingIntermediateConstraintsIsNotUpdated()
+    {
+        await TestAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("MockConflict.Root", "1.0.0", "net8.0", [(null, [("MockConflict.Pin", "1.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("MockConflict.Root", "2.0.0", "net8.0", [(null, [("MockConflict.Low", "2.0.0"), ("MockConflict.High", "2.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("MockConflict.Low", "2.0.0", "net8.0", [(null, [("MockConflict.Pin", "[2.0.0,3.0.0)")])]),
+                MockNuGetPackage.CreateSimplePackage("MockConflict.High", "2.0.0", "net8.0", [(null, [("MockConflict.Pin", "[3.0.0,4.0.0)")])]),
+                MockNuGetPackage.CreateSimplePackage("MockConflict.Pin", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("MockConflict.Pin", "2.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("MockConflict.Pin", "3.0.0", "net8.0"),
+            ],
+            existingTopLevelDependencies: ["MockConflict.Root/1.0.0", "MockConflict.Pin/1.0.0"],
+            desiredDependencies: ["MockConflict.Root/2.0.0"],
+            targetFramework: "net8.0",
+            expectedResolvedDependencies: ["MockConflict.Root/1.0.0", "MockConflict.Pin/1.0.0"],
+            transitivePins: ["MockConflict.Pin"]
+        );
+    }
+
+    [Fact(Timeout = 120_000)]
+    public async Task CentralPinResolutionHandlesDependencyCycles()
+    {
+        await TestAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("MockCycle.Root", "1.0.0", "net8.0", [(null, [("MockCycle.Pin", "1.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("MockCycle.Root", "2.0.0", "net8.0", [(null, [("MockCycle.Middle", "2.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("MockCycle.Middle", "2.0.0", "net8.0", [(null, [("MockCycle.Root", "2.0.0"), ("MockCycle.Pin", "2.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("MockCycle.Pin", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("MockCycle.Pin", "2.0.0", "net8.0"),
+            ],
+            existingTopLevelDependencies: ["MockCycle.Root/1.0.0", "MockCycle.Pin/1.0.0"],
+            desiredDependencies: ["MockCycle.Root/2.0.0"],
+            targetFramework: "net8.0",
+            expectedResolvedDependencies: ["MockCycle.Root/2.0.0", "MockCycle.Pin/2.0.0"],
+            transitivePins: ["MockCycle.Pin"]
         );
     }
 
@@ -594,7 +783,9 @@ public class MSBuildDependencySolverTests : TestBase
         ImmutableArray<string> desiredDependencies,
         string targetFramework,
         ImmutableArray<string> expectedResolvedDependencies,
-        MockNuGetPackage[]? packages = null
+        MockNuGetPackage[]? packages = null,
+        ImmutableArray<string> transitivePins = default,
+        ImmutableArray<string> targetFrameworkFallbacks = default
     )
     {
         // arrange
@@ -618,10 +809,16 @@ public class MSBuildDependencySolverTests : TestBase
         var msbuildDepSolver = new MSBuildDependencySolver(repoContentsPath, projectPath, logger);
 
         // act
+        var framework = NuGetFramework.Parse(targetFramework);
+        if (!targetFrameworkFallbacks.IsDefaultOrEmpty)
+        {
+            framework = new FallbackFramework(framework, targetFrameworkFallbacks.Select(NuGetFramework.Parse).ToArray());
+        }
+
         var resolvedDependencies = await msbuildDepSolver.SolveAsync(
-            [.. existingTopLevelDependencies.Select(d => new Dependency(d.Split('/')[0], d.Split('/')[1], DependencyType.PackageReference))],
+            [.. existingTopLevelDependencies.Select(d => new Dependency(d.Split('/')[0], d.Split('/')[1], DependencyType.PackageReference, IsTopLevel: transitivePins.IsDefaultOrEmpty || !transitivePins.Contains(d.Split('/')[0], StringComparer.OrdinalIgnoreCase)))],
             [.. desiredDependencies.Select(d => new Dependency(d.Split('/')[0], d.Split('/')[1], DependencyType.PackageReference))],
-            targetFramework
+            framework
         );
 
         // assert

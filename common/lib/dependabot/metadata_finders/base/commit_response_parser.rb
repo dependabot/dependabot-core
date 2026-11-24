@@ -47,14 +47,6 @@ module Dependabot
           raise_bad_response("GitLab", "#{context} #{key} must be a string")
         end
 
-        sig { params(object: T::Hash[String, Object], key: String, context: String).returns(String) }
-        def object_string(object, key, context)
-          value = object[key]
-          return value if value.is_a?(String)
-
-          raise_bad_response("Azure", "#{context} #{key} must be a string")
-        end
-
         sig { params(provider: String, message: String).returns(T.noreturn) }
         def raise_bad_response(provider, message)
           raise Dependabot::PrivateSourceBadResponse.new(

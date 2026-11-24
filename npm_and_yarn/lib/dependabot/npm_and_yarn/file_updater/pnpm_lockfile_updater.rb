@@ -196,6 +196,11 @@ module Dependabot
         # parse as INVALID_PATCH
         ERR_PNPM_PATCH_NOT_APPLIED = /ERR_PNPM_PATCH_(?:NOT_APPLIED|FAILED)|ERR_PNPM_INVALID_PATCH/
 
+        # A patch is keyed by the exact version it was made for ("pkg@1.0.0"), so updating a patched package leaves its
+        # patch without a package, and pnpm refuses to install while a patch is unused.
+        ERR_PNPM_UNUSED_PATCH = /ERR_PNPM_UNUSED_PATCH/
+        UNUSED_PATCH_LIST = /The following patches were not used: (?<patches>[^\n]+)/
+
         # this intermittent issue is related with Node v20
         ERR_INVALID_THIS = /ERR_INVALID_THIS/
         URL_SEARCH_PARAMS = /URLSearchParams/
@@ -286,6 +291,8 @@ module Dependabot
               write_final_package_json_files
 
               run_pnpm_install
+
+              update_again_for_widened_requirements(pnpm_lock)
 
               updated_content = File.read(pnpm_lock.name)
               if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
@@ -504,6 +511,109 @@ module Dependabot
           cmd = "update #{specs.join(' ')}  --lockfile-only --no-save -r"
           fingerprint = "update <dependency_updates>  --lockfile-only --no-save -r"
           run_pnpm_command_with_release_age_gate(cmd, fingerprint)
+        end
+
+        # A locked version that satisfies a widened range stays where it is unless pnpm is asked to move it while that
+        # range is in the manifest, which is only the case after the first update and install.
+        sig { params(pnpm_lock: Dependabot::DependencyFile).void }
+        def update_again_for_widened_requirements(pnpm_lock)
+          return unless widened_dependency_left_behind?(File.read(pnpm_lock.name))
+
+          run_pnpm_update_packages
+        end
+
+        # Whether a requirement was widened with another alternative ("^1.0.0 || ^2.0.0") and the lockfile still has the
+        # dependency, in the importer of that requirement, at another version than the new one
+        sig { params(lockfile_content: String).returns(T::Boolean) }
+        def widened_dependency_left_behind?(lockfile_content)
+          lockfile = parsed_lockfile(lockfile_content)
+
+          dependencies.any? do |dep|
+            next false unless dep.top_level? && dep.version
+
+            widened_requirements(dep).any? do |req|
+              locked = locked_versions(lockfile, req, dep.name)
+              next !lockfile_content.include?("#{dep.name}@#{dep.version}") if locked.empty?
+
+              locked.any? { |version| version != dep.version }
+            end
+          end
+        end
+
+        sig { params(dep: Dependabot::Dependency).returns(T::Array[Dependabot::DependencyRequirement]) }
+        def widened_requirements(dep)
+          dep.requirements.zip(dep.previous_requirements || []).filter_map do |new_req, old_req|
+            next if new_req.requirement_string == old_req&.requirement_string
+            next unless new_req.requirement_string&.include?("||")
+
+            new_req
+          end
+        end
+
+        sig { params(content: String).returns(T.nilable(T::Hash[String, Object])) }
+        def parsed_lockfile(content)
+          # pnpm 11+ can write the lockfile as two YAML documents, an environment one and then the project's
+          documents = T.cast(YAML.safe_load_stream(content), T::Array[Object])
+          parsed = documents.last
+          parsed.is_a?(Hash) ? mapping(parsed) : nil
+        rescue Psych::Exception
+          nil
+        end
+
+        sig { params(value: T.nilable(Object)).returns(T::Hash[String, Object]) }
+        def mapping(value)
+          return {} unless value.is_a?(Hash)
+
+          value.to_h { |key, entry| [T.cast(key, Object).to_s, T.cast(entry, Object)] }
+        end
+
+        # The versions a requirement is locked to: for a requirement of the workspace file (a catalog), those of the
+        # catalogs with that range, or those of the importers that use the dependency when the lockfile has no such
+        # catalog; otherwise the one in the importer of the manifest. Empty when the lockfile does not say.
+        sig do
+          params(lockfile: T.nilable(T::Hash[String, Object]), req: Dependabot::DependencyRequirement, name: String)
+            .returns(T::Array[String])
+        end
+        def locked_versions(lockfile, req, name)
+          return [] unless lockfile
+
+          entries = if File.basename(T.must(req.file)) == PNPMPackageManager::PNPM_WS_YML_FILENAME
+                      catalog_entries(lockfile, name, req.requirement_string)
+                    else
+                      importer_entries(lockfile, name, T.must(req.file))
+                    end
+
+          entries.map do |entry|
+            locked = entry.is_a?(Hash) ? mapping(entry)["version"] : entry
+            locked.to_s.split("(").first.to_s.delete_prefix("/")
+          end
+        end
+
+        sig do
+          params(lockfile: T::Hash[String, Object], name: String, range: T.nilable(String)).returns(T::Array[Object])
+        end
+        def catalog_entries(lockfile, name, range)
+          entries = mapping(lockfile["catalogs"]).values.filter_map { |catalog| mapping(catalog)[name] }
+          return importer_entries(lockfile, name, nil) if entries.empty?
+
+          with_range = entries.select { |entry| mapping(entry)["specifier"] == range }
+          with_range.empty? ? entries : with_range
+        end
+
+        # The entries for a dependency in the importer of a manifest, or in every importer when there is no manifest
+        sig { params(lockfile: T::Hash[String, Object], name: String, file_name: T.nilable(String)).returns(T::Array[Object]) }
+        def importer_entries(lockfile, name, file_name)
+          importers = if lockfile.key?("importers")
+                        all = mapping(lockfile["importers"])
+                        file_name ? [all[Pathname.new(file_name).dirname.to_s]].compact : all.values
+                      else
+                        [lockfile]
+                      end
+
+          groups = %w(dependencies devDependencies optionalDependencies)
+          importers.flat_map do |importer|
+            groups.filter_map { |group| mapping(mapping(importer)[group])[name] }.first(1)
+          end
         end
 
         sig { returns(T.nilable(String)) }
@@ -1114,6 +1224,7 @@ module Dependabot
           end
 
           raise_patch_dependency_error(error_message) if error_message.match?(ERR_PNPM_PATCH_NOT_APPLIED)
+          raise_unused_patch_error(error_message) if error_message.match?(ERR_PNPM_UNUSED_PATCH)
           raise_unsupported_engine_error(error_message, pnpm_lock) if error_message.match?(ERR_PNPM_UNSUPPORTED_ENGINE)
 
           if error_message.match?(ERR_INVALID_THIS) && error_message.match?(URL_SEARCH_PARAMS)
@@ -1226,6 +1337,19 @@ module Dependabot
                 "update group \"patchedDependencies\"."
           Dependabot.logger.warn(error_message)
           raise Dependabot::DependencyFileNotResolvable, msg
+        end
+
+        sig { params(error_message: String).returns(T.noreturn) }
+        def raise_unused_patch_error(error_message)
+          patches = error_message.match(UNUSED_PATCH_LIST)&.[](:patches).to_s.split(",").map(&:strip).reject(&:empty?)
+          dependency_names = dependencies.map(&:name).join(", ")
+          unused = patches.empty? ? "its patches" : patches.join(", ")
+
+          Dependabot.logger.warn(error_message)
+          raise Dependabot::DependencyFileNotResolvable,
+                "Updating \"#{dependency_names}\" leaves #{unused} in \"patchedDependencies\" without a package to " \
+                "apply to, because a patch is tied to the exact version it was made for. Update the version in " \
+                "\"patchedDependencies\" (and check that the patch still applies), or remove the patch."
         end
 
         sig do
