@@ -52,12 +52,12 @@ module Dependabot
       sig { params(uri: URI::HTTP).returns(String) }
       def self.without_credentials(uri)
         # Bun also recognizes credentials appended to the registry path.
-        path = uri.path
-        path = path.sub(%r{(?:(?<=/)|:)(?:_authToken|_auth|username|_password)=.*}, "")
-        path = path.sub(%r{(?<=/):[a-zA-Z_][\w-]*=[^/]*/?\z}, "")
+        if (path = uri.path)
+          path = path.sub(%r{(?:(?<=/)|:)(?:_authToken|_auth|username|_password)=.*}, "")
+          uri.path = path.sub(%r{(?<=/):[a-zA-Z_][\w-]*=[^/]*/?\z}, "")
+        end
         uri.user = nil
         uri.password = nil
-        uri.path = path
         uri.to_s
       end
       private_class_method :without_credentials
