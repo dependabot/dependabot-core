@@ -740,7 +740,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
     end
 
     it "fetches the new hashes from the configured index" do
-      updated_files = updater.send(:update_uncompiled_files, [])
+      updated_files = updater.updated_dependency_files
 
       expect(updated_files.map(&:name)).to eq(["requirements-lock.txt"])
       expect(updated_files.first.content)
