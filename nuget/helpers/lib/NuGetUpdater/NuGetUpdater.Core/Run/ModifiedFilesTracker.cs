@@ -31,6 +31,7 @@ public class ModifiedFilesTracker
     [
         "global.json",
         "dotnet-tools.json",
+        "*.cs",
         "*.csproj",
         "*.fsproj",
         "*.vbproj",
