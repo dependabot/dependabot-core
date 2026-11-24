@@ -52,12 +52,16 @@ RSpec.describe Dependabot::Bun::FileFetcher do
   end
 
   context "with a bun.lock but no package-lock.json file" do
+    let(:repo_listing) do
+      JSON.parse(fixture("github", "contents_js_bun.json")).reject { |entry| entry["name"] == "bunfig.toml" }
+    end
+
     before do
       stub_request(:get, url + "?ref=sha")
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,
-          body: fixture("github", "contents_js_bun.json"),
+          body: JSON.generate(repo_listing),
           headers: json_header
         )
       stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
@@ -82,6 +86,63 @@ RSpec.describe Dependabot::Bun::FileFetcher do
           .to match_array(%w(package.json bun.lock))
         expect(file_fetcher_instance.ecosystem_versions)
           .to match({ package_managers: { "bun" => an_instance_of(Integer) } })
+      end
+
+      context "with registry settings in bunfig.toml" do
+        let(:repo_listing) { JSON.parse(fixture("github", "contents_js_bun.json")) }
+
+        let(:bunfig) do
+          <<~TOML
+            [install]
+            registry = "https://mirror.example.com/"
+
+            [install.scopes]
+            "@example" = { url = "https://packages.example.com/npm/", token = "$REGISTRY_TOKEN" }
+          TOML
+        end
+
+        before do
+          stub_request(:get, File.join(url, "bunfig.toml?ref=sha"))
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              body: JSON.generate(
+                name: "bunfig.toml",
+                path: "bunfig.toml",
+                type: "file",
+                encoding: "base64",
+                content: Base64.strict_encode64(bunfig)
+              ),
+              headers: json_header
+            )
+        end
+
+        it "provides registry routing to the updater without copying credentials" do
+          files = file_fetcher_instance.files
+          npmrc = files.find { |file| file.name == ".npmrc" }
+
+          expect(npmrc).to have_attributes(
+            support_file: true,
+            content: "registry=https://mirror.example.com/\n@example:registry=https://packages.example.com/npm/\n"
+          )
+          expect(files.map(&:name)).not_to include("bunfig.toml")
+        end
+
+        context "with only a private scope configured" do
+          let(:bunfig) do
+            <<~TOML
+              [install.scopes]
+              "@example" = "https://packages.example.com/npm/"
+            TOML
+          end
+
+          it "keeps the public registry as the default" do
+            npmrc = file_fetcher_instance.files.find { |file| file.name == ".npmrc" }
+
+            expect(npmrc).to have_attributes(
+              content: "registry=https://registry.npmjs.org/\n@example:registry=https://packages.example.com/npm/\n"
+            )
+          end
+        end
       end
     end
   end
