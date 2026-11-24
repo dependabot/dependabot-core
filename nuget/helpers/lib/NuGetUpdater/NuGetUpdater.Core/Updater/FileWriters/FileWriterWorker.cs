@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Xml.Linq;
 
 using NuGet.Versioning;
 
@@ -169,15 +170,14 @@ public class FileWriterWorker
         var initialTopLevelDependencies = initialProjectDiscovery.Dependencies
             .Where(d => d.IsTopLevel)
             .ToImmutableArray();
+        var initialSolvableDependencies = await GetSolvableDependenciesAsync(projectPath.FullName, initialProjectDiscovery);
         var newDependency = new Dependency(dependencyName, newDependencyVersion.ToString(), DependencyType.Unknown);
-        var desiredDependencies = initialTopLevelDependencies.Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
-            ? initialTopLevelDependencies.Select(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase) ? newDependency : d).ToImmutableArray()
-            : initialTopLevelDependencies.Concat([newDependency]).ToImmutableArray();
+        var desiredDependencies = GetDesiredDependencies(initialSolvableDependencies, newDependency);
 
         var updateOperations = new List<UpdateOperationBase>();
         foreach (var targetFramework in initialProjectDiscovery.TargetFrameworks)
         {
-            var resolvedDependencies = await _dependencySolver.SolveAsync(initialTopLevelDependencies, desiredDependencies, targetFramework);
+            var resolvedDependencies = await _dependencySolver.SolveAsync(initialSolvableDependencies, desiredDependencies, targetFramework);
             if (resolvedDependencies is null)
             {
                 _logger.Warn($"Unable to solve dependency conflicts for target framework {targetFramework}.");
@@ -242,13 +242,9 @@ public class FileWriterWorker
                     continue;
                 }
 
-                var rerunTopLevelDependencies = rerunProjectDiscovery.Dependencies
-                    .Where(d => d.IsTopLevel)
-                    .ToImmutableArray();
-                var rerunDesiredDependencies = rerunTopLevelDependencies.Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
-                    ? rerunTopLevelDependencies.Select(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase) ? newDependency : d).ToImmutableArray()
-                    : rerunTopLevelDependencies.Concat([newDependency]).ToImmutableArray();
-                var resolvedDependenciesInThisproject = await _dependencySolver.SolveAsync(rerunTopLevelDependencies, rerunDesiredDependencies, targetFramework);
+                var rerunSolvableDependencies = await GetSolvableDependenciesAsync(projectFullPath, rerunProjectDiscovery);
+                var rerunDesiredDependencies = GetDesiredDependencies(rerunSolvableDependencies, newDependency);
+                var resolvedDependenciesInThisproject = await _dependencySolver.SolveAsync(rerunSolvableDependencies, rerunDesiredDependencies, targetFramework);
                 if (resolvedDependenciesInThisproject is null)
                 {
                     _logger.Warn($"  Unable to solve dependency conflicts for {projectRelativePath}/{targetFramework}.");
@@ -324,6 +320,56 @@ public class FileWriterWorker
         }
 
         return [.. updateOperations];
+    }
+
+    private static ImmutableArray<Dependency> GetDesiredDependencies(ImmutableArray<Dependency> existingDependencies, Dependency newDependency)
+    {
+        return existingDependencies.Any(d => d.Name.Equals(newDependency.Name, StringComparison.OrdinalIgnoreCase))
+            ? existingDependencies.Select(d => d.Name.Equals(newDependency.Name, StringComparison.OrdinalIgnoreCase) ? newDependency : d).ToImmutableArray()
+            : existingDependencies.Concat([newDependency]).ToImmutableArray();
+    }
+
+    /// <summary>
+    /// Returns the dependencies that must be considered by the dependency solver.  This is all top-level dependencies
+    /// and, when Central Package Management transitive pinning is enabled, any transitive dependency that is pinned via
+    /// a <c>&lt;PackageVersion&gt;</c> element because updating a top-level dependency might require that pin to also
+    /// be updated.
+    /// </summary>
+    private async Task<ImmutableArray<Dependency>> GetSolvableDependenciesAsync(string projectFullPath, ProjectDiscoveryResult projectDiscovery)
+    {
+        var topLevelDependencies = projectDiscovery.Dependencies
+            .Where(d => d.IsTopLevel)
+            .ToImmutableArray();
+        if (projectDiscovery.PackageManagementKind != PackageManagementKind.CentralPackageManagementWithTransitivePinning)
+        {
+            return topLevelDependencies;
+        }
+
+        var projectDirectory = Path.GetDirectoryName(projectFullPath)!;
+        var candidateFilePaths = new[] { projectFullPath }
+            .Concat(projectDiscovery.ImportedFiles.Select(f => Path.Join(projectDirectory, f).FullyNormalizedRootedPath()));
+        var pinnedPackageNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var filePath in candidateFilePaths)
+        {
+            try
+            {
+                var contents = await File.ReadAllTextAsync(filePath);
+                var document = XDocument.Parse(contents);
+                var packageNames = document.Descendants()
+                    .Where(e => e.Name.LocalName.Equals("PackageVersion", StringComparison.OrdinalIgnoreCase))
+                    .SelectMany(e => (e.Attribute("Include")?.Value ?? string.Empty).Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+                pinnedPackageNames.UnionWith(packageNames);
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"Unable to determine pinned packages from file {filePath}: {ex.Message}");
+            }
+        }
+
+        var pinnedTransitiveDependencies = projectDiscovery.Dependencies
+            .Where(d => !d.IsTopLevel && d.Version is not null && pinnedPackageNames.Contains(d.Name))
+            .ToImmutableArray();
+        return [.. topLevelDependencies, .. pinnedTransitiveDependencies];
     }
 
     internal static async Task<Dictionary<string, string>> GetOriginalFileContentsAsync(DirectoryInfo repoContentsPath, DirectoryInfo initialStartingDirectory, IEnumerable<ProjectDiscoveryResult> projectDiscoveryResults)
