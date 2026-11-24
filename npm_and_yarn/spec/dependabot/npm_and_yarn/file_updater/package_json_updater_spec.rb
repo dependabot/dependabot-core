@@ -534,6 +534,48 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
       end
     end
 
+    # The git declaration is matched up to the last quote on its line, so on a one-line section it includes the
+    # sibling and its backslashes
+    context "with a git dependency followed by a value with backslashes on the same line" do
+      let(:package_json) do
+        Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: <<~JSON
+            {
+              "name": "app",
+              "devDependencies": { "is-number": "jonschlinkert/is-number#2.0.0", "shared": "file:..\\\\packages\\\\shared" }
+            }
+          JSON
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "is-number",
+          version: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
+          package_manager: "npm_and_yarn",
+          requirements: [{
+            requirement: nil,
+            file: "package.json",
+            groups: ["devDependencies"],
+            source: { type: "git", url: "https://github.com/jonschlinkert/is-number", branch: nil, ref: "4.0.0" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            file: "package.json",
+            groups: ["devDependencies"],
+            source: { type: "git", url: "https://github.com/jonschlinkert/is-number", branch: nil, ref: "2.0.0" }
+          }]
+        )
+      end
+
+      it "updates the reference and keeps the backslashes escaped" do
+        expect(JSON.parse(updated_package_json.content)["devDependencies"]).to eq(
+          "is-number" => "jonschlinkert/is-number#4.0.0",
+          "shared" => "file:..\\packages\\shared"
+        )
+      end
+    end
+
     context "with non-standard whitespace" do
       let(:project_name) { "npm8/non_standard_whitespace" }
 

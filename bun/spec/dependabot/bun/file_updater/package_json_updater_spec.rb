@@ -70,6 +70,36 @@ RSpec.describe Dependabot::Bun::FileUpdater::PackageJsonUpdater do
       end
     end
 
+    # The git declaration is matched up to the last quote on its line, so on a one-line section it includes the
+    # sibling and its backslashes
+    context "with a git dependency followed by a value with backslashes on the same line" do
+      let(:git_source) { { type: "git", url: "https://github.com/jonschlinkert/is-number", branch: nil } }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "is-number",
+          version: "a" * 40,
+          previous_version: "b" * 40,
+          package_manager: "bun",
+          requirements: [{ file: "package.json", requirement: nil, groups: ["dependencies"],
+                           source: git_source.merge(ref: "v7.0.0") }],
+          previous_requirements: [{ file: "package.json", requirement: nil, groups: ["dependencies"],
+                                    source: git_source.merge(ref: "v6.0.0") }]
+        )
+      end
+      let(:content) do
+        <<~JSON
+          {
+            "dependencies": { "is-number": "github:jonschlinkert/is-number#v6.0.0", "shared": "file:..\\\\packages\\\\shared" }
+          }
+        JSON
+      end
+
+      it "updates the reference and keeps the backslashes escaped" do
+        expect(updated_content).to eq(content.sub("#v6.0.0", "#v7.0.0"))
+        expect(JSON.parse(updated_content)["dependencies"]["shared"]).to eq("file:..\\packages\\shared")
+      end
+    end
+
     context "when a compact ignored root catalog precedes the workspaces catalog" do
       let(:content) do
         <<~JSON
