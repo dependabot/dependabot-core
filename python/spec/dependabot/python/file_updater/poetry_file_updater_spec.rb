@@ -1278,7 +1278,11 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
     let(:helper_result) { {} }
 
     before do
-      allow(updater).to receive(:updated_lockfile_content_for).and_return(lockfile.content)
+      updated_lockfile = lockfile.content.sub(
+        "name = \"requests\"\nversion = \"2.18.0\"",
+        "name = \"requests\"\nversion = \"2.19.1\""
+      )
+      allow(updater).to receive(:updated_lockfile_content_for).and_return(updated_lockfile)
       allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
         .with(hash_including(function: "get_pyproject_hash")).and_return(helper_result)
     end
