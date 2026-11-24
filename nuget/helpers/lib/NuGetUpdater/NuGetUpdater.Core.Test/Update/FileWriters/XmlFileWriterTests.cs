@@ -2792,6 +2792,106 @@ public class XmlFileWriterTests : FileWriterTestsBase
         );
     }
 
+    [Theory]
+    [InlineData("$(MissingVersion)")]
+    [InlineData("$(CycleA)")]
+    [InlineData("1.5.0")]
+    public async Task UpdatingAnUnresolvableCentralTransitivePinLeavesAllFilesUnchanged(string pinVersion)
+    {
+        await TestNoChangeAsync(
+            packageManagementKind: PackageManagementKind.CentralPackageManagementWithTransitivePinning,
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Direct.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", $$"""
+                    <Project>
+                      <PropertyGroup>
+                        <CycleA>$(CycleB)</CycleA>
+                        <CycleB>$(CycleA)</CycleB>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageVersion Include="Direct.Dependency" Version="1.0.0" />
+                        <PackageVersion Include="Transitive.Dependency" Version="{{pinVersion}}" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Direct.Dependency/1.0.0", "Transitive.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Direct.Dependency/2.0.0", "Transitive.Dependency/2.0.0"]
+        );
+    }
+
+    [Fact]
+    public async Task UpdatingACentralTransitivePinFollowsChildVersionPropertiesAcrossFiles()
+    {
+        await TestAsync(
+            packageManagementKind: PackageManagementKind.CentralPackageManagementWithTransitivePinning,
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Direct.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <VersionAlias>$(ActualVersion)</VersionAlias>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageVersion Include="Transitive.Dependency">
+                          <Version>$(VersionAlias)</Version>
+                        </PackageVersion>
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Versions.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ActualVersion>1.0.0</ActualVersion>
+                      </PropertyGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Transitive.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Transitive.Dependency/2.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Direct.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <VersionAlias>$(ActualVersion)</VersionAlias>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageVersion Include="Transitive.Dependency">
+                          <Version>$(VersionAlias)</Version>
+                        </PackageVersion>
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Versions.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ActualVersion>2.0.0</ActualVersion>
+                      </PropertyGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
     [Fact]
     public async Task NewReference_ItemGroupWithExistingPackageReferences_IsAdded()
     {
