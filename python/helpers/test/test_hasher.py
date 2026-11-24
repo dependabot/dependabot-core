@@ -2,6 +2,9 @@ import json
 import os
 import ssl
 import sys
+import threading
+from contextlib import contextmanager
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from unittest.mock import MagicMock, patch
 from urllib.error import URLError
 
@@ -83,6 +86,79 @@ class TestGetDependencyHash:
             assert False, "Expected URLError to be raised"
         except URLError:
             pass  # expected
+
+
+PACKAGE_JSON = {
+    "info": {"name": "demo"},
+    "releases": {
+        "1.0": [{
+            "url": "https://files.example.com/demo-1.0.tar.gz",
+            "digests": {"sha256": "abc123"},
+        }],
+    },
+}
+
+
+@contextmanager
+def package_index(json_path):
+    """Serve PACKAGE_JSON at json_path only; every other path is a 404."""
+    requests = []
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            requests.append(self.path)
+            if self.path != json_path:
+                self.send_error(404)
+                return
+            body = json.dumps(PACKAGE_JSON).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        yield "http://127.0.0.1:%d" % server.server_port, requests
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+class TestGetDependencyHashFromIndex:
+    def test_index_served_under_a_path(self):
+        with package_index("/api/pypi/pypi-remote/pypi/demo/json") as (
+            host, requests
+        ):
+            result = json.loads(hasher.get_dependency_hash(
+                "demo", "1.0", "sha256",
+                index_url=host + "/api/pypi/pypi-remote/simple"
+            ))
+
+        assert result == {"result": [{"hash": "abc123"}]}
+        assert requests == ["/api/pypi/pypi-remote/pypi/demo/json"]
+
+    def test_index_under_a_path_with_json_at_the_host_root(self):
+        with package_index("/pypi/demo/json") as (host, requests):
+            result = json.loads(hasher.get_dependency_hash(
+                "demo", "1.0", "sha256", index_url=host + "/mirror/simple/"
+            ))
+
+        assert result == {"result": [{"hash": "abc123"}]}
+        assert requests == ["/mirror/pypi/demo/json", "/pypi/demo/json"]
+
+    def test_index_at_the_host_root(self):
+        with package_index("/pypi/demo/json") as (host, requests):
+            result = json.loads(hasher.get_dependency_hash(
+                "demo", "1.0", "sha256", index_url=host + "/simple"
+            ))
+
+        assert result == {"result": [{"hash": "abc123"}]}
+        assert requests == ["/pypi/demo/json"]
 
 
 class TestGetPipfileHash:
