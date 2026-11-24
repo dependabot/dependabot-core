@@ -7,6 +7,7 @@ require "dependabot/file_parsers/base/dependency_set"
 require "dependabot/swift/file_parser"
 require "dependabot/swift/file_parser/package_resolved_parser"
 require "dependabot/swift/file_parser/pbxproj_parser"
+require "dependabot/swift/file_parser/xcproj_parser"
 require "dependabot/swift/xcode_file_helpers"
 
 module Dependabot
@@ -17,7 +18,7 @@ module Dependabot
       # Parses Package.resolved JSON files found inside Xcode project and
       # workspace directories (e.g., .xcodeproj and .xcworkspace), then
       # enriches each dependency with requirement info extracted from the
-      # corresponding project.pbxproj files.
+      # corresponding project.pbxproj or project.xcproj files.
       class XcodeSpmResolver
         extend T::Sig
 
@@ -73,12 +74,21 @@ module Dependabot
             xcode_scope_dir = extract_xcode_scope_dir(pbxproj_file.name)
             scoped[xcode_scope_dir] ||= {}
 
-            PbxprojParser.new(pbxproj_file).parse.each do |name, req_info|
+            project_file_parser(pbxproj_file).parse.each do |name, req_info|
               T.must(scoped[xcode_scope_dir])[name] = req_info
             end
           end
 
           scoped
+        end
+
+        sig { params(project_file: Dependabot::DependencyFile).returns(T.any(PbxprojParser, XcprojParser)) }
+        def project_file_parser(project_file)
+          if XcodeFileHelpers.xcproj_file?(project_file.name)
+            XcprojParser.new(project_file)
+          else
+            PbxprojParser.new(project_file)
+          end
         end
 
         sig do

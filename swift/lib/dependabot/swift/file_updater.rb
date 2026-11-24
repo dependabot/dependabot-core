@@ -13,6 +13,7 @@ module Dependabot
       require_relative "file_updater/lockfile_updater"
       require_relative "file_updater/manifest_updater"
       require_relative "file_updater/pbxproj_updater"
+      require_relative "file_updater/xcproj_updater"
       require_relative "file_updater/xcode_lockfile_updater"
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
@@ -47,7 +48,7 @@ module Dependabot
         updated_files
       end
 
-      # Xcode SPM update: updates Package.resolved and project.pbxproj files
+      # Xcode SPM update: updates Package.resolved and project.pbxproj/project.xcproj files
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def updated_xcode_spm_files
         updated_files = T.let([], T::Array[Dependabot::DependencyFile])
@@ -116,16 +117,28 @@ module Dependabot
           scoped_dependencies = dependencies_for_pbxproj(pbxproj_file)
           next if scoped_dependencies.empty?
 
-          updater = PbxprojUpdater.new(
-            pbxproj_file: pbxproj_file,
-            dependencies: scoped_dependencies
-          )
-          updated_content = updater.updated_pbxproj_content
+          updated_content = updated_project_file_content(pbxproj_file, scoped_dependencies)
           next if updated_content == pbxproj_file.content
 
           updated = updated_file(file: pbxproj_file, content: updated_content)
           updated.support_file = false
           updated_files << updated
+        end
+      end
+
+      sig do
+        params(
+          project_file: Dependabot::DependencyFile,
+          scoped_dependencies: T::Array[Dependabot::Dependency]
+        ).returns(String)
+      end
+      def updated_project_file_content(project_file, scoped_dependencies)
+        if XcodeFileHelpers.xcproj_file?(project_file.name)
+          XcprojUpdater.new(xcproj_file: project_file, dependencies: scoped_dependencies)
+                       .updated_xcproj_content
+        else
+          PbxprojUpdater.new(pbxproj_file: project_file, dependencies: scoped_dependencies)
+                        .updated_pbxproj_content
         end
       end
 
@@ -145,11 +158,12 @@ module Dependabot
         files.compact.to_set
       end
 
+      # All Xcode project support files (project.pbxproj or project.xcproj)
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def pbxproj_files
         @pbxproj_files ||= T.let(
           dependency_files.select do |f|
-            f.name.end_with?("project.pbxproj") && f.support_file?
+            XcodeFileHelpers.xcode_project_file?(f.name) && f.support_file?
           end,
           T.nilable(T::Array[Dependabot::DependencyFile])
         )

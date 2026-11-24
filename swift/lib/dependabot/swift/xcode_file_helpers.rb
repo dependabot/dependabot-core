@@ -12,6 +12,22 @@ module Dependabot
       XCWORKSPACE_SUFFIX = ".xcworkspace/"
       PACKAGE_RESOLVED = "Package.resolved"
 
+      # Xcode 27.2 and later write the project as JSON (project.xcproj) instead
+      # of a property list (project.pbxproj). A project contains one or the other.
+      PBXPROJ_FILENAME = "project.pbxproj"
+      XCPROJ_FILENAME = "project.xcproj"
+      PROJECT_FILENAMES = T.let([PBXPROJ_FILENAME, XCPROJ_FILENAME].freeze, T::Array[String])
+
+      sig { params(path: String).returns(T::Boolean) }
+      def self.xcode_project_file?(path)
+        PROJECT_FILENAMES.include?(File.basename(path))
+      end
+
+      sig { params(path: String).returns(T::Boolean) }
+      def self.xcproj_file?(path)
+        File.basename(path) == XCPROJ_FILENAME
+      end
+
       sig { params(path: String).returns(T::Boolean) }
       def self.xcode_resolved_path?(path)
         return false unless path.end_with?(PACKAGE_RESOLVED)

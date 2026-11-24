@@ -270,6 +270,66 @@ RSpec.describe Dependabot::Swift::FileUpdater do
         end
       end
 
+      context "with the JSON project format (project.xcproj)" do
+        let(:project_name) { "xcode_project_xcproj" }
+        let(:files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "MyApp.xcodeproj/project.xcproj",
+              content: fixture("projects", project_name, "MyApp.xcodeproj", "project.xcproj"),
+              support_file: true
+            ),
+            Dependabot::DependencyFile.new(
+              name: "MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+              content: fixture(
+                "projects",
+                project_name,
+                "MyApp.xcodeproj",
+                "project.xcworkspace",
+                "xcshareddata",
+                "swiftpm",
+                "Package.resolved"
+              )
+            )
+          ]
+        end
+        let(:dependencies) do
+          requirement = lambda do |version, ref|
+            {
+              requirement: ">= #{version}, < 3.0.0",
+              groups: ["dependencies"],
+              file: "MyApp.xcodeproj/project.xcproj",
+              source: { type: "git", url: "https://github.com/apple/swift-nio.git", ref: ref, branch: nil },
+              metadata: { requirement_string: "from: \"#{version}\"", kind: "upToNextMajorVersion" }
+            }
+          end
+
+          [
+            Dependabot::Dependency.new(
+              name: "github.com/apple/swift-nio",
+              version: "2.55.0",
+              previous_version: "2.54.0",
+              requirements: [requirement.call("2.55.0", "abc123newrevision")],
+              previous_requirements: [requirement.call("2.54.0", "1234567890abcdef1234567890abcdef12345678")],
+              package_manager: "swift",
+              metadata: { identity: "swift-nio" }
+            )
+          ]
+        end
+
+        it "returns the updated Package.resolved and project.xcproj files" do
+          expect(updated_dependency_files.map(&:name)).to contain_exactly(
+            "MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+            "MyApp.xcodeproj/project.xcproj"
+          )
+
+          xcproj = updated_dependency_files.find { |f| f.name.end_with?("project.xcproj") }
+          expect(xcproj.support_file).to be false
+          expect(xcproj.content).to include("\"up-to-next-major-version\": \"2.55.0\"")
+          expect(xcproj.content).not_to include("\"up-to-next-major-version\": \"2.54.0\"")
+        end
+      end
+
       context "with workspace-scoped Package.resolved" do
         let(:project_name) { "xcode_workspace" }
         let(:files) do

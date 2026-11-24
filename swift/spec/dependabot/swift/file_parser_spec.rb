@@ -587,6 +587,43 @@ RSpec.describe Dependabot::Swift::FileParser do
       end
     end
 
+    context "with a single Xcode project in the JSON project format (project.xcproj)" do
+      let(:project_name) { "xcode_project_xcproj" }
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcodeproj/project.xcproj",
+            content: fixture("projects", project_name, "MyApp.xcodeproj", "project.xcproj"),
+            support_file: true
+          ),
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+            content: fixture(
+              "projects",
+              project_name,
+              "MyApp.xcodeproj",
+              "project.xcworkspace",
+              "xcshareddata",
+              "swiftpm",
+              "Package.resolved"
+            )
+          )
+        ]
+      end
+      let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+
+      it "enriches dependencies with project.xcproj requirements" do
+        dep = parser.parse.first
+        req = dep.requirements.first
+
+        expect(dep.name).to eq("github.com/apple/swift-nio")
+        expect(req[:requirement]).to eq(">= 2.54.0, < 3.0.0")
+        expect(req[:file]).to eq("MyApp.xcodeproj/project.xcproj")
+        expect(req[:metadata][:requirement_string]).to eq("from: \"2.54.0\"")
+        expect(req[:metadata][:kind]).to eq("upToNextMajorVersion")
+      end
+    end
+
     context "with v1 Package.resolved" do
       let(:project_name) { "xcode_project_v1_resolved" }
       let(:files) do
