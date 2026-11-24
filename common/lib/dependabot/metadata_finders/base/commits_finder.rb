@@ -207,7 +207,7 @@ module Dependabot
 
           target_version = version_class.new(version)
           dependency_tags.select do |tag|
-            tag_version = GitCommitChecker::VERSION_REGEX.match(tag)&.[](:version)
+            tag_version = GitCommitChecker::VERSION_REGEX.match(tag)&.named_captures&.fetch("version")
             next false unless tag_version && version_class.correct?(tag_version)
 
             version_class.new(tag_version) == target_version
