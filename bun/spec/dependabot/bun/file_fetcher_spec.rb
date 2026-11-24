@@ -4,6 +4,7 @@
 require "spec_helper"
 require "dependabot/file_fetchers"
 require "dependabot/bun"
+require "dependabot/bun/package/registry_finder"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Bun::FileFetcher do
@@ -135,12 +136,23 @@ RSpec.describe Dependabot::Bun::FileFetcher do
             TOML
           end
 
-          it "keeps the public registry as the default" do
-            npmrc = file_fetcher_instance.files.find { |file| file.name == ".npmrc" }
+          let(:npmrc) { file_fetcher_instance.files.find { |file| file.name == ".npmrc" } }
 
+          it "does not set a default registry" do
             expect(npmrc).to have_attributes(
-              content: "registry=https://registry.npmjs.org/\n@example:registry=https://packages.example.com/npm/\n"
+              content: "@example:registry=https://packages.example.com/npm/\n"
             )
+          end
+
+          it "preserves a replacement registry for unscoped packages" do
+            replacement = Dependabot::Credential.new(
+              "type" => "npm_registry", "registry" => "mirror.example.com", "replaces-base" => true
+            )
+            finder = Dependabot::Bun::Package::RegistryFinder.new(
+              dependency: nil, credentials: [replacement], npmrc_file: npmrc
+            )
+
+            expect(finder.registry_from_rc("etag")).to eq("https://mirror.example.com")
           end
         end
       end

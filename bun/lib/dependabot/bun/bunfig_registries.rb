@@ -20,6 +20,7 @@ module Dependabot
 
         lines = T.let([], T::Array[String])
         registry = registry_url(install["registry"])
+        lines << "registry=#{registry}" if registry
         scopes = install["scopes"]
         if scopes.is_a?(Hash)
           scopes.each do |scope, value|
@@ -29,9 +30,7 @@ module Dependabot
           end
         end
 
-        return unless registry || !lines.empty?
-
-        ["registry=#{registry || 'https://registry.npmjs.org/'}", *lines, ""].join("\n")
+        lines.join("\n") + "\n" unless lines.empty?
       rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
         raise Dependabot::DependencyFileNotParseable, file.path
       end
