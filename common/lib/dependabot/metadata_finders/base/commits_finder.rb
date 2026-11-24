@@ -82,14 +82,14 @@ module Dependabot
           @new_tag = T.let(compute_new_tag, T.nilable(String))
         end
 
+        private
+
         sig { returns(T.nilable(String)) }
         def previous_tag
           return @previous_tag if defined?(@previous_tag)
 
           @previous_tag = T.let(compute_previous_tag, T.nilable(String))
         end
-
-        private
 
         sig { returns(T.nilable(String)) }
         def compute_new_tag
