@@ -1,15 +1,16 @@
 using System.Collections.Immutable;
 
+using NuGet.Frameworks;
 using NuGet.Versioning;
 
 namespace NuGetUpdater.Core.Analyze;
 
 internal static class DependencyFinder
 {
-    public static async Task<ImmutableDictionary<string, ImmutableArray<Dependency>>> GetDependenciesAsync(
+    public static async Task<ImmutableDictionary<NuGetFramework, ImmutableArray<Dependency>>> GetDependenciesAsync(
         string repoRoot,
         string projectPath,
-        IEnumerable<string> frameworks,
+        IEnumerable<NuGetFramework> frameworks,
         ImmutableHashSet<string> packageIds,
         NuGetVersion version,
         NuGetContext nugetContext,
@@ -21,15 +22,16 @@ internal static class DependencyFinder
             .Select(id => new Dependency(id, versionString, DependencyType.Unknown))
             .ToImmutableArray();
 
-        var result = ImmutableDictionary.CreateBuilder<string, ImmutableArray<Dependency>>();
+        var result = ImmutableDictionary.CreateBuilder<NuGetFramework, ImmutableArray<Dependency>>();
         foreach (var framework in frameworks)
         {
             var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
                 repoRoot,
                 projectPath,
-                framework,
+                framework.GetShortFolderName(),
                 packages,
-                logger);
+                logger,
+                restoreFramework: framework);
             var updatedDependencies = new Dependency[dependencies.Length];
             await Parallel.ForEachAsync(
                 Enumerable.Range(0, dependencies.Length),
