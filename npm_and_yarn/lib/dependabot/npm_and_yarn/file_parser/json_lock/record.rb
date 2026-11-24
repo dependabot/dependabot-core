@@ -9,6 +9,11 @@ module Dependabot
   module NpmAndYarn
     class FileParser < Dependabot::FileParsers::Base
       class JsonLock
+        class GitPin < T::ImmutableStruct
+          const :version, String
+          const :from, T.nilable(String), default: nil
+        end
+
         class Record
           extend T::Sig
 
@@ -32,6 +37,14 @@ module Dependabot
             optional_string("name")
           end
 
+          sig { returns(T.nilable(GitPin)) }
+          def git_pin
+            pin = version
+            return unless pin&.start_with?("git")
+
+            GitPin.new(version: pin, from: optional_string("from"))
+          end
+
           sig { returns(T.nilable(String)) }
           def resolved
             optional_string("resolved")
@@ -40,6 +53,19 @@ module Dependabot
           sig { returns(T.nilable(String)) }
           def resolution
             optional_string("resolution")
+          end
+
+          sig { returns(T.nilable(T::Hash[String, String])) }
+          def requires
+            value = object["requires"]
+            return if value.nil?
+
+            context = "#{@context}.requires"
+            object_value(value, context).to_h do |name, requirement|
+              invalid!("#{context}.#{name} must be a string") unless requirement.is_a?(String)
+
+              [name, requirement]
+            end
           end
 
           sig { returns(T::Boolean) }
@@ -87,6 +113,29 @@ module Dependabot
             key = mapping[primary] ? primary : fallback
             data = mapping[key]
             self.class.new(data, path: @path, context: "packages.#{key}") unless data.nil?
+          end
+
+          sig { returns(T.nilable(Record)) }
+          def root_package
+            packages = object["packages"]
+            return if packages.nil?
+
+            invalid!("#{@context}.packages must be an object") unless packages.is_a?(Hash)
+            data = T.cast(packages[""], Object)
+            self.class.new(data, path: @path, context: "packages root") unless data.nil?
+          end
+
+          sig { params(type: String, name: String).returns(T.nilable(String)) }
+          def requirement(type, name)
+            mapping = object[type]
+            return if mapping.nil?
+
+            invalid!("#{@context}.#{type} must be an object") unless mapping.is_a?(Hash)
+            value = T.cast(mapping[name], Object)
+            return if value.nil?
+            return value if value.is_a?(String)
+
+            invalid!("#{@context}.#{type}.#{name} must be a string or nil")
           end
 
           sig { params(default_registry: String).returns(T.nilable(URI::Generic)) }

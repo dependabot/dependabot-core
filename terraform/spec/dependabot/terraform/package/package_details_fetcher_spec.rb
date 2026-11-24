@@ -91,4 +91,34 @@ RSpec.describe Dependabot::Terraform::Package::PackageDetailsFetcher do
       expect(result).to be_empty
     end
   end
+
+  context "with a registry dependency whose registry returns an unparseable response" do
+    sig { returns(Dependabot::Dependency) }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "hashicorp/aws",
+        version: "1.0.0",
+        package_manager: "terraform",
+        requirements: [{
+          requirement: "1.0.0",
+          groups: [],
+          file: "main.tf",
+          source: { type: "provider", registry_hostname: "registry.terraform.io", module_identifier: "hashicorp/aws" }
+        }]
+      )
+    end
+
+    before do
+      stub_request(:get, "https://registry.terraform.io/v2/providers/hashicorp/aws?include=provider-versions")
+        .to_return(status: 200, body: "")
+    end
+
+    it "attaches only the registry host to the parse error" do
+      expect { fetcher.fetch_tag_and_release_date_from_provider }.to raise_error(JSON::ParserError) do |error|
+        context = T.must(Dependabot::ErrorReportContext.build(error: error))
+        expect(context).to include("host" => "registry.terraform.io", "http-method" => "GET")
+        expect(context.values.join).not_to include("/v2/providers")
+      end
+    end
+  end
 end

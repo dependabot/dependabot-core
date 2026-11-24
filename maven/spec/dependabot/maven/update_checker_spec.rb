@@ -83,6 +83,18 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
 
     it { is_expected.to eq(version_class.new("23.6-jre")) }
 
+    context "when Maven Central is rate limited" do
+      before do
+        stub_request(:get, maven_central_metadata_url)
+          .to_return(status: 429, body: "Too Many Requests")
+      end
+
+      it "raises a RegistryError instead of reporting no versions" do
+        expect { checker.latest_version }
+          .to raise_error(Dependabot::RegistryError) { |e| expect(e.status).to eq(429) }
+      end
+    end
+
     context "when Maven Central doesn't return a release tag" do
       let(:maven_central_releases) do
         fixture("maven_central_metadata", "no_release.xml")

@@ -87,6 +87,38 @@ RSpec.describe Dependabot::Sbt::Package::PackageDetailsFetcher do
     end
   end
 
+  describe "#fetch when a registry that replaces Maven Central is rate limited" do
+    let(:credentials) do
+      [
+        Dependabot::Credential.new({ "type" => "maven_repository", "url" => "https://other.example.com/maven" }),
+        Dependabot::Credential.new(
+          { "type" => "maven_repository", "url" => "https://registry.example.com/maven/", "replaces-base" => true }
+        )
+      ]
+    end
+
+    before do
+      stub_request(:get, "https://registry.example.com/maven/com/google/guava/guava/maven-metadata.xml")
+        .to_return(status: 429, body: "Too Many Requests")
+      stub_request(:get, "https://other.example.com/maven/com/google/guava/guava/maven-metadata.xml")
+        .to_return(status: 200, body: maven_central_releases)
+    end
+
+    it "raises a RegistryError even when another repository has versions" do
+      expect { fetcher.fetch }.to raise_error(Dependabot::RegistryError) { |e| expect(e.status).to eq(429) }
+    end
+  end
+
+  describe "#fetch when Maven Central is rate limited" do
+    before do
+      stub_request(:get, maven_central_metadata_url).to_return(status: 429, body: "Too Many Requests")
+    end
+
+    it "raises a RegistryError instead of returning no versions" do
+      expect { fetcher.fetch }.to raise_error(Dependabot::RegistryError) { |e| expect(e.status).to eq(429) }
+    end
+  end
+
   describe "#releases" do
     subject(:releases) { fetcher.releases }
 

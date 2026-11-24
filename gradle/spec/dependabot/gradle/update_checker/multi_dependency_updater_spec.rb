@@ -177,6 +177,76 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::MultiDependencyUpdater do
         it { is_expected.to be(false) }
       end
     end
+
+    context "with a version catalog property that another catalog also defines" do
+      let(:dependency_files) { [tools_catalog, testing_catalog] }
+      let(:tools_catalog) do
+        Dependabot::DependencyFile.new(
+          name: "gradle/tools.versions.toml",
+          content: fixture("version_catalog_file", "tools.versions.toml")
+        )
+      end
+      let(:testing_catalog) do
+        Dependabot::DependencyFile.new(
+          name: "gradle/testing.versions.toml",
+          content: fixture("version_catalog_file", "testing.versions.toml")
+        )
+      end
+
+      let(:dependency_requirements) do
+        [{
+          file: "gradle/tools.versions.toml",
+          requirement: "4.13.2",
+          groups: [],
+          source: nil,
+          metadata: { property_name: "junit" }
+        }]
+      end
+      let(:dependency_name) { "junit:junit" }
+      let(:dependency_version) { "4.13.2" }
+
+      let(:maven_central_metadata_url_junit) do
+        "https://repo.maven.apache.org/maven2/junit/junit/maven-metadata.xml"
+      end
+      let(:maven_central_metadata_url_junit_bom) do
+        "https://repo.maven.apache.org/maven2/org/junit/junit-bom/maven-metadata.xml"
+      end
+
+      before do
+        stub_request(:get, maven_central_metadata_url_junit)
+          .to_return(
+            status: 200,
+            body: fixture("maven_central_metadata", "with_release.xml")
+          )
+        stub_request(:get, maven_central_metadata_url_junit_bom)
+          .to_return(
+            status: 200,
+            body: fixture("maven_central_metadata", "missing_latest.xml")
+          )
+      end
+
+      it { is_expected.to be(true) }
+
+      context "when the dependency is also declared in the other catalog" do
+        let(:dependency_requirements) do
+          [{
+            file: "gradle/tools.versions.toml",
+            requirement: "4.13.2",
+            groups: [],
+            source: nil,
+            metadata: { property_name: "junit" }
+          }, {
+            file: "gradle/testing.versions.toml",
+            requirement: "5.10.0",
+            groups: [],
+            source: nil,
+            metadata: { property_name: "junit" }
+          }]
+        end
+
+        it { is_expected.to be(false) }
+      end
+    end
   end
 
   describe "#updated_dependencies" do
