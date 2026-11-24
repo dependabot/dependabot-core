@@ -586,6 +586,46 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
           end
         end
 
+        context "when another package's name is the dependency's name and a number" do
+          let(:dependency_name) { "@scope/foo" }
+          let(:dependency_version) { "2.0.0" }
+          let(:dependency_previous_version) { "1.9.0" }
+          let(:source) { Dependabot::Source.new(provider: "github", repo: "scope/foo") }
+          let(:github_url) { "https://api.github.com/repos/scope/foo/releases?per_page=100" }
+          let(:github_response) do
+            JSON.generate(
+              [
+                { id: 30, tag_name: "@scope/foo-2@2.0.0", name: "@scope/foo-2@2.0.0", body: "Notes for foo-2",
+                  prerelease: false },
+                { id: 20, tag_name: "v2.0.0", name: "v2.0.0", body: "Notes for v2.0.0", prerelease: false },
+                { id: 10, tag_name: "v1.9.0", name: "v1.9.0", body: "Notes for v1.9.0", prerelease: false }
+              ]
+            )
+          end
+
+          it "uses the dependency's own release" do
+            expect(releases_text).to eq("## v2.0.0\nNotes for v2.0.0")
+          end
+        end
+
+        context "when the new version is only tagged as <prefix>@<version>" do
+          let(:dependency_version) { "2.0.0" }
+          let(:dependency_previous_version) { "1.0.0" }
+          let(:github_response) do
+            JSON.generate(
+              [
+                { id: 20, tag_name: "release@2.0.0", name: "release@2.0.0", body: "Notes for 2.0.0",
+                  prerelease: false },
+                { id: 10, tag_name: "v1.0.0", name: "v1.0.0", body: "Notes for 1.0.0", prerelease: false }
+              ]
+            )
+          end
+
+          it "uses that release" do
+            expect(releases_text).to eq("## release@2.0.0\nNotes for 2.0.0")
+          end
+        end
+
         context "when two releases have the same version" do
           let(:dependency_version) { "2.0.0" }
           let(:dependency_previous_version) { "1.9.0" }

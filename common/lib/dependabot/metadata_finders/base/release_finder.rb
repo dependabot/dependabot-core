@@ -131,11 +131,22 @@ module Dependabot
             releases.select { |r| PackageTagMatcher.starts_with_dependency?(r.tag_name, dependency.name) }
           return releases_with_dependency_name if releases_with_dependency_name.any?
 
-          # No release is tagged with the dependency's name, so leave out the releases of other packages
-          # in the repository, unless that would leave nothing.
+          # No release is tagged with the dependency's name. Leave out the releases of other packages in the
+          # repository only when the rest include the new version: otherwise a `<prefix>@<version>` tag can be
+          # the dependency's own release under another prefix, such as `release@2.0.0`.
           other_releases_removed =
             releases.reject { |r| PackageTagMatcher.other_package_tag?(r.tag_name, dependency.name) }
-          other_releases_removed.any? ? other_releases_removed : releases
+          return releases unless other_releases_removed.any? { |r| release_matches_new_version?(r) }
+
+          other_releases_removed
+        end
+
+        sig { params(release: ReleaseType).returns(T::Boolean) }
+        def release_matches_new_version?(release)
+          return false unless new_version
+
+          release_regex = version_regex(new_version)
+          release_regex.match?(release.tag_name.to_s) || release_regex.match?(release.name.to_s)
         end
 
         sig { returns(T::Array[ReleaseType]) }

@@ -18,6 +18,10 @@ RSpec.describe Dependabot::MetadataFinders::Base::PackageTagMatcher do
       expect(described_class.starts_with_dependency?("@cldmv/slothlet-i18n@3.24.0", "@cldmv/slothlet")).to be(false)
       expect(described_class.starts_with_dependency?("Flurl.2.8.0", "Flurl.Http")).to be(false)
     end
+
+    it "does not match another package whose name is the dependency's name and a number" do
+      expect(described_class.starts_with_dependency?("@scope/foo-2@2.0.0", "@scope/foo")).to be(false)
+    end
   end
 
   describe ".contains_dependency?" do

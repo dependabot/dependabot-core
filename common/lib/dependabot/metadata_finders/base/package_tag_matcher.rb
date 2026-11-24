@@ -16,9 +16,13 @@ module Dependabot
         # `<package>@<version>`, where the package name may have an npm scope.
         PACKAGE_TAG = %r{\A(?<package>(?:@[^@/\s]+/)?[^@/\s]+)@v?\d}
 
-        # Whether the tag starts with the dependency's name, followed by a version.
+        # Whether the tag starts with the dependency's name, followed by a version. Another package's
+        # `<package>@<version>` tag never matches, even when its name is the dependency's name and a number
+        # (`@scope/foo-2@2.0.0` for `@scope/foo`).
         sig { params(tag: String, dependency_name: String).returns(T::Boolean) }
         def self.starts_with_dependency?(tag, dependency_name)
+          return false if other_package_tag?(tag, dependency_name)
+
           tag.match?(/\A#{name_then_version(dependency_name)}/i)
         end
 
