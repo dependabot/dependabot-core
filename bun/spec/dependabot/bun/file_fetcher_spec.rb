@@ -94,7 +94,7 @@ RSpec.describe Dependabot::Bun::FileFetcher do
         let(:bunfig) do
           <<~TOML
             [install]
-            registry = "https://mirror.example.com/"
+            registry = "https://$REGISTRY_USER:$REGISTRY_PASSWORD@mirror.example.com:8443/npm/"
 
             [install.scopes]
             "@example" = { url = "https://packages.example.com/npm/", token = "$REGISTRY_TOKEN" }
@@ -122,16 +122,16 @@ RSpec.describe Dependabot::Bun::FileFetcher do
 
           expect(npmrc).to have_attributes(
             support_file: true,
-            content: "registry=https://mirror.example.com/\n@example:registry=https://packages.example.com/npm/\n"
+            content: "registry=https://mirror.example.com:8443/npm/\n@example:registry=https://packages.example.com/npm/\n"
           )
           expect(files.map(&:name)).not_to include("bunfig.toml")
         end
 
-        context "with only a private scope configured" do
+        context "with only a private scope configured without an @ prefix" do
           let(:bunfig) do
             <<~TOML
               [install.scopes]
-              "@example" = "https://packages.example.com/npm/"
+              example = "https://packages.example.com/npm/"
             TOML
           end
 

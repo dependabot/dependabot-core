@@ -23,8 +23,9 @@ module Dependabot
         scopes = install["scopes"]
         if scopes.is_a?(Hash)
           scopes.each do |scope, value|
+            scope_name = scope.delete_prefix("@")
             url = registry_url(value)
-            lines << "#{scope}:registry=#{url}" if url && scope.match?(/\A@[\w.-]+\z/)
+            lines << "@#{scope_name}:registry=#{url}" if url && scope_name.match?(/\A[\w.-]+\z/)
           end
         end
 
@@ -41,9 +42,12 @@ module Dependabot
         return unless value.is_a?(String) && !value.match?(/[[:space:][:cntrl:]]/)
 
         uri = URI.parse(value)
-        return unless uri.is_a?(URI::HTTP) && uri.host && !uri.userinfo && !uri.query && !uri.fragment
+        return unless uri.is_a?(URI::HTTP) && uri.host && !uri.query && !uri.fragment
+        return value unless uri.userinfo
 
-        value
+        uri.user = nil
+        uri.password = nil
+        uri.to_s
       rescue URI::InvalidURIError
         nil
       end
