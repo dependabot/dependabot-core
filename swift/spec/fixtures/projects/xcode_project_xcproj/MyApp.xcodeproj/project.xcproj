@@ -1,0 +1,54 @@
+{
+  "default-configuration": "Release",
+  "configurations": [
+    "Debug",
+    "Release",
+  ],
+  "localizations": {
+    "development": "en",
+    "supported": [
+      "Base",
+    ],
+  },
+  "packages": [
+    {
+      "kind": "remote",
+      "repository": "https://github.com/apple/swift-nio.git",
+      "version": {
+        "up-to-next-major-version": "2.54.0",
+      },
+    },
+  ],
+  "files": [
+    { "kind": "folder", "path": "MyApp", "target-membership": [ "MyApp" ] },
+    {
+      "kind": "group",
+      "name": "Products",
+      "children": [
+        { "path": "<PRODUCTS>/MyApp", "id": "A30000000000000000000001", "type": "compiled.mach-o.executable", "index": false },
+      ],
+    },
+  ],
+  "targets": [
+    {
+      "name": "MyApp",
+      "id": "A70000000000000000000001",
+      "product": "Products/MyApp",
+      "product-type": "tool",
+      "build-phases": [
+        "compile-sources",
+        "frameworks",
+      ],
+      "build-settings": {
+        "PRODUCT_NAME": "$(TARGET_NAME)",
+      },
+    },
+  ],
+  "build-settings": {
+    "MACOSX_DEPLOYMENT_TARGET": "14.0",
+    "SDKROOT": "macosx",
+    "SWIFT_VERSION": "5.0",
+  },
+  "last-upgrade": "27.0",
+  "last-swift-update": "27.0",
+}
