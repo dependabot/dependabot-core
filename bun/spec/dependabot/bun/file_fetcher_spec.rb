@@ -95,10 +95,10 @@ RSpec.describe Dependabot::Bun::FileFetcher do
         let(:bunfig) do
           <<~TOML
             [install]
-            registry = "https://$REGISTRY_USER:$REGISTRY_PASSWORD@mirror.example.com:8443/npm/"
+            registry = "https://$REGISTRY_USER:$REGISTRY_PASSWORD@mirror.example.com:8443/npm/:_authToken=$REGISTRY_TOKEN"
 
             [install.scopes]
-            "@example" = { url = "https://packages.example.com/npm/", token = "$REGISTRY_TOKEN" }
+            "@example" = { url = "https://packages.example.com/npm/_auth=$REGISTRY_AUTH", token = "$REGISTRY_TOKEN" }
           TOML
         end
 

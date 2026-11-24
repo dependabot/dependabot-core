@@ -42,15 +42,25 @@ module Dependabot
 
         uri = URI.parse(value)
         return unless uri.is_a?(URI::HTTP) && uri.host && !uri.query && !uri.fragment
-        return value unless uri.userinfo
 
-        uri.user = nil
-        uri.password = nil
-        uri.to_s
+        without_credentials(uri)
       rescue URI::InvalidURIError
         nil
       end
       private_class_method :registry_url
+
+      sig { params(uri: URI::HTTP).returns(String) }
+      def self.without_credentials(uri)
+        # Bun also recognizes credentials appended to the registry path.
+        path = uri.path
+        path = path.sub(%r{(?:(?<=/)|:)(?:_authToken|_auth|username|_password)=.*}, "")
+        path = path.sub(%r{(?<=/):[a-zA-Z_][\w-]*=[^/]*/?\z}, "")
+        uri.user = nil
+        uri.password = nil
+        uri.path = path
+        uri.to_s
+      end
+      private_class_method :without_credentials
     end
   end
 end
