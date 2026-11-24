@@ -82,6 +82,13 @@ module Dependabot
           @new_tag = T.let(compute_new_tag, T.nilable(String))
         end
 
+        sig { returns(T.nilable(String)) }
+        def previous_tag
+          return @previous_tag if defined?(@previous_tag)
+
+          @previous_tag = T.let(compute_previous_tag, T.nilable(String))
+        end
+
         private
 
         sig { returns(T.nilable(String)) }
@@ -95,13 +102,6 @@ module Dependabot
           tags = tags_matching_version(new_version).sort_by(&:length)
 
           tags.find { |t| t.include?(dependency.name) } || tags.first
-        end
-
-        sig { returns(T.nilable(String)) }
-        def previous_tag
-          return @previous_tag if defined?(@previous_tag)
-
-          @previous_tag = T.let(compute_previous_tag, T.nilable(String))
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
