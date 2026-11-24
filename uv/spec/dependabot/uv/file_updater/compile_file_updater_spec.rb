@@ -649,6 +649,47 @@ RSpec.describe Dependabot::Uv::FileUpdater::CompileFileUpdater do
     end
   end
 
+  describe "#update_uncompiled_files" do
+    let(:updater) do
+      described_class.new(
+        dependency_files: dependency_files,
+        dependencies: [dependency],
+        credentials: credentials,
+        index_urls: ["https://private.example.com/simple"]
+      )
+    end
+    let(:dependency_files) { [manifest_file, generated_file, requirement_file] }
+    let(:requirement_file) do
+      Dependabot::DependencyFile.new(name: "requirements.txt", content: fixture("requirements", "hashes.txt"))
+    end
+    let(:dependency_name) { "pytest" }
+    let(:dependency_version) { "3.3.1" }
+    let(:dependency_previous_version) { "3.2.3" }
+    let(:dependency_requirements) do
+      [{ file: "requirements.txt", requirement: "==3.3.1", groups: [], source: nil }]
+    end
+    let(:dependency_previous_requirements) do
+      [{ file: "requirements.txt", requirement: "==3.2.3", groups: [], source: nil }]
+    end
+
+    before do
+      allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_return([{ "hash" => "123abc" }])
+    end
+
+    it "looks up the hashes of a hashed requirement file on the configured index" do
+      updated_files = updater.send(:update_uncompiled_files, [generated_file])
+
+      expect(Dependabot::SharedHelpers).to have_received(:run_helper_subprocess).with(
+        hash_including(
+          function: "get_dependency_hash",
+          args: %w(pytest 3.3.1 sha256 https://private.example.com/simple)
+        )
+      )
+      expect(updated_files.map(&:name)).to eq(["requirements.txt"])
+      expect(updated_files.first.content).to include("pytest==3.3.1 --hash=sha256:123abc")
+    end
+  end
+
   describe "#package_hashes_for" do
     let(:name) { "package_name" }
     let(:version) { "1.0.0" }
