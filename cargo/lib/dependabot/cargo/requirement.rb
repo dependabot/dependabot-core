@@ -25,7 +25,7 @@ module Dependabot
       PATTERN = /\A#{PATTERN_RAW}\z/
       COMPARATOR_PATTERN = /
         \A\s*
-        (?<operator>~>|==|>=|<=|=|>|<|~|\^)?
+        (?<operator>==|>=|<=|=|>|<|~|\^)?
         \s*
         (?<major>\d+)
         (?:\.(?<minor>\d+|\*))?
@@ -351,7 +351,7 @@ module Dependabot
         when ">=" then :greater_eq
         when "<" then :less
         when "<=" then :less_eq
-        when "~", "~>" then :tilde
+        when "~" then :tilde
         else raise "Unknown Cargo comparator operator: #{operator}"
         end
       end

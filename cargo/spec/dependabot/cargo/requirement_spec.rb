@@ -33,8 +33,8 @@ RSpec.describe Dependabot::Cargo::Requirement do
         expect(requirement).not_to be_satisfied_by(Dependabot::Cargo::Version.new("4.0.1-beta1"))
       end
 
-      it "recognizes prerelease opt-ins with Cargo and RubyGems prefixes" do
-        ["^1.2.3-beta.1", "~1.2.3-beta.1", "~>1.2.3-beta.1"].each do |requirement_string|
+      it "recognizes prerelease opt-ins with Cargo prefixes" do
+        ["^1.2.3-beta.1", "~1.2.3-beta.1"].each do |requirement_string|
           prefixed_requirement = described_class.new(requirement_string)
 
           expect(prefixed_requirement).to be_satisfied_by(
@@ -286,6 +286,17 @@ RSpec.describe Dependabot::Cargo::Requirement do
       let(:requirement_string) { "~> 1.5.1" }
 
       its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.5.1").to_s) }
+
+      it "rejects it for Cargo manifest matching" do
+        expect { requirement.satisfied_by?(Dependabot::Cargo::Version.new("1.5.2")) }
+          .to raise_error(Gem::Requirement::BadRequirementError)
+      end
+
+      it "retains its RubyGems semantics for policy ranges" do
+        policy_range = described_class.new("~> 1.2")
+
+        expect(policy_range.satisfied_by_range?(Dependabot::Cargo::Version.new("1.3.0"))).to be(true)
+      end
     end
 
     context "with a comma separated list" do
