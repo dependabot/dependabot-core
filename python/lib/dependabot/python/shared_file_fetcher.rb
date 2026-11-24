@@ -239,12 +239,9 @@ module Dependabot
         content = file.content
         return [] if content.nil?
 
-        paths = content.scan(CHILD_REQUIREMENT_REGEX).flatten +
-                content.scan(CONSTRAINT_REGEX).flatten
-        current_dir = File.dirname(file.name)
+        paths = RequirementReferences.paths(file)
 
         paths.flat_map do |path|
-          path = File.join(current_dir, path) unless current_dir == "."
           path = clean_path(path)
 
           next if previously_fetched_files.map(&:name).include?(path)
@@ -273,16 +270,10 @@ module Dependabot
                                 requirements_in_files
 
         constraints_paths = all_requirement_files.map do |req_file|
-          current_dir = File.dirname(req_file.name)
           content = req_file.content
           next [] if content.nil?
 
-          paths = content.scan(CONSTRAINT_REGEX).flatten
-
-          paths.map do |path|
-            path = File.join(current_dir, path) unless current_dir == "."
-            clean_path(path)
-          end
+          RequirementReferences.constraint_paths(req_file)
         end.flatten.uniq
 
         already_fetched_names = child_requirement_files.map(&:name)
