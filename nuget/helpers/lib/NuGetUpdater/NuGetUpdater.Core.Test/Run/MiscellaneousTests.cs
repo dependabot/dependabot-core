@@ -994,6 +994,104 @@ public class MiscellaneousTests
 
     public static IEnumerable<object?[]> DependencyInfoFromJobData()
     {
+        static object?[] WithAllowedUpdates(
+            AllowedUpdate[] allowedUpdates,
+            ConditionUpdateType[] expectedIgnoredUpdateTypes,
+            bool isTopLevel = true,
+            bool securityUpdatesOnly = false,
+            Condition[]? ignoreConditions = null,
+            GroupMatcher? groupMatcher = null) =>
+        [
+            new Job()
+            {
+                Source = new() { Provider = "github", Repo = "some/repo" },
+                AllowedUpdates = [.. allowedUpdates],
+                SecurityUpdatesOnly = securityUpdatesOnly,
+                IgnoreConditions = ignoreConditions ?? [],
+            },
+            new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference, IsTopLevel: isTopLevel),
+            groupMatcher,
+            new DependencyInfo()
+            {
+                Name = "Some.Dependency",
+                Version = "1.0.0",
+                IsVulnerable = false,
+                IgnoredVersions = [],
+                Vulnerabilities = [],
+                IgnoredUpdateTypes = [.. expectedIgnoredUpdateTypes],
+            },
+        ];
+
+        yield return WithAllowedUpdates(
+            [new() { DependencyName = "*", UpdateTypes = [ConditionUpdateType.SemVerMinor, ConditionUpdateType.SemVerPatch] }],
+            [ConditionUpdateType.SemVerMajor]);
+        yield return WithAllowedUpdates(
+            [new() { UpdateTypes = [ConditionUpdateType.SemVerPatch] }],
+            [ConditionUpdateType.SemVerMajor, ConditionUpdateType.SemVerMinor]);
+        yield return WithAllowedUpdates(
+            [new() { UpdateTypes = [ConditionUpdateType.SemVerMajor] }],
+            [ConditionUpdateType.SemVerMinor, ConditionUpdateType.SemVerPatch]);
+
+        // Matching allow rules are additive, including case-insensitive wildcard matches.
+        yield return WithAllowedUpdates(
+            [
+                new() { DependencyName = "some.*", UpdateTypes = [ConditionUpdateType.SemVerMinor] },
+                new() { DependencyName = "SOME.DEPENDENCY", UpdateTypes = [ConditionUpdateType.SemVerPatch] },
+            ],
+            [ConditionUpdateType.SemVerMajor]);
+        yield return WithAllowedUpdates(
+            [
+                new() { DependencyType = Core.Run.ApiModel.DependencyType.Production, UpdateTypes = [ConditionUpdateType.SemVerPatch] },
+                new() { DependencyType = Core.Run.ApiModel.DependencyType.Development },
+            ],
+            [ConditionUpdateType.SemVerMajor, ConditionUpdateType.SemVerMinor]);
+        yield return WithAllowedUpdates(
+            [
+                new() { UpdateTypes = [ConditionUpdateType.SemVerPatch] },
+                new() { DependencyType = Core.Run.ApiModel.DependencyType.Development, UpdateTypes = [ConditionUpdateType.SemVerMinor] },
+            ],
+            [ConditionUpdateType.SemVerMajor, ConditionUpdateType.SemVerMinor]);
+        yield return WithAllowedUpdates(
+            [new() { UpdateTypes = [ConditionUpdateType.SemVerPatch] }, new()],
+            []);
+        yield return WithAllowedUpdates(
+            [new() { UpdateTypes = [ConditionUpdateType.SemVerPatch] }, new() { UpdateTypes = [] }],
+            []);
+        yield return WithAllowedUpdates(
+            [
+                new() { UpdateTypes = [ConditionUpdateType.SemVerPatch] },
+                new() { DependencyName = "Unrelated.*" },
+            ],
+            [ConditionUpdateType.SemVerMajor, ConditionUpdateType.SemVerMinor]);
+        yield return WithAllowedUpdates(
+            [new() { DependencyName = "Unrelated.*", UpdateTypes = [ConditionUpdateType.SemVerPatch] }],
+            []);
+
+        yield return WithAllowedUpdates(
+            [
+                new() { DependencyType = Core.Run.ApiModel.DependencyType.Direct, UpdateTypes = [ConditionUpdateType.SemVerPatch] },
+                new() { DependencyType = Core.Run.ApiModel.DependencyType.Indirect },
+            ],
+            [ConditionUpdateType.SemVerMajor, ConditionUpdateType.SemVerMinor]);
+        yield return WithAllowedUpdates(
+            [
+                new() { DependencyType = Core.Run.ApiModel.DependencyType.Direct },
+                new() { DependencyType = Core.Run.ApiModel.DependencyType.Indirect, UpdateTypes = [ConditionUpdateType.SemVerPatch] },
+            ],
+            [ConditionUpdateType.SemVerMajor, ConditionUpdateType.SemVerMinor],
+            isTopLevel: false);
+        yield return WithAllowedUpdates(
+            [new() { UpdateTypes = [ConditionUpdateType.SemVerPatch] }],
+            [],
+            securityUpdatesOnly: true);
+
+        // Allow rules cannot override explicit ignores or group restrictions.
+        yield return WithAllowedUpdates(
+            [new() { UpdateTypes = [ConditionUpdateType.SemVerMinor, ConditionUpdateType.SemVerPatch] }],
+            [ConditionUpdateType.SemVerMajor, ConditionUpdateType.SemVerMinor],
+            ignoreConditions: [new() { DependencyName = "Some.*", UpdateTypes = [ConditionUpdateType.SemVerMinor] }],
+            groupMatcher: new() { Patterns = ["Some.*"], ExcludePatterns = [], UpdateTypes = [GroupUpdateType.Patch] });
+
         // with security advisory
         yield return
         [
