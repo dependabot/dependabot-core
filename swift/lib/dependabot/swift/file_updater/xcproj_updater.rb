@@ -22,15 +22,14 @@ module Dependabot
       class XcprojUpdater
         extend T::Sig
 
-        # Xcode writes each remote package as "kind", "repository", "version"
-        # (in that order), and the version constraint object only holds strings.
-        PACKAGE_REF_BLOCK = /
-            ("repository"\s*:\s*")
-            ([^"]+)
-            ("\s*,\s*"version"\s*:\s*\{)
-            ([^}]*)
-            (\})
-          /mx
+        # An object nested at most one level deep. A package is one of these: its
+        # only nested object is the version constraint, which holds strings only.
+        # Properties are looked up inside the object, so their order does not
+        # matter (Xcode writes "kind", "repository", "version", but other tools
+        # and hand edits may not).
+        PACKAGE_OBJECT = /\{(?:[^{}]|\{[^{}]*\})*\}/m
+        REPOSITORY_VALUE = /"repository"\s*:\s*"(?<url>[^"]+)"/
+        VERSION_OBJECT = /(?<open>"version"\s*:\s*\{)(?<constraint>[^}]*)(?<close>\})/m
 
         SINGLE_VERSION_KEYS = %w(version up-to-next-major-version up-to-next-minor-version version-range-min).freeze
         VERSION_RANGE_PATTERN = /("version-range"\s*:\s*")[^"]*?(\.\.<)/
@@ -63,20 +62,12 @@ module Dependabot
 
           dep_lookup = dependencies.to_h { |dep| [dep.name, dep] }
 
-          content.gsub(PACKAGE_REF_BLOCK) do
-            prefix = T.must(Regexp.last_match(1))
-            url = T.must(Regexp.last_match(2))
-            mid = T.must(Regexp.last_match(3))
-            constraint = T.must(Regexp.last_match(4))
-            suffix = T.must(Regexp.last_match(5))
+          content.gsub(PACKAGE_OBJECT) do
+            package = T.must(Regexp.last_match(0))
+            url = package[REPOSITORY_VALUE, :url]
+            version = url && dep_lookup[normalize_url(url)]&.version
 
-            dep = dep_lookup[normalize_url(url)]
-
-            if dep&.version
-              "#{prefix}#{url}#{mid}#{update_constraint(constraint, T.must(dep.version))}#{suffix}"
-            else
-              T.must(Regexp.last_match(0))
-            end
+            version ? update_package(package, version) : package
           end
         end
 
@@ -87,6 +78,14 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::Dependency]) }
         attr_reader :dependencies
+
+        sig { params(package: String, target_version: String).returns(String) }
+        def update_package(package, target_version)
+          package.sub(VERSION_OBJECT) do
+            match = T.must(Regexp.last_match)
+            "#{match[:open]}#{update_constraint(T.must(match[:constraint]), target_version)}#{match[:close]}"
+          end
+        end
 
         sig { params(url: String).returns(String) }
         def normalize_url(url)

@@ -187,6 +187,42 @@ RSpec.describe Dependabot::Swift::FileUpdater::XcprojUpdater do
       end
     end
 
+    context "with the version constraint written before the repository" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(T.nilable(String)) }
+      let(:xcproj_content) do
+        <<~JSON
+          {
+            "packages": [
+              {
+                "version": {
+                  "version": "1.2.0",
+                },
+                "kind": "remote",
+                "repository": "https://github.com/apple/swift-argument-parser",
+              }, {
+                "kind": "remote",
+                "repository": "https://github.com/apple/swift-nio.git",
+                "version": {
+                  "up-to-next-major-version": "2.54.0",
+                },
+              },
+            ],
+          }
+        JSON
+      end
+
+      sig { returns(T::Array[Dependabot::Dependency]) }
+      let(:dependencies) { [dependency("github.com/apple/swift-argument-parser", "1.8.2")] }
+      # rubocop:enable RSpec/ScatteredLet
+
+      it "replaces the version and changes nothing else" do
+        expect(changed_lines(T.must(xcproj_content), updated_content)).to eq(
+          [["        \"version\": \"1.2.0\",\n", "        \"version\": \"1.8.2\",\n"]]
+        )
+      end
+    end
+
     context "without content" do
       # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
       sig { returns(T.nilable(String)) }
