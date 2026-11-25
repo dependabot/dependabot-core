@@ -81,9 +81,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
             .Where(p => p.Dependencies.Any(d => d.Name.Equals(dependencyInfo.Name, StringComparison.OrdinalIgnoreCase)))
             .ToImmutableArray();
         var projectFrameworks = projectsWithDependency
-            .SelectMany(p => p.TargetFrameworks)
-            .Distinct()
-            .Select(NuGetFramework.Parse)
+            .SelectMany(p => p.TargetFrameworks.Select(p.GetFramework))
             .ToImmutableArray();
         var propertyBasedDependencies = discovery.Projects.SelectMany(p
             => p.Dependencies.Where(d => d.IsTopLevel &&
@@ -115,10 +113,12 @@ public partial class AnalyzeWorker : IAnalyzeWorker
                     .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase)
                 : [dependencyInfo.Name];
             var applicableTargetFrameworks = usesMultiDependencyProperty
-                ? multiDependencies
-                    .SelectMany(md => md.TargetFrameworks)
-                    .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase)
-                    .Select(NuGetFramework.Parse)
+                ? discovery.Projects
+                    .SelectMany(p => p.Dependencies
+                        .Where(d => dependenciesToUpdate.Contains(d.Name))
+                        .SelectMany(d => d.TargetFrameworks ?? [])
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .Select(p.GetFramework))
                     .ToImmutableArray()
                 : projectFrameworks;
 
@@ -470,10 +470,8 @@ public partial class AnalyzeWorker : IAnalyzeWorker
         }
 
         var projectFrameworks = projectsWithDependency
-            .SelectMany(p => p.TargetFrameworks)
-            .Select(NuGetFramework.Parse)
+            .SelectMany(p => p.TargetFrameworks.Select(p.GetFramework))
             .Distinct()
-            .Select(f => f.GetShortFolderName())
             .ToImmutableArray();
 
         // When updating peer dependencies, we only need to consider top-level dependencies.

@@ -153,6 +153,65 @@ public class XmlFileWriter : IFileWriter
                 return newlyAddedNode;
             }
 
+            bool TryUpdateCentralVersion(string filePath, string startVersionString, Action<string> startUpdater)
+            {
+                var candidateLocations = new Queue<(string VersionString, Action<string> Updater)>();
+                var visitedProperties = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                candidateLocations.Enqueue((startVersionString, startUpdater));
+                while (candidateLocations.TryDequeue(out var candidate))
+                {
+                    var (candidateVersionString, candidateUpdater) = candidate;
+                    if (NuGetVersion.TryParse(candidateVersionString, out var candidateVersion))
+                    {
+                        if (candidateVersion == requiredVersion)
+                        {
+                            _logger.Info($"Dependency {requiredPackageVersion.Name} already set to {requiredVersion} in file {filePath}; no update needed.");
+                            return true;
+                        }
+
+                        if (candidateVersion == oldVersion)
+                        {
+                            _logger.Info($"Dependency {requiredPackageVersion.Name} updated to version {requiredVersion} in file {filePath}.");
+                            candidateUpdater(requiredVersion.ToString());
+                            return true;
+                        }
+                    }
+                    else if (VersionRange.TryParse(candidateVersionString, out var candidateRange))
+                    {
+                        if (candidateRange.Satisfies(oldVersion))
+                        {
+                            _logger.Info($"Dependency {requiredPackageVersion.Name} updated to version {requiredVersion} in file {filePath}.");
+                            candidateUpdater(CreateUpdatedVersionRangeString(candidateRange, oldVersion, requiredVersion));
+                            return true;
+                        }
+
+                        if (candidateRange.MinVersion == requiredVersion || candidateRange.Satisfies(requiredVersion))
+                        {
+                            _logger.Info($"Dependency {requiredPackageVersion.Name} already includes {requiredVersion} in file {filePath}; no update needed.");
+                            return true;
+                        }
+                    }
+
+                    var propertyMatch = Regex.Match(candidateVersionString, @"(?<Prefix>[^$]*)\$\((?<PropertyName>[A-Za-z0-9_]+)\)(?<Suffix>.*$)");
+                    if (propertyMatch.Success && visitedProperties.Add(propertyMatch.Groups["PropertyName"].Value))
+                    {
+                        var propertyName = propertyMatch.Groups["PropertyName"].Value;
+                        var propertyDefinitionsAndPaths = filesAndContents
+                            .SelectMany(kvp => kvp.Value.Descendants()
+                                .Where(e => e.Name.Equals(propertyName, StringComparison.OrdinalIgnoreCase))
+                                .Where(e => e.Parent?.Name.Equals(PropertyGroupElementName, StringComparison.OrdinalIgnoreCase) == true)
+                                .Select(e => KeyValuePair.Create(e, kvp.Key)))
+                            .ToArray();
+                        foreach (var (propertyDefinition, propertyFilePath) in propertyDefinitionsAndPaths)
+                        {
+                            candidateLocations.Enqueue((propertyDefinition.GetContentValue(), version => ReplaceNode(propertyFilePath, propertyDefinition.AsNode, propertyDefinition.WithContent(version).AsNode)));
+                        }
+                    }
+                }
+
+                return false;
+            }
+
             if (packageReferenceElementsAndPaths.Length == 0)
             {
                 // no matching `<PackageReference>` elements found; pin it as a transitive dependency
@@ -280,6 +339,21 @@ public class XmlFileWriter : IFileWriter
                     // found matching `<PackageVersion>` element
                     var (matchingPackageVersionElement, filePath) = matchingPackageVersionElementsAndPaths.First();
                     var versionAttribute = matchingPackageVersionElement.GetAttributeCaseInsensitive(VersionMetadataName);
+                    if (packageManagementKind == PackageManagementKind.CentralPackageManagementWithTransitivePinning)
+                    {
+                        var versionElement = matchingPackageVersionElement.GetElements(VersionMetadataName, StringComparison.OrdinalIgnoreCase).FirstOrDefault();
+                        var updated = versionAttribute is not null
+                            ? TryUpdateCentralVersion(filePath, versionAttribute.Value, version => ReplaceNode(filePath, versionAttribute, versionAttribute.WithValue(version)))
+                            : versionElement is not null && TryUpdateCentralVersion(filePath, versionElement.GetContentValue(), version => ReplaceNode(filePath, versionElement.AsNode, versionElement.WithContent(version).AsNode));
+                        updatesPerformed[requiredPackageVersion.Name] = updated;
+                        if (!updated)
+                        {
+                            _logger.Warn($"Unable to find an appropriate location to set {requiredPackageVersion.Name} to version {requiredVersion} in file {filePath}; no update performed.");
+                        }
+
+                        continue;
+                    }
+
                     var isVersionOverrideNeeded = false;
                     if (versionAttribute is not null &&
                         VersionRange.TryParse(versionAttribute.Value, out var existingVersionRange))
@@ -420,69 +494,7 @@ public class XmlFileWriter : IFileWriter
                                 var cpvVersionAttribute = cpvElement.GetAttributeCaseInsensitive(VersionMetadataName);
                                 if (cpvVersionAttribute is not null)
                                 {
-                                    bool TryUpdateCentralVersion(string startVersionString, Action<string> startUpdater)
-                                    {
-                                        var candidateLocations = new Queue<(string VersionString, Action<string> Updater)>();
-                                        candidateLocations.Enqueue((startVersionString, startUpdater));
-                                        while (candidateLocations.TryDequeue(out var candidate))
-                                        {
-                                            var (candidateVersionString, candidateUpdater) = candidate;
-                                            if (NuGetVersion.TryParse(candidateVersionString, out var candidateVersion))
-                                            {
-                                                if (candidateVersion == requiredVersion)
-                                                {
-                                                    _logger.Info($"Dependency {requiredPackageVersion.Name} already set to {requiredVersion} in file {cpvFilePath}; no update needed.");
-                                                    return true;
-                                                }
-
-                                                if (candidateVersion == oldVersion)
-                                                {
-                                                    _logger.Info($"Dependency {requiredPackageVersion.Name} updated to version {requiredVersion} in file {cpvFilePath}.");
-                                                    candidateUpdater(requiredVersion.ToString());
-                                                    return true;
-                                                }
-                                            }
-                                            else if (VersionRange.TryParse(candidateVersionString, out var candidateRange))
-                                            {
-                                                if (candidateRange.Satisfies(oldVersion))
-                                                {
-                                                    // update the value, preserving the range structure where applicable
-                                                    _logger.Info($"Dependency {requiredPackageVersion.Name} updated to version {requiredVersion} in file {cpvFilePath}.");
-                                                    candidateUpdater(CreateUpdatedVersionRangeString(candidateRange, oldVersion, requiredVersion));
-                                                    return true;
-                                                }
-
-                                                if (candidateRange.MinVersion == requiredVersion || candidateRange.Satisfies(requiredVersion))
-                                                {
-                                                    // the version range (e.g. `[1.1.0]`) already includes the required version; no update needed
-                                                    _logger.Info($"Dependency {requiredPackageVersion.Name} already includes {requiredVersion} in file {cpvFilePath}; no update needed.");
-                                                    return true;
-                                                }
-                                            }
-
-                                            // the value may be (or contain) a property reference; walk back to the property definition(s)
-                                            var propertyInSubstringPattern = new Regex(@"(?<Prefix>[^$]*)\$\((?<PropertyName>[A-Za-z0-9_]+)\)(?<Suffix>.*$)");
-                                            var propertyMatch = propertyInSubstringPattern.Match(candidateVersionString);
-                                            if (propertyMatch.Success)
-                                            {
-                                                var propertyName = propertyMatch.Groups["PropertyName"].Value;
-                                                var propertyDefinitionsAndPaths = filesAndContents
-                                                    .SelectMany(kvp => kvp.Value.Descendants()
-                                                        .Where(e => e.Name.Equals(propertyName, StringComparison.OrdinalIgnoreCase))
-                                                        .Where(e => e.Parent?.Name.Equals(PropertyGroupElementName, StringComparison.OrdinalIgnoreCase) == true)
-                                                        .Select(e => KeyValuePair.Create(e, kvp.Key)))
-                                                    .ToArray();
-                                                foreach (var (propertyDefinition, propertyFilePath) in propertyDefinitionsAndPaths)
-                                                {
-                                                    candidateLocations.Enqueue((propertyDefinition.GetContentValue(), version => ReplaceNode(propertyFilePath, propertyDefinition.AsNode, propertyDefinition.WithContent(version).AsNode)));
-                                                }
-                                            }
-                                        }
-
-                                        return false;
-                                    }
-
-                                    var centralUpdatePerformed = TryUpdateCentralVersion(cpvVersionAttribute.Value, version => ReplaceNode(cpvFilePath, cpvVersionAttribute, cpvVersionAttribute.WithValue(version)));
+                                    var centralUpdatePerformed = TryUpdateCentralVersion(cpvFilePath, cpvVersionAttribute.Value, version => ReplaceNode(cpvFilePath, cpvVersionAttribute, cpvVersionAttribute.WithValue(version)));
                                     if (!centralUpdatePerformed)
                                     {
                                         // couldn't find a literal version (or backing property) to update; don't leave a broken pin

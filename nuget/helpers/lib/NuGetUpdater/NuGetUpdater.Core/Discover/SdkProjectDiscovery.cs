@@ -717,6 +717,58 @@ internal static class SdkProjectDiscovery
 
             var dependencyGraph = dependencyGraphBuilder.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase);
 
+            var frameworkFallbacks = ImmutableDictionary.CreateBuilder<string, TargetFrameworkFallback>(StringComparer.OrdinalIgnoreCase);
+            var centralVersionsByFramework = ImmutableDictionary.CreateBuilder<string, ImmutableDictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+            var versionOverridesByFramework = ImmutableDictionary.CreateBuilder<string, ImmutableDictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+            if (assetsJson.Value is { } assetsForFallbacks &&
+                assetsForFallbacks.TryGetProperty("project", out var restoreProject) &&
+                restoreProject.TryGetProperty("frameworks", out var restoreFrameworks))
+            {
+                foreach (var restoreFramework in restoreFrameworks.EnumerateObject())
+                {
+                    var targetFramework = restoreFramework.Value.TryGetProperty("targetAlias", out var alias)
+                        ? alias.GetString() ?? restoreFramework.Name
+                        : restoreFramework.Name;
+                    var evaluatedCentralVersions = ImmutableDictionary.CreateBuilder<string, string>(StringComparer.OrdinalIgnoreCase);
+                    if (restoreFramework.Value.TryGetProperty("centralPackageVersions", out var centralVersions))
+                    {
+                        foreach (var centralVersion in centralVersions.EnumerateObject())
+                        {
+                            if (centralVersion.Value.GetString() is { } versionRange)
+                            {
+                                evaluatedCentralVersions[centralVersion.Name] = versionRange;
+                            }
+                        }
+                    }
+
+                    centralVersionsByFramework[targetFramework] = evaluatedCentralVersions.ToImmutable();
+                    var evaluatedVersionOverrides = ImmutableDictionary.CreateBuilder<string, string>(StringComparer.OrdinalIgnoreCase);
+                    if (restoreFramework.Value.TryGetProperty("dependencies", out var directDependencies))
+                    {
+                        foreach (var directDependency in directDependencies.EnumerateObject())
+                        {
+                            if (directDependency.Value.TryGetProperty("versionOverride", out var versionOverride) &&
+                                versionOverride.GetString() is { } overrideRange)
+                            {
+                                evaluatedVersionOverrides[directDependency.Name] = overrideRange;
+                            }
+                        }
+                    }
+
+                    versionOverridesByFramework[targetFramework] = evaluatedVersionOverrides.ToImmutable();
+                    if (restoreFramework.Value.TryGetProperty("imports", out var imports))
+                    {
+                        var fallbackImports = imports.EnumerateArray()
+                            .Select(import => import.GetString())
+                            .OfType<string>()
+                            .ToImmutableArray();
+                        var assetTargetFallback = restoreFramework.Value.TryGetProperty("assetTargetFallback", out var assetFallback)
+                            && assetFallback.ValueKind == JsonValueKind.True;
+                        frameworkFallbacks[targetFramework] = new(fallbackImports, assetTargetFallback);
+                    }
+                }
+            }
+
             // other values
             var projectProperties = resolvedProperties[projectPath];
             var referenced = referencedProjects.GetOrAdd(projectPath, () => new(PathComparer.Instance))
@@ -782,6 +834,9 @@ internal static class SdkProjectDiscovery
                 FilePath = projectRelativePath,
                 Dependencies = dependencies,
                 TargetFrameworks = tfms,
+                TargetFrameworkFallbacks = frameworkFallbacks.ToImmutable(),
+                CentralPackageVersions = centralVersionsByFramework.ToImmutable(),
+                PackageReferenceVersionOverrides = versionOverridesByFramework.ToImmutable(),
                 ReferencedProjectPaths = referenced,
                 ImportedFiles = imported,
                 AdditionalFiles = additional,
