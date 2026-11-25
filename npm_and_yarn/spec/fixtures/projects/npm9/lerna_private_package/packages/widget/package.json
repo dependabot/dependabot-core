@@ -1,0 +1,8 @@
+{
+  "name": "example-app",
+  "version": "1.0.0",
+  "dependencies": {
+    "@example-org/lib": "^1.0.0",
+    "etag": "^1.8.1"
+  }
+}
