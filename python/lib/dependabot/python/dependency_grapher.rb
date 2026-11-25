@@ -142,9 +142,8 @@ module Dependabot
         files_by_name = dependency_files.to_h { |file| [file.name, file] }
 
         seeds = dependency_files.select do |file|
-          file.name.end_with?(".txt") &&
-            (RequirementsLayers.manifest_txt_filename?(file.name) ||
-              pip_compile_file_matcher.lockfile_for_pip_compile_file?(file))
+          RequirementsLayers.manifest_txt_file?(file) ||
+            (file.name.end_with?(".txt") && pip_compile_file_matcher.lockfile_for_pip_compile_file?(file))
         end
 
         # `.in` files are always retained, so a `.txt` they reference must be kept too.
@@ -493,7 +492,7 @@ module Dependabot
 
         @pip_requirements_file = T.let(
           dependency_files.find { |f| f.name == "requirements.txt" } ||
-            dependency_files.find { |f| f.name.end_with?(".txt") && RequirementsLayers.manifest_txt_filename?(f.name) },
+            dependency_files.find { |file| RequirementsLayers.manifest_txt_file?(file) },
           T.nilable(Dependabot::DependencyFile)
         )
       end
