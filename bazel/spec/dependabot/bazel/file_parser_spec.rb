@@ -327,6 +327,46 @@ RSpec.describe Dependabot::Bazel::FileParser do
     end
   end
 
+  context "with bazel_dep versions held in constants" do
+    let(:dependency_files) { bazel_project_dependency_files("module_with_version_constants") }
+
+    it "resolves the version from the top-level constant" do
+      dependencies = parser.parse
+
+      expect(dependencies.map(&:name)).to contain_exactly("rules_kotlin", "rules_cc")
+
+      rules_kotlin = dependencies.find { |d| d.name == "rules_kotlin" }
+      expect(rules_kotlin.version).to eq("2.4.20")
+      expect(rules_kotlin.requirements).to eq(
+        [{ file: "MODULE.bazel", requirement: "2.4.20", groups: [], source: nil }]
+      )
+    end
+  end
+
+  context "with a git_repository remote held in a constant" do
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "WORKSPACE",
+          content: <<~WORKSPACE
+            REMOTE = "https://github.com/bazelbuild/rules_go.git"
+
+            git_repository(name = "rules_go", remote = REMOTE, tag = "v0.39.1")
+          WORKSPACE
+        )
+      ]
+    end
+
+    it "only records string values in the requirement source" do
+      dependency = parser.parse.find { |d| d.name == "rules_go" }
+
+      expect(dependency.version).to eq("v0.39.1")
+      expect(dependency.requirements.first[:source]).to eq(
+        { type: "git_repository", tag: "v0.39.1", commit: nil, remote: nil }
+      )
+    end
+  end
+
   context "with bazel_dep parameter order variations" do
     let(:dependency_files) { bazel_project_dependency_files("parameter_order_variations") }
 
