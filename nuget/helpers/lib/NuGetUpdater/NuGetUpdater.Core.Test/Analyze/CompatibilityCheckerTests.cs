@@ -7,6 +7,7 @@ using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Test.Update;
 
 using Xunit;
@@ -77,6 +78,76 @@ public class CompatibilityCheckerTests
             new TestLogger());
 
         Assert.True(result);
+    }
+
+    [Fact]
+    public void PerformCheck_FallbackFramework_PreservesWindowsCompatibilityException()
+    {
+        var projectFramework = new FallbackFramework(
+            NuGetFramework.Parse("net9.0-windows"),
+            [NuGetFramework.Parse("net461")]);
+
+        var result = CompatibilityChecker.PerformCheck(
+            new PackageIdentity("Dependency", NuGetVersion.Parse("1.0.0")),
+            [projectFramework],
+            isDevDependency: false,
+            [NuGetFramework.Parse("net6.0-windows7.0")],
+            new TestLogger());
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void PerformCheck_MergedDiscovery_PreservesFallbacksForNormalizedAlias()
+    {
+        var project = new ProjectDiscoveryResult
+        {
+            FilePath = "project.csproj",
+            TargetFrameworks = ["net10.0-windows10.0.19041.0"],
+            TargetFrameworkFallbacks = ImmutableDictionary<string, TargetFrameworkFallback>.Empty
+                .Add("net10.0-windows10.0.19041.0", new(["net461"], AssetTargetFallback: true)),
+            Dependencies = [],
+            ImportedFiles = [],
+            AdditionalFiles = [],
+        };
+        var merged = DiscoveryWorker.MergeProjectDiscovery(project, project);
+        var targetFramework = Assert.Single(merged.TargetFrameworks);
+        Assert.Equal("net10.0-windows10.0.19041", targetFramework);
+
+        var result = CompatibilityChecker.PerformCheck(
+            new PackageIdentity("Dependency", NuGetVersion.Parse("1.0.0")),
+            [merged.GetFramework(targetFramework)],
+            isDevDependency: false,
+            [NuGetFramework.Parse("net35")],
+            new TestLogger());
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void PerformCheck_MergedDiscovery_PrefersExactFallbackAlias()
+    {
+        var project = new ProjectDiscoveryResult
+        {
+            FilePath = "project.csproj",
+            TargetFrameworks = ["net10.0-windows10.0.19041.0"],
+            TargetFrameworkFallbacks = ImmutableDictionary<string, TargetFrameworkFallback>.Empty
+                .Add("net10.0-windows10.0.19041.0", new(["net461"], AssetTargetFallback: true))
+                .Add("net10.0-windows10.0.19041", new([], AssetTargetFallback: false)),
+            Dependencies = [],
+            ImportedFiles = [],
+            AdditionalFiles = [],
+        };
+        var merged = DiscoveryWorker.MergeProjectDiscovery(project, project);
+
+        var result = CompatibilityChecker.PerformCheck(
+            new PackageIdentity("Dependency", NuGetVersion.Parse("1.0.0")),
+            [merged.GetFramework(Assert.Single(merged.TargetFrameworks))],
+            isDevDependency: false,
+            [NuGetFramework.Parse("net35")],
+            new TestLogger());
+
+        Assert.False(result);
     }
 
     [Fact]

@@ -3,6 +3,8 @@
 
 require "json"
 require "sorbet-runtime"
+require "dependabot/dependency_file"
+require "dependabot/errors"
 
 module Dependabot
   module Nix
@@ -11,9 +13,46 @@ module Dependabot
 
       Node = T.type_alias { T::Hash[String, Object] }
 
-      sig { params(content: String).void }
-      def initialize(content)
-        @data = T.let(T.cast(JSON.parse(content), Node), Node)
+      require_relative "lockfile/dependency_input"
+
+      class FollowsPath < T::ImmutableStruct
+        extend T::Sig
+
+        const :head, String
+        const :tail, T::Array[String]
+
+        sig { params(value: Object).returns(T.nilable(FollowsPath)) }
+        def self.from_value(value)
+          return unless value.is_a?(Array)
+
+          segments = value.grep(String)
+          head = segments.first
+          return unless head && segments.length == value.length
+
+          new(head: head, tail: segments.drop(1))
+        end
+
+        sig { returns(T::Array[String]) }
+        def segments
+          [head, *tail]
+        end
+      end
+      private_constant :FollowsPath
+
+      sig { params(file: Dependabot::DependencyFile).returns(Lockfile) }
+      def self.from_file(file)
+        new(T.must(file.content), path: file.path)
+      rescue JSON::ParserError, TypeError => e
+        raise Dependabot::DependencyFileNotParseable.new(file.path, e.message)
+      end
+
+      sig { params(content: String, path: String).void }
+      def initialize(content, path: "flake.lock")
+        value = T.cast(JSON.parse(content), Object)
+        raise TypeError, "#{path} must be an object" unless value.is_a?(Hash)
+
+        @data = T.let(value, Node)
+        @path = path
       end
 
       sig { returns(T.nilable(Integer)) }
@@ -31,9 +70,8 @@ module Dependabot
       def input_path(input_name)
         reference = root_inputs[input_name]
         return [input_name] if reference.is_a?(String)
-        return unless string_array?(reference)
 
-        T.cast(reference, T::Array[String])
+        FollowsPath.from_value(reference)&.segments
       end
 
       sig { params(input_name: String).returns(T.nilable(Node)) }
@@ -43,6 +81,12 @@ module Dependabot
 
         node = nodes[label]
         node if node.is_a?(Hash)
+      end
+
+      sig { params(input_name: String).returns(T.nilable(DependencyInput)) }
+      def dependency_input(input_name)
+        node = input_node(input_name)
+        InputParser.new(node, path: @path, name: input_name).parse if node
       end
 
       sig { params(input_name: String).returns(T.nilable(Node)) }
@@ -89,26 +133,25 @@ module Dependabot
       sig { params(reference: Object, visited_paths: T::Set[String]).returns(T.nilable(String)) }
       def resolve_reference(reference, visited_paths)
         return reference if reference.is_a?(String)
-        return unless string_array?(reference)
 
-        path = T.cast(reference, T::Array[String])
-        path_key = path.join("\0")
+        path = FollowsPath.from_value(reference)
+        return unless path
+
+        path_key = path.segments.join("\0")
         return if visited_paths.include?(path_key)
 
         visited_paths.add(path_key)
         resolve_path(path, visited_paths)
       end
 
-      sig { params(path: T::Array[String], visited_paths: T::Set[String]).returns(T.nilable(String)) }
+      sig { params(path: FollowsPath, visited_paths: T::Set[String]).returns(T.nilable(String)) }
       def resolve_path(path, visited_paths)
-        first_segment = path.first
-        return unless first_segment
+        reference = T.let(root_inputs[path.head], Object)
 
-        reference = T.let(root_inputs[first_segment], Object)
-
-        index = T.let(1, Integer)
-        while index < path.length
-          segment = path.fetch(index)
+        segments = path.tail
+        index = T.let(0, Integer)
+        while index < segments.length
+          segment = segments.fetch(index)
           label = resolve_reference(reference, visited_paths)
           return unless label
 
@@ -123,11 +166,6 @@ module Dependabot
         end
 
         resolve_reference(reference, visited_paths)
-      end
-
-      sig { params(value: Object).returns(T::Boolean) }
-      def string_array?(value)
-        value.is_a?(Array) && !value.empty? && value.all?(String)
       end
     end
   end
