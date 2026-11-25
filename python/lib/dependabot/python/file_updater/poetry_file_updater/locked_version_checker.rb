@@ -69,7 +69,14 @@ module Dependabot
             package_version = T.cast(pkg["version"], T.nilable(String))
             return false unless package_name && package_version && Python::Version.correct?(package_version)
 
-            NameNormaliser.normalise(package_name) == dep.name && Python::Version.new(package_version) == target
+            locked_version = Python::Version.new(package_version)
+            version_matches = if target.local
+                                locked_version == target
+                              else
+                                Python::Version.new(package_version.sub(/\+[^+]+\z/, "")) == target
+                              end
+
+            NameNormaliser.normalise(package_name) == dep.name && version_matches
           end
 
           sig { params(dep: Dependabot::Dependency).returns(T::Boolean) }

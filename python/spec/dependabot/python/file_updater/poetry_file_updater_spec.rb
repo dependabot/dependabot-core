@@ -108,6 +108,33 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
       end
     end
 
+    context "when the locked version has a local version identifier" do
+      before do
+        lockfile_with_local_version = lockfile.content.sub(
+          "name = \"requests\"\nversion = \"2.18.0\"",
+          "name = \"requests\"\nversion = \"2.19.1+cpu\""
+        )
+        allow(updater).to receive_messages(
+          updated_lockfile_content_for: lockfile_with_local_version,
+          pyproject_hash_for: "newhash"
+        )
+      end
+
+      it "accepts a local build for the requested public version" do
+        expect(updated_files.map(&:name)).to eq(%w(poetry.lock))
+      end
+
+      context "when the requested version also has a local identifier" do
+        let(:dependency_version) { "2.19.1+gpu" }
+
+        it "rejects a different local build" do
+          expect { updated_files }.to raise_error(Dependabot::UpdateNotPossible) do |error|
+            expect(error.dependencies).to eq(["requests"])
+          end
+        end
+      end
+    end
+
     context "when the dependency version is equivalent to its previous version" do
       let(:dependency_version) { "2.18.0.0" }
       let(:previous_dependency_version) { "2.18.0" }
