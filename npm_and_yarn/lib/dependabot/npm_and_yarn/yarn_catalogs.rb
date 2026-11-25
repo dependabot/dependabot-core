@@ -22,8 +22,9 @@ module Dependabot
       OTHER_LOCKFILES = %w(package-lock.json npm-shrinkwrap.json pnpm-lock.yaml).freeze
 
       # Yarn Berry's resolution grammar: [parent[@locator]/]package[@range].
+      # Yarn also rejects legacy */ and **/ prefixes before parsing the selector.
       RESOLUTION_IDENT = %r{(?:@[^/@]+/)?[^/@]+}
-      RESOLUTION_SELECTOR = %r{\A(?:(?<parent>#{RESOLUTION_IDENT})(?:@(?<locator>[^/]+))?/)?
+      RESOLUTION_SELECTOR = %r{\A(?!\*{1,2}/)(?:(?<parent>#{RESOLUTION_IDENT})(?:@(?<locator>[^/]+))?/)?
                                (?<package>#{RESOLUTION_IDENT})(?:@(?<range>[^/]+))?\z}x
       ResolutionRules = T.type_alias { T::Hash[String, T::Array[[MatchData, String]]] }
 

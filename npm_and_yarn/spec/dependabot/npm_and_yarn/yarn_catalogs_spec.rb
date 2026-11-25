@@ -315,6 +315,17 @@ RSpec.describe Dependabot::NpmAndYarn::YarnCatalogs do
       end
     end
 
+    %w(*/prettier **/prettier catalog-child@workspace:packages/child/prettier).each do |key|
+      context "with the invalid Yarn selector #{key}" do
+        let(:resolutions) { { key => "workspace:*" } }
+
+        it "ignores the selector during catalog and transitive checks" do
+          expect(catalogs.resolution_targets?("prettier")).to be(false)
+          expect(catalogs.helper_catalogs).to eq("catalog:" => { "prettier" => "2.8.0" })
+        end
+      end
+    end
+
     context "when the first matching resolution preserves the original reference" do
       let(:resolutions) { { "prettier@catalog:" => "catalog:", "prettier" => "workspace:*" } }
 
