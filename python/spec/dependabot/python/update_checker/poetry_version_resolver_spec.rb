@@ -628,6 +628,19 @@ RSpec.describe namespace::PoetryVersionResolver do
         it { is_expected.to be(true) }
       end
 
+      context "when the returned version adds a local identifier" do
+        let(:resolved_version) { "2.18.4+cpu" }
+
+        it { is_expected.to be(true) }
+      end
+
+      context "when the requested local identifier differs from the returned one" do
+        let(:version) { Dependabot::Python::Version.new("2.18.4+cpu") }
+        let(:resolved_version) { "2.18.4+cu121" }
+
+        it { is_expected.to be(false) }
+      end
+
       context "when no version is returned" do
         let(:dependency_name) { "idna" }
         let(:dependency_version) { "2.5" }

@@ -110,7 +110,7 @@ module Dependabot
 
           resolved_version = fetch_latest_resolvable_version_string(requirement: "==#{version}")
           @resolvable[version] = !resolved_version.nil? &&
-                                 Python::Version.new(resolved_version) == Python::Version.new(version.to_s)
+                                 resolved_version_matches?(resolved_version, version.to_s)
         rescue SharedHelpers::HelperSubprocessFailed => e
           raise unless e.message.include?("version solving failed.")
 
@@ -118,6 +118,16 @@ module Dependabot
         end
 
         private
+
+        # PEP 440: `==2.0` also matches local versions such as `2.0+cpu`, so only
+        # compare local segments when the requested version specifies one.
+        sig { params(resolved_version: String, requested_version: String).returns(T::Boolean) }
+        def resolved_version_matches?(resolved_version, requested_version)
+          requested = Python::Version.new(requested_version)
+          return Python::Version.new(resolved_version) == requested if requested.local
+
+          Python::Version.new(resolved_version.sub(/\+[^+]+\z/, "")) == requested
+        end
 
         sig { params(requirement: T.nilable(String)).returns(T.nilable(String)) }
         def fetch_latest_resolvable_version_string(requirement:)
