@@ -265,6 +265,8 @@ GEM
     benchmark (0.5.0)
     bigdecimal (4.1.2)
     citrus (3.0.2)
+    commonmarker (2.10.0)
+      rb_sys (~> 0.9)
     commonmarker (2.10.0-arm64-darwin)
     commonmarker (2.10.0-x86_64-linux)
     crack (1.0.1)
@@ -323,9 +325,12 @@ GEM
     net-http (0.9.1)
       uri (>= 0.11.1)
     netrc (0.11.0)
-    nokogiri (1.19.4-arm64-darwin)
+    nokogiri (1.19.5)
+      mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
-    nokogiri (1.19.4-x86_64-linux-gnu)
+    nokogiri (1.19.5-arm64-darwin)
+      racc (~> 1.4)
+    nokogiri (1.19.5-x86_64-linux-gnu)
       racc (~> 1.4)
     octokit (10.0.0)
       faraday (>= 1, < 3)
@@ -354,6 +359,9 @@ GEM
     racc (1.8.1)
     rainbow (3.1.1)
     rake (13.4.2)
+    rake-compiler-dock (1.12.0)
+    rb_sys (0.9.130)
+      rake-compiler-dock (= 1.12.0)
     rbi (0.4.2)
       prism (~> 1.0)
       rbs (>= 4.0.1)
@@ -416,6 +424,7 @@ GEM
       rubocop (>= 1.75.2)
       spoom (~> 1.8)
     ruby-progressbar (1.13.0)
+    rubydex (0.3.0)
     rubydex (0.3.0-arm64-darwin)
     rubydex (0.3.0-x86_64-linux)
     sawyer (0.9.3)
@@ -548,6 +557,7 @@ CHECKSUMS
   bigdecimal (4.1.2) sha256=53d217666027eab4280346fba98e7d5b66baaae1b9c3c1c0ffe89d48188a3fbd
   bundler (4.0.14) sha256=d09a0a965cf772266a7e49e83610be7c2f4e49e61134c42a56804bb383cc24b8
   citrus (3.0.2) sha256=4ec2412fc389ad186735f4baee1460f7900a8e130ffe3f216b30d4f9c684f650
+  commonmarker (2.10.0) sha256=1884529957bf59bcd4f19fcc29e931f2042760ced273353e8010a20fe4ae68cb
   commonmarker (2.10.0-arm64-darwin) sha256=39ecc891d1e4308b5233cc28b40383de854a2bfbefe17d68e49174347a8aa79e
   commonmarker (2.10.0-x86_64-linux) sha256=945c510c0bfca9022245928e2248468fe3ddad58c939be0c37b20082cc392880
   crack (1.0.1) sha256=ff4a10390cd31d66440b7524eb1841874db86201d5b70032028553130b6d4c7e
@@ -614,8 +624,9 @@ CHECKSUMS
   multi_xml (0.8.1) sha256=addba0290bac34e9088bfe73dc4878530297a82a7bbd66cb44dcd0a4b86edf5a
   net-http (0.9.1) sha256=25ba0b67c63e89df626ed8fac771d0ad24ad151a858af2cc8e6a716ca4336996
   netrc (0.11.0) sha256=de1ce33da8c99ab1d97871726cba75151113f117146becbe45aa85cb3dabee3f
-  nokogiri (1.19.4-arm64-darwin) sha256=a46db9853286e6597b36ebc6953817d15acf3a299583eb3f89fdc6f91dd63527
-  nokogiri (1.19.4-x86_64-linux-gnu) sha256=379fae440b28915e3f19d752ce2dcf8465ed2b2fbefd2a7ca0dd497bc981a06a
+  nokogiri (1.19.5) sha256=d7ff830dfbe32fa03191412d8ef9dbf0d2db77bc4587e683dc38ec55813c8e03
+  nokogiri (1.19.5-arm64-darwin) sha256=2d0baa8f8234c442f0190133da87c9a2a89d48ec0b5e0c986d6047255d63a2f5
+  nokogiri (1.19.5-x86_64-linux-gnu) sha256=2a32516e91fd53aa32bb281a1edbbd1b9b8440a14f43b1f22035ca504ad46091
   octokit (10.0.0) sha256=82e99a539b7637b7e905e6d277bb0c1a4bed56735935cc33db6da7eae49a24e8
   opentelemetry-api (1.11.0) sha256=218c840170fa473974756668b32b6989570de07c7d3864627960209f189247e2
   opentelemetry-logs-api (0.4.1) sha256=9db6c9a0c172df4e302e490c80697ea9fc1223501f4358acfc01dd4c2307ca4a
@@ -632,6 +643,8 @@ CHECKSUMS
   racc (1.8.1) sha256=4a7f6929691dbec8b5209a0b373bc2614882b55fc5d2e447a21aaa691303d62f
   rainbow (3.1.1) sha256=039491aa3a89f42efa1d6dec2fc4e62ede96eb6acd95e52f1ad581182b79bc6a
   rake (13.4.2) sha256=cb825b2bd5f1f8e91ca37bddb4b9aaf345551b4731da62949be002fa89283701
+  rake-compiler-dock (1.12.0) sha256=f13205c2738f3d2053afcd03491a9e4541b22a59a0bfc53fc8bc883bd8188023
+  rb_sys (0.9.130) sha256=7d486d99c1da02635515deaf9860fc5aea90bb4ab2589b2deec7fdc7d3548615
   rbi (0.4.2) sha256=f1da92e338a6d45f9c4c1465b27a878a007fa7a0307f38abd29e6ddcb9f155b9
   rbs (4.1.2) sha256=050eb1d8b508f1233bed929c0f2c7052302f7adf295230d9cb314e9024078f48
   rdoc (7.2.0) sha256=8650f76cd4009c3b54955eb5d7e3a075c60a57276766ebf36f9085e8c9f23192
@@ -652,6 +665,7 @@ CHECKSUMS
   rubocop-rspec (3.10.2) sha256=0b3e2ecc592cd10ecbf0095bb58d1e357905276e069643523cc19eb7495f65e2
   rubocop-sorbet (0.15.0) sha256=666abfb804feb4c5b298e5143ad6ee154ddc486fcd2d15648f8a6ca22b805c70
   ruby-progressbar (1.13.0) sha256=80fc9c47a9b640d6834e0dc7b3c94c9df37f08cb072b7761e4a71e22cff29b33
+  rubydex (0.3.0) sha256=902ba4546c548de6a1908acee54cf3f5b998f01c87e2ad6fbd708011774df4e5
   rubydex (0.3.0-arm64-darwin) sha256=19f685610216e4e7f488722ac90dfbc33113a384dd16db309cf939606f4c32dd
   rubydex (0.3.0-x86_64-linux) sha256=dfe4026591f226b4a1b53f82f86dc14fad2e7c221ee8a5be99a0a46bf2d58b04
   sawyer (0.9.3) sha256=0d0f19298408047037638639fe62f4794483fb04320269169bd41af2bdcf5e41
