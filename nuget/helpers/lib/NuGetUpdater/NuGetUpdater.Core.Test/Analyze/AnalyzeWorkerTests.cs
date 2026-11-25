@@ -12,6 +12,7 @@ using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Test.Update;
 
@@ -21,6 +22,333 @@ namespace NuGetUpdater.Core.Test.Analyze;
 
 public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
 {
+    [Fact]
+    public async Task FindsPeerUpdatesUsingCustomAssetTargetFallback()
+    {
+        var result = await AnalyzeRestoredFrameworkFallbackProjectAsync(
+            projectContent: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net10.0-windows</TargetFramework>
+                    <DisableImplicitAssetTargetFallback>true</DisableImplicitAssetTargetFallback>
+                    <AssetTargetFallback>net35</AssetTargetFallback>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Package" Version="1.0.0" />
+                    <PackageReference Include="Other.Package" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """,
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net35", [("net35", [("Other.Package", "[1.0.0]")])]),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net35",
+                    [("net35", [("Other.Package", "[2.0.0]")]), ("net46", [("Other.Package", "[3.0.0]")])]),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "1.0.0", "net35"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "2.0.0", "net35"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "3.0.0", "net35"),
+            ]);
+
+        Assert.True(result.CanUpdate);
+        Assert.Equal("2.0.0", result.UpdatedVersion);
+        Assert.Equal("2.0.0", Assert.Single(result.UpdatedDependencies, dependency => dependency.Name == "Other.Package").Version);
+    }
+
+    [Fact]
+    public async Task FindsUpdatedVersionUsingRestoredFrameworkFallbacks()
+    {
+        var result = await AnalyzeRestoredFrameworkFallbackProjectAsync(
+            projectContent: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net10.0-windows</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Package" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """,
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net35"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net35"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "3.0.0", "net11.0"),
+            ]);
+
+        Assert.True(result.CanUpdate);
+        Assert.False(result.VersionComesFromMultiDependencyProperty);
+        Assert.Equal("2.0.0", result.UpdatedVersion);
+        Assert.Equal("2.0.0", Assert.Single(result.UpdatedDependencies).Version);
+    }
+
+    [Fact]
+    public async Task DoesNotUpdateWhenRestoredFrameworkFallbacksAreDisabled()
+    {
+        var result = await AnalyzeRestoredFrameworkFallbackProjectAsync(
+            projectContent: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net10.0-windows</TargetFramework>
+                    <DisableImplicitAssetTargetFallback>true</DisableImplicitAssetTargetFallback>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Package" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """,
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net10.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net35"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "3.0.0", "net11.0"),
+            ]);
+
+        Assert.False(result.CanUpdate);
+        Assert.False(result.VersionComesFromMultiDependencyProperty);
+        Assert.Equal("1.0.0", result.UpdatedVersion);
+        Assert.Empty(result.UpdatedDependencies);
+    }
+
+    [Fact]
+    public async Task FindsUpdatedSharedVersionUsingFrameworkFallbacks()
+    {
+        var evaluation = new EvaluationResult(EvaluationResultType.Success, "$(SomePackageVersion)", "1.0.0", "SomePackageVersion", ErrorMessage: null);
+        await TestAnalyzeAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net35"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net35"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "3.0.0", "net11.0"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "1.0.0", "net35"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "2.0.0", "net35"),
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects =
+                [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net10.0-windows"],
+                        TargetFrameworkFallbacks = ImmutableDictionary<string, TargetFrameworkFallback>.Empty.Add("net10.0-windows", new(["net461"], AssetTargetFallback: true)),
+                        Dependencies =
+                        [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference, EvaluationResult: evaluation, TargetFrameworks: ["net10.0-windows"]),
+                            new("Other.Package", "1.0.0", DependencyType.PackageReference, EvaluationResult: evaluation, TargetFrameworks: ["net10.0-windows"]),
+                        ],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    },
+                ],
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IgnoredVersions = [],
+                IsVulnerable = false,
+                Vulnerabilities = [],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "2.0.0",
+                CanUpdate = true,
+                VersionComesFromMultiDependencyProperty = true,
+                UpdatedDependencies =
+                [
+                    new("Some.Package", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net10.0-windows"]),
+                    new("Other.Package", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net10.0-windows"]),
+                ],
+            });
+    }
+
+    [Fact]
+    public async Task DoesNotUpdateSharedVersionWithoutFrameworkFallbacks()
+    {
+        var evaluation = new EvaluationResult(EvaluationResultType.Success, "$(SomePackageVersion)", "1.0.0", "SomePackageVersion", ErrorMessage: null);
+        await TestAnalyzeAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net10.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net35"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "3.0.0", "net11.0"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "1.0.0", "net10.0"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "2.0.0", "net35"),
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects =
+                [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net10.0-windows"],
+                        Dependencies =
+                        [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference, EvaluationResult: evaluation, TargetFrameworks: ["net10.0-windows"]),
+                            new("Other.Package", "1.0.0", DependencyType.PackageReference, EvaluationResult: evaluation, TargetFrameworks: ["net10.0-windows"]),
+                        ],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    },
+                ],
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IgnoredVersions = [],
+                IsVulnerable = false,
+                Vulnerabilities = [],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "1.0.0",
+                CanUpdate = false,
+                VersionComesFromMultiDependencyProperty = true,
+                UpdatedDependencies = [],
+            });
+    }
+
+    [Fact]
+    public async Task DoesNotShareFrameworkFallbacksBetweenProjects()
+    {
+        var project = new ProjectDiscoveryResult
+        {
+            FilePath = "project.csproj",
+            TargetFrameworks = ["net10.0-windows"],
+            TargetFrameworkFallbacks = ImmutableDictionary<string, TargetFrameworkFallback>.Empty.Add("net10.0-windows", new(["net461"], AssetTargetFallback: true)),
+            Dependencies = [new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net10.0-windows"])],
+            ImportedFiles = [],
+            AdditionalFiles = [],
+        };
+        await TestAnalyzeAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net10.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net35"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "3.0.0", "net11.0"),
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects =
+                [
+                    project,
+                    project with
+                    {
+                        FilePath = "strict/strict.csproj",
+                        TargetFrameworkFallbacks = ImmutableDictionary<string, TargetFrameworkFallback>.Empty,
+                    },
+                ],
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IgnoredVersions = [],
+                IsVulnerable = false,
+                Vulnerabilities = [],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "1.0.0",
+                CanUpdate = false,
+                VersionComesFromMultiDependencyProperty = false,
+                UpdatedDependencies = [],
+            });
+    }
+
+    [Fact]
+    public async Task DoesNotShareFrameworkFallbacksWithTransitiveConsumersForSharedVersions()
+    {
+        var evaluation = new EvaluationResult(EvaluationResultType.Success, "$(SomePackageVersion)", "1.0.0", "SomePackageVersion", ErrorMessage: null);
+        var project = new ProjectDiscoveryResult
+        {
+            FilePath = "project.csproj",
+            TargetFrameworks = ["net10.0-windows"],
+            TargetFrameworkFallbacks = ImmutableDictionary<string, TargetFrameworkFallback>.Empty.Add("net10.0-windows", new(["net461"], AssetTargetFallback: true)),
+            Dependencies =
+            [
+                new("Some.Package", "1.0.0", DependencyType.PackageReference, EvaluationResult: evaluation, TargetFrameworks: ["net10.0-windows"]),
+                new("Other.Package", "1.0.0", DependencyType.PackageReference, EvaluationResult: evaluation, TargetFrameworks: ["net10.0-windows"]),
+            ],
+            ImportedFiles = [],
+            AdditionalFiles = [],
+        };
+        await TestAnalyzeAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net10.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net35"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "3.0.0", "net11.0"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "1.0.0", "net35"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "2.0.0", "net35"),
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects =
+                [
+                    project,
+                    project with
+                    {
+                        FilePath = "strict/strict.csproj",
+                        TargetFrameworkFallbacks = ImmutableDictionary<string, TargetFrameworkFallback>.Empty,
+                        ReferencedProjectPaths = ["../project.csproj"],
+                        Dependencies = [new("Some.Package", "1.0.0", DependencyType.Unknown, TargetFrameworks: ["net10.0-windows"], IsTopLevel: false)],
+                    },
+                ],
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IgnoredVersions = [],
+                IsVulnerable = false,
+                Vulnerabilities = [],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "1.0.0",
+                CanUpdate = false,
+                VersionComesFromMultiDependencyProperty = true,
+                UpdatedDependencies = [],
+            });
+    }
+
+    private static async Task<AnalysisResult> AnalyzeRestoredFrameworkFallbackProjectAsync(string projectContent, MockNuGetPackage[] packages)
+    {
+        using var directory = await TemporaryDirectory.CreateWithContentsAsync(("project.csproj", projectContent));
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, directory.DirectoryPath);
+        var experiments = new ExperimentsManager();
+        var logger = new TestLogger();
+        var discoveryWorker = new DiscoveryWorker("TEST-JOB-ID", experiments, logger);
+        var discovery = await discoveryWorker.RunWithErrorHandlingAsync(directory.DirectoryPath, "/");
+        Assert.True(discovery.Error is null, JsonSerializer.Serialize(discovery.Error, AnalyzeWorker.SerializerOptions));
+        Assert.True(Assert.Single(discovery.Projects).IsSuccess);
+
+        var discoveryPath = Path.Combine(directory.DirectoryPath, "discovery.json");
+        await File.WriteAllTextAsync(discoveryPath, JsonSerializer.Serialize(discovery, AnalyzeWorker.SerializerOptions), TestContext.Current.CancellationToken);
+        var dependencyPath = Path.Combine(directory.DirectoryPath, "dependency.json");
+        await File.WriteAllTextAsync(dependencyPath, JsonSerializer.Serialize(new DependencyInfo
+        {
+            Name = "Some.Package",
+            Version = "1.0.0",
+            IgnoredVersions = [],
+            IsVulnerable = false,
+            Vulnerabilities = [],
+        }, AnalyzeWorker.SerializerOptions), TestContext.Current.CancellationToken);
+        var analyzeWorker = new AnalyzeWorker("TEST-JOB-ID", experiments, logger);
+
+        var result = await analyzeWorker.RunWithErrorHandlingAsync(directory.DirectoryPath, discoveryPath, dependencyPath);
+
+        Assert.Null(result.Error);
+        return result;
+    }
+
     [Fact]
     public async Task FindsUpdatedVersion()
     {

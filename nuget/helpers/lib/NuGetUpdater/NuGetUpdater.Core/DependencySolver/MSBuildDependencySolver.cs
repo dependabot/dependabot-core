@@ -1,5 +1,7 @@
 using System.Collections.Immutable;
 
+using NuGet.Frameworks;
+
 using NuGetUpdater.Core.Updater.FileWriters;
 
 namespace NuGetUpdater.Core.DependencySolver;
@@ -17,7 +19,7 @@ public class MSBuildDependencySolver : IDependencySolver
         _logger = logger;
     }
 
-    public async Task<ImmutableArray<Dependency>?> SolveAsync(ImmutableArray<Dependency> existingTopLevelDependencies, ImmutableArray<Dependency> desiredDependencies, string targetFramework)
+    public async Task<ImmutableArray<Dependency>?> SolveAsync(ImmutableArray<Dependency> existingTopLevelDependencies, ImmutableArray<Dependency> desiredDependencies, NuGetFramework targetFramework)
     {
         var projectExtension = _projectPath.Extension.ToLowerInvariant();
         if (!XmlFileWriter.SupportedProjectFileExtensions.Contains(projectExtension))

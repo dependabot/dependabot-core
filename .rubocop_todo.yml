@@ -239,7 +239,7 @@ Style/HashSlice:
 Style/SafeNavigationChainLength:
   Enabled: false
 
-# Offense count: 308
+# Offense count: 287
 Sorbet/ForbidTUntyped:
   Exclude:
     - "bun/lib/dependabot/bun.rb"
@@ -286,7 +286,6 @@ Sorbet/ForbidTUntyped:
     - "julia/lib/dependabot/julia/file_parser.rb"
     - "julia/lib/dependabot/julia/file_updater.rb"
     - "julia/lib/dependabot/julia/update_checker.rb"
-    - "nix/lib/dependabot/nix/file_parser.rb"
     - "nix/lib/dependabot/nix/flake_nix_parser.rb"
     - "nix/lib/dependabot/nix/package/package_details_fetcher.rb"
     - "nix/lib/dependabot/nix/update_checker/versioned_branch_finder.rb"
@@ -306,7 +305,6 @@ Sorbet/ForbidTUntyped:
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/latest_version_finder.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/library_detector.rb"
-    - "opentofu/lib/dependabot/opentofu/file_parser.rb"
     - "opentofu/lib/dependabot/opentofu/package/package_details_fetcher.rb"
     - "opentofu/lib/dependabot/opentofu/registry_client.rb"
     - "python/lib/dependabot/python/dependency_grapher.rb"
@@ -326,7 +324,6 @@ Sorbet/ForbidTUntyped:
     - "sbt/lib/dependabot/sbt/package/package_details_fetcher.rb"
     - "sbt/lib/dependabot/sbt/update_checker.rb"
     - "silent/lib/dependabot/silent/update_checker.rb"
-    - "terraform/lib/dependabot/terraform/file_parser.rb"
     - "terraform/lib/dependabot/terraform/file_updater/provider_cli_config_builder.rb"
     - "terraform/lib/dependabot/terraform/package/package_details_fetcher.rb"
     - "uv/lib/dependabot/uv.rb"

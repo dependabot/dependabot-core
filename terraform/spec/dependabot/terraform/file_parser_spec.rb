@@ -1,8 +1,6 @@
 # typed: false
 # frozen_string_literal: true
 
-# Sorbet cannot resolve child-context source_string fixtures or class-scope generated examples.
-
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/source"
@@ -20,12 +18,6 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
   let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/") }
   let(:files) { project_dependency_files("registry") }
-  let(:file_parser) do
-    described_class.new(
-      dependency_files: files,
-      source: source
-    )
-  end
   let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/") }
   let(:files) { [] }
 
@@ -896,6 +888,21 @@ RSpec.describe Dependabot::Terraform::FileParser do
           )
         end
       end
+
+      context "with a terragrunt registry source" do
+        let(:files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "terragrunt.hcl",
+              content: 'terraform { source = "hashicorp/consul/aws" }'
+            )
+          ]
+        end
+
+        it "raises when the source has no URL to name the dependency" do
+          expect { dependencies }.to raise_error(TypeError, "Passed `nil` into T.must")
+        end
+      end
     end
 
     context "when dealing with terraform.lock.hcl files" do
@@ -1091,6 +1098,25 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
+    context "with a private module proxy that resolves to Git" do
+      let(:files) { project_dependency_files("private_module_proxy") }
+      let(:proxy_url) do
+        "http://artifactory.dependabot.com/artifactory/tf-modules/azurerm/terraform-azurerm-nsg-rules.v1.1.0"
+      end
+
+      before do
+        stub_request(:get, "#{proxy_url}?terraform-get=1")
+          .and_return(headers: { "X-Terraform-Get" => "git::https://github.com/example/module.git?ref=v1.1.0" })
+      end
+
+      it "keeps the original source URL alongside the resolved source" do
+        expect(dependencies.first.version).to eq("1.1.0")
+        expect(dependencies.first.requirements.first[:source]).to eq(
+          type: "git", url: "https://github.com/example/module.git", branch: nil, ref: "v1.1.0", proxy_url: proxy_url
+        )
+      end
+    end
+
     context "with a private module proxy that can't be reached", :vcr do
       before do
         artifactory_repo_url = "http://artifactory.dependabot.com/artifactory/tf-modules/azurerm"
@@ -1151,89 +1177,42 @@ RSpec.describe Dependabot::Terraform::FileParser do
         end
       end
     end
-  end
 
-  describe "#source_type" do
-    subject(:source_type) { file_parser.send(:source_type, source_string) }
-
-    let(:file_parser) { described_class.new(dependency_files: files, source: source) }
-
-    let(:files) { project_dependency_files("registry") }
-    let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/") }
-
-    context "when the source type is known" do
-      let(:source_string) { "github.com/org/repo" }
-
-      it "returns the correct source type" do
-        expect(source_type).to eq(:github)
-      end
-    end
-
-    context "when the source type is a registry" do
-      let(:source_string) { "registry.terraform.io/hashicorp/aws" }
-
-      it "returns the correct source type" do
-        expect(source_type).to eq(:registry)
-      end
-    end
-
-    context "when the source type is an HTTP archive" do
+    context "with HTTP archive sources" do
       %w(.zip .bz2 .tar.bz2 .tar.tbz2 .tbz2 .gz .tar.gz .tgz .xz .tar.xz .txz).each do |extension|
-        context "with #{extension} extension" do
-          let(:source_string) { "https://example.com/archive#{extension}?ref=v1.0.0" }
+        context "with the #{extension} extension" do
+          let(:url) { "https://example.com/archive#{extension}?ref=v1.0.0" }
+          let(:files) do
+            [Dependabot::DependencyFile.new(name: "main.tf", content: %(module "example" { source = "#{url}" }))]
+          end
 
-          it "returns the correct source type" do
-            expect(source_type).to eq(:http_archive)
+          it "keeps the archive URL" do
+            expect(dependencies.first.requirements.first[:source]).to eq(type: "http_archive", url: url)
           end
         end
       end
     end
 
-    context "when the source type is an interpolation" do
-      let(:source_string) { "${var.source}" }
-
-      it "returns the correct source type" do
-        expect(source_type).to eq(:interpolation)
+    context "with Mercurial and S3 module sources" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "main.tf",
+            content: <<~HCL
+              module "mercurial" { source = "hg::https://example.com/repo" }
+              module "s3" { source = "s3::https://example.com/archive.zip" }
+            HCL
+          )
+        ]
       end
-    end
 
-    context "when the source type is an interpolation at the end" do
-      let(:source_string) { "git::https://github.com/username/repo.git//path/to/${var.module_name}" }
-
-      it "returns the correct source type" do
-        expect(source_type).to eq(:interpolation)
-      end
-    end
-
-    context "when the source type is an interpolation at the start" do
-      let(:source_string) { "${var.repo_url}/username/repo.git" }
-
-      it "returns the correct source type" do
-        expect(source_type).to eq(:interpolation)
-      end
-    end
-
-    context "when the source type is an interpolation type with multiple" do
-      let(:source_string) { "git::https://github.com/${var.username}/${var.repo}//path/to/${var.module_name}" }
-
-      it "returns the correct source type" do
-        expect(source_type).to eq(:interpolation)
-      end
-    end
-
-    context "when the source type is a compound interpolation" do
-      let(:source_string) { "test/${var.map[${var.key}']" }
-
-      it "returns the correct source type" do
-        expect(source_type).to eq(:interpolation)
-      end
-    end
-
-    context "when the source type is unknown" do
-      let(:source_string) { "unknown_source" }
-
-      it "returns the correct source type" do
-        expect(source_type).to eq(:registry)
+      it "keeps each source's kind and URL" do
+        expect(dependencies.map { |dependency| dependency.requirements.first[:source] }).to eq(
+          [
+            { type: "mercurial", url: "hg::https://example.com/repo" },
+            { type: "s3", url: "s3::https://example.com/archive.zip" }
+          ]
+        )
       end
     end
   end
