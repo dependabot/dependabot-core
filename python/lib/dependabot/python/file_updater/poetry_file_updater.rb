@@ -25,6 +25,7 @@ module Dependabot
       class PoetryFileUpdater
         require_relative "pyproject_preparer"
         require_relative "poetry_file_updater/pep621_updater"
+        require_relative "poetry_file_updater/locked_version_checker"
         extend T::Sig
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -189,6 +190,7 @@ module Dependabot
           @updated_lockfile_content ||=
             begin
               new_lockfile = updated_lockfile_content_for(prepared_pyproject)
+              LockedVersionChecker.new(dependencies: dependencies).check(new_lockfile)
 
               original_locked_python =
                 FileParser::PoetryLock.from_content(T.must(T.must(lockfile).content)).python_versions

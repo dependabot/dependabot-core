@@ -610,6 +610,50 @@ RSpec.describe namespace::PoetryVersionResolver do
       end
     end
 
+    context "when Poetry exits successfully" do
+      let(:resolved_version) { dependency_version }
+
+      before do
+        allow(resolver).to receive(:fetch_latest_resolvable_version_string)
+          .with(requirement: "==#{version}").and_return(resolved_version)
+      end
+
+      it "rejects a result that kept the previous version" do
+        expect(resolvable).to be(false)
+      end
+
+      context "when the returned version is equivalent to the requested version" do
+        let(:resolved_version) { "2.18.4.0" }
+
+        it { is_expected.to be(true) }
+      end
+
+      context "when the returned version adds a local identifier" do
+        let(:resolved_version) { "2.18.4+cpu" }
+
+        it { is_expected.to be(true) }
+      end
+
+      context "when the requested local identifier differs from the returned one" do
+        let(:version) { Dependabot::Python::Version.new("2.18.4+cpu") }
+        let(:resolved_version) { "2.18.4+cu121" }
+
+        it { is_expected.to be(false) }
+      end
+
+      context "when no version is returned" do
+        let(:dependency_name) { "idna" }
+        let(:dependency_version) { "2.5" }
+        let(:dependency_requirements) { [] }
+        let(:pyproject_fixture_name) { "latest_subdep_blocked.toml" }
+        let(:lockfile_fixture_name) { "latest_subdep_blocked.lock" }
+        let(:version) { Gem::Version.new("2.7") }
+        let(:resolved_version) { nil }
+
+        it { is_expected.to be(false) }
+      end
+    end
+
     context "when version is not resolvable" do
       let(:version) { Gem::Version.new("99.18.4") }
 
