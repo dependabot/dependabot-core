@@ -32,6 +32,48 @@ module Dependabot
           ).fetch
         end
 
+        sig do
+          params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+            .returns(T::Array[Dependabot::Version])
+        end
+        def eligible_versions(language_version: nil)
+          releases = available_versions || []
+          releases = filter_yanked_versions(releases)
+          releases = cooldown_tracker.filter(language_version:, requirements: false) do
+            filtered = filter_by_cooldown(releases)
+            filtered = filter_unsupported_versions(filtered, language_version)
+            filtered = filter_prerelease_versions(filtered)
+            filtered = filter_ignored_versions(filtered)
+            apply_post_fetch_latest_versions_filter(filtered)
+          end
+          releases.map(&:version).uniq
+        end
+
+        sig do
+          params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+            .returns(T::Array[Dependabot::Version])
+        end
+        def eligible_security_fix_versions(language_version: nil)
+          releases = available_versions || []
+          releases = filter_yanked_versions(releases)
+          releases = filter_unsupported_versions(releases, language_version)
+          releases = Dependabot::UpdateCheckers::VersionFilters
+                     .filter_vulnerable_versions(releases, security_advisories)
+          releases = filter_ignored_versions(releases)
+          releases = filter_lower_versions(releases)
+          releases = apply_post_fetch_lowest_security_fix_versions_filter(releases)
+          releases.map(&:version).uniq.sort
+        end
+
+        sig do
+          params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+            .returns(T::Array[Dependabot::Version])
+        end
+        def resolver_excluded_versions(language_version: nil)
+          releases = available_versions || []
+          (releases.map(&:version) - eligible_versions(language_version:)).uniq
+        end
+
         sig { override.returns(T::Boolean) }
         def cooldown_enabled?
           return false if cooldown_options.nil?

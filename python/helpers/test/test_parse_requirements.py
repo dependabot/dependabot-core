@@ -207,6 +207,7 @@ class TestParseRequirementsTxt:
         assert component["status"] == "partial"
         assert component["reasons"] == ["remote_reference", "local_path"]
         assert component["has_index_options"] is False
+        assert component["source_spans_applicable"] is True
         assert "ignored.txt" not in component["files"]
 
     def test_partial_acyclic_component_preserves_constraint_roles(
@@ -274,8 +275,27 @@ class TestParseRequirementsTxt:
                 "status": "complete",
                 "reasons": [],
                 "has_index_options": True,
+                "source_spans_applicable": True,
             }
         ]
+
+    def test_marks_changed_pip_decoding_as_unsafe_for_source_spans(
+        self,
+        tmp_path
+    ):
+        (tmp_path / "requirements.txt").write_bytes(
+            (
+                "# coding: latin-1\n"
+                "# Å\n"
+                "requests==2.31.0\n"
+            ).encode("utf-8")
+        )
+
+        result = json.loads(parse_requirements_v2(str(tmp_path)))["result"]
+
+        requests = find_dep(result["declarations"], "requests")
+        assert requests["source"] == {"start_line": 4, "end_line": 4}
+        assert result["components"][0]["source_spans_applicable"] is False
 
     def test_records_long_and_compact_reference_options(self, tmp_path):
         result = parse_files(
@@ -370,6 +390,7 @@ class TestParseRequirementsTxt:
                 "status": "partial",
                 "reasons": ["cycle"],
                 "has_index_options": False,
+                "source_spans_applicable": True,
             }
         ]
         assert {

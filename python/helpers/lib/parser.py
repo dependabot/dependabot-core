@@ -235,6 +235,7 @@ class RequirementsFileParser:
         self.has_index_options = set()
         self.has_local_path = set()
         self.source_spans = {}
+        self.source_spans_applicable = set()
 
     def parse(self):
         original_directory = os.getcwd()
@@ -297,9 +298,12 @@ class RequirementsFileParser:
 
             parsed.add(filename)
             absolute_path = os.path.join(self.directory, filename)
-            self.source_spans[filename] = self._physical_line_spans(
-                absolute_path
+            source_spans, source_spans_applicable = (
+                self._physical_line_spans(absolute_path)
             )
+            self.source_spans[filename] = source_spans
+            if source_spans_applicable:
+                self.source_spans_applicable.add(filename)
             direct_requirements = []
 
             for line in self.pip_parser._parse_file(absolute_path, False):
@@ -456,6 +460,9 @@ class RequirementsFileParser:
             "reasons": reasons,
             "has_index_options": bool(
                 self.has_index_options.intersection(files)
+            ),
+            "source_spans_applicable": files.issubset(
+                self.source_spans_applicable
             ),
         }
 
@@ -622,16 +629,21 @@ class RequirementsFileParser:
 
     def _physical_line_spans(self, filename):
         with open(filename, "rb") as file:
-            content = self.req_file._decode_req_file(
-                file.read(),
-                filename
-            )
+            data = file.read()
+        content = self.req_file._decode_req_file(data, filename)
 
         lines = TrackingLineIterator(content)
         spans = {}
         for start_line, _ in self.req_file.join_lines(lines):
             spans[start_line] = lines.last_line_number
-        return spans
+        return spans, self._source_spans_apply_to_original(data, content)
+
+    @staticmethod
+    def _source_spans_apply_to_original(data, content):
+        try:
+            return data.decode("utf-8-sig") == content
+        except UnicodeDecodeError:
+            return False
 
     def _relative_path(self, path):
         return os.path.relpath(path, self.directory)

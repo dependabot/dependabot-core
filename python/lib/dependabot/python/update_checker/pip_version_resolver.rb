@@ -2,14 +2,21 @@
 # frozen_string_literal: true
 
 require "json"
+require "fileutils"
 require "pathname"
+require "shellwords"
 require "toml-rb"
 require "sorbet-runtime"
 require "excon"
 require "dependabot/registry_client"
+require "dependabot/shared_helpers"
+require "dependabot/python/authed_url_builder"
+require "dependabot/python/dependency_grapher/requirements_layers"
 require "dependabot/python/language_version_manager"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/package/package_registry_finder"
+require "dependabot/python/requirement"
+require "dependabot/python/requirements_file_parser"
 require "dependabot/python/update_checker"
 require "dependabot/python/update_checker/latest_version_finder"
 require "dependabot/python/file_parser/python_requirement_parser"
@@ -24,6 +31,51 @@ module Dependabot
       # rubocop:disable-next Metrics/ClassLength
       class PipVersionResolver
         extend T::Sig
+
+        PIP_REPORT_FILENAME = "dependabot-pip-report.json"
+        PIP_RESOLVER_FINGERPRINT =
+          "pyenv exec pip install --dry-run --ignore-installed --report <report> -r <requirements_file>"
+        RESOLUTION_ERROR_PATTERN = /ResolutionImpossible|No matching distribution found/
+        NO_MATCHING_DISTRIBUTION_PATTERN =
+          /No\s+matching\s+distribution\s+found\s+for\s+
+           (?<name>[A-Za-z0-9][A-Za-z0-9._-]*)
+           (?:\[[^\]\r\n]+\])?
+           (?<requirement>[^\r\n]*)/x
+        UNSUPPORTED_BUILD_METADATA_PATTERNS = T.let(
+          [
+            /Failed to build '.+' when getting requirements to build wheel/,
+            /BackendUnavailable: Cannot import 'setuptools\.build_meta'/
+          ].freeze,
+          T::Array[Regexp]
+        )
+        PRERELEASE_OPT_IN_REQUIREMENT = ">=0.0.dev0"
+        LOWER_BOUND_OPERATORS = %w(> >= ~>).freeze
+        NON_PYTHON_MARKER_PATTERN =
+          /\b(?:extra|implementation_name|implementation_version|os_name|platform_machine|
+               platform_python_implementation|platform_release|platform_system|
+               platform_version|sys_platform)\b/x
+        MARKER_MEMBERSHIP_PATTERN = /\b(?:not\s+)?in\b/
+        UNSUPPORTED_PYTHON_MARKER_OPERATOR_PATTERN =
+          /\bpython(?:_full)?_version\b\s*(?:~=|===)/
+        WILDCARD_PYTHON_MARKER_PATTERN =
+          /\bpython(?:_full)?_version\b\s*(?:==|!=)\s*['"][^'"]*\*[^'"]*['"]/
+        REVERSED_PYTHON_MARKER_PATTERN =
+          /['"][^'"]*['"]\s*(?:<=|>=|==|!=|~=|===|<|>)\s*python(?:_full)?_version\b/
+        VARIABLE_TO_VARIABLE_PYTHON_MARKER_PATTERN =
+          /\bpython(?:_full)?_version\b\s*(?:<=|>=|==|!=|~=|===|<|>)\s*python(?:_full)?_version\b/
+        PYTHON_SPLITLINES_BOUNDARY_PATTERN =
+          /(?<=\r\n)|(?<=\r)(?!\n)|(?<!\r)(?<=\n)|(?<=[\v\f\x1C-\x1E\u0085\u2028\u2029])/
+        PYTHON_LINE_ENDING_PATTERN = /(?:\r\n|[\n\v\f\r\x1C-\x1E\u0085\u2028\u2029])\z/
+        LowerBound = T.type_alias { [String, Gem::Version] }
+        ObjectHash = T.type_alias { T::Hash[String, Object] }
+
+        class InvalidPipReport < Dependabot::DependabotError; end
+
+        class ResolutionContext < T::ImmutableStruct
+          const :declarations, T::Array[RequirementsFileParser::Declaration]
+          const :root, String
+          const :unchanged_declarations, T::Array[RequirementsFileParser::Declaration]
+        end
 
         sig do
           params(
@@ -67,8 +119,26 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::Version)) }
         def latest_resolvable_version
-          candidate = latest_version_finder.latest_version(language_version: language_version_manager.python_version)
-          return candidate if candidate.nil?
+          language_version = language_version_manager.python_version
+          eligible_versions = latest_version_finder.eligible_versions(
+            language_version: language_version
+          )
+          policy_ceiling = eligible_versions.max
+          return if policy_ceiling.nil?
+
+          selection_requirement = resolver_requirement(policy_ceiling, eligible_versions, language_version)
+          policy_candidate = eligible_versions.sort.reverse.find do |candidate|
+            candidate_admitted_by_requirement?(candidate, selection_requirement)
+          end
+          policy_candidate ||= policy_ceiling if below_resolver_lower_bound?(policy_ceiling)
+          return unless policy_candidate
+
+          requirement_string = resolver_requirement(policy_candidate, eligible_versions, language_version)
+          candidate = pip_resolvable_version(
+            policy_candidate: policy_candidate,
+            requirement_string: requirement_string
+          )
+          return unless candidate && eligible_versions.include?(candidate)
           return candidate if compatible_with_pinned_pyproject_dependencies?(candidate)
 
           nil
@@ -82,10 +152,17 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::Version)) }
         def lowest_resolvable_security_fix_version
-          candidate = latest_version_finder
-                      .lowest_security_fix_version(language_version: language_version_manager.python_version)
-          return candidate if candidate.nil?
-          return candidate if compatible_with_pinned_pyproject_dependencies?(candidate)
+          candidates = latest_version_finder.eligible_security_fix_versions(
+            language_version: language_version_manager.python_version
+          )
+          candidates.each do |candidate|
+            resolved_candidate = pip_resolvable_version(
+              policy_candidate: candidate,
+              requirement_string: ["==#{candidate}", *source_exclusion_requirements].uniq.join(",")
+            )
+            next unless resolved_candidate == candidate
+            return candidate if compatible_with_pinned_pyproject_dependencies?(candidate)
+          end
 
           nil
         end
@@ -140,6 +217,499 @@ module Dependabot
         sig { returns(Dependabot::Python::MarkerEvaluator) }
         def marker_evaluator
           @marker_evaluator ||= Dependabot::Python::MarkerEvaluator.new
+        end
+
+        sig do
+          params(
+            policy_candidate: Dependabot::Version,
+            requirement_string: String
+          ).returns(T.nilable(Dependabot::Version))
+        end
+        def pip_resolvable_version(policy_candidate:, requirement_string:)
+          return policy_candidate if local_version_bounds?(policy_candidate)
+          return policy_candidate if below_resolver_lower_bound?(policy_candidate)
+
+          context = resolution_context
+          return policy_candidate unless context
+
+          SharedHelpers.in_a_temporary_directory do
+            SharedHelpers.with_git_configured(credentials: credentials) do
+              write_dependency_files(context: context, requirement_string: requirement_string)
+              language_version_manager.install_required_python
+              SharedHelpers.run_shell_command(
+                pip_resolver_command(context.root),
+                allow_unsafe_shell_command: true,
+                env: pip_environment,
+                fingerprint: PIP_RESOLVER_FINGERPRINT,
+                stderr_to_stdout: true
+              )
+
+              pip_report_version(
+                context: context,
+                policy_candidate: policy_candidate,
+                requirement_string: requirement_string
+              )
+            end
+          end
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          return policy_candidate if UNSUPPORTED_BUILD_METADATA_PATTERNS.any? { |pattern| e.message.match?(pattern) }
+          return policy_candidate if context && unchanged_peer_distribution_missing?(e.message, context)
+          return nil if e.message.match?(RESOLUTION_ERROR_PATTERN)
+
+          raise
+        end
+
+        sig { params(message: String, context: ResolutionContext).returns(T::Boolean) }
+        def unchanged_peer_distribution_missing?(message, context)
+          match = message.match(NO_MATCHING_DISTRIBUTION_PATTERN)
+          return false unless match
+
+          missing_name = NameNormaliser.normalise(T.must(match[:name]))
+          missing_requirement = normalized_requirement(T.must(match[:requirement]))
+
+          context.unchanged_declarations.any? do |declaration|
+            next false if declaration.constraint
+            next false unless marker_satisfied_for_python?(declaration.markers)
+            next false unless NameNormaliser.normalise(declaration.name) == missing_name
+
+            normalized_requirement(declaration.requirement.to_s) == missing_requirement
+          end
+        end
+
+        sig { params(requirement: String).returns(String) }
+        def normalized_requirement(requirement)
+          normalized = requirement.gsub(/\s+/, "")
+          return T.must(normalized[1...-1]) if normalized.start_with?("(") && normalized.end_with?(")")
+
+          normalized
+        end
+
+        sig { returns(T.nilable(LowerBound)) }
+        def resolver_lower_bound
+          current_version = dependency.numeric_version
+          return [">=", current_version] if current_version
+
+          lower_bounds = dependency.requirements.filter_map { |requirement| lower_bound_for(requirement) }
+          lower_bounds.max_by { |operator, version| [version, operator == ">" ? 1 : 0] }
+        end
+
+        sig { params(policy_candidate: Dependabot::Version).returns(T::Boolean) }
+        def below_resolver_lower_bound?(policy_candidate)
+          lower_bound = resolver_lower_bound
+          return false unless lower_bound
+
+          operator, version = lower_bound
+          policy_candidate < version || (policy_candidate == version && operator == ">")
+        end
+
+        sig { params(requirement: Dependabot::DependencyRequirement).returns(T.nilable(LowerBound)) }
+        def lower_bound_for(requirement)
+          requirement_string = requirement.requirement_string
+          return unless requirement_string
+
+          parsed_requirements = T.let(
+            Python::Requirement.new(requirement_string).requirements,
+            T::Array[[String, Gem::Version]]
+          )
+          lower_bounds = parsed_requirements.filter_map do |operator, version|
+            [operator, version] if LOWER_BOUND_OPERATORS.include?(operator)
+          end
+          operator, version = lower_bounds.max_by do |bound_operator, bound_version|
+            [bound_version, bound_operator == ">" ? 1 : 0]
+          end
+          return unless operator && version
+
+          [operator == ">" ? ">" : ">=", version]
+        rescue Gem::Requirement::BadRequirementError
+          nil
+        end
+
+        sig do
+          params(
+            policy_candidate: Dependabot::Version,
+            eligible_versions: T::Array[Dependabot::Version],
+            language_version: T.nilable(T.any(String, Dependabot::Version))
+          ).returns(String)
+        end
+        def resolver_requirement(policy_candidate, eligible_versions, language_version)
+          requirements = ["<=#{policy_candidate}"]
+          lower_bound = resolver_lower_bound
+          requirements.unshift("#{lower_bound[0]}#{lower_bound[1]}") if lower_bound
+          requirements << "!=#{dependency.numeric_version}" if dependency.numeric_version
+          requirements.concat(source_exclusion_requirements)
+          requirements.concat(excluded_version_requirements(policy_candidate, eligible_versions, language_version))
+          requirements << PRERELEASE_OPT_IN_REQUIREMENT if eligible_versions.any?(&:prerelease?)
+          requirements.uniq.join(",")
+        end
+
+        sig do
+          params(
+            policy_candidate: Dependabot::Version,
+            eligible_versions: T::Array[Dependabot::Version],
+            language_version: T.nilable(T.any(String, Dependabot::Version))
+          ).returns(T::Array[String])
+        end
+        def excluded_version_requirements(policy_candidate, eligible_versions, language_version)
+          lower_bound = resolver_lower_bound
+          excluded_versions = latest_version_finder.resolver_excluded_versions(language_version: language_version)
+
+          excluded_versions.filter_map do |version|
+            next if version > policy_candidate
+
+            if lower_bound
+              operator, bound_version = lower_bound
+              next if version < bound_version || (version == bound_version && operator == ">")
+            end
+            next if eligible_versions.include?(version)
+
+            "!=#{version}"
+          end
+        end
+
+        sig { returns(T::Array[String]) }
+        def source_exclusion_requirements
+          dependency.requirements.flat_map do |requirement|
+            requirement_string = requirement.requirement_string
+            next [] unless requirement_string
+
+            requirement_string.split(",").filter_map do |clause|
+              exclusion = clause.strip
+              exclusion if exclusion.start_with?("!=")
+            end
+          end.uniq
+        end
+
+        sig { params(candidate: Dependabot::Version, requirement_string: String).returns(T::Boolean) }
+        def candidate_admitted_by_requirement?(candidate, requirement_string)
+          wildcard_exclusions, requirements = requirement_string.split(",").map(&:strip).partition do |requirement|
+            requirement.start_with?("!=") && requirement.end_with?(".*")
+          end
+          return false unless Dependabot::Python::Requirement.new(requirements.join(",")).satisfied_by?(candidate)
+
+          wildcard_exclusions.none? do |exclusion|
+            prefix = exclusion.delete_prefix("!=").delete_suffix(".*").strip
+            wildcard_excludes_candidate?(candidate, prefix)
+          end
+        end
+
+        sig { params(candidate: Dependabot::Version, prefix: String).returns(T::Boolean) }
+        def wildcard_excludes_candidate?(candidate, prefix)
+          candidate_version = Dependabot::Python::Version.new(candidate.to_s)
+          prefix_version = Dependabot::Python::Version.new(prefix)
+          candidate_release = candidate_version.release_segment.dup
+          if candidate_release.length < prefix_version.release_segment.length
+            candidate_release.fill(0, candidate_release.length...prefix_version.release_segment.length)
+          end
+
+          candidate_version.epoch == prefix_version.epoch &&
+            candidate_release.first(prefix_version.release_segment.length) ==
+              prefix_version.release_segment
+        end
+
+        sig { returns(T.nilable(ResolutionContext)) }
+        def resolution_context
+          requirement = native_dependency_requirement
+          return unless requirement
+
+          manifest_files = resolver_manifest_files
+          result = RequirementsFileParser.new(
+            dependency_files: dependency_files,
+            requirement_files: (manifest_files + [T.must(requirement.file)]).uniq
+          ).parse
+          declaration = primary_declaration(result, requirement)
+          return unless declaration&.requirement
+
+          component = complete_primary_component(result, declaration, manifest_files)
+          return unless component
+
+          return if native_component_unsupported?(component, result.declarations)
+
+          unchanged_declarations = result.declarations.filter_map do |item|
+            next unless component.files.include?(item.file)
+            next if NameNormaliser.normalise(item.name) == NameNormaliser.normalise(dependency.name)
+
+            item
+          end
+
+          ResolutionContext.new(
+            declarations: [declaration],
+            root: T.must(component.roots.first),
+            unchanged_declarations: unchanged_declarations
+          )
+        end
+
+        sig do
+          params(
+            result: RequirementsFileParser::Result,
+            declaration: RequirementsFileParser::Declaration,
+            manifest_files: T::Array[String]
+          ).returns(T.nilable(RequirementsFileParser::Component))
+        end
+        def complete_primary_component(result, declaration, manifest_files)
+          file_node = result.files.find { |file| file.path == declaration.file }
+          component = result.components.find { |item| item.id == file_node&.component_id }
+          return unless component&.complete? && component.roots.one?
+          return unless manifest_files.include?(T.must(component.roots.first))
+
+          component
+        end
+
+        sig do
+          params(
+            result: RequirementsFileParser::Result,
+            requirement: Dependabot::DependencyRequirement
+          ).returns(T.nilable(RequirementsFileParser::Declaration))
+        end
+        def primary_declaration(result, requirement)
+          normalized_file = Pathname.new(T.must(requirement.file)).cleanpath.to_s
+          declarations = result.declarations.select do |declaration|
+            declaration.file == normalized_file &&
+              declaration.requirement == requirement.requirement_string &&
+              NameNormaliser.normalise(declaration.name) == NameNormaliser.normalise(dependency.name)
+          end
+          declarations.first if declarations.one?
+        end
+
+        sig { returns(T.nilable(Dependabot::DependencyRequirement)) }
+        def native_dependency_requirement
+          return unless dependency.package_manager == "pip"
+          return unless dependency.requirements.one?
+          return unless dependency_file_paths_safe?
+
+          requirement = T.must(dependency.requirements.first)
+          requirement_file = requirement.file
+          return unless requirement_file&.end_with?(".txt")
+          return unless requirement.source.nil? && requirement.requirement_string
+
+          return unless dependency_file_present?(requirement_file)
+
+          requirement
+        end
+
+        sig { params(path: String).returns(T::Boolean) }
+        def dependency_file_present?(path)
+          normalized_path = Pathname.new(path).cleanpath.to_s
+          dependency_files.any? do |file|
+            file.content && Pathname.new(file.name).cleanpath.to_s == normalized_path
+          end
+        end
+
+        sig do
+          params(
+            component: RequirementsFileParser::Component,
+            declarations: T::Array[RequirementsFileParser::Declaration]
+          ).returns(T::Boolean)
+        end
+        def native_component_unsupported?(component, declarations)
+          return true unless component.source_spans_applicable
+          return true if component.has_index_options && python_index_credentials?
+          return true if pip_config_extra_indexes_override_credentials?
+          return true if non_native_registry_sources?
+
+          declarations.any? do |declaration|
+            component.files.include?(declaration.file) && unsupported_declaration?(declaration)
+          end
+        end
+
+        sig { params(declaration: RequirementsFileParser::Declaration).returns(T::Boolean) }
+        def unsupported_declaration?(declaration)
+          declaration.editable ||
+            declaration.local ||
+            declaration.hashes.any? ||
+            unsupported_marker?(declaration.markers)
+        end
+
+        sig { params(marker: T.nilable(String)).returns(T::Boolean) }
+        def unsupported_marker?(marker)
+          return false unless marker
+
+          [
+            NON_PYTHON_MARKER_PATTERN,
+            MARKER_MEMBERSHIP_PATTERN,
+            UNSUPPORTED_PYTHON_MARKER_OPERATOR_PATTERN,
+            WILDCARD_PYTHON_MARKER_PATTERN,
+            REVERSED_PYTHON_MARKER_PATTERN,
+            VARIABLE_TO_VARIABLE_PYTHON_MARKER_PATTERN
+          ].any? { |pattern| marker.match?(pattern) }
+        end
+
+        sig { returns(T::Boolean) }
+        def python_index_credentials?
+          credentials.any? { |credential| credential["type"] == "python_index" }
+        end
+
+        sig { returns(T::Boolean) }
+        def pip_config_extra_indexes_override_credentials?
+          return false unless credentials.any? do |credential|
+            credential["type"] == "python_index" && !credential.replaces_base?
+          end
+
+          pip_config = dependency_files.find { |file| file.name == "pip.conf" }
+          pip_config&.content&.match?(/^\s*extra-index-url\s*=/i) == true
+        end
+
+        sig { returns(T::Boolean) }
+        def non_native_registry_sources?
+          native_dependency_files = dependency_files.reject do |file|
+            file.name == "Pipfile" || file.name == "pyproject.toml"
+          end
+          package_registry_urls(dependency_files) != package_registry_urls(native_dependency_files)
+        end
+
+        sig { returns(T::Boolean) }
+        def dependency_file_paths_safe?
+          dependency_files.all? do |file|
+            path = Pathname.new(file.name).cleanpath
+            !path.absolute? && path.each_filename.first != ".."
+          end
+        end
+
+        sig { returns(T::Array[String]) }
+        def resolver_manifest_files
+          dependency_files.filter_map do |file|
+            file.name if file.name.end_with?(".in") ||
+                         DependencyGrapher::RequirementsLayers.manifest_txt_filename?(file.name)
+          end
+        end
+
+        sig { params(policy_candidate: Dependabot::Version).returns(T::Boolean) }
+        def local_version_bounds?(policy_candidate)
+          policy_candidate.to_s.include?("+") || resolver_lower_bound&.last&.to_s&.include?("+") == true
+        end
+
+        sig do
+          params(
+            context: ResolutionContext,
+            requirement_string: String
+          ).void
+        end
+        def write_dependency_files(context:, requirement_string:)
+          declarations_by_file = context.declarations.group_by(&:file)
+          dependency_files.each do |file|
+            next unless file.content
+
+            FileUtils.mkdir_p(File.dirname(file.name))
+            normalized_file = Pathname.new(file.name).cleanpath.to_s
+            declarations = declarations_by_file.fetch(normalized_file, [])
+            content = replace_declaration_spans(T.must(file.content), declarations, requirement_string)
+            File.write(file.name, content)
+          end
+          File.write(".python-version", language_version_manager.python_major_minor)
+        end
+
+        sig do
+          params(
+            content: String,
+            declarations: T::Array[RequirementsFileParser::Declaration],
+            requirement_string: String
+          ).returns(String)
+        end
+        def replace_declaration_spans(content, declarations, requirement_string)
+          lines = content.split(PYTHON_SPLITLINES_BOUNDARY_PATTERN)
+          declarations.sort_by { |declaration| declaration.source.start_line }.reverse_each do |declaration|
+            start_index = declaration.source.start_line - 1
+            length = declaration.source.end_line - declaration.source.start_line + 1
+            ending = line_ending(lines.fetch(start_index + length - 1))
+            extras = declaration.extras.any? ? "[#{declaration.extras.join(',')}]" : ""
+            marker = declaration.markers
+            marker = nil if marker == "None"
+            marker_suffix = marker ? "; #{marker}" : ""
+            replacement = "#{declaration.name}#{extras}#{requirement_string}#{marker_suffix}#{ending}"
+            lines[start_index, length] = [replacement]
+          end
+          lines.join
+        end
+
+        sig { params(line: String).returns(String) }
+        def line_ending(line)
+          line[PYTHON_LINE_ENDING_PATTERN] || ""
+        end
+
+        sig { params(root: String).returns(String) }
+        def pip_resolver_command(root)
+          command = [
+            "pyenv", "exec", "pip", "install", "--dry-run", "--ignore-installed",
+            "--report", PIP_REPORT_FILENAME
+          ]
+          Shellwords.join([*command, "-r", root])
+        end
+
+        sig { returns(T::Hash[String, String]) }
+        def pip_environment
+          index_credentials = credentials.select { |credential| credential["type"] == "python_index" }
+          environment = T.let({}, T::Hash[String, String])
+
+          base_credential = index_credentials.find(&:replaces_base?)
+          environment["PIP_INDEX_URL"] = AuthedUrlBuilder.authed_url(credential: base_credential) if base_credential
+
+          extra_index_urls = index_credentials.reject(&:replaces_base?).map do |credential|
+            AuthedUrlBuilder.authed_url(credential: credential)
+          end
+          environment["PIP_EXTRA_INDEX_URL"] = extra_index_urls.join(" ") if extra_index_urls.any?
+          if dependency_files.any? { |file| file.name == "pip.conf" }
+            environment["PIP_CONFIG_FILE"] = File.expand_path("pip.conf")
+          end
+
+          environment
+        end
+
+        sig do
+          params(
+            context: ResolutionContext,
+            policy_candidate: Dependabot::Version,
+            requirement_string: String
+          ).returns(T.nilable(Dependabot::Version))
+        end
+        def pip_report_version(context:, policy_candidate:, requirement_string:)
+          report_object = T.let(JSON.parse(File.read(PIP_REPORT_FILENAME)), Object)
+          report = object_hash(report_object)
+          raise InvalidPipReport, "pip report must be an object" unless report
+
+          installs = report["install"]
+          raise InvalidPipReport, "pip report install must be an array" unless installs.is_a?(Array)
+
+          versions = installs.filter_map { |entry| version_from_pip_report_entry(T.cast(entry, Object)) }.uniq
+          return T.must(versions.first) if versions.one?
+
+          if versions.empty? && context.declarations.all?(&:constraint)
+            return nil unless candidate_admitted_by_requirement?(policy_candidate, requirement_string)
+
+            return policy_candidate
+          end
+
+          raise InvalidPipReport, "pip report did not contain exactly one version for #{dependency.name}"
+        rescue JSON::ParserError, Errno::ENOENT => e
+          raise InvalidPipReport, "invalid pip report: #{e.message}"
+        end
+
+        sig { params(entry: Object).returns(T.nilable(Dependabot::Version)) }
+        def version_from_pip_report_entry(entry)
+          install = object_hash(entry)
+          raise InvalidPipReport, "pip report install entry must be an object" unless install
+
+          metadata = object_hash(install["metadata"])
+          raise InvalidPipReport, "pip report install metadata must be an object" unless metadata
+
+          name = metadata["name"]
+          version = metadata["version"]
+          unless name.is_a?(String) && version.is_a?(String)
+            raise InvalidPipReport, "pip report install metadata must contain a name and version"
+          end
+          return unless NameNormaliser.normalise(name) == NameNormaliser.normalise(dependency.name)
+
+          Python::Version.new(version)
+        rescue ArgumentError => e
+          raise InvalidPipReport, "pip report contained an invalid version: #{e.message}"
+        end
+
+        sig { params(value: T.nilable(Object)).returns(T.nilable(ObjectHash)) }
+        def object_hash(value)
+          return unless value.is_a?(Hash)
+
+          typed_value = T.let(value, T::Hash[Object, Object])
+          typed_value.each_with_object(T.let({}, ObjectHash)) do |(key, item), result|
+            result[key] = item if key.is_a?(String)
+          end
         end
 
         sig { params(candidate: Dependabot::Version).returns(T::Boolean) }
@@ -317,18 +887,19 @@ module Dependabot
         def registry_json_urls
           return @registry_json_urls if @registry_json_urls
 
-          package_registry_urls = Package::PackageRegistryFinder.new(
-            dependency_files: dependency_files,
+          @registry_json_urls =
+            package_registry_urls(dependency_files)
+            .map { |url| url.sub(%r{/simple/?$}i, "/pypi/") }
+            .uniq
+        end
+
+        sig { params(files: T::Array[Dependabot::DependencyFile]).returns(T::Array[String]) }
+        def package_registry_urls(files)
+          Package::PackageRegistryFinder.new(
+            dependency_files: files,
             credentials: credentials,
             dependency: dependency
           ).registry_urls
-
-          @registry_json_urls =
-            package_registry_urls
-            .map { |url| url.sub(%r{/simple/?$}i, "/pypi/") }
-            .uniq
-
-          @registry_json_urls
         end
 
         sig { params(response: Excon::Response).returns([T::Array[String], T::Boolean]) }
@@ -519,7 +1090,7 @@ module Dependabot
 
         sig { params(marker: T.nilable(String)).returns(T::Boolean) }
         def marker_satisfied_for_python?(marker)
-          return true if marker.nil? || marker.empty?
+          return true if marker.nil? || marker.empty? || marker == "None"
           return false unless marker.match?(/\bpython(?:_full)?_version\b/)
 
           marker_satisfied?(marker, language_version_manager.python_version)
