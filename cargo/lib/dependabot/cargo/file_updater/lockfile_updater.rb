@@ -6,6 +6,7 @@ require "toml-rb"
 require "open3"
 require "dependabot/git_commit_checker"
 require "dependabot/cargo/file_updater"
+require "dependabot/cargo/file_updater/graph_update_validator"
 require "dependabot/cargo/file_updater/manifest_updater"
 require "dependabot/cargo/file_parser"
 require "dependabot/cargo/helpers"
@@ -164,9 +165,25 @@ module Dependabot
           package_version_count(File.read("Cargo.lock"), dependency, previous_version).zero?
         end
 
+        # Registry updates with exact numeric versions are validated together
+        # against the lock graph, so grouped parent updates correlate. Git
+        # updates and updates without exact versions keep the textual checks.
         sig { params(updated_lockfile: String).returns(String) }
         def validate_updates(updated_lockfile)
-          dependencies.each do |updated_dependency|
+          graph_dependencies, other_dependencies = dependencies.partition { |dep| graph_validated?(dep) }
+
+          GraphUpdateValidator.new(
+            dependencies: graph_dependencies,
+            manifest_files: manifest_files,
+            original_lockfile: lockfile,
+            updated_lockfile: DependencyFile.new(
+              name: lockfile.name,
+              content: updated_lockfile,
+              directory: lockfile.directory
+            )
+          ).validate!
+
+          other_dependencies.each do |updated_dependency|
             @current_dependency = updated_dependency
             validate_dependency_update(updated_lockfile)
           end
@@ -174,20 +191,18 @@ module Dependabot
           updated_lockfile
         end
 
+        sig { params(candidate: Dependabot::Dependency).returns(T::Boolean) }
+        def graph_validated?(candidate)
+          @current_dependency = candidate
+          !git_dependency? && GraphUpdateValidator.covers?(candidate)
+        end
+
         sig { params(updated_lockfile: String).void }
         def validate_dependency_update(updated_lockfile)
           return if desired_version_present?(updated_lockfile)
           return if git_line_resolved_differently?(updated_lockfile)
 
-          raise "Failed to update #{dependency.name}!" unless dependency_updated?(updated_lockfile, dependency)
-
-          actual_version = extract_actual_version(updated_lockfile, dependency)
-          return unless actual_version && actual_version != dependency.version
-
-          Dependabot.logger.info(
-            "Cargo selected version #{actual_version} instead of #{dependency.version} " \
-            "for #{dependency.name} due to dependency constraints"
-          )
+          raise "Failed to update #{dependency.name}!"
         end
 
         sig { params(error: StandardError).returns(T.noreturn) }
@@ -698,47 +713,6 @@ module Dependabot
         sig { returns(T.class_of(Gem::Version)) }
         def version_class
           dependency.version_class
-        end
-
-        sig { params(lockfile_content: String, dependency: Dependabot::Dependency).returns(T::Boolean) }
-        def dependency_updated?(lockfile_content, dependency)
-          return false unless dependency.previous_version
-
-          target_line_versions(lockfile_content, dependency).any? do |version|
-            dependency.version_class.new(version) > dependency.version_class.new(T.must(dependency.previous_version))
-          end
-        end
-
-        sig do
-          params(lockfile_content: String, dependency: Dependabot::Dependency)
-            .returns(T.nilable(String))
-        end
-        def extract_actual_version(lockfile_content, dependency)
-          target_line_versions(lockfile_content, dependency).max_by do |version|
-            dependency.version_class.new(version)
-          end
-        end
-
-        sig do
-          params(lockfile_content: String, dependency: Dependabot::Dependency)
-            .returns(T::Array[String])
-        end
-        def target_line_versions(lockfile_content, dependency)
-          target_version = dependency.version
-          return [] unless target_version && dependency.version_class.correct?(target_version)
-
-          requirements = [dependency.previous_version, target_version].compact.uniq.filter_map do |version|
-            dependency.requirement_class.new(version) if dependency.version_class.correct?(version)
-          end
-          dependency_lockfile_entries(lockfile_content, dependency).filter_map do |entry|
-            version = entry[/^version = "([^"]+)"$/, 1]
-            next unless version && dependency.version_class.correct?(version)
-
-            parsed_version = dependency.version_class.new(version)
-            next unless requirements.any? { |requirement| requirement.satisfied_by?(parsed_version) }
-
-            version
-          end
         end
 
         sig do
