@@ -4,13 +4,13 @@
 require "excon"
 require "nokogiri"
 require "open3"
-require "digest"
+require "uri"
 require "sorbet-runtime"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/file_parsers/hcl2_json_document"
-require "dependabot/git_commit_checker"
+require "dependabot/file_parsers/hcl_module_source"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/opentofu/file_selector"
@@ -27,6 +27,85 @@ module Dependabot
       include FileSelector
 
       HclDocument = Dependabot::FileParsers::Hcl2JsonDocument
+      ModuleSource = Dependabot::FileParsers::HclModuleSource
+
+      class OciSource < T::ImmutableStruct
+        extend T::Sig
+
+        class Tag < T::ImmutableStruct
+          const :value, String
+        end
+
+        class Digest < T::ImmutableStruct
+          const :value, String
+        end
+
+        const :artifact_identifier, T.nilable(String)
+        const :subdirectory, T.nilable(String)
+        const :pin, T.nilable(T.any(Tag, Digest))
+        const :proxy_url, T.nilable(String)
+
+        sig { params(source: String, proxy_url: T.nilable(String)).returns(T.nilable(OciSource)) }
+        def self.parse(source, proxy_url:)
+          location = source.split("oci://").last
+          # Keep the error for a bare scheme distinct from a source without a query.
+          raise NoMethodError, "undefined method 'split' for nil" unless location
+
+          uri_part, query = location.split("?", 2)
+          return if query.nil?
+
+          # Only the bare repository, before the sub-module path, is queryable for tags.
+          artifact_identifier, subdirectory = T.must(uri_part).split(%r{(?<!:)//}, 2)
+          new(
+            artifact_identifier: artifact_identifier,
+            subdirectory: subdirectory,
+            pin: pin_from(source, query),
+            proxy_url: proxy_url
+          )
+        end
+
+        sig { returns(T.nilable(String)) }
+        def version
+          pin&.value
+        end
+
+        sig { returns(ModuleSource::RequirementSource) }
+        def to_requirement_source
+          source_pin = pin
+          ModuleSource.with_proxy_url(
+            {
+              type: "oci",
+              artifact_identifier: artifact_identifier,
+              subdirectory: subdirectory,
+              tag: (source_pin.value if source_pin.is_a?(Tag)),
+              digest: (source_pin.value if source_pin.is_a?(Digest)),
+              version: version
+            },
+            proxy_url
+          )
+        end
+
+        sig { params(source: String, query: String).returns(T.nilable(T.any(Tag, Digest))) }
+        def self.pin_from(source, query)
+          pins = URI.decode_www_form(query).to_h
+          tag = pins["tag"]
+          digest = pins["digest"]
+
+          if tag && !tag.empty?
+            if digest && !digest.empty?
+              raise DependencyFileNotEvaluatable,
+                    "Invalid OCI source '#{source}': only one of `tag` or `digest` may be specified"
+            end
+
+            return Tag.new(value: tag)
+          end
+
+          Digest.new(value: digest) if digest && !digest.empty?
+        end
+        private_class_method :pin_from
+      end
+
+      SourceVariant = T.type_alias { T.any(ModuleSource::Variant, OciSource) }
 
       DEFAULT_REGISTRY = "registry.opentofu.org"
       DEFAULT_NAMESPACE = "hashicorp"
@@ -117,18 +196,17 @@ module Dependabot
           overrides = override_opentofu_files.map { |override_file| parsed_file(override_file) }
           document.module_declarations(overrides: overrides).each do |details|
             source = source_from(details.source)
-            # nil sources are unpinned (e.g. OCI without a tag/digest); paths are local.
-            next if source.nil? || source[:type] == "path"
+            next unless source
 
             # Cannot update modules using early evaluation yet
-            if source[:type] == "interpolation"
+            if source.is_a?(ModuleSource::Interpolation)
               Dependabot.logger.warn(
                 "Cannot parse module source name with early evaluation for #{details.name} in #{file.name}."
               )
               next
             end
 
-            dependency_set << build_opentofu_dependency(file, details.name, source, details)
+            dependency_set << build_opentofu_dependency(file, source, details)
           end
 
           parsed_file(file).provider_declarations.each do |provider|
@@ -149,11 +227,10 @@ module Dependabot
         terragrunt_files.each do |file|
           parsed_file(file).terragrunt_sources.each do |raw_source|
             source = source_from(raw_source)
-            # nil sources are unpinned; paths are local.
-            next if source.nil? || source[:type] == "path"
+            next unless source
 
             # Cannot update modules using early evaluation yet
-            if source[:type] == "interpolation"
+            if source.is_a?(ModuleSource::Interpolation)
               Dependabot.logger.warn(
                 "Cannot parse terragrunt module source with early evaluation in #{file.name}."
               )
@@ -168,20 +245,18 @@ module Dependabot
       sig do
         params(
           file: Dependabot::DependencyFile,
-          name: String,
-          source: T::Hash[Symbol, T.untyped],
+          source: SourceVariant,
           details: HclDocument::ModuleDeclaration
         )
           .returns(Dependabot::Dependency)
       end
-      def build_opentofu_dependency(file, name, source, details)
+      def build_opentofu_dependency(file, source, details)
         # dep_name should be unique for a source, using the info derived from
         # the source or the source name provides this uniqueness
-        dep_name = case source[:type]
-                   when "registry" then source[:module_identifier]
-                   when "provider" then details.source
-                   when "git" then git_dependency_name(name, source)
-                   else name
+        dep_name = case source
+                   when ModuleSource::Registry then source.module_identifier
+                   when ModuleSource::Git then source.dependency_name(details.name)
+                   else details.name
                    end
         version_req = details.version&.strip
 
@@ -190,14 +265,15 @@ module Dependabot
         if resolved
           version_req = resolved[:value]
           req_file = T.must(resolved[:file])
-          source[:local_variable] = resolved[:variable]
         end
 
         version =
-          if source[:type] == "git" then version_from_ref(source[:ref])
-          elsif source[:type] == "oci" then source[:version]
+          if source.is_a?(ModuleSource::Git) || source.is_a?(OciSource) then source.version
           elsif version_req&.match?(/^\d/) then version_req
           end
+
+        requirement_source = source.to_requirement_source
+        requirement_source[:local_variable] = resolved[:variable] if resolved
 
         Dependency.new(
           name: dep_name,
@@ -207,7 +283,7 @@ module Dependabot
             { requirement: version_req,
               groups: [],
               file: req_file,
-              source: source }
+              source: requirement_source }
           ]
         )
       end
@@ -253,48 +329,38 @@ module Dependabot
         )
       end
 
-      sig { params(file: Dependabot::DependencyFile, source: T::Hash[Symbol, String]).returns(Dependabot::Dependency) }
+      sig { params(file: Dependabot::DependencyFile, source: SourceVariant).returns(Dependabot::Dependency) }
       def build_terragrunt_dependency(file, source)
-        dep_name = Source.from_url(source[:url]) ? T.must(Source.from_url(source[:url])).repo : source[:url]
-        version = version_from_ref(source[:ref])
+        url = source.url if source.is_a?(ModuleSource::Git) || source.is_a?(ModuleSource::Url)
 
         Dependency.new(
-          name: T.must(dep_name),
-          version: version,
+          name: ModuleSource.terragrunt_name(url),
+          version: source.is_a?(ModuleSource::Git) ? source.version : nil,
           package_manager: "opentofu",
           requirements: [
             { requirement: nil,
               groups: [],
               file: file.name,
-              source: source }
+              source: source.to_requirement_source }
           ]
         )
       end
 
       # Full docs at https://opentofu.org/docs/language/modules/sources/
-      sig { params(raw_source: String).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { params(raw_source: String).returns(T.nilable(T.any(SourceVariant, ModuleSource::Interpolation))) }
       def source_from(raw_source)
         bare_source = RegistryClient.get_proxied_source(raw_source)
-        source_type = source_type(bare_source)
+        proxy_url = raw_source == bare_source ? nil : raw_source
+        if bare_source.include?("oci://") && !ModuleSource.interpolation?(bare_source)
+          return OciSource.parse(bare_source, proxy_url: proxy_url)
+        end
 
-        source_details =
-          case source_type
-          when :http_archive, :path, :mercurial, :s3
-            { type: source_type.to_s, url: bare_source }
-          when :github, :bitbucket, :git
-            git_source_details_from(bare_source)
-          when :oci
-            oci_source_details_from(bare_source)
-          when :registry
-            registry_source_details_from(bare_source)
-          when :interpolation
-            { type: source_type.to_s, name: bare_source }
-          end
-
-        return nil if source_details.nil?
-
-        source_details[:proxy_url] = raw_source if raw_source != bare_source
-        source_details
+        ModuleSource.parse(
+          bare_source,
+          default_registry: DEFAULT_REGISTRY,
+          archive_extensions: RegistryClient::ARCHIVE_EXTENSIONS,
+          proxy_url: proxy_url
+        )
       end
 
       sig { params(source_address: T.nilable(String), name: String).returns([String, String, String]) }
@@ -312,132 +378,6 @@ module Dependabot
         ]
       end
 
-      sig { params(source_string: T.untyped).returns(T.nilable(T::Hash[Symbol, T.nilable(String)])) }
-      def oci_source_details_from(source_string)
-        uri_part, query_part = source_string.split("oci://").last.split("?", 2)
-
-        # Sources with no query string are unpinned — nothing to update.
-        return nil if query_part.nil?
-
-        # `//` (not preceded by `:`) separates the bare repository from a
-        # sub-module path; only the bare repo is queryable for tags.
-        artifact_identifier, subdirectory = uri_part.split(%r{(?<!:)//}, 2)
-
-        qs = URI.decode_www_form(query_part).to_h
-        # Treat `?tag=` or `?digest=` (empty value) the same as the param
-        # being absent, so we don't propagate "" as a usable version.
-        tag = qs["tag"]&.then { |v| v.empty? ? nil : v }
-        digest = qs["digest"]&.then { |v| v.empty? ? nil : v }
-
-        if tag && digest
-          raise DependencyFileNotEvaluatable,
-                "Invalid OCI source '#{source_string}': only one of `tag` or `digest` may be specified"
-        end
-
-        {
-          type: "oci",
-          artifact_identifier: artifact_identifier,
-          subdirectory: subdirectory,
-          tag: tag,
-          digest: digest,
-          version: tag || digest
-        }
-      end
-
-      sig { params(source_string: T.untyped).returns(T::Hash[Symbol, String]) }
-      def registry_source_details_from(source_string)
-        parts = source_string.split("//").first.split("/")
-
-        # Registry module source addresses are case-insensitive, so we normalize
-        # to lowercase to avoid treating case-variant declarations as different sources.
-        if parts.count == 3
-          {
-            type: "registry",
-            registry_hostname: "registry.opentofu.org",
-            module_identifier: source_string.split("//").first.downcase
-          }
-        elsif parts.count == 4
-          {
-            type: "registry",
-            registry_hostname: parts.first.downcase,
-            module_identifier: parts[1..3].join("/").downcase
-          }
-        else
-          msg = "Invalid registry source specified: '#{source_string}'"
-          raise DependencyFileNotEvaluatable, msg
-        end
-      end
-
-      sig { params(name: String, source: T::Hash[Symbol, T.untyped]).returns(String) }
-      def git_dependency_name(name, source)
-        git_source = Source.from_url(source[:url])
-        if git_source && source[:ref]
-          name + "::" + git_source.provider + "::" + git_source.repo + "::" + source[:ref]
-        elsif git_source
-          name + "::" + git_source.provider + "::" + git_source.repo
-        elsif source[:ref]
-          name + "::git_provider::repo_name/git_repo(" \
-          + Digest::SHA1.hexdigest(source[:url]) + ")::" + source[:ref]
-        else
-          name + "::git_provider::repo_name/git_repo(" + Digest::SHA1.hexdigest(source[:url]) + ")"
-        end
-      end
-
-      sig { params(source_string: String).returns(T::Hash[Symbol, T.nilable(String)]) }
-      def git_source_details_from(source_string)
-        git_url = source_string.strip.gsub(/^git::/, "")
-        git_url = "https://" + git_url unless git_url.start_with?("git@") || git_url.include?("://")
-
-        bare_uri =
-          if git_url.include?("git@")
-            T.must(git_url.split("git@").last).sub(":", "/")
-          else
-            git_url.sub(%r{(?:\w{3,5})?://}, "")
-          end
-
-        querystr = URI.parse("https://" + bare_uri).query
-        git_url = git_url.gsub("?#{querystr}", "").split(%r{(?<!:)//}).first
-
-        {
-          type: "git",
-          url: git_url,
-          branch: nil,
-          ref: URI.decode_www_form(querystr.to_s).to_h["ref"]&.split(%r{(?<!:)//})&.first
-        }
-      end
-
-      sig { params(ref: T.nilable(String)).returns(T.nilable(String)) }
-      def version_from_ref(ref)
-        version_regex = GitCommitChecker::VERSION_REGEX
-        return unless ref&.match?(version_regex)
-
-        ref.match(version_regex)&.named_captures&.fetch("version")
-      end
-
-      # rubocop:disable Metrics/CyclomaticComplexity
-      sig { params(source_string: String).returns(Symbol) }
-      def source_type(source_string)
-        return :interpolation if source_string.include?("${")
-        return :oci if source_string.include?("oci://")
-        return :path if source_string.start_with?(".")
-        return :github if source_string.start_with?("github.com/")
-        return :bitbucket if source_string.start_with?("bitbucket.org/")
-        return :git if source_string.start_with?("git::", "git@")
-        return :mercurial if source_string.start_with?("hg::")
-        return :s3 if source_string.start_with?("s3::")
-
-        raise "Unknown src: #{source_string}" if source_string.split("/").first&.include?("::")
-
-        return :registry unless source_string.start_with?("http")
-
-        path_uri = URI.parse(T.must(source_string.split(%r{(?<!:)//}).first))
-        query_uri = URI.parse(source_string)
-        return :http_archive if RegistryClient::ARCHIVE_EXTENSIONS.any? { |ext| path_uri.path&.end_with?(ext) }
-        return :http_archive if query_uri.query&.include?("archive=")
-
-        raise "HTTP source, but not an archive!"
-      end
-      # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
 
       sig { params(file: Dependabot::DependencyFile).returns(HclDocument) }
