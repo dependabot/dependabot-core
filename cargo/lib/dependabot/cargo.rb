@@ -1,4 +1,4 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
 # These all need to be required so the various classes can be registered in a
@@ -16,4 +16,8 @@ Dependabot::PullRequestCreator::Labeler
   .register_label_details("cargo", name: "rust", colour: "000000")
 
 require "dependabot/dependency"
-Dependabot::Dependency.register_production_check("cargo", ->(_) { true })
+Dependabot::Dependency.register_production_check(
+  "cargo",
+  # Only a dependency declared solely under [dev-dependencies] is a development one.
+  ->(groups) { groups.empty? || groups.any? { |group| group != "dev-dependencies" } }
+)
