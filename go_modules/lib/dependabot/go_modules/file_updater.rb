@@ -103,6 +103,8 @@ module Dependabot
               )
           end
 
+          include_ancestor_workspace_files(updated_files)
+
           vendor_updater.updated_files(base_directory: T.must(directory))
                         .each do |file|
             updated_files << file
@@ -110,6 +112,20 @@ module Dependabot
         end
 
         updated_files
+      end
+
+      sig { params(updated_files: T::Array[Dependabot::DependencyFile]).void }
+      def include_ancestor_workspace_files(updated_files)
+        ancestor_files = file_updater.updated_ancestor_workspace_files.filter_map do |name, content|
+          original = dependency_files.find { |file| file.name == name }
+          next if original.nil? || original.content == content
+
+          updated_file(file: original, content: content)
+        end
+        return if ancestor_files.empty?
+
+        # A non-support ancestor would otherwise cause the change builder to discard support-only member edits.
+        updated_files.concat(ancestor_files).each { |file| file.support_file = false }
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }

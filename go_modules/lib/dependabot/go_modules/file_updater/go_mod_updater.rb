@@ -5,6 +5,7 @@ require "sorbet-runtime"
 
 require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "dependabot/experiments"
 require "dependabot/logger"
 require "dependabot/go_modules/file_updater"
 require "dependabot/go_modules/go_work_parser"
@@ -122,6 +123,14 @@ module Dependabot
 
         GO_MOD_VERSION = /^go 1\.\d+(\.\d+)?$/
 
+        ANCESTOR_WORKSPACE_FILENAMES = %w(go.work go.work.sum).freeze
+
+        class UpdatedModuleFiles < T::Struct
+          const :go_mod, String
+          const :go_sum, T.nilable(String)
+          const :ancestor_workspace_files, T::Hash[String, String]
+        end
+
         sig do
           params(
             dependencies: T::Array[Dependabot::Dependency],
@@ -151,12 +160,17 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def updated_go_mod_content
-          updated_files[:go_mod]
+          updated_files.go_mod
         end
 
         sig { returns(T.nilable(String)) }
         def updated_go_sum_content
-          updated_files[:go_sum]
+          updated_files.go_sum
+        end
+
+        sig { returns(T::Hash[String, String]) }
+        def updated_ancestor_workspace_files
+          updated_files.ancestor_workspace_files
         end
 
         sig { returns(T::Hash[String, String]) }
@@ -184,12 +198,31 @@ module Dependabot
         sig { returns(String) }
         attr_reader :directory
 
-        sig { returns(T::Hash[Symbol, String]) }
+        sig { returns(UpdatedModuleFiles) }
         def updated_files
-          @updated_files ||= T.let(update_files, T.nilable(T::Hash[Symbol, String]))
+          @updated_files ||= T.let(update_files, T.nilable(UpdatedModuleFiles))
         end
 
-        sig { returns(T::Hash[Symbol, String]) }
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        def ancestor_workspace_files
+          return [] unless Dependabot::Experiments.enabled?(:enable_go_work_version_sync)
+
+          dependency_files.select do |file|
+            # Ancestor workspace files are fetched as support files, but once a prior
+            # grouped update changes one, `FileUpdater` marks it as a non-support file
+            # so it is included in the PR. Match by name instead of `support_file?` so
+            # later updates in the same directory still treat it as the ancestor workspace.
+            file.name.start_with?("../") &&
+              ANCESTOR_WORKSPACE_FILENAMES.include?(File.basename(file.name))
+          end
+        end
+
+        sig { returns(T::Hash[String, String]) }
+        def read_ancestor_workspace_files
+          ancestor_workspace_files.to_h { |file| [file.name, File.read(file.name)] }
+        end
+
+        sig { returns(UpdatedModuleFiles) }
         def update_files
           in_repo_path do
             # During grouped updates, the dependency_files are from a previous dependency
@@ -232,7 +265,11 @@ module Dependabot
             updated_go_sum = original_go_sum ? File.read("go.sum") : nil
             updated_go_mod = File.read("go.mod")
 
-            { go_mod: updated_go_mod, go_sum: updated_go_sum }
+            UpdatedModuleFiles.new(
+              go_mod: updated_go_mod,
+              go_sum: updated_go_sum,
+              ancestor_workspace_files: read_ancestor_workspace_files
+            )
           end
         end
 
