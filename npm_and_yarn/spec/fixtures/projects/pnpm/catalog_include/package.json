@@ -1,0 +1,11 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "packageManager": "pnpm@12.15.0",
+  "dependencies": {
+    "is-even": "catalog:legacy"
+  },
+  "devDependencies": {
+    "prettier": "catalog:"
+  }
+}
