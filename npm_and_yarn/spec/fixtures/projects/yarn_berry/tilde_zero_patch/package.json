@@ -1,0 +1,8 @@
+{
+  "name": "{{ name }}",
+  "packageManager": "yarn@3.2.3",
+  "version": "1.0.0",
+  "dependencies": {
+    "etag": "~1.7.0"
+  }
+}

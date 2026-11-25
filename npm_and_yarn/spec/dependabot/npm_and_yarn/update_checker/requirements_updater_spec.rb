@@ -14,9 +14,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
       requirements: requirements,
       updated_source: updated_source,
       update_strategy: update_strategy,
-      latest_resolvable_version: latest_resolvable_version
+      latest_resolvable_version: latest_resolvable_version,
+      preserve_zero_patch: preserve_zero_patch
     )
   end
+
+  let(:preserve_zero_patch) { false }
 
   let(:requirements) { [package_json_req] }
   let(:updated_source) { nil }
@@ -770,6 +773,92 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
       let(:package_json_req_string) { "jsr:^3.0.0" }
 
       its([:requirement]) { is_expected.to eq("jsr:^4.0.0") }
+    end
+
+    context "when preserving a zero patch (a lockfile is present)" do
+      let(:preserve_zero_patch) { true }
+      let(:latest_resolvable_version) { Gem::Version.new("6.8.1") }
+
+      context "with a tilde requirement" do
+        let(:package_json_req_string) { "~5.3.0" }
+
+        its([:requirement]) { is_expected.to eq("~6.8.0") }
+
+        context "without a lockfile" do
+          let(:preserve_zero_patch) { false }
+
+          its([:requirement]) { is_expected.to eq("~6.8.1") }
+        end
+      end
+
+      context "with a caret requirement" do
+        let(:package_json_req_string) { "^1.4.0" }
+        let(:latest_resolvable_version) { Gem::Version.new("2.3.1") }
+
+        its([:requirement]) { is_expected.to eq("^2.3.0") }
+      end
+
+      context "when the new version is a patch release within the range" do
+        let(:package_json_req_string) { "~6.8.0" }
+
+        its([:requirement]) { is_expected.to eq("~6.8.0") }
+      end
+
+      context "with a ~> requirement" do
+        let(:package_json_req_string) { "~>5.3.0" }
+
+        its([:requirement]) { is_expected.to eq("~>6.8.0") }
+      end
+
+      context "with a v-prefix" do
+        let(:package_json_req_string) { "~v5.3.0" }
+
+        its([:requirement]) { is_expected.to eq("~v6.8.0") }
+      end
+
+      context "with a JSR requirement" do
+        let(:package_json_req_string) { "jsr:^5.3.0" }
+
+        its([:requirement]) { is_expected.to eq("jsr:^6.8.0") }
+      end
+
+      context "with a non-zero patch" do
+        let(:package_json_req_string) { "~5.3.1" }
+
+        its([:requirement]) { is_expected.to eq("~6.8.1") }
+      end
+
+      context "with an exact version" do
+        let(:package_json_req_string) { "5.3.0" }
+
+        its([:requirement]) { is_expected.to eq("6.8.1") }
+      end
+
+      context "with an x patch" do
+        let(:package_json_req_string) { "~5.3.x" }
+
+        its([:requirement]) { is_expected.to eq("~6.8.x") }
+      end
+
+      context "with a pre-release target" do
+        let(:package_json_req_string) { "~5.3.0" }
+        let(:latest_resolvable_version) { "6.8.1-beta.1" }
+
+        its([:requirement]) { is_expected.to eq("~6.8.1-beta.1") }
+      end
+
+      context "with a || separator" do
+        let(:package_json_req_string) { "^5.3.0 || ^4.0.0" }
+
+        its([:requirement]) { is_expected.to eq("^6.8.0") }
+      end
+
+      context "when widening ranges" do
+        let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+        let(:package_json_req_string) { "~6.7.0" }
+
+        its([:requirement]) { is_expected.to eq("~6.8.0") }
+      end
     end
 
     context "when dealing with a requirement being left alone" do
