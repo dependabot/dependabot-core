@@ -44,6 +44,25 @@ module Dependabot
 
         MAVEN_SNAPSHOT_QUALIFIER = /-SNAPSHOT$/i
 
+        # Matches a qualifier followed by a delimiter-separated trailing build
+        # counter in a version suffix, e.g. the "rhlw-00002" in
+        # "2.7.18.rhlw-00002" (extracted as "rhlw_00002" after delimiter
+        # normalization).
+        #
+        # Maven's version grammar treats qualifiers as an open set: any
+        # non-numeric token is valid, and a delimiter-separated numeric token
+        # after a qualifier is compared numerically (Version Order
+        # Specification). Vendors use that shape to publish respins of the
+        # same upstream version — a qualifier naming the stream and a
+        # monotonically increasing build counter, e.g. "2.7.18.rhlw-00002"
+        # (Red Hat Lightwell), "1.0.0.redhat-00004" (Red Hat legacy). The
+        # counter is a build revision within the qualifier series, so a
+        # newer counter of the same qualifier is a compatible update.
+        # Numbers *attached* to the qualifier (e.g.
+        # "jre8", "android23") are intentionally not matched: those encode a
+        # runtime/platform target that must stay identical.
+        QUALIFIER_COUNTER_SERIES = /\A_?([a-z]+)_\d+\z/i
+
         # Minimum and maximum lengths for Git SHAs
         MIN_GIT_SHA_LENGTH = 7
         MAX_GIT_SHA_LENGTH = 40
@@ -148,7 +167,9 @@ module Dependabot
         #   for compatibility purposes,
         #   as SHAs indicate specific build states rather than compatibility constraints.
         #
-        # - Other suffixes: Must match exactly (e.g., platform identifiers, build tags)
+        # - Other suffixes: Must match exactly (e.g., platform identifiers, build tags),
+        #   unless both are qualifier/build-counter series of the same qualifier
+        #   (e.g. 1.0.0.rhlw-00001 → 1.0.0.rhlw-00002)
         #
         # - No suffix: Both versions must have no suffix
         #
@@ -167,6 +188,11 @@ module Dependabot
         #   suffix_compatible?("1.0.0-linux", "1.0.0-win")   # => false (different platform)
         #   suffix_compatible?("1.0.0", "1.0.0")             # => true  (both have no suffix)
         #   suffix_compatible?("1.0.0", "1.0.0-beta")        # => false (suffix mismatch)
+        #
+        # @example Remediation respin of a plain version
+        #   suffix_compatible?("6.0.3", "6.0.3.rhlw-00001")   # => true  (same base, remediated respin)
+        #   suffix_compatible?("6.0.3", "6.0.4.rhlw-00001")   # => false (different base)
+        #   suffix_compatible?("6.0.3.rhlw-00001", "6.0.3")   # => false (respins never lose their suffix)
         sig { params(current: T.nilable(String), candidate: String).returns(T::Boolean) }
         def suffix_compatible?(current, candidate)
           current_suffix = extract_version_suffix(current)
@@ -180,8 +206,94 @@ module Dependabot
 
           return true if contains_date?(current_suffix) || contains_date?(candidate_suffix)
 
+          # A delimiter-separated trailing counter (e.g. "rhlw_00002" or
+          # "redhat_00004") denotes a build revision within a qualifier
+          # series, so versions sharing the qualifier are compatible even
+          # when the counter differs.
+          return true if same_qualifier_series?(current_suffix, candidate_suffix)
+
+          # A plain (suffix-less, purely numeric) version may move to a
+          # remediated respin of the exact same upstream version: vendor
+          # respins like "6.0.3.rhlw-00001" are drop-in replacements for
+          # "6.0.3", so the suffix is not a compatibility constraint here.
+          # The reverse direction stays incompatible: a respin must never
+          # "upgrade" back to the plain upstream version.
+          return true if remediation_respin_of_plain?(current, candidate)
+
           # If both versions share the exact suffix or no suffix, they are compatible
           current_suffix == candidate_suffix
+        end
+
+        # Determines whether a purely numeric, suffix-less version (current)
+        # and a qualifier/build-counter respin (candidate) share the exact
+        # same numeric base version (e.g. "6.0.3" vs "6.0.3.rhlw-00001").
+        #
+        # The current version must contain nothing but digits and delimiters
+        # (so release qualifiers like "-RELEASE" are excluded), and the
+        # candidate's suffix must be a qualifier/build-counter series.
+        #
+        # @example
+        #   remediation_respin_of_plain?("6.0.3", "6.0.3.rhlw-00001")    # => true
+        #   remediation_respin_of_plain?("6.0.3", "6.0.4.rhlw-00001")    # => false (base mismatch)
+        #   remediation_respin_of_plain?("6.0.3.rhlw-00001", "6.0.3")    # => false (current has a suffix)
+        #   remediation_respin_of_plain?("6.0.3-RELEASE", "6.0.3.rhlw-00001") # => false (not purely numeric)
+        sig { params(current: T.nilable(String), candidate: String).returns(T::Boolean) }
+        def remediation_respin_of_plain?(current, candidate)
+          return false if current.nil?
+          return false unless extract_version_suffix(current).nil?
+          return false unless current.match?(/\A\d+(?:[.\-_]\d+)*\z/)
+          return false unless extract_version_suffix(candidate)&.match?(QUALIFIER_COUNTER_SERIES)
+
+          leading_numeric_segments(current) == leading_numeric_segments(candidate)
+        end
+
+        # Returns the leading run of purely numeric, delimiter-separated
+        # segments of a version string, i.e. the base version with any
+        # qualifier suffix removed.
+        #
+        # @example
+        #   leading_numeric_segments("6.0.3")             # => ["6", "0", "3"]
+        #   leading_numeric_segments("6.0.3.rhlw-00001")  # => ["6", "0", "3"]
+        #   leading_numeric_segments("1.0.0-redhat-00004") # => ["1", "0", "0"]
+        sig { params(version: String).returns(T::Array[String]) }
+        def leading_numeric_segments(version)
+          base = []
+          version.split(/[.\-_]/).each do |segment|
+            break unless segment.match?(/\A\d+\z/)
+
+            base << segment
+          end
+          base
+        end
+
+        # Determines whether two version suffixes belong to the same
+        # qualifier/build-counter series (e.g. "2.7.18.rhlw-00002" ->
+        # "2.7.18.rhlw-00004").
+        #
+        # Both suffixes must end in a delimiter-separated counter and their
+        # qualifier parts must match. Suffixes without such a counter (nil,
+        # plain qualifiers, or qualifiers with attached numbers like "jre8")
+        # are never part of a series.
+        #
+        # @example Same series
+        #   same_qualifier_series?("rhlw_00002", "rhlw_00004")     # => true
+        #   same_qualifier_series?("_rhlw_00002", "_rhlw_00003")   # => true
+        #
+        # @example Different series
+        #   same_qualifier_series?("rhlw_00002", "redhat_00004")   # => false
+        #   same_qualifier_series?("jre8", "jre11")                # => false
+        #   same_qualifier_series?("rhlw_00002", nil)              # => false
+        sig { params(current_suffix: T.nilable(String), candidate_suffix: T.nilable(String)).returns(T::Boolean) }
+        def same_qualifier_series?(current_suffix, candidate_suffix)
+          return false unless current_suffix && candidate_suffix
+
+          current_match = current_suffix.match(QUALIFIER_COUNTER_SERIES)
+          candidate_match = candidate_suffix.match(QUALIFIER_COUNTER_SERIES)
+          return false unless current_match && candidate_match
+
+          # The qualifier (excluding any leading delimiter) must match,
+          # case-insensitively
+          T.must(T.must(current_match[1]).casecmp(T.must(candidate_match[1]))).zero?
         end
 
         # Determines whether a given string is a valid Git commit SHA.
