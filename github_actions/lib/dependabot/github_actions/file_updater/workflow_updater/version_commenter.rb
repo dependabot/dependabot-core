@@ -10,6 +10,8 @@ module Dependabot
         class VersionCommenter
           extend T::Sig
 
+          STANDALONE_VERSION_COMMENT = /\A\s*#\s*(?<version>v?\d[\w.-]*)\s*\z/
+
           sig do
             params(
               dependency: Dependabot::Dependency,
@@ -36,7 +38,11 @@ module Dependabot
 
           sig { params(comment: String, old_ref: String, new_ref: String).returns(T::Boolean) }
           def recognized_comment?(comment, old_ref, new_ref)
-            !previous_version_from_comment(comment.rstrip, old_ref, new_ref).nil?
+            comment = comment.rstrip
+            return true if tagged_version_from_comment(comment, old_ref, new_ref)
+            return false unless standalone_version_from_comment(comment) && sha?(old_ref) && sha?(new_ref)
+
+            !git_checker.most_specific_version_tag_for_sha(new_ref).nil?
           end
 
           sig { params(old_ref: String, new_ref: String).returns(T.nilable(String)) }
@@ -71,6 +77,26 @@ module Dependabot
 
           sig { params(comment: String, old_ref: String, new_ref: String).returns(T.nilable(String)) }
           def previous_version_from_comment(comment, old_ref, new_ref)
+            standalone_version = standalone_version_from_comment(comment) if sha?(old_ref) && sha?(new_ref)
+            # A standalone comment names its entire version, so a tag suffix must not match it.
+            return standalone_version if standalone_version
+
+            tagged_version_from_comment(comment, old_ref, new_ref)
+          end
+
+          sig { params(comment: String).returns(T.nilable(String)) }
+          def standalone_version_from_comment(comment)
+            match = comment.match(STANDALONE_VERSION_COMMENT)
+            return unless match
+
+            version = T.must(match[:version])
+            return unless version_class.correct?(version)
+
+            version.delete_prefix("v")
+          end
+
+          sig { params(comment: String, old_ref: String, new_ref: String).returns(T.nilable(String)) }
+          def tagged_version_from_comment(comment, old_ref, new_ref)
             version_tags = if sha?(old_ref)
                              git_checker.most_specific_version_tags_for_sha(old_ref)
                            elsif tag_to_sha?(old_ref, new_ref)
