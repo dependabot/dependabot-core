@@ -476,6 +476,106 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
       end
     end
 
+    context "when the section has a value with backslashes, such as a Windows path" do
+      let(:package_json) do
+        Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: <<~JSON
+            {
+              "name": "app",
+              "dependencies": {
+                "fetch-factory": "^0.0.1",
+                "xlsx": "file:vendor\\\\xlsx-0.20.3.tgz",
+                "shared": "file:..\\\\packages\\\\shared"
+              }
+            }
+          JSON
+        )
+      end
+
+      it "updates the dependency and keeps the backslashes escaped" do
+        content = updated_package_json.content
+
+        expect(content).to include('"fetch-factory": "^0.0.2"')
+        expect(content).to include('"xlsx": "file:vendor\\\\xlsx-0.20.3.tgz"')
+        expect(JSON.parse(content)["dependencies"]).to eq(
+          "fetch-factory" => "^0.0.2",
+          "xlsx" => "file:vendor\\xlsx-0.20.3.tgz",
+          "shared" => "file:..\\packages\\shared"
+        )
+      end
+
+      context "when the overrides section has one too" do
+        let(:package_json) do
+          Dependabot::DependencyFile.new(
+            name: "package.json",
+            content: <<~JSON
+              {
+                "name": "app",
+                "dependencies": { "fetch-factory": "^0.0.1" },
+                "overrides": {
+                  "fetch-factory": "^0.0.1",
+                  "local-lib": "file:.\\\\libs\\\\local-lib"
+                }
+              }
+            JSON
+          )
+        end
+
+        it "updates both declarations and keeps the backslashes escaped" do
+          parsed = JSON.parse(updated_package_json.content)
+
+          expect(parsed["dependencies"]).to eq("fetch-factory" => "^0.0.2")
+          expect(parsed["overrides"]).to eq(
+            "fetch-factory" => "^0.0.2",
+            "local-lib" => "file:.\\libs\\local-lib"
+          )
+        end
+      end
+    end
+
+    # The git declaration is matched up to the last quote on its line, so on a one-line section it includes the
+    # sibling and its backslashes
+    context "with a git dependency followed by a value with backslashes on the same line" do
+      let(:package_json) do
+        Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: <<~JSON
+            {
+              "name": "app",
+              "devDependencies": { "is-number": "jonschlinkert/is-number#2.0.0", "shared": "file:..\\\\packages\\\\shared" }
+            }
+          JSON
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "is-number",
+          version: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
+          package_manager: "npm_and_yarn",
+          requirements: [{
+            requirement: nil,
+            file: "package.json",
+            groups: ["devDependencies"],
+            source: { type: "git", url: "https://github.com/jonschlinkert/is-number", branch: nil, ref: "4.0.0" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            file: "package.json",
+            groups: ["devDependencies"],
+            source: { type: "git", url: "https://github.com/jonschlinkert/is-number", branch: nil, ref: "2.0.0" }
+          }]
+        )
+      end
+
+      it "updates the reference and keeps the backslashes escaped" do
+        expect(JSON.parse(updated_package_json.content)["devDependencies"]).to eq(
+          "is-number" => "jonschlinkert/is-number#4.0.0",
+          "shared" => "file:..\\packages\\shared"
+        )
+      end
+    end
+
     context "with non-standard whitespace" do
       let(:project_name) { "npm8/non_standard_whitespace" }
 
