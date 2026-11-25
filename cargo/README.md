@@ -70,3 +70,68 @@ Inside the Cargo development container, run `cargo test --locked`,
 `cargo fmt -- --check`, and `cargo clippy --locked --all-targets -- -D warnings`
 from `cargo/helpers/`. Rust integration tests execute the binary with an empty
 `PATH`; they require no Cargo installation or network access at runtime.
+
+### Ruby graph-transition policy (spike, layer 2)
+
+Explicitly require `dependabot/cargo/graph_transition_policy`. No production
+updater calls this policy. It consumes the helper's schema-v1 facts without
+parsing lockfile text or invoking Cargo metadata:
+
+```ruby
+policy = Dependabot::Cargo::GraphTransitionPolicy
+previous = policy::Package.new(
+  name: dependency.name,
+  version: dependency.previous_version,
+  source: "registry+https://github.com/rust-lang/crates.io-index"
+)
+intent = policy::Intent.from_dependency(dependency: dependency, previous: previous)
+result = policy.evaluate(facts: facts, intents: [intent], before: "before", after: "after")
+result.status.serialize # "accepted", "rejected", or "unknown"
+result.reasons.map(&:serialize)
+```
+
+The caller must resolve the exact previous name/version/source from helper facts,
+not guess a registry or collapse duplicate sources. `Intent.from_dependency`
+checks the supplied identity against Dependabot's name/previous version and
+retains its source. Construct `Intent.new(previous:, target:, parents:)` directly
+for an explicit subset of incoming parents; omitted `parents` selects all incoming
+edges. This supports split updates where the old package remains for other
+parents. Source-changing updates (including changed Git commit fragments) are
+unknown, not compared across origins.
+
+Acceptance proves a **lockfile-level** edge property, not manifest compatibility:
+each selected old edge disappears and its correlated parent has an edge of the
+same kind to the exact target. An already-present target is sufficient, including
+`{1,2,3}->{1,3}` and several incoming edges. Parent updates correlate through exact
+group intents only when the old parent disappears and the target parent exists.
+Retained old/new parent pairs are ambiguous. Replacement and dependency edges
+are checked separately. Unselected incoming edges and other pre-existing
+same-name/same-source destinations must remain unchanged.
+
+Ruby's Cargo version class rejects proven edge downgrades and requested
+downgrades. All other unproven transitions are unknown: unchanged selected edges,
+missing or ambiguous destinations, newly introduced competing destinations,
+uncorrelated parents, root packages without incoming edges, invalid selections,
+conflicting intents, incomplete/ambiguous helper facts, and unsupported schemas.
+When Cargo selects another higher version, the observed identity is retained in
+an `alternative_version` reason; lockfile facts cannot prove its manifest
+requirements or advisory/ignore-policy compatibility. The caller must decide how
+to handle unknown results; this spike deliberately does not invent a fallback.
+
+Each reason has a status, code, message, and optional snapshot, previous package,
+old parent, and observed destination. Helper diagnostics retain their code,
+message, snapshot, and package, plus the full diagnostic (including reference
+and candidate identities). Rejected reasons dominate unknown reasons, which
+dominate accepted reasons within a fully validated graph. Incomplete input facts
+stop evaluation with unknown before transition checks. Acceptance does not audit
+unrelated packages, newly introduced parents, feature/target conditions, or
+manifest declarations; graph deduplication cannot prove which declaration was
+rewritten when a parent already referenced both versions.
+
+Inside the Cargo development container:
+
+```bash
+cd /home/dependabot/cargo
+bundle exec rspec spec/dependabot/cargo/graph_transition_policy_spec.rb spec/dependabot/cargo/lockfile_graph_spec.rb
+bundle exec rubocop lib/dependabot/cargo/graph_transition_policy.rb spec/dependabot/cargo/graph_transition_policy_spec.rb
+```
