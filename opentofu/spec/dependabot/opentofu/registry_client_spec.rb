@@ -1,12 +1,16 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/opentofu/registry_client"
 
 RSpec.describe Dependabot::Opentofu::RegistryClient do
+  extend T::Sig
+
+  sig { returns(Dependabot::Opentofu::RegistryClient) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   subject(:client) { described_class.new }
 
+  sig { returns(Dependabot::Dependency) }
   let(:module_dependency) do
     Dependabot::Dependency.new(
       name: "hashicorp/consul/aws",
@@ -96,7 +100,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
   it "fetches provider versions form a custom registry secured by a token" do
     hostname = "registry.example.org"
     token = SecureRandom.hex(16)
-    credentials = [{ "type" => "opentofu_registry", "host" => hostname, "token" => token }]
+    credentials = [Dependabot::Credential.new({ "type" => "opentofu_registry", "host" => hostname, "token" => token })]
 
     stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(
       body: {
@@ -116,7 +120,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
   it "also accepts terraform_registry credentials so existing configs keep working" do
     hostname = "registry.example.org"
     token = SecureRandom.hex(16)
-    credentials = [{ "type" => "terraform_registry", "host" => hostname, "token" => token }]
+    credentials = [Dependabot::Credential.new({ "type" => "terraform_registry", "host" => hostname, "token" => token })]
 
     stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(
       body: {
@@ -176,7 +180,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
     source = client.source(dependency: module_dependency)
 
     expect(source).to be_a Dependabot::Source
-    expect(source.url).to eq("https://github.com/hashicorp/terraform-aws-consul")
+    expect(T.must(source).url).to eq("https://github.com/hashicorp/terraform-aws-consul")
   end
 
   it "handles a relative X-OpenTofu-Get header without a type error" do
@@ -208,7 +212,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
     source = client.source(dependency: module_dependency)
 
     expect(source).to be_a Dependabot::Source
-    expect(source.url).to eq("https://github.com/hashicorp/terraform-aws-consul")
+    expect(T.must(source).url).to eq("https://github.com/hashicorp/terraform-aws-consul")
   end
 
   it "handles sources that can't be found", :vcr do
@@ -265,12 +269,14 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
     )
 
     expect(source).to be_a Dependabot::Source
-    expect(source.url).to eq("https://github.com/hashicorp/terraform-provider-ciscoasa")
+    expect(T.must(source).url).to eq("https://github.com/hashicorp/terraform-provider-ciscoasa")
   end
 
   context "with a custom hostname" do
+    sig { returns(Dependabot::Opentofu::RegistryClient) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
     subject(:client) { described_class.new(hostname: hostname) }
 
+    sig { returns(String) }
     let(:hostname) { "registry.example.org" }
 
     it "raises helpful error when request is not authenticated", :vcr do
@@ -283,8 +289,12 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
   end
 
   describe "#all_provider_package_hashes" do
+    # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+    sig { returns(String) }
     let(:metadata_url) { "https://registry.opentofu.org/.well-known/terraform.json" }
+    sig { returns(String) }
     let(:download_url) { "https://registry.opentofu.org/v1/providers/hashicorp/aws/3.42.0/download/linux/amd64" }
+    # rubocop:enable RSpec/ScatteredLet
 
     before do
       stub_request(:get, metadata_url).and_return(
@@ -342,7 +352,10 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
     it "sends auth token when credentials are configured" do
       hostname = "registry.example.org"
       token = SecureRandom.hex(16)
-      credentials = [{ "type" => "opentofu_registry", "host" => hostname, "token" => token }]
+      credentials = [Dependabot::Credential.new(
+        { "type" => "opentofu_registry", "host" => hostname,
+          "token" => token }
+      )]
 
       stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(
         body: {
@@ -373,6 +386,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
   end
 
   describe "#service_url_for_registry" do
+    sig { returns(String) }
     let(:metadata) { "https://registry.opentofu.org/.well-known/terraform.json" }
 
     context "when the metadata endpoint is not reachable" do

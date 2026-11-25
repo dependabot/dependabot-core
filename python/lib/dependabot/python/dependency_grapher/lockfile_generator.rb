@@ -8,6 +8,7 @@ require "dependabot/shared_helpers"
 require "dependabot/python/file_parser/python_requirement_parser"
 require "dependabot/python/language_version_manager"
 require "dependabot/python/poetry_plugin_installer"
+require "dependabot/python/subprocess_error_context"
 
 module Dependabot
   module Python
@@ -102,6 +103,11 @@ module Dependabot
         sig { params(command: String).returns(String) }
         def run_poetry_command(command)
           SharedHelpers.run_shell_command(command, fingerprint: command)
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          SubprocessErrorContext.attach(
+            e, command: command, dependency_files: dependency_files, credentials: credentials
+          )
+          raise
         end
 
         sig { returns(LanguageVersionManager) }

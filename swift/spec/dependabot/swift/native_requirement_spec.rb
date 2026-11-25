@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the custom matcher's match DSL.
+
 require "spec_helper"
 require "dependabot/swift/native_requirement"
 

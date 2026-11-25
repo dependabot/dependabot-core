@@ -265,7 +265,7 @@ public class VersionFinderTests : TestBase
             CancellationToken.None);
 
         // assert
-        var actual = versionResult.GetVersions().Select(v => v.ToString()).ToArray();
+        var actual = versionResult.GetVersions().Order().Select(v => v.ToString()).ToArray();
         var expected = new[] { "2.0.0", "3.0.0" };
         AssertEx.Equal(expected, actual);
     }
@@ -341,11 +341,16 @@ public class VersionFinderTests : TestBase
     }
 
     [Theory]
-    [InlineData(null, "1.0.1", "1.1.0", "2.0.0")]
-    [InlineData(ConditionUpdateType.SemVerMajor, "1.0.1", "1.1.0")]
-    [InlineData(ConditionUpdateType.SemVerMinor, "1.0.1")]
-    [InlineData(ConditionUpdateType.SemVerPatch)]
-    public async Task VersionFinder_IgnoredUpdateTypesIsHonored(ConditionUpdateType? ignoredUpdateType, params string[] expectedVersions)
+    [InlineData(new ConditionUpdateType[0], new[] { "1.0.1", "1.1.0", "2.0.0" })]
+    [InlineData(new[] { ConditionUpdateType.SemVerMajor }, new[] { "1.0.1", "1.1.0" })]
+    [InlineData(new[] { ConditionUpdateType.SemVerMinor }, new[] { "1.0.1", "2.0.0" })]
+    [InlineData(new[] { ConditionUpdateType.SemVerPatch }, new[] { "1.1.0", "2.0.0" })]
+    [InlineData(new[] { ConditionUpdateType.SemVerMajor, ConditionUpdateType.SemVerMinor }, new[] { "1.0.1" })]
+    [InlineData(new[] { ConditionUpdateType.SemVerMajor, ConditionUpdateType.SemVerPatch }, new[] { "1.1.0" })]
+    // this is what a group with `update-types: [major]` forwards
+    [InlineData(new[] { ConditionUpdateType.SemVerMinor, ConditionUpdateType.SemVerPatch }, new[] { "2.0.0" })]
+    [InlineData(new[] { ConditionUpdateType.SemVerMajor, ConditionUpdateType.SemVerMinor, ConditionUpdateType.SemVerPatch }, new string[0])]
+    public async Task VersionFinder_IgnoredUpdateTypesIsHonored(ConditionUpdateType[] ignoredUpdateTypes, string[] expectedVersions)
     {
         // arrange
         using var tempDir = new TemporaryDirectory();
@@ -355,9 +360,6 @@ public class VersionFinderTests : TestBase
             MockNuGetPackage.CreateSimplePackage("Some.Dependency", "2.0.0", "net9.0"),
         ], tempDir.DirectoryPath);
         var tfm = NuGetFramework.Parse("net9.0");
-        var ignoredUpdateTypes = ignoredUpdateType is not null
-            ? new ConditionUpdateType[] { ignoredUpdateType.Value }
-            : [];
         var dependencyInfo = new DependencyInfo()
         {
             Name = "Some.Dependency",

@@ -1,8 +1,8 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "dependabot/error_report_context"
 require "dependabot/errors"
-require "dependabot/sentry/error_fingerprint"
 require "dependabot/updater/errors"
 require "dependabot/updater/security_update_helpers"
 require "octokit"
@@ -94,7 +94,7 @@ module Dependabot
         # We don't set this flag in GHES because there older GHES version does not support reporting unknown errors.
         if Experiments.enabled?(:record_update_job_unknown_error) &&
            error_details.error_type == "unknown_error"
-          log_unknown_error_with_backtrace(error)
+          log_unknown_error_with_backtrace(error, dependency: dependency)
         end
 
         log_dependency_error(
@@ -222,6 +222,9 @@ module Dependabot
         ).returns(Dependabot::ErrorDetails)
       end
       def error_details_for(error, dependency: nil, dependency_group: nil)
+        registry_host = unreachable_registry_host(error)
+        return registry_unreachable_details(error, registry_host) if registry_host
+
         error_details = Dependabot.updater_error_details(error)
         return error_details if error_details
 
@@ -234,6 +237,8 @@ module Dependabot
           msg = "Subprocess #{error.sentry_context[:fingerprint]} failed to run. Check the job logs for error messages"
           sanitized_error = SubprocessFailed.new(msg, sentry_context: error.sentry_context)
           sanitized_error.set_backtrace(error.backtrace)
+          sanitized_context = ErrorReportContext.build(error: error, dependency: dependency)
+          ErrorReportContext.attach(sanitized_error, sanitized_context) if sanitized_context
           service.capture_exception(error: sanitized_error, job: job)
         else
           service.capture_exception(
@@ -247,13 +252,42 @@ module Dependabot
         Dependabot::ErrorDetails.new(error_type: "unknown_error", error_detail: nil)
       end
 
-      sig { params(error: StandardError).void }
-      def log_unknown_error_with_backtrace(error)
+      # A self-hosted runner runs in the customer's network. When that network blocks or cannot resolve a registry,
+      # the Dependabot proxy closes the connection without a response (EOFError) or the request times out. Ecosystems
+      # raise these as Excon errors for public registries, so they would otherwise be reported as unknown errors.
+      # On GitHub-hosted runners, and when dependabot-api doesn't say where the job runs, they still are.
+      #
+      # Only requests made through RegistryClient count, which records the host on the error it raises. Other requests
+      # (such as fetching a Git repository's refs, which fails the same way for a Git host) are not registry requests,
+      # and an unreachable Git host is not what this error says, so those stay unknown errors.
+      sig { params(error: StandardError).returns(T.nilable(String)) }
+      def unreachable_registry_host(error)
+        return unless error.is_a?(Excon::Error::Socket) || error.is_a?(Excon::Error::Timeout)
+        # A certificate that can't be verified means a server answered: the network path works
+        return if error.is_a?(Excon::Error::Certificate)
+        return unless job.self_hosted_runner?
+
+        host = ErrorReportContext.build(error: error)&.fetch("host", nil)
+        host if host.is_a?(String) && host != ErrorReportContext::REDACTED
+      end
+
+      sig { params(error: StandardError, host: String).returns(Dependabot::ErrorDetails) }
+      def registry_unreachable_details(error, host)
+        Dependabot.logger.warn(
+          "#{host} could not be reached from the self-hosted runner this job runs on " \
+          "(#{error.class}: #{error.message}). Check that the runner's network can reach it."
+        )
+        Dependabot::ErrorDetails.new(error_type: "registry_unreachable", error_detail: { source: host })
+      end
+
+      sig { params(error: StandardError, dependency: T.nilable(Dependabot::Dependency)).void }
+      def log_unknown_error_with_backtrace(error, dependency: nil)
         error_details = {
           ErrorAttributes::CLASS => error.class.to_s,
           ErrorAttributes::MESSAGE => error.message,
           ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
           ErrorAttributes::FINGERPRINT => extract_fingerprint(error),
+          ErrorAttributes::CONTEXT => ErrorReportContext.build(error: error, dependency: dependency),
           ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
           ErrorAttributes::JOB_ID => job.id,
           ErrorAttributes::DEPENDENCIES => job.dependencies,
@@ -278,7 +312,7 @@ module Dependabot
           return fingerprint.map { |value| T.cast(value, Object).to_s } if fingerprint.is_a?(Array)
         end
 
-        Dependabot::Sentry::ErrorFingerprint.for(error: error, package_manager: job.package_manager)
+        nil
       end
     end
   end

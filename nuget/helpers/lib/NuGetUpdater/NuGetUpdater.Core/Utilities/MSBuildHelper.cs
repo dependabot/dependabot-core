@@ -13,6 +13,7 @@ using NuGet.Frameworks;
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.DependencySolver;
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Utilities;
 
@@ -88,7 +89,7 @@ internal static partial class MSBuildHelper
         }
     }
 
-    internal static async Task<ImmutableArray<Dependency>?> ResolveDependencyConflicts(string repoRoot, string projectPath, string targetFramework, ImmutableArray<Dependency> packages, ImmutableArray<Dependency> update, ILogger logger)
+    internal static async Task<ImmutableArray<Dependency>?> ResolveDependencyConflicts(string repoRoot, string projectPath, NuGetFramework targetFramework, ImmutableArray<Dependency> packages, ImmutableArray<Dependency> update, ILogger logger)
     {
         var projectPathDir = Path.GetDirectoryName(projectPath)!;
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");
@@ -96,7 +97,7 @@ internal static partial class MSBuildHelper
 
         try
         {
-            string tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages, logger);
+            string tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework.GetShortFolderName(), packages, logger, restoreFramework: targetFramework);
             var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(["restore", tempProjectPath], tempDirectory.FullName);
 
             // Add Dependency[] packages to List<PackageToUpdate> existingPackages
@@ -204,9 +205,15 @@ internal static partial class MSBuildHelper
             .ToList();
 
             // Return as array
-            var candidatePackagesArray = candidatePackages.ToImmutableArray();
+            var candidatePackagesArray = await CentralTransitivePinResolver.ResolveAsync(tempProjectPath, packages, candidatePackages.ToImmutableArray(), logger);
+            if (candidatePackagesArray is null)
+            {
+                return packages;
+            }
 
-            var targetFrameworks = ImmutableArray.Create<NuGetFramework>(NuGetFramework.Parse(targetFramework));
+            candidatePackages = candidatePackagesArray.Value.ToList();
+
+            var targetFrameworks = ImmutableArray.Create(targetFramework);
 
             var resolveProjectPath = projectPath;
 
@@ -234,6 +241,16 @@ internal static partial class MSBuildHelper
                 }
 
                 var nuGetVersion = nuGetVersionRange.MinVersion; // not a wildcard, so `MinVersion` is just the version itself
+                var existingPackage = packages.FirstOrDefault(p => p.Name.Equals(package.Name, StringComparison.OrdinalIgnoreCase));
+                if (NuGetVersion.TryParse(package.Version, out var candidateVersion) &&
+                    existingPackage?.Version is { } existingVersionString &&
+                    NuGetVersion.TryParse(existingVersionString, out var existingVersion) &&
+                    candidateVersion.Equals(existingVersion))
+                {
+                    // An unchanged package may already be part of the project even if it is not compatible with this target framework.
+                    continue;
+                }
+
                 var packageIdentity = new NuGet.Packaging.Core.PackageIdentity(package.Name, nuGetVersion);
 
                 bool isNewPackageCompatible = await CompatibilityChecker.CheckAsync(packageIdentity, targetFrameworks, nugetContext, logger, CancellationToken.None);
@@ -244,7 +261,68 @@ internal static partial class MSBuildHelper
                 }
             }
 
-            return candidatePackagesArray;
+            return candidatePackagesArray.Value;
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
+    internal static async Task<bool> IsPackageGraphCompatibleAsync(
+        string repoRoot,
+        string projectPath,
+        NuGetFramework targetFramework,
+        IReadOnlyCollection<Dependency> packages,
+        ILogger logger,
+        IReadOnlyDictionary<string, string>? centralPackageVersions = null,
+        IReadOnlyDictionary<string, string>? versionOverrides = null)
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory("package-graph-validation_");
+        try
+        {
+            var tempProjectPath = await CreateTempProjectAsync(
+                tempDirectory, repoRoot, projectPath, targetFramework.GetShortFolderName(), packages, logger,
+                restoreFramework: targetFramework);
+            if (centralPackageVersions is not null)
+            {
+                var project = XDocument.Load(tempProjectPath);
+                foreach (var reference in project.Descendants("PackageReference"))
+                {
+                    reference.Attribute("Version")?.Remove();
+                    var name = reference.Attribute("Include")?.Value ?? reference.Attribute("Update")?.Value;
+                    if (name is not null && versionOverrides is not null &&
+                        versionOverrides.TryGetValue(name, out var versionOverride))
+                    {
+                        reference.SetAttributeValue("VersionOverride", versionOverride);
+                    }
+                }
+
+                var centralProps = new XElement("Project",
+                    new XElement("PropertyGroup",
+                        new XElement("ManagePackageVersionsCentrally", true),
+                        new XElement("CentralPackageTransitivePinningEnabled", true),
+                        new XElement("CentralPackageFloatingVersionsEnabled", centralPackageVersions.Values.Any(
+                            version => VersionRange.TryParse(version, out var range) && range.IsFloating))),
+                    new XElement("ItemGroup",
+                        centralPackageVersions
+                            .Select(p => new XElement("PackageVersion",
+                                new XAttribute("Include", p.Key),
+                                new XAttribute("Version", p.Value)))));
+                await File.WriteAllTextAsync(Path.Combine(tempDirectory.FullName, "Directory.Packages.props"), centralProps.ToString());
+                await File.WriteAllTextAsync(Path.Combine(tempDirectory.FullName, "Directory.Build.props"), "<Project />");
+                await File.WriteAllTextAsync(tempProjectPath, project.ToString());
+            }
+
+            var (exitCode, output, error) = await ProcessEx.RunDotnetMSBuildSafelyAsync(
+                [tempProjectPath, "/t:Restore", "/warnaserror:NU1605,NU1608"],
+                tempDirectory.FullName);
+            if (exitCode != 0)
+            {
+                logger.Warn($"Merged package graph could not be restored for {targetFramework.GetShortFolderName()}.\nSTDOUT:\n{output}\nSTDERR:\n{error}");
+            }
+
+            return exitCode == 0;
         }
         finally
         {
@@ -279,8 +357,9 @@ internal static partial class MSBuildHelper
         IReadOnlyCollection<Dependency> packages,
         ILogger logger,
         bool usePackageDownload = false,
-        bool importDependencyTargets = true
-    ) => CreateTempProjectAsync(tempDir, repoRoot, projectPath, new XElement("TargetFramework", targetFramework), packages, logger, usePackageDownload, importDependencyTargets);
+        bool importDependencyTargets = true,
+        NuGetFramework? restoreFramework = null
+    ) => CreateTempProjectAsync(tempDir, repoRoot, projectPath, new XElement("TargetFramework", targetFramework), packages, logger, usePackageDownload, importDependencyTargets, restoreFramework);
 
     internal static Task<string> CreateTempProjectAsync(
         DirectoryInfo tempDir,
@@ -291,7 +370,7 @@ internal static partial class MSBuildHelper
         ILogger logger,
         bool usePackageDownload = false,
         bool importDependencyTargets = true
-    ) => CreateTempProjectAsync(tempDir, repoRoot, projectPath, new XElement("TargetFrameworks", string.Join(";", targetFrameworks)), packages, logger, usePackageDownload, importDependencyTargets);
+    ) => CreateTempProjectAsync(tempDir, repoRoot, projectPath, new XElement("TargetFrameworks", string.Join(";", targetFrameworks)), packages, logger, usePackageDownload, importDependencyTargets, restoreFramework: null);
 
     private static async Task<string> CreateTempProjectAsync(
         DirectoryInfo tempDir,
@@ -301,7 +380,8 @@ internal static partial class MSBuildHelper
         IReadOnlyCollection<Dependency> packages,
         ILogger logger,
         bool usePackageDownload,
-        bool importDependencyTargets)
+        bool importDependencyTargets,
+        NuGetFramework? restoreFramework)
     {
         var projectDirectory = Path.GetDirectoryName(projectPath);
         projectDirectory ??= repoRoot;
@@ -353,11 +433,25 @@ internal static partial class MSBuildHelper
             ? $"""<Import Project="{GetFileFromRuntimeDirectory("DependencyDiscovery.targets")}" />"""
             : string.Empty;
 
+        var fallbackFrameworks = restoreFramework switch
+        {
+            AssetTargetFallbackFramework assetFallback => assetFallback.Fallback,
+            FallbackFramework packageFallback => packageFallback.Fallback,
+            _ => [],
+        };
+        var fallbackProperties = restoreFramework is null
+            ? null
+            : new XElement("PropertyGroup",
+                new XElement("DisableImplicitAssetTargetFallback", true),
+                new XElement(restoreFramework is FallbackFramework ? "PackageTargetFallback" : "AssetTargetFallback",
+                    string.Join(";", fallbackFrameworks.Select(f => f.GetShortFolderName()))));
+
         var projectContents = $"""
             <Project Sdk="Microsoft.NET.Sdk">
               <PropertyGroup>
                 {targetFrameworkElement}
               </PropertyGroup>
+              {fallbackProperties}
               {dependencyTargetsImport}
               <ItemGroup>
                 {packageReferences}
@@ -505,14 +599,15 @@ internal static partial class MSBuildHelper
         string projectPath,
         string targetFramework,
         IReadOnlyCollection<Dependency> packages,
-        ILogger logger
+        ILogger logger,
+        NuGetFramework? restoreFramework = null
     )
     {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-resolution_");
         try
         {
             var topLevelPackagesNames = packages.Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages, logger, importDependencyTargets: false);
+            var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages, logger, importDependencyTargets: false, restoreFramework: restoreFramework);
 
             var experimentsManager = new ExperimentsManager();
             var projectDiscovery = await SdkProjectDiscovery.DiscoverAsync(repoRoot, tempDirectory.FullName, tempProjectPath, experimentsManager, solutionDir: null, logger);

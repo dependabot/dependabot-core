@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -6,6 +6,9 @@ require "dependabot/julia/package/package_details_fetcher"
 require "dependabot/julia/version"
 
 RSpec.describe Dependabot::Julia::Package::PackageDetailsFetcher do
+  extend T::Sig
+
+  sig { returns(Dependabot::Julia::Package::PackageDetailsFetcher) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   subject(:fetcher) do
     described_class.new(
       dependency: dependency,
@@ -13,6 +16,8 @@ RSpec.describe Dependabot::Julia::Package::PackageDetailsFetcher do
     )
   end
 
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Dependabot::Dependency) }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "Example",
@@ -30,13 +35,21 @@ RSpec.describe Dependabot::Julia::Package::PackageDetailsFetcher do
     )
   end
 
+  sig { returns(T::Array[Dependabot::Credential]) }
   let(:credentials) { [] }
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#fetch_package_releases" do
+    # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+    sig { returns(Dependabot::Julia::RegistryClient) }
     let(:registry_client) { instance_double(Dependabot::Julia::RegistryClient) }
+    sig { returns(T::Array[String]) }
     let(:available_versions) { ["0.5.0", "0.5.1", "0.5.2", "0.5.3"] }
+    sig { returns(Time) }
     let(:release_date1) { Time.parse("2023-01-01T00:00:00Z") }
+    sig { returns(Time) }
     let(:release_date2) { Time.parse("2023-02-01T00:00:00Z") }
+    # rubocop:enable RSpec/ScatteredLet
 
     before do
       allow(Dependabot::Julia::RegistryClient).to receive(:new)
@@ -89,9 +102,9 @@ RSpec.describe Dependabot::Julia::Package::PackageDetailsFetcher do
     it "includes release dates when available" do
       releases = fetcher.fetch_package_releases
 
-      release_zero_five_zero = releases.find { |r| r.version.to_s == "0.5.0" }
-      release_zero_five_one = releases.find { |r| r.version.to_s == "0.5.1" }
-      release_zero_five_two = releases.find { |r| r.version.to_s == "0.5.2" }
+      release_zero_five_zero = T.must(releases.find { |r| r.version.to_s == "0.5.0" })
+      release_zero_five_one = T.must(releases.find { |r| r.version.to_s == "0.5.1" })
+      release_zero_five_two = T.must(releases.find { |r| r.version.to_s == "0.5.2" })
 
       expect(release_zero_five_zero.released_at).to eq(release_date1)
       expect(release_zero_five_one.released_at).to eq(release_date2)
@@ -101,14 +114,14 @@ RSpec.describe Dependabot::Julia::Package::PackageDetailsFetcher do
     it "marks releases whose date is not published yet" do
       releases = fetcher.fetch_package_releases.to_h { |r| [r.version.to_s, r] }
 
-      expect(releases["0.5.3"].released_at).to be_nil
-      expect(releases["0.5.3"].details).to eq("release_date_pending" => true)
-      expect(releases["0.5.2"].details).to eq({})
+      expect(releases.fetch("0.5.3").released_at).to be_nil
+      expect(releases.fetch("0.5.3").details).to eq("release_date_pending" => true)
+      expect(releases.fetch("0.5.2").details).to eq({})
     end
 
     it "marks the latest version correctly" do
       releases = fetcher.fetch_package_releases
-      latest_release = releases.find { |r| r.version.to_s == "0.5.3" }
+      latest_release = T.must(releases.find { |r| r.version.to_s == "0.5.3" })
       other_releases = releases.reject { |r| r.version.to_s == "0.5.3" }
 
       expect(latest_release.latest).to be true
@@ -119,12 +132,13 @@ RSpec.describe Dependabot::Julia::Package::PackageDetailsFetcher do
       releases = fetcher.fetch_package_releases
 
       releases.each do |release|
-        expect(release.language.name).to eq("julia")
+        expect(T.must(release.language).name).to eq("julia")
         expect(release.yanked).to be false
       end
     end
 
     context "when registry client returns empty versions" do
+      sig { returns(T::Array[String]) }
       let(:available_versions) { [] }
 
       it "returns empty array" do

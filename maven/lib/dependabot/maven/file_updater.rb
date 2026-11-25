@@ -11,7 +11,19 @@ require "dependabot/maven/distributions"
 
 module Dependabot
   module Maven
-    class FileUpdater < Dependabot::FileUpdaters::Base
+    class FileUpdater < Dependabot::FileUpdaters::Base # rubocop:disable Metrics/ClassLength
+      XML_TERMINATORS = T.let(
+        { "<!--" => "-->", "<?" => "?>", "<![CDATA[" => "]]>" }.freeze,
+        T::Hash[String, String]
+      )
+
+      XML_TAG_SCANNER = %r{
+        <!--.*?-->
+        |<\?.*?\?>
+        |<!\[CDATA\[.*?\]\]>
+        |<(/?)[^\s>/!?](?:"[^"]*"|'[^']*'|[^>"'])*?(/?)>
+      }mx
+
       extend T::Sig
 
       require_relative "file_updater/declaration_finder"
@@ -27,7 +39,7 @@ module Dependabot
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         all_updated = collect_wrapper_updates + collect_pom_updates
-        raise "No files changed!" if all_updated.none?
+        raise no_files_changed_error("No files changed!") if all_updated.none?
 
         all_updated
       end
@@ -134,13 +146,8 @@ module Dependabot
       def update_files_for_dependency(original_files:, dependency:)
         files = original_files.dup
 
-        # The UpdateChecker ensures the order of requirements is preserved
-        # when updating, so we can zip them together in new/old pairs.
-        reqs = dependency.requirements.zip(dependency.previous_requirements.to_a)
-                         .reject { |new_req, old_req| new_req == old_req }
-
         # Loop through each changed requirement and update the files
-        reqs.each do |new_req, old_req|
+        changed_requirement_pairs(dependency).each do |new_req, old_req|
           raise "Bad req match" unless new_req.file == T.must(old_req).file
           next if new_req.requirement == T.must(old_req).requirement
 
@@ -160,6 +167,15 @@ module Dependabot
         files
       end
       # rubocop:enable Metrics/AbcSize
+
+      # Requirement order is preserved, so new/old pairs zip together. One rewrite changes every XML
+      # entry that matches it, so pairs that differ only in other metadata (the override tag, or what
+      # the dependency tree scan merged into one of them) collapse into one.
+      sig { params(dependency: Dependency).returns(T::Array[[DependencyRequirement, T.nilable(DependencyRequirement)]]) }
+      def changed_requirement_pairs(dependency)
+        dependency.requirements.zip(dependency.previous_requirements.to_a).reject { |new, old| new == old }
+                  .uniq { |pair| pair.map { |req| req && DeclarationFinder.match_key(req) } }
+      end
 
       sig do
         params(
@@ -327,10 +343,48 @@ module Dependabot
       def updated_file_declaration(old_declaration, previous_req, requirement)
         original_req_string = T.must(previous_req.requirement_string)
 
-        old_declaration.gsub(
-          /(?<=\s|>)#{Regexp.quote(original_req_string)}(?=\s|<)/,
-          T.must(requirement.requirement_string)
-        )
+        filler = /(?:\s|<!--(?:(?!-->).)*-->|<\?(?:(?!\?>).)*\?>)*/m
+        own_version = %r{
+          (<(?:[\w.-]+:)?version(?:\s(?:"[^"]*"|'[^']*'|[^>"'])*)?>#{filler}(?:<!\[CDATA\[\s*)?)
+          #{Regexp.quote(original_req_string)}
+          ((?:\s*\]\]>)?#{filler}</(?:[\w.-]+:)?version\s*>)
+        }mx
+
+        # Only rewrite the declaration's own <version> child; nested elements
+        # (e.g. plugin <configuration>) may contain the same text.
+        old_declaration.gsub(own_version) do
+          match = T.must(Regexp.last_match)
+          prefix = old_declaration[0...match.begin(0)].to_s
+          next match[0].to_s if inside_comment_or_cdata?(prefix) || element_depth(prefix) != 1
+
+          "#{match[1]}#{requirement.requirement_string}#{match[2]}"
+        end
+      end
+
+      sig { params(xml_prefix: String).returns(T::Boolean) }
+      def inside_comment_or_cdata?(xml_prefix)
+        pos = 0
+        while (match = xml_prefix.match(/<!--|<\?|<!\[CDATA\[/, pos))
+          terminator = XML_TERMINATORS.fetch(match[0].to_s)
+          finish = xml_prefix.index(terminator, match.end(0))
+          return true unless finish
+
+          pos = finish + terminator.length
+        end
+        false
+      end
+
+      sig { params(xml_prefix: String).returns(Integer) }
+      def element_depth(xml_prefix)
+        depth = 0
+        xml_prefix.scan(XML_TAG_SCANNER) do |closing, self_closing|
+          next if Regexp.last_match(0).to_s.start_with?("<!", "<?")
+
+          if closing == "/" then depth -= 1
+          elsif self_closing.to_s.empty? then depth += 1
+          end
+        end
+        depth
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }

@@ -3,6 +3,7 @@
 
 require "dependabot/shared_helpers"
 require "dependabot/clients/json_response_parser"
+require "dependabot/clients/comparison_commit"
 require "excon"
 require "sorbet-runtime"
 
@@ -372,7 +373,7 @@ module Dependabot
           new_tag: T.nilable(String),
           type: String
         )
-          .returns(JsonObjects)
+          .returns(T::Array[ComparisonCommit])
       end
       def compare(previous_tag, new_tag, type)
         response = get(
@@ -386,7 +387,13 @@ module Dependabot
         )
 
         root = parse_json_object(response.body, "commit comparison")
-        object_array_field(root, "value", "commit comparison")
+        object_array_field(root, "value", "commit comparison").map do |commit|
+          ComparisonCommit.new(
+            sha: comparison_string(commit, "commitId"),
+            message: comparison_string(commit, "comment"),
+            html_url: comparison_string(commit, "remoteUrl")
+          )
+        end
       end
 
       sig { params(url: String).returns(Excon::Response) }
@@ -486,6 +493,17 @@ module Dependabot
       end
 
       private
+
+      sig { params(commit: JsonObject, key: String).returns(String) }
+      def comparison_string(commit, key)
+        value = commit[key]
+        return value if value.is_a?(String)
+
+        raise Dependabot::PrivateSourceBadResponse.new(
+          source.url,
+          "Malformed Azure commit response: commit #{key} must be a string"
+        )
+      end
 
       sig { returns([String, String]) }
       def response_identity

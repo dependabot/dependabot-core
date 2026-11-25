@@ -135,7 +135,9 @@ module Dependabot
 
           combined = version_class.new(parsed_dep.version)
           current_version = dependency.version ? version_class.new(dependency.version) : nil
-          candidate = audit_fix_best_version(parsed_dep, current_version) || combined
+          candidate = replacement_version(parsed_dep, current_version) ||
+                      audit_fix_best_version(parsed_dep, current_version) ||
+                      combined
           return candidate unless pnpm_update.pin_dropped
 
           candidate if pnpm_update.within_bound?(
@@ -152,6 +154,26 @@ module Dependabot
         def allowable_version
           allowable = latest_allowable_version
           allowable.is_a?(String) ? version_class.new(allowable) : allowable
+        end
+
+        # A lockfile can hold several copies of a package, and the parsed version of the package is the lowest of them.
+        # When the copy being updated is gone from the updated lockfile, the lowest copy above it is the one that
+        # replaced it: each copy only moves within its own range, so copies of other majors stay where they were.
+        sig do
+          params(
+            parsed_dep: Dependabot::Dependency,
+            current_version: T.nilable(Gem::Version)
+          ).returns(T.nilable(Gem::Version))
+        end
+        def replacement_version(parsed_dep, current_version)
+          return unless current_version
+
+          versions = parsed_dep.metadata_dependencies(:all_versions)&.filter_map do |d|
+            version_class.new(d.version) if d.version && version_class.correct?(d.version)
+          end
+          return if versions.nil? || versions.empty? || versions.include?(current_version)
+
+          versions.select { |v| v > current_version }.min
         end
 
         sig do

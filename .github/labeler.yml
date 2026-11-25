@@ -84,6 +84,10 @@
 - changed-files:
   - any-glob-to-any-file: uv/**
 
+"L: python:conda":
+- changed-files:
+  - any-glob-to-any-file: conda/**
+
 "L: rust:rust-toolchain":
 - changed-files:
   - any-glob-to-any-file: rust_toolchain/**
@@ -107,3 +111,27 @@
 "L: cpp:vcpkg":
 - changed-files:
   - any-glob-to-any-file: vcpkg/**
+
+"L: julia":
+- changed-files:
+  - any-glob-to-any-file: julia/**
+
+"L: bazel":
+- changed-files:
+  - any-glob-to-any-file: bazel/**
+
+"L: nix":
+- changed-files:
+  - any-glob-to-any-file: nix/**
+
+"L: sbt":
+- changed-files:
+  - any-glob-to-any-file: sbt/**
+
+"L: pre:commit":
+- changed-files:
+  - any-glob-to-any-file: pre_commit/**
+
+"L: deno":
+- changed-files:
+  - any-glob-to-any-file: deno/**

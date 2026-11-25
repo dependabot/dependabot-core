@@ -12,6 +12,30 @@ RSpec.describe Dependabot::Docker::Tag do
     end
   end
 
+  describe "numeric architecture suffix" do
+    it "parses -386 as a suffix, not a version segment" do
+      tag = described_class.new("0.156.0-386")
+
+      expect(tag.version).to eq("0.156.0")
+      expect(tag.suffix).to eq("-386")
+      expect(tag.numeric_version).to eq("0.156.0")
+    end
+
+    it "is not comparable to the multi-arch tag" do
+      expect(described_class.new("0.156.0").comparable_to?(described_class.new("0.156.0-386"))).to be false
+      expect(described_class.new("0.155.0-386").comparable_to?(described_class.new("0.156.0-386"))).to be true
+    end
+
+    it "still parses build numbers as part of the version" do
+      %w(1803-kb4505057 3.3-20220922 1.2.3-1 1.2.3-3860 1.2.3-1386).each do |name|
+        tag = described_class.new(name)
+
+        expect(tag.version).to eq(name)
+        expect(tag.suffix).to be_nil
+      end
+    end
+  end
+
   describe "#looks_like_prerelease?" do
     context "with prerelease tags" do
       it "detects alpha versions" do

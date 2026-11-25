@@ -1,18 +1,24 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/github_actions/update_checker/latest_version_finder"
+require "dependabot/github_actions/requirement"
 
-namespace = Dependabot::GithubActions::UpdateChecker
-RSpec.describe namespace::LatestVersionFinder do
+RSpec.describe Dependabot::GithubActions::UpdateChecker::LatestVersionFinder do
+  extend T::Sig
+
+  sig { returns(T::Array[Dependabot::Credential]) }
+  let(:credentials) { github_credentials.map { |credential| Dependabot::Credential.new(credential) } }
+
   let(:upload_pack_fixture) { "setup-node" }
   let(:git_commit_checker) do
     Dependabot::GitCommitChecker.new(
       dependency: dependency,
-      credentials: github_credentials,
+      credentials: credentials,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored
     )
@@ -58,7 +64,7 @@ RSpec.describe namespace::LatestVersionFinder do
     described_class.new(
       dependency: dependency,
       dependency_files: [],
-      credentials: github_credentials,
+      credentials: credentials,
       security_advisories: security_advisories,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
@@ -181,14 +187,14 @@ RSpec.describe namespace::LatestVersionFinder do
         Dependabot::SecurityAdvisory.new(
           dependency_name: dependency_name,
           package_manager: "github_actions",
-          vulnerable_versions: ["< 1.0"]
+          vulnerable_versions: [Dependabot::GithubActions::Requirement.new("< 1.0")]
         )
       ]
     end
 
     context "when a supported newer version is available" do
       it "updates to the least new supported version" do
-        expect(lowest_security_fix_release).to eq(
+        expect(lowest_security_fix_release&.details).to have_attributes(
           { tag: "v1",
             version: Dependabot::GithubActions::Version.new("1.0.0"),
             commit_sha: "d0b521928fa734513b5cd9c7d9d8e09db50e884a",
@@ -201,7 +207,7 @@ RSpec.describe namespace::LatestVersionFinder do
       let(:ignored_versions) { ["= 1.0.0"] }
 
       it "doesn't return ignored versions" do
-        expect(lowest_security_fix_release).to eq(
+        expect(lowest_security_fix_release&.details).to have_attributes(
           { commit_sha: "bb178d2de54771e6f9332a2b1d55546cf2bc3e08", tag: "v2",
             tag_sha: "bb178d2de54771e6f9332a2b1d55546cf2bc3e08",
             version: Dependabot::GithubActions::Version.new("2.0.0") }
@@ -242,7 +248,7 @@ RSpec.describe namespace::LatestVersionFinder do
         described_class.new(
           dependency: dependency,
           dependency_files: [],
-          credentials: github_credentials,
+          credentials: credentials,
           security_advisories: security_advisories,
           ignored_versions: ignored_versions,
           raise_on_ignored: raise_on_ignored,
@@ -253,14 +259,14 @@ RSpec.describe namespace::LatestVersionFinder do
       before do
         allow(finder).to receive(:select_version_tags_in_cooldown_period) do |tags_with_dates|
           tags_with_dates.filter_map do |tag|
-            tag_name = tag.is_a?(Hash) ? tag.fetch(:tag) : tag.tag
+            tag_name = tag.tag
             tag_name if tag_name.start_with?("v3")
           end
         end
       end
 
       it "keeps the major-only precision instead of rewriting to a full version" do
-        expect(latest_version_tag_respecting_cooldown).to include(
+        expect(latest_version_tag_respecting_cooldown).to have_attributes(
           tag: "v2",
           version: Dependabot::GithubActions::Version.new("2")
         )
@@ -284,7 +290,7 @@ RSpec.describe namespace::LatestVersionFinder do
         described_class.new(
           dependency: dependency,
           dependency_files: [],
-          credentials: github_credentials,
+          credentials: credentials,
           security_advisories: security_advisories,
           ignored_versions: ignored_versions,
           raise_on_ignored: raise_on_ignored,
@@ -295,14 +301,14 @@ RSpec.describe namespace::LatestVersionFinder do
       before do
         allow(finder).to receive(:select_version_tags_in_cooldown_period) do |tags_with_dates|
           tags_with_dates.filter_map do |tag|
-            tag_name = tag.is_a?(Hash) ? tag.fetch(:tag) : tag.tag
+            tag_name = tag.tag
             tag_name unless tag_name == "v1"
           end
         end
       end
 
       it "does not downgrade to an older major tag" do
-        expect(latest_version_tag_respecting_cooldown).to include(
+        expect(latest_version_tag_respecting_cooldown).to have_attributes(
           tag: "v2",
           version: Dependabot::GithubActions::Version.new("2")
         )
@@ -326,7 +332,7 @@ RSpec.describe namespace::LatestVersionFinder do
         described_class.new(
           dependency: dependency,
           dependency_files: [],
-          credentials: github_credentials,
+          credentials: credentials,
           security_advisories: security_advisories,
           ignored_versions: ignored_versions,
           raise_on_ignored: raise_on_ignored,
@@ -407,7 +413,7 @@ RSpec.describe namespace::LatestVersionFinder do
       subject(:latest_version_tag) { finder.latest_version_tag }
 
       it "returns tag information for v0.0.24" do
-        expect(latest_version_tag).to include(
+        expect(latest_version_tag).to have_attributes(
           tag: "v0.0.24",
           commit_sha: "b4cc9058ebd2336f73752f9d3c9b3835d52c66de",
           version: Dependabot::GithubActions::Version.new("0.0.24")
@@ -439,7 +445,7 @@ RSpec.describe namespace::LatestVersionFinder do
         described_class.new(
           dependency: dependency,
           dependency_files: [],
-          credentials: github_credentials,
+          credentials: credentials,
           security_advisories: security_advisories,
           ignored_versions: ignored_versions,
           raise_on_ignored: raise_on_ignored,
@@ -485,7 +491,7 @@ RSpec.describe namespace::LatestVersionFinder do
           described_class.new(
             dependency: dependency,
             dependency_files: [],
-            credentials: github_credentials,
+            credentials: credentials,
             security_advisories: security_advisories,
             ignored_versions: ignored_versions,
             raise_on_ignored: raise_on_ignored,
@@ -508,7 +514,7 @@ RSpec.describe namespace::LatestVersionFinder do
           described_class.new(
             dependency: dependency,
             dependency_files: [],
-            credentials: github_credentials,
+            credentials: credentials,
             security_advisories: security_advisories,
             ignored_versions: ignored_versions,
             raise_on_ignored: raise_on_ignored,
@@ -567,12 +573,19 @@ RSpec.describe namespace::LatestVersionFinder do
 
     let(:reference) { "v1" }
     let(:dependency_version) { "1.0.0" }
+    let(:latest_tag_details) do
+      Dependabot::GitTagDetails.new(
+        tag: "v1.0.0",
+        version: Dependabot::GithubActions::Version.new("1.0.0"),
+        commit_sha: "abc123"
+      )
+    end
 
     let(:finder) do
       described_class.new(
         dependency: dependency,
         dependency_files: [],
-        credentials: github_credentials,
+        credentials: credentials,
         security_advisories: security_advisories,
         ignored_versions: ignored_versions,
         raise_on_ignored: raise_on_ignored,
@@ -599,8 +612,7 @@ RSpec.describe namespace::LatestVersionFinder do
           .to receive(:dependency_source_details)
           .and_return(source_details)
         allow(finder).to receive_messages(
-          latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
-                                commit_sha: "abc123" },
+          latest_version_tag: latest_tag_details,
           commit_ref: "abc123"
         )
         # No GitHub Release available — forces git fallback
@@ -621,15 +633,14 @@ RSpec.describe namespace::LatestVersionFinder do
     end
 
     context "when for-each-ref returns empty (lightweight tag not found)" do
-      it "falls back to commit date from git show" do
+      it "falls back to the commit date from git log" do
         commit_date = "2026-06-01 10:00:00 +0000"
 
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:dependency_source_details)
           .and_return(source_details)
         allow(finder).to receive_messages(
-          latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
-                                commit_sha: "abc123" },
+          latest_version_tag: latest_tag_details,
           commit_ref: "abc123"
         )
         # No GitHub Release available — forces git fallback
@@ -644,9 +655,12 @@ RSpec.describe namespace::LatestVersionFinder do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .with(/git for-each-ref/, hash_including(fingerprint: anything))
           .and_return("")
-        # Fallback to git show
+        # Fallback to the commit date, read without contacting the remote
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(/git show --no-patch/, hash_including(fingerprint: anything))
+          .with(
+            'git log -1 --no-mailmap --format="%cd" --date=iso abc123',
+            fingerprint: 'git log -1 --no-mailmap --format="%cd" --date=iso <commit_ref>'
+          )
           .and_return(commit_date)
 
         expect(commit_metadata_details).to eq(commit_date)
@@ -662,8 +676,7 @@ RSpec.describe namespace::LatestVersionFinder do
           .to receive(:dependency_source_details)
           .and_return(source_details)
         allow(finder).to receive_messages(
-          latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
-                                commit_sha: "abc123" },
+          latest_version_tag: latest_tag_details,
           commit_ref: "abc123"
         )
         # Stub GitHub releases to return empty (force git fallback)
@@ -690,8 +703,7 @@ RSpec.describe namespace::LatestVersionFinder do
           .to receive(:dependency_source_details)
           .and_return(source_details)
         allow(finder).to receive(:latest_version_tag)
-          .and_return({ tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
-                        commit_sha: "abc123" })
+          .and_return(latest_tag_details)
 
         sawyer_agent = instance_double(Sawyer::Agent)
         allow(sawyer_agent).to receive(:parse_links) { |value| [value, {}] }
@@ -717,8 +729,7 @@ RSpec.describe namespace::LatestVersionFinder do
           .to receive(:dependency_source_details)
           .and_return(source_details)
         allow(finder).to receive_messages(
-          latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
-                                commit_sha: "abc123" },
+          latest_version_tag: latest_tag_details,
           commit_ref: "abc123"
         )
 
@@ -736,6 +747,29 @@ RSpec.describe namespace::LatestVersionFinder do
           .and_return(tag_creation_date)
 
         expect(commit_metadata_details).to eq(tag_creation_date)
+      end
+
+      it "clones only commits and tags to read the date" do
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return(source_details)
+        allow(finder).to receive_messages(
+          latest_version_tag: latest_tag_details,
+          commit_ref: "abc123"
+        )
+        mock_client = instance_double(Octokit::Client, releases: [])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
+        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
+        allow(Dir).to receive(:chdir).and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("2026-01-01 00:00:00 +0000")
+
+        commit_metadata_details
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          %r{\Agit clone --bare --filter=tree:0 --no-recurse-submodules https://github\.com/},
+          fingerprint: "git clone --bare --filter=tree:0 --no-recurse-submodules <url> <path>"
+        )
       end
     end
   end

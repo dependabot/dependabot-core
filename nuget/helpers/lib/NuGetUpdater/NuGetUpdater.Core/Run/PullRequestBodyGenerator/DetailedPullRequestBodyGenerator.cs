@@ -27,135 +27,140 @@ internal class DetailedPullRequestBodyGenerator : IPullRequestBodyGenerator, IDi
 
     public async Task<string> GeneratePullRequestBodyTextAsync(Job job, ImmutableArray<UpdateOperationBase> updateOperationsPerformed, ImmutableArray<ReportedDependency> updatedDependencies)
     {
-        var sb = new StringBuilder();
         var dedupedUpdateOperations = updateOperationsPerformed
             .DistinctBy(u => $"{u.DependencyName}/{u.OldVersion}/{u.NewVersion}", StringComparer.OrdinalIgnoreCase)
             .OrderBy(u => u.DependencyName, StringComparer.OrdinalIgnoreCase)
             .ThenBy(u => u.OldVersion, NullableNuGetVersionComparer.Instance)
             .ThenBy(u => u.NewVersion)
             .ToImmutableArray();
-        foreach (var updateOperation in dedupedUpdateOperations)
-        {
-            if (sb.Length > 0)
+        var sections = new string[dedupedUpdateOperations.Length];
+        await Parallel.ForEachAsync(
+            Enumerable.Range(0, dedupedUpdateOperations.Length),
+            new ParallelOptions { MaxDegreeOfParallelism = 4 },
+            async (index, _) =>
             {
-                // ensure a blank line between entries
-                sb.AppendLine();
+                sections[index] = await GenerateUpdateSectionAsync(job, dedupedUpdateOperations[index], updatedDependencies);
+            });
+
+        var prBody = string.Join(Environment.NewLine, sections).Replace("\r", "").TrimEnd();
+        var scrubbedBody = ScrubLinksAndMentions(prBody);
+        var truncatedPrBody = TruncateCharacterCount(scrubbedBody, GetMaxPrLength(job.Source.Provider));
+        return truncatedPrBody;
+    }
+
+    private async Task<string> GenerateUpdateSectionAsync(Job job, UpdateOperationBase updateOperation, ImmutableArray<ReportedDependency> updatedDependencies)
+    {
+        var sb = new StringBuilder();
+        var reportText = $"{updateOperation.GetReport(includeFileNames: false)}.";
+        var updatedDependency = updatedDependencies
+            .Where(d => d.Name.Equals(updateOperation.DependencyName, StringComparison.OrdinalIgnoreCase))
+            .Where(d => NuGetVersion.TryParse(d.Version, out var version) && version == updateOperation.NewVersion)
+            .FirstOrDefault();
+        var sourceUrl = (updatedDependency?.Requirements ?? [])
+            .Select(r => r.Source?.SourceUrl)
+            .FirstOrDefault(u => u is not null);
+        if (sourceUrl is null)
+        {
+            // no source url, just append the report text
+            sb.AppendLine(reportText);
+        }
+        else
+        {
+            if (sourceUrl.EndsWith(".git"))
+            {
+                // remove the trailing .git if present
+                sourceUrl = sourceUrl[..^4];
             }
 
-            var reportText = $"{updateOperation.GetReport(includeFileNames: false)}.";
-            var updatedDependency = updatedDependencies
-                .Where(d => d.Name.Equals(updateOperation.DependencyName, StringComparison.OrdinalIgnoreCase))
-                .Where(d => NuGetVersion.TryParse(d.Version, out var version) && version == updateOperation.NewVersion)
-                .FirstOrDefault();
-            var sourceUrl = (updatedDependency?.Requirements ?? [])
-                .Select(r => r.Source?.SourceUrl)
-                .FirstOrDefault(u => u is not null);
-            if (sourceUrl is null)
+            // build detailed report
+            var packageNameIndex = reportText.IndexOf(updateOperation.DependencyName, StringComparison.OrdinalIgnoreCase);
+            if (packageNameIndex >= 0)
             {
-                // no source url, just append the report text
-                sb.AppendLine(reportText);
+                // link the package name
+                sb.AppendLine($"{reportText[..packageNameIndex]}[{updateOperation.DependencyName}]({sourceUrl}){reportText[(packageNameIndex + updateOperation.DependencyName.Length)..]}");
             }
             else
             {
-                if (sourceUrl.EndsWith(".git"))
-                {
-                    // remove the trailing .git if present
-                    sourceUrl = sourceUrl[..^4];
-                }
+                sb.AppendLine(reportText);
+            }
 
-                // build detailed report
-                var packageNameIndex = reportText.IndexOf(updateOperation.DependencyName, StringComparison.OrdinalIgnoreCase);
-                if (packageNameIndex >= 0)
+            // more details
+            if (Uri.TryCreate(sourceUrl, UriKind.Absolute, out var uri))
+            {
+                IPackageDetailFinder? packageDetailFinder = uri.Host.ToLowerInvariant() switch
                 {
-                    // link the package name
-                    sb.AppendLine($"{reportText[..packageNameIndex]}[{updateOperation.DependencyName}]({sourceUrl}){reportText[(packageNameIndex + updateOperation.DependencyName.Length)..]}");
-                }
-                else
-                {
-                    sb.AppendLine(reportText);
-                }
+                    "dev.azure.com" => new AzurePackageDetailFinder(),
+                    "github.com" => new GitHubPackageDetailFinder(_httpFetcher),
+                    "gitlab.com" => new GitLabPackageDetailFinder(_httpFetcher),
+                    var host when host.EndsWith(".visualstudio.com") => new AzurePackageDetailFinder(),
+                    _ => null,
+                };
 
-                // more details
-                if (Uri.TryCreate(sourceUrl, UriKind.Absolute, out var uri))
+                if (packageDetailFinder is not null &&
+                    updateOperation.OldVersion is not null)
                 {
-                    IPackageDetailFinder? packageDetailFinder = uri.Host.ToLowerInvariant() switch
+                    var repoName = uri.LocalPath.TrimStart('/');
+                    var versionsAndDetails = await packageDetailFinder.GetReleaseDataForVersionsAsync(repoName, updateOperation.DependencyName, updateOperation.OldVersion, updateOperation.NewVersion);
+                    var ordered = versionsAndDetails
+                        .Where(kv => kv.Key != updateOperation.OldVersion)
+                        .OrderByDescending(kv => kv.Key)
+                        .ToList();
+
+                    sb.AppendLine();
+                    var detailsLineTemplate = IsHtmlSupported(job.Source.Provider)
+                        ? "<details>\n<summary>{0}</summary>"
+                        : "# {0}";
+                    sb.AppendLine(string.Format(detailsLineTemplate, "Release notes"));
+
+                    var releasesUrlPath = packageDetailFinder.GetReleasesUrlPath();
+                    if (releasesUrlPath is not null)
                     {
-                        "dev.azure.com" => new AzurePackageDetailFinder(),
-                        "github.com" => new GitHubPackageDetailFinder(_httpFetcher),
-                        "gitlab.com" => new GitLabPackageDetailFinder(_httpFetcher),
-                        var host when host.EndsWith(".visualstudio.com") => new AzurePackageDetailFinder(),
-                        _ => null,
-                    };
+                        sb.AppendLine();
+                        sb.AppendLine($"_Sourced from [{updateOperation.DependencyName}'s releases]({sourceUrl}/{releasesUrlPath})._");
+                    }
 
-                    if (packageDetailFinder is not null &&
-                        updateOperation.OldVersion is not null)
+                    foreach (var (version, (tagName, body)) in ordered)
                     {
-                        var repoName = uri.LocalPath.TrimStart('/');
-                        var versionsAndDetails = await packageDetailFinder.GetReleaseDataForVersionsAsync(repoName, updateOperation.DependencyName, updateOperation.OldVersion, updateOperation.NewVersion);
-                        var ordered = versionsAndDetails
-                            .Where(kv => kv.Key != updateOperation.OldVersion)
-                            .OrderByDescending(kv => kv.Key)
-                            .ToList();
-
                         sb.AppendLine();
-                        var detailsLineTemplate = IsHtmlSupported(job.Source.Provider)
-                            ? "<details>\n<summary>{0}</summary>"
-                            : "# {0}";
-                        sb.AppendLine(string.Format(detailsLineTemplate, "Release notes"));
-
-                        var releasesUrlPath = packageDetailFinder.GetReleasesUrlPath();
-                        if (releasesUrlPath is not null)
+                        sb.AppendLine($"## {version}");
+                        if (body is not null)
                         {
+                            var truncatedBody = TruncateLineCount(body);
                             sb.AppendLine();
-                            sb.AppendLine($"_Sourced from [{updateOperation.DependencyName}'s releases]({sourceUrl}/{releasesUrlPath})._");
+                            sb.AppendLine(truncatedBody);
                         }
+                    }
 
-                        foreach (var (version, (tagName, body)) in ordered)
-                        {
-                            sb.AppendLine();
-                            sb.AppendLine($"## {version}");
-                            if (body is not null)
-                            {
-                                var truncatedBody = TruncateLineCount(body);
-                                sb.AppendLine();
-                                sb.AppendLine(truncatedBody);
-                            }
-                        }
-
-                        if (ordered.Count == 0)
-                        {
-                            sb.AppendLine();
-                            sb.AppendLine("No release notes found for this version range.");
-                        }
-
-                        string? oldTag = null;
-                        if (versionsAndDetails.TryGetValue(updateOperation.OldVersion, out var oldVersionDetails))
-                        {
-                            oldTag = oldVersionDetails.TagName;
-                        }
-
-                        string? newTag = null;
-                        if (versionsAndDetails.TryGetValue(updateOperation.NewVersion, out var newVersionDetails))
-                        {
-                            newTag = newVersionDetails.TagName;
-                        }
-
-                        var compareUrlPath = packageDetailFinder.GetCompareUrlPath(oldTag, newTag);
+                    if (ordered.Count == 0)
+                    {
                         sb.AppendLine();
-                        sb.AppendLine($"Commits viewable in [compare view]({sourceUrl}/{compareUrlPath}).");
-                        if (IsHtmlSupported(job.Source.Provider))
-                        {
-                            sb.AppendLine("</details>");
-                        }
+                        sb.AppendLine("No release notes found for this version range.");
+                    }
+
+                    string? oldTag = null;
+                    if (versionsAndDetails.TryGetValue(updateOperation.OldVersion, out var oldVersionDetails))
+                    {
+                        oldTag = oldVersionDetails.TagName;
+                    }
+
+                    string? newTag = null;
+                    if (versionsAndDetails.TryGetValue(updateOperation.NewVersion, out var newVersionDetails))
+                    {
+                        newTag = newVersionDetails.TagName;
+                    }
+
+                    var compareUrlPath = packageDetailFinder.GetCompareUrlPath(oldTag, newTag);
+                    sb.AppendLine();
+                    sb.AppendLine($"Commits viewable in [compare view]({sourceUrl}/{compareUrlPath}).");
+                    if (IsHtmlSupported(job.Source.Provider))
+                    {
+                        sb.AppendLine("</details>");
                     }
                 }
             }
         }
 
-        var prBody = sb.ToString().Replace("\r", "").TrimEnd();
-        var scrubbedBody = ScrubLinksAndMentions(prBody);
-        var truncatedPrBody = TruncateCharacterCount(scrubbedBody, GetMaxPrLength(job.Source.Provider));
-        return truncatedPrBody;
+        return sb.ToString();
     }
 
     private static bool IsHtmlSupported(string sourceProvider)

@@ -8,6 +8,7 @@ require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/bundler/file_updater"
 require "dependabot/bundler/cached_lockfile_parser"
+require "dependabot/bundler/checksum_mismatch"
 require "dependabot/bundler/native_helpers"
 require "dependabot/bundler/helpers"
 
@@ -125,13 +126,16 @@ module Dependabot
         rescue SharedHelpers::HelperSubprocessFailed => e
           raise Dependabot::DependencyFileNotResolvable, e.message if e.error_class == "Bundler::SolveFailure"
 
+          checksum_mismatch = ChecksumMismatch.error_for(e)
+          raise checksum_mismatch if checksum_mismatch
+
           raise
         end
 
         sig { void }
         def write_temporary_dependency_files
           File.write(T.must(gemfile).name, prepared_gemfile_content(T.must(gemfile)))
-          File.write(T.must(lockfile).name, sanitized_lockfile_body)
+          File.write(T.must(lockfile).name, T.must(T.must(lockfile).content))
 
           write_gemspecs(top_level_gemspecs)
           write_ruby_version_file
@@ -352,7 +356,7 @@ module Dependabot
                                        .dependency_name || File.basename(path, ".gemspec")
 
           gemspec_specs =
-            CachedLockfileParser.parse(sanitized_lockfile_body).specs
+            CachedLockfileParser.parse(T.must(T.must(lockfile).content)).specs
                                 .select { |s| s.name == gem_name && gemspec_sources.include?(s.source.class) }
 
           gemspec_specs.first&.version&.to_s || "0.0.1"
@@ -396,13 +400,6 @@ module Dependabot
           @lockfile ||=
             dependency_files.find { |f| f.name == "Gemfile.lock" } ||
             dependency_files.find { |f| f.name == "gems.locked" }
-        end
-
-        # TODO: Stop sanitizing the lockfile once we have bundler 2 installed
-        sig { returns(String) }
-        def sanitized_lockfile_body
-          content = T.must(lockfile).content
-          T.must(content).gsub(LOCKFILE_ENDING, "")
         end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }

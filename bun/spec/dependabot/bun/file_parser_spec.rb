@@ -155,6 +155,83 @@ RSpec.describe Dependabot::Bun::FileParser do
       end
     end
 
+    context "when a dependency is declared in a support file as well" do
+      let(:manifest) { { "name" => "root", "dependencies" => { "chalk" => "1.0.0", "debug" => "2.0.0" } } }
+      let(:support_file) do
+        Dependabot::DependencyFile.new(
+          name: "../shared/package.json",
+          content: JSON.dump(
+            "name" => "shared",
+            "dependencies" => { "chalk" => "2.0.0", "lodash" => "4.0.0" }
+          ),
+          support_file: true
+        )
+      end
+      let(:files) { [package_file, support_file] }
+
+      it "keeps the dependency with only the requirement of the file that is updated" do
+        chalk = parser.parse.find { |dep| dep.name == "chalk" }
+
+        expect(chalk.requirements.map { |req| [req.file, req.requirement_string] })
+          .to eq([["package.json", "1.0.0"]])
+        expect(chalk.version).to eq("1.0.0")
+      end
+
+      it "removes support-file declarations from all versions" do
+        chalk = parser.parse.find { |dep| dep.name == "chalk" }
+        version_requirements = chalk.metadata[:all_versions].map(&:requirements).map do |requirements|
+          requirements.map { |req| [req.file, req.requirement_string] }
+        end
+
+        expect(version_requirements).to eq([[["package.json", "1.0.0"]]])
+      end
+
+      it "leaves out a dependency that is only declared in the support file" do
+        expect(parser.parse.map(&:name)).to contain_exactly("chalk", "debug")
+      end
+
+      context "with a bun.lock that has other copies of the dependency" do
+        # bun.lock resolves every declaration of chalk to its top-level entry; debug has its own copy at 1.0.0
+        let(:manifest) { { "name" => "root", "dependencies" => { "chalk" => "2.0.0", "debug" => "2.0.0" } } }
+        let(:support_file) do
+          Dependabot::DependencyFile.new(
+            name: "../shared/package.json",
+            content: JSON.dump("name" => "shared", "dependencies" => { "chalk" => "^2.0.0" }),
+            support_file: true
+          )
+        end
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "bun.lock",
+            content: <<~JSONC
+              {
+                "lockfileVersion": 1,
+                "workspaces": {
+                  "": { "name": "root", "dependencies": { "chalk": "2.0.0", "debug": "2.0.0" } },
+                },
+                "packages": {
+                  "chalk": ["chalk@2.0.0", "", {}, "sha512-a"],
+                  "debug": ["debug@2.0.0", "", { "dependencies": { "chalk": "1.0.0" } }, "sha512-b"],
+                  "debug/chalk": ["chalk@1.0.0", "", {}, "sha512-c"],
+                }
+              }
+            JSONC
+          )
+        end
+        let(:files) { [package_file, support_file, lockfile] }
+
+        it "keeps the locked copies, without the support file's requirement" do
+          chalk = parser.parse.find { |dep| dep.name == "chalk" }
+          versions = chalk.metadata[:all_versions].to_h do |version|
+            [version.version, version.requirements.map { |req| [req.file, req.requirement_string] }]
+          end
+
+          expect(chalk.version).to eq("2.0.0")
+          expect(versions).to eq("2.0.0" => [["package.json", "2.0.0"]], "1.0.0" => [])
+        end
+      end
+    end
+
     context "with invalid JSON" do
       let(:manifest_content) { "{" }
 

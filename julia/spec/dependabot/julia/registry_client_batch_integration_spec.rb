@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -6,8 +6,11 @@ require "dependabot/julia/registry_client"
 require "dependabot/dependency"
 
 RSpec.describe Dependabot::Julia::RegistryClient, :julia_helpers do
+  extend T::Sig
+
   subject(:client) { described_class.new(credentials: credentials, custom_registries: []) }
 
+  sig { returns(T::Array[Dependabot::Credential]) }
   let(:credentials) { [] }
 
   describe "batch operations integration" do
@@ -120,12 +123,12 @@ RSpec.describe Dependabot::Julia::RegistryClient, :julia_helpers do
           )
         ]
 
-        result = nil
+        result = T.let(nil, T.nilable(Dependabot::Julia::RegistryClient::Result::PackageInfoBatch))
         expect do
           result = client.batch_fetch_package_info(dependencies)
         end.not_to raise_error
 
-        expect(result.packages.length).to eq(3)
+        expect(T.must(result).packages.length).to eq(3)
       end
     end
   end

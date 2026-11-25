@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only error_message fixture.
+
 require "spec_helper"
 require "shared_contexts"
 require "dependabot/dependency"

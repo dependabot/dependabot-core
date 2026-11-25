@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the name fixture defined only in child contexts.
+
 require "spec_helper"
 require "dependabot/terraform"
 require_common_spec "shared_examples_for_autoloading"

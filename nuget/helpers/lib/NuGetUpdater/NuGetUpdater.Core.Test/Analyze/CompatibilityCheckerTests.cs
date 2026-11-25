@@ -7,6 +7,7 @@ using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Test.Update;
 
 using Xunit;
@@ -77,6 +78,76 @@ public class CompatibilityCheckerTests
             new TestLogger());
 
         Assert.True(result);
+    }
+
+    [Fact]
+    public void PerformCheck_FallbackFramework_PreservesWindowsCompatibilityException()
+    {
+        var projectFramework = new FallbackFramework(
+            NuGetFramework.Parse("net9.0-windows"),
+            [NuGetFramework.Parse("net461")]);
+
+        var result = CompatibilityChecker.PerformCheck(
+            new PackageIdentity("Dependency", NuGetVersion.Parse("1.0.0")),
+            [projectFramework],
+            isDevDependency: false,
+            [NuGetFramework.Parse("net6.0-windows7.0")],
+            new TestLogger());
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void PerformCheck_MergedDiscovery_PreservesFallbacksForNormalizedAlias()
+    {
+        var project = new ProjectDiscoveryResult
+        {
+            FilePath = "project.csproj",
+            TargetFrameworks = ["net10.0-windows10.0.19041.0"],
+            TargetFrameworkFallbacks = ImmutableDictionary<string, TargetFrameworkFallback>.Empty
+                .Add("net10.0-windows10.0.19041.0", new(["net461"], AssetTargetFallback: true)),
+            Dependencies = [],
+            ImportedFiles = [],
+            AdditionalFiles = [],
+        };
+        var merged = DiscoveryWorker.MergeProjectDiscovery(project, project);
+        var targetFramework = Assert.Single(merged.TargetFrameworks);
+        Assert.Equal("net10.0-windows10.0.19041", targetFramework);
+
+        var result = CompatibilityChecker.PerformCheck(
+            new PackageIdentity("Dependency", NuGetVersion.Parse("1.0.0")),
+            [merged.GetFramework(targetFramework)],
+            isDevDependency: false,
+            [NuGetFramework.Parse("net35")],
+            new TestLogger());
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void PerformCheck_MergedDiscovery_PrefersExactFallbackAlias()
+    {
+        var project = new ProjectDiscoveryResult
+        {
+            FilePath = "project.csproj",
+            TargetFrameworks = ["net10.0-windows10.0.19041.0"],
+            TargetFrameworkFallbacks = ImmutableDictionary<string, TargetFrameworkFallback>.Empty
+                .Add("net10.0-windows10.0.19041.0", new(["net461"], AssetTargetFallback: true))
+                .Add("net10.0-windows10.0.19041", new([], AssetTargetFallback: false)),
+            Dependencies = [],
+            ImportedFiles = [],
+            AdditionalFiles = [],
+        };
+        var merged = DiscoveryWorker.MergeProjectDiscovery(project, project);
+
+        var result = CompatibilityChecker.PerformCheck(
+            new PackageIdentity("Dependency", NuGetVersion.Parse("1.0.0")),
+            [merged.GetFramework(Assert.Single(merged.TargetFrameworks))],
+            isDevDependency: false,
+            [NuGetFramework.Parse("net35")],
+            new TestLogger());
+
+        Assert.False(result);
     }
 
     [Fact]
@@ -209,6 +280,36 @@ public class CompatibilityCheckerTests
 
         //assert
         Assert.True(isCompatible);
+    }
+
+    [Theory]
+    [InlineData("net10.0-windows", "net10.0", true)]
+    [InlineData("net10.0-windows7.0", "net10.0", true)]
+    [InlineData("net10.0-windows10.0.19041", "net10.0", true)]
+    [InlineData("net10.0-ios18.0", "net10.0", true)]
+    [InlineData("net10.0-windows10.0.19041", "net10.0-windows10.0.17763", true)]
+    [InlineData("net10.0-windows10.0.17763", "net10.0-windows10.0.19041", false)]
+    [InlineData("net10.0", "net10.0-windows", false)]
+    [InlineData("net10.0-windows", "net11.0", false)]
+    public async Task CheckAsync_PackageWithLibAssembly_ChecksPlatformCompatibility(
+        string projectTfm,
+        string packageTfm,
+        bool expectedCompatible)
+    {
+        using var tempDir = new TemporaryDirectory();
+        var package = MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", packageTfm);
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([package], tempDir.DirectoryPath, includeCommonPackages: false);
+        var packageId = new PackageIdentity(package.Id, NuGetVersion.Parse(package.Version));
+        using var context = new NuGetContext(tempDir.DirectoryPath, NuGet.Common.NullLogger.Instance);
+
+        var isCompatible = await CompatibilityChecker.CheckAsync(
+            packageId,
+            [NuGetFramework.Parse(projectTfm)],
+            context,
+            new TestLogger(),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(expectedCompatible, isCompatible);
     }
 
     [Fact]

@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve fixtures and matcher calls in class-scope generated examples.
+
 require "spec_helper"
 require "json"
 require "dependabot/dependency"
@@ -71,7 +73,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
     let(:action) { Dependabot::DependencyFile.new(name: "tools/setup/action.yml", content: "runs: {}\n") }
 
     it "materializes them at repo-relative paths under the named repo root" do
-      seen = nil
+      seen = T.let(nil, T.nilable([T::Boolean, String]))
       allow(Dependabot::CommandHelpers).to receive(:capture3_with_timeout) do |cmd|
         dir = cmd.last[:chdir]
         seen = [cmd.first["GH_ACTIONS_LOCK_REPO_ROOT"] == dir, File.read(File.join(dir, "tools/setup/action.yml"))]
@@ -193,7 +195,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
     it "maps resolver failures to a user-facing updater error" do
       engine.relock(workflow_files: [workflow], lockfile: lockfile)
     rescue Dependabot::GithubActions::Lockfile::UnresolvableDependency => e
-      expect(Dependabot.updater_error_details(e).error_type).to eq("dependency_file_not_resolvable")
+      expect(T.must(Dependabot.updater_error_details(e)).error_type).to eq("dependency_file_not_resolvable")
     end
   end
 
@@ -236,7 +238,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
         raise "expected an error"
       rescue Dependabot::GithubActions::Lockfile::UnresolvableDependency => e
         expect(e.message).to include("actions/setup-node@v4.0.0", "#{category} detail")
-        expect(Dependabot.updater_error_details(e).error_type).to eq("dependency_file_not_resolvable")
+        expect(T.must(Dependabot.updater_error_details(e)).error_type).to eq("dependency_file_not_resolvable")
       end
     end
   end

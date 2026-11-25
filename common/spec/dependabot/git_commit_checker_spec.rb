@@ -1072,20 +1072,48 @@ RSpec.describe Dependabot::GitCommitChecker do
       context "with version tags" do
         let(:upload_pack_fixture) { "business" }
 
-        its([:tag]) { is_expected.to eq("v1.13.0") }
+        its(:tag) { is_expected.to eq("v1.13.0") }
 
-        its([:commit_sha]) do
+        its(:commit_sha) do
           is_expected.to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104")
         end
 
-        its([:tag_sha]) do
+        its(:tag_sha) do
           is_expected.to eq("37f41032a0f191507903ebbae8a5c0cb945d7585")
+        end
+
+        context "when the version class rejects a tag that matches the version pattern" do
+          # Mirrors a tag such as `v1.2.2-python38`: VERSION_REGEX accepts it,
+          # but PEP 440 does not, so Python's version class raises on it.
+          let(:strict_version_class) do
+            Class.new(DummyPackageManager::Version) do
+              def self.correct?(version)
+                return false if remove_leading_v(version).to_s == "1.13.0"
+
+                super
+              end
+
+              def initialize(version)
+                if DummyPackageManager::Version.remove_leading_v(version).to_s == "1.13.0"
+                  raise Dependabot::BadRequirementError, "Malformed version string - #{version}"
+                end
+
+                super
+              end
+            end
+          end
+
+          before do
+            allow(dependency).to receive(:version_class).and_return(strict_version_class)
+          end
+
+          its(:tag) { is_expected.to eq("v1.11.1") }
         end
 
         context "when there is a pre-release latest version" do
           let(:upload_pack_fixture) { "k8s-apiextensions-apiserver" }
 
-          its([:tag]) { is_expected.to eq("kubernetes-1.11.2") }
+          its(:tag) { is_expected.to eq("kubernetes-1.11.2") }
 
           context "when using a pre-release" do
             let(:source) do
@@ -1097,7 +1125,7 @@ RSpec.describe Dependabot::GitCommitChecker do
               }
             end
 
-            its([:tag]) { is_expected.to eq("kubernetes-1.13.0-alpha.0") }
+            its(:tag) { is_expected.to eq("kubernetes-1.13.0-alpha.0") }
           end
         end
 
@@ -1122,7 +1150,7 @@ RSpec.describe Dependabot::GitCommitChecker do
               )
           end
 
-          its([:tag]) { is_expected.to eq("gatsby-transformer-sqip@2.0.40") }
+          its(:tag) { is_expected.to eq("gatsby-transformer-sqip@2.0.40") }
         end
 
         context "when raise_on_ignored is enabled and later versions are allowed" do
@@ -1136,7 +1164,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         context "when already on the latest version" do
           let(:version) { "1.13.0" }
 
-          its([:tag]) { is_expected.to eq("v1.13.0") }
+          its(:tag) { is_expected.to eq("v1.13.0") }
 
           context "when raise_on_ignored is enabled" do
             let(:raise_on_ignored) { true }
@@ -1151,7 +1179,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           let(:version) { "1.0.0" }
           let(:ignored_versions) { ["> 1.0.0"] }
 
-          its([:tag]) { is_expected.to eq("v1.0.0") }
+          its(:tag) { is_expected.to eq("v1.0.0") }
 
           context "when raise_on_ignored is enabled" do
             let(:raise_on_ignored) { true }
@@ -1165,13 +1193,13 @@ RSpec.describe Dependabot::GitCommitChecker do
         context "when an ignore condition is present" do
           let(:ignored_versions) { [">= 1.12.0"] }
 
-          its([:tag]) { is_expected.to eq("v1.11.1") }
+          its(:tag) { is_expected.to eq("v1.11.1") }
         end
 
         context "when there are multiple ignore conditions" do
           let(:ignored_versions) { [">= 1.11.2, < 1.12.0"] }
 
-          its([:tag]) { is_expected.to eq("v1.13.0") }
+          its(:tag) { is_expected.to eq("v1.13.0") }
         end
 
         context "when all versions are ignored" do
@@ -1200,7 +1228,7 @@ RSpec.describe Dependabot::GitCommitChecker do
             }
           end
 
-          its([:tag]) { is_expected.to eq("tags/v1.13.0") }
+          its(:tag) { is_expected.to eq("tags/v1.13.0") }
         end
       end
 
@@ -1219,7 +1247,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
 
         it "only considers tags with matching prefix (excludes date-based tags)" do
-          expect(local_tag_for_latest_version[:tag]).to eq("v1.14.2")
+          expect(local_tag_for_latest_version.tag).to eq("v1.14.2")
         end
       end
     end
@@ -1292,7 +1320,7 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       it "returns the latest version tag" do
-        expect(local_tag_for_pinned_version_ref[:tag]).to eq("v1.13.0")
+        expect(local_tag_for_pinned_version_ref.tag).to eq("v1.13.0")
       end
     end
 
@@ -1334,7 +1362,7 @@ RSpec.describe Dependabot::GitCommitChecker do
 
       it "returns the latest version tag without consulting release dates" do
         expect(checker).not_to receive(:refs_for_tag_with_detail)
-        expect(latest_tag[:tag]).to eq("v1.13.0")
+        expect(latest_tag.tag).to eq("v1.13.0")
       end
     end
 
@@ -1356,7 +1384,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
 
         it "skips the cooled-down tag and returns the next newest allowed tag" do
-          expect(latest_tag[:tag]).to eq("v1.11.1")
+          expect(latest_tag.tag).to eq("v1.11.1")
         end
       end
 
@@ -1381,7 +1409,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
 
         it "returns the latest version tag" do
-          expect(latest_tag[:tag]).to eq("v1.13.0")
+          expect(latest_tag.tag).to eq("v1.13.0")
         end
       end
 
@@ -1400,7 +1428,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
 
         it "prefers the release publish date over the tag creation date" do
-          expect(latest_tag[:tag]).to eq("v1.11.1")
+          expect(latest_tag.tag).to eq("v1.11.1")
         end
       end
 
@@ -1415,7 +1443,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
 
         it "ignores cooldown and returns the latest version tag" do
-          expect(latest_tag[:tag]).to eq("v1.13.0")
+          expect(latest_tag.tag).to eq("v1.13.0")
         end
       end
     end
@@ -1472,7 +1500,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         }
       end
 
-      it { is_expected.to match(latest_patch) }
+      it { is_expected.to have_attributes(latest_patch) }
     end
 
     context "with a version branch higher than the latest version tag, and pinned to the commit sha of a version tag" do
@@ -1497,7 +1525,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         }
       end
 
-      it { is_expected.to match(latest_patch) }
+      it { is_expected.to have_attributes(latest_patch) }
     end
 
     context "with tags for minor versions and branches for major versions" do
@@ -1515,7 +1543,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           }
         end
 
-        it { is_expected.to match(latest_major_branch) }
+        it { is_expected.to have_attributes(latest_major_branch) }
       end
 
       context "when pinned to a minor" do
@@ -1530,7 +1558,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           }
         end
 
-        it { is_expected.to match(latest_minor_tag) }
+        it { is_expected.to have_attributes(latest_minor_tag) }
       end
 
       context "when pinned to a patch" do
@@ -1607,7 +1635,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         )
       end
 
-      it { is_expected.to match(latest_compact_calver) }
+      it { is_expected.to have_attributes(latest_compact_calver) }
     end
   end
 
@@ -1662,7 +1690,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         }
       end
 
-      it { is_expected.to match(latest_patch) }
+      it { is_expected.to have_attributes(latest_patch) }
     end
 
     context "with a version branch higher than the latest version tag, and pinned to the commit sha of a version tag" do
@@ -1687,7 +1715,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         }
       end
 
-      it { is_expected.to match(latest_patch) }
+      it { is_expected.to have_attributes(latest_patch) }
     end
 
     context "with tags for minor versions and branches for major versions" do
@@ -1705,7 +1733,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           }
         end
 
-        it { is_expected.to match(latest_major_branch) }
+        it { is_expected.to have_attributes(latest_major_branch) }
       end
 
       context "when pinned to a minor" do
@@ -1720,7 +1748,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           }
         end
 
-        it { is_expected.to match(latest_minor_tag) }
+        it { is_expected.to have_attributes(latest_minor_tag) }
       end
 
       context "when pinned to a patch" do
@@ -1735,7 +1763,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           }
         end
 
-        it { is_expected.to match(latest_minor_tag) }
+        it { is_expected.to have_attributes(latest_minor_tag) }
       end
     end
   end

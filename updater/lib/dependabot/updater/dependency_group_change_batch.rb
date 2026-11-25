@@ -51,6 +51,8 @@ module Dependabot
         directory = Pathname.new(job.source.directory).cleanpath.to_s
 
         files = @dependency_file_batch.filter_map do |_path, data|
+          next if data.file.deleted?
+
           data.file if (data.initially_exists || data.changed) &&
                        Pathname.new(data.file.directory).cleanpath.to_s == directory
         end

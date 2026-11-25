@@ -306,7 +306,9 @@ module Dependabot
                              .gsub(/^.*\$\{.*\}.*/) { |line| line.match?(POLICY_KEY) ? line : "" }
                              .strip.gsub(/^timeout.*/, "").strip + "\n"
 
-          return initial_content unless yarn_lock || package_lock
+          # A replaces-base registry must apply regardless of lockfile type (e.g. pnpm-lock.yaml),
+          # otherwise the package manager falls back to registry.npmjs.org
+          return initial_content unless yarn_lock || package_lock || registry_credentials.any?(&:replaces_base?)
           return initial_content unless global_registry
 
           registry = T.must(global_registry)["registry"]

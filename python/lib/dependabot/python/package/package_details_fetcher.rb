@@ -77,11 +77,29 @@ module Dependabot
 
           Dependabot::Package::PackageDetails.new(
             dependency: dependency,
-            releases: package_releases.reverse
+            releases: with_shared_release_dates(package_releases).reverse
           )
         end
 
         private
+
+        # An undated copy of a version (e.g. from a PEP 503 HTML-only index) would otherwise bypass cooldown.
+        sig do
+          params(releases: T::Array[Dependabot::Package::PackageRelease])
+            .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def with_shared_release_dates(releases)
+          # Keyed by string: Python::Version#hash ignores pre/post/dev/local, so 2.0.0rc1 and 2.0.0 collide.
+          earliest = releases.each_with_object(T.let({}, T::Hash[String, Time])) do |release, dates|
+            released_at = release.released_at
+            next unless released_at
+
+            known = dates[release.version.to_s]
+            dates[release.version.to_s] = released_at if known.nil? || released_at < known
+          end
+
+          releases.each { |release| release.released_at ||= earliest[release.version.to_s] }
+        end
 
         sig do
           params(index_url: String)

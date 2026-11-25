@@ -4,12 +4,12 @@
 require "sorbet-runtime"
 
 require "dependabot/api_client"
+require "dependabot/error_report_context"
 require "dependabot/errors"
 require "dependabot/service"
 require "dependabot/logger"
 require "dependabot/logger/formats"
 require "dependabot/environment"
-require "dependabot/sentry/error_fingerprint"
 
 module Dependabot
   class RunFailure < StandardError; end
@@ -68,20 +68,19 @@ module Dependabot
 
     sig { params(err: StandardError).void }
     def handle_unknown_error(err)
-      fingerprint = if err.respond_to?(:sentry_context)
-                      T.cast(
-                        err,
-                        Dependabot::HasSentryContext
-                      ).sentry_context[:fingerprint]
-                    else
-                      Dependabot::Sentry::ErrorFingerprint.for(error: err, package_manager: job.package_manager)
-                    end
+      fingerprint = (if err.respond_to?(:sentry_context)
+                       T.cast(
+                         err,
+                         Dependabot::HasSentryContext
+                       ).sentry_context[:fingerprint]
+                     end)
 
       error_details = {
         ErrorAttributes::CLASS => err.class.to_s,
         ErrorAttributes::MESSAGE => err.message,
         ErrorAttributes::BACKTRACE => err.backtrace&.join("\n"),
         ErrorAttributes::FINGERPRINT => fingerprint,
+        ErrorAttributes::CONTEXT => ErrorReportContext.build(error: err),
         ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
         ErrorAttributes::JOB_ID => job.id,
         ErrorAttributes::DEPENDENCIES => job.dependencies,

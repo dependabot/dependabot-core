@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 
 require "dependabot/credential"
+require "dependabot/error_report_context"
 require "dependabot/notices"
 
 module Dependabot
@@ -87,6 +88,21 @@ module Dependabot
         updated_file = file.dup
         updated_file.content = content
         updated_file
+      end
+
+      # Builds the error raised when an update unexpectedly changes no files, with the
+      # dependency and file names attached as `error-context` to help debug it.
+      sig { params(message: String, context: T::Hash[Symbol, T.anything]).returns(RuntimeError) }
+      def no_files_changed_error(message, context = {})
+        error = RuntimeError.new(message)
+        Dependabot::ErrorReportContext.attach(
+          error,
+          {
+            dependency_names: dependencies.map(&:name),
+            dependency_files: dependency_files.map(&:name)
+          }.merge(context)
+        )
+        error
       end
     end
   end

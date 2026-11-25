@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only newline fixture or class-scope generated examples.
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
@@ -95,6 +97,19 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
     end
 
     its(:length) { is_expected.to eq(1) }
+
+    context "when no dependency file has a changed requirement" do
+      let(:files) { [Dependabot::DependencyFile.new(content: workflow_file_body, name: ".github/workflows/other.yml")] }
+
+      it "raises with error report context attached" do
+        expect { updated_files }.to raise_error(RuntimeError, "No files changed!") do |error|
+          expect(Dependabot::ErrorReportContext.build(error: error)).to eq(
+            "dependency-names" => ["actions/setup-node"],
+            "dependency-files" => [".github/workflows/other.yml"]
+          )
+        end
+      end
+    end
 
     describe "the updated workflow file" do
       subject(:updated_workflow_file) do
@@ -496,7 +511,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
               dependency_files: [lf_file],
               dependencies: [dependency],
               credentials: credentials
-            ).updated_dependency_files.first.content
+            ).updated_dependency_files.fetch(0).content
 
             expect(updated_workflow_file.content.gsub("\r\n", "\n")).to eq(lf_content)
           end
@@ -1034,7 +1049,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
               dependency_files: [lf_file],
               dependencies: [dependency],
               credentials: credentials
-            ).updated_dependency_files.first.content
+            ).updated_dependency_files.fetch(0).content
 
             expect(updated_workflow_file.content.gsub("\r\n", "\n")).to eq(lf_content)
           end
@@ -1246,7 +1261,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
             dependencies: [second_dependency],
             credentials: credentials
           )
-          second_content = T.must(second_updater.updated_dependency_files.first.content)
+          second_content = T.must(second_updater.updated_dependency_files.fetch(0).content)
 
           expect(second_content).to include(
             "{ uses: *checkout }, # v2.2.0"
@@ -1338,7 +1353,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
             dependencies: [second_dependency],
             credentials: credentials
           )
-          second_content = T.must(second_updater.updated_dependency_files.first.content)
+          second_content = T.must(second_updater.updated_dependency_files.fetch(0).content)
 
           expect(second_content).to include(
             "{ uses: actions/checkout@#{checkout_sha} }, # v2.2.0"
@@ -1456,7 +1471,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
             dependencies: [second_dependency],
             credentials: credentials
           )
-          second_content = T.must(second_updater.updated_dependency_files.first.content)
+          second_content = T.must(second_updater.updated_dependency_files.fetch(0).content)
 
           expect(second_content).to include(
             "{ uses: actions/setup-node@#{setup_node_sha} }, # keep this note"
@@ -1801,7 +1816,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
             dependencies: [second_dependency],
             credentials: credentials
           )
-          second_content = T.must(second_updater.updated_dependency_files.first.content)
+          second_content = T.must(second_updater.updated_dependency_files.fetch(0).content)
 
           expect(second_content).to include("actions/checkout@#{checkout_sha} } # v2.2.0")
           expect(second_content).to include("actions/setup-node@#{setup_node_sha} } # v3.1.0")

@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve fixtures and matchers in class-scope generated examples.
+
 require "spec_helper"
 require "dependabot/credential"
 require "dependabot/dependency_file"
@@ -46,7 +48,7 @@ RSpec.describe Dependabot::Composer::Package::PackageDetailsFetcher do
       released_at: Time.parse("2025-05-13T15:08:45+00:00"),
       yanked: false,
       url: "https://api.github.com/repos/illuminate/support/zipball/e7789d3fd90493d076318df934a92d687e4bc340",
-      package_type: described_class::PACKAGE_TYPE,
+      package_type: Dependabot::Composer::Package::PackageDetailsFetcher::PACKAGE_TYPE,
       language: Dependabot::Package::PackageLanguage.new(
         name: "php",
         version: nil

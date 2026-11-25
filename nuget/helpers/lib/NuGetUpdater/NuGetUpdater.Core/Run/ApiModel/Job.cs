@@ -3,8 +3,6 @@ using System.IO.Enumeration;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-using Microsoft.Extensions.FileSystemGlobbing;
-
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Analyze;
@@ -143,9 +141,10 @@ public sealed record Job
 
     public Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingPullRequestForDependencies(
         IEnumerable<ReportedDependencyWithDirectory> dependencies,
-        bool considerVersions)
+        bool considerVersions,
+        bool treatEmptyDirectoryAsWildcard = false)
     {
-        return GetExistingPullRequestForDependencies(dependencies, considerVersions, dependencyGroupName: null, matchGroupName: false);
+        return GetExistingPullRequestForDependencies(dependencies, considerVersions, dependencyGroupName: null, matchGroupName: false, treatEmptyDirectoryAsWildcard);
     }
 
     public Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingGroupPullRequestForDependencies(
@@ -153,14 +152,15 @@ public sealed record Job
         bool considerVersions,
         string dependencyGroupName)
     {
-        return GetExistingPullRequestForDependencies(dependencies, considerVersions, dependencyGroupName, matchGroupName: true);
+        return GetExistingPullRequestForDependencies(dependencies, considerVersions, dependencyGroupName, matchGroupName: true, treatEmptyDirectoryAsWildcard: false);
     }
 
     private Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingPullRequestForDependencies(
         IEnumerable<ReportedDependencyWithDirectory> dependencies,
         bool considerVersions,
         string? dependencyGroupName,
-        bool matchGroupName)
+        bool matchGroupName,
+        bool treatEmptyDirectoryAsWildcard)
     {
         var desiredDependencies = dependencies.ToArray();
         if (desiredDependencies.Any(d => d.Version is null))
@@ -179,6 +179,7 @@ public sealed record Job
         {
             return NamesAndVersionsMatch(desiredDependency, existingDependency) &&
                 (existingDependency.Directory is null ||
+                    (treatEmptyDirectoryAsWildcard && existingDependency.Directory.Length == 0) ||
                     desiredDependency.Directory.Equals(existingDependency.Directory, StringComparison.Ordinal));
         }
 
@@ -224,15 +225,9 @@ public sealed record Job
         bool IsAllowed(AllowedUpdate allowedUpdate)
         {
             // check name restriction, if any
-            if (allowedUpdate.DependencyName is not null)
+            if (!allowedUpdate.MatchesDependencyName(dependency.Name))
             {
-                var matcher = new Matcher(StringComparison.OrdinalIgnoreCase)
-                    .AddInclude(allowedUpdate.DependencyName);
-                var result = matcher.Match(dependency.Name);
-                if (!result.HasMatches)
-                {
-                    return false;
-                }
+                return false;
             }
 
             var isSecurityUpdate = allowedUpdate.UpdateType == UpdateType.Security || SecurityUpdatesOnly;

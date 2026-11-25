@@ -24,6 +24,7 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
       require_relative "file_parser/maven_dependency_parser"
       require_relative "file_parser/property_value_finder"
+      require_relative "file_parser/transitive_override_finder"
       require_relative "file_parser/wrapper_mojo"
 
       # The following "dependencies" are candidates for updating:
@@ -36,10 +37,18 @@ module Dependabot
                             "extensions > extension, " \
                             "annotationProcessorPaths > path"
       PLUGIN_SELECTOR     = "plugins > plugin"
-      EXTENSION_SELECTOR  = "extensions > extension"
+      # `<dependencies>` under these elements don't declare a project dependency.
+      NON_DECLARING_SECTIONS = %w(dependencyManagement plugin).freeze
+      EXTENSION_SELECTOR = "extensions > extension"
       TARGET_SELECTOR = "target > locations > location[type='Maven'] > dependencies > dependency"
       PLUGIN_ARTIFACT_ITEMS_SELECTOR = "plugins > plugin > executions > execution > " \
                                        "configuration > artifactItems > artifactItem"
+      # Annotation processor paths and plugin artifact items can take their version
+      # from `<dependencyManagement>`, so they count as declarations too.
+      DECLARATION_SELECTOR = T.let(
+        "dependencies > dependency, annotationProcessorPaths > path, #{PLUGIN_ARTIFACT_ITEMS_SELECTOR}".freeze,
+        String
+      )
 
       # Regex to get the property name from a declaration that uses a property
       PROPERTY_REGEX = /\$\{(?<property>.*?)\}/
@@ -285,10 +294,83 @@ module Dependabot
             source: nil,
             metadata: {
               packaging_type: packaging_type(pom, dependency_node),
-              classifier: dependency_classifier(dependency_node, pom)
+              classifier: dependency_classifier(dependency_node, pom),
+              transitive_override: transitive_override?(pom, dependency_node, is_plugin: is_plugin) || nil
             }.merge(property_details).compact
           }]
         )
+      end
+
+      # A `<dependencyManagement>` entry (not a BOM import) for an artifact that nothing in its
+      # POM lineage declares only sets a transitive version. Tagged with the experiment on, so
+      # the update checker can leave it alone outside security updates.
+      sig do
+        params(
+          pom: Dependabot::DependencyFile,
+          dependency_node: Nokogiri::XML::Element,
+          is_plugin: T::Boolean
+        ).returns(T::Boolean)
+      end
+      def transitive_override?(pom, dependency_node, is_plugin:)
+        return false if is_plugin
+        return false unless Dependabot::Experiments.enabled?(:maven_transitive_dependencies)
+        return false unless dependency_management_node?(dependency_node)
+        return false if dependency_scope(pom, dependency_node) == "import"
+
+        key = management_key(dependency_node, pom)
+        !key.nil? && transitive_override_finder.override?(pom: pom, key: key)
+      end
+
+      sig { params(node: Nokogiri::XML::Node).returns(T::Boolean) }
+      def dependency_management_node?(node)
+        node.name == "dependency" && node.ancestors.any? { |a| a.name == "dependencyManagement" }
+      end
+
+      sig { returns(TransitiveOverrideFinder) }
+      def transitive_override_finder
+        @transitive_override_finder ||= T.let(
+          TransitiveOverrideFinder.new(
+            pomfiles: pomfiles,
+            declared_keys_by_pom: declared_keys_by_pom,
+            property_value_finder: property_value_finder
+          ),
+          T.nilable(TransitiveOverrideFinder)
+        )
+      end
+
+      # Management keys of the artifacts each POM declares in a `<dependencies>`
+      # section, as an annotation processor path or as a plugin artifact item,
+      # excluding `<dependencyManagement>` entries and plugin dependencies.
+      sig { returns(T::Hash[String, T::Set[String]]) }
+      def declared_keys_by_pom
+        pomfiles.to_h do |pom|
+          doc = Nokogiri::XML(pom.content)
+          doc.remove_namespaces!
+          keys = doc.css(DECLARATION_SELECTOR).each_with_object(Set.new) do |node, set|
+            next if node.name == "dependency" && node.ancestors.any? { |a| NON_DECLARING_SECTIONS.include?(a.name) }
+
+            key = declared_key(node, pom)
+            set << key if key
+          end
+          [pom.name, keys]
+        end
+      end
+
+      sig { params(node: Nokogiri::XML::Element, pom: Dependabot::DependencyFile).returns(T.nilable(String)) }
+      def declared_key(node, pom)
+        management_key(node, pom)
+      rescue DependencyFileNotEvaluatable
+        nil
+      end
+
+      # Maven matches a declaration to a `<dependencyManagement>` entry by groupId, artifactId,
+      # type and classifier, so a `test-jar` or classified declaration doesn't use the plain jar entry.
+      sig { params(node: Nokogiri::XML::Element, pom: Dependabot::DependencyFile).returns(T.nilable(String)) }
+      def management_key(node, pom)
+        name = dependency_name(node, pom)
+        return unless name
+
+        [name, packaging_type(pom, node), dependency_classifier(node, pom).to_s].join(":")
       end
 
       sig do

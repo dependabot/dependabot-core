@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/dependency"
+require "dependabot/error_report_context"
 require "dependabot/python/requirement_parser"
 require "dependabot/python/file_updater"
 require "dependabot/shared_helpers"
@@ -26,7 +27,8 @@ module Dependabot
             old_requirement: T.nilable(String),
             new_requirement: T.nilable(String),
             new_hash_version: T.nilable(String),
-            index_urls: T.nilable(T::Array[T.nilable(String)])
+            index_urls: T.nilable(T::Array[T.nilable(String)]),
+            dependency_file_name: T.nilable(String)
           ).void
         end
         def initialize(
@@ -35,7 +37,8 @@ module Dependabot
           old_requirement:,
           new_requirement:,
           new_hash_version: nil,
-          index_urls: nil
+          index_urls: nil,
+          dependency_file_name: nil
         )
           @content = content
           @dependency_name = T.let(normalise(dependency_name), String)
@@ -43,6 +46,7 @@ module Dependabot
           @new_requirement = new_requirement
           @new_hash_version = new_hash_version
           @index_urls = index_urls
+          @dependency_file_name = dependency_file_name
         end
 
         sig { returns(String) }
@@ -56,7 +60,9 @@ module Dependabot
               updated_matched_declaration(mtch)
             end
 
-          raise "Expected content to change!" if old_requirement != new_requirement && content == updated_content
+          if old_requirement != new_requirement && content == updated_content
+            raise replacement_error("Expected content to change!")
+          end
 
           updated_content
         end
@@ -77,6 +83,26 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         attr_reader :new_hash_version
+
+        sig { returns(T.nilable(String)) }
+        attr_reader :dependency_file_name
+
+        # Attaches the file and requirements being replaced, which the replacer's
+        # own error messages don't include, to help debug them from Sentry.
+        sig { params(message: String).returns(RuntimeError) }
+        def replacement_error(message)
+          error = RuntimeError.new(message)
+          Dependabot::ErrorReportContext.attach(
+            error,
+            {
+              dependency_file: dependency_file_name,
+              dependency_name: dependency_name,
+              old_requirement: old_requirement,
+              new_requirement: new_requirement
+            }
+          )
+          error
+        end
 
         sig { returns(T::Boolean) }
         def update_hashes?
@@ -150,7 +176,10 @@ module Dependabot
           after_escaped = Regexp.escape(after_name_extras)
           # Match the dependency name with any extras (or none), followed by the requirement.
           # This ensures a single gsub handles all extras variants of the same dependency.
-          /(?<![\-\w\.\[])#{name_escaped}\s*\\?\s*(?:\[[^\]]*\])?\s*\\?\s*#{after_escaped}(?![\-\w\.])/
+          # The requirement must end where the declaration's own specifiers end: ">=2.7.0" is the start of
+          # ">=2.7.0,<3.0.0" and ">=2.7.0,!=2.9.0; sys_platform == 'win32'", which are other declarations.
+          /(?<![\-\w\.\[])#{name_escaped}\s*\\?\s*(?:\[[^\]]*\])?\s*\\?\s*
+           #{after_escaped}(?![\-\w\.]|\s*,\s*\\?\s*[<>=!~])/x
         end
 
         sig { params(requirement: T.nilable(String)).returns(T::Boolean) }
@@ -235,7 +264,7 @@ module Dependabot
                 .find { |m| requirements_match(m[:requirements], old_req) }
             end
 
-          raise "Declaration not found for #{dependency_name}!" unless dec
+          raise replacement_error("Declaration not found for #{dependency_name}!") unless dec
 
           dec.to_s.strip
         end

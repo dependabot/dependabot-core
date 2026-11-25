@@ -1,12 +1,11 @@
 # typed: strong
 # frozen_string_literal: true
 
-require "pathname"
 require "sorbet-runtime"
 
 require "dependabot/dependency_file"
 require "dependabot/dependency_graphers/base"
-require "dependabot/python/shared_file_fetcher"
+require "dependabot/python/requirement_references"
 
 module Dependabot
   module Python
@@ -55,27 +54,6 @@ module Dependabot
             path.match?(REQUIRE_TXT_REGEX) ||
             path.match?(DEPENDENCIES_TXT_REGEX) ||
             path.match?(DEPEND_TXT_REGEX)
-        end
-
-        # Resolves the sibling paths a requirements file references via `-r`/`-c`, returning repo-relative
-        # cleanpaths (matching fetched DependencyFile names). Single home for reference resolution, shared by the
-        # grapher's bystander filter and the layering group builder so reference-syntax handling never drifts.
-        #
-        # Reuses SharedFileFetcher's reference regexes so callers keep exactly the children the file fetcher pulled in.
-        sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
-        def self.referenced_paths(file)
-          content = file.content
-          return [] if content.nil?
-
-          current_dir = File.dirname(file.name)
-          referenced =
-            content.scan(Dependabot::Python::SharedFileFetcher::CHILD_REQUIREMENT_REGEX).flatten +
-            content.scan(Dependabot::Python::SharedFileFetcher::CONSTRAINT_REGEX).flatten
-
-          referenced.map do |path|
-            resolved = current_dir == "." ? path : File.join(current_dir, path)
-            Pathname.new(resolved).cleanpath.to_path
-          end
         end
 
         sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
@@ -169,7 +147,7 @@ module Dependabot
 
           until queue.empty?
             current = T.must(queue.shift)
-            self.class.referenced_paths(current).each do |path|
+            RequirementReferences.paths(current).each do |path|
               next if seen.include?(path)
 
               seen << path

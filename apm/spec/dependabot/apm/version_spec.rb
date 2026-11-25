@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only ref fixture used by the parent subject.
+
 require "spec_helper"
 require "dependabot/apm/version"
 
@@ -189,7 +191,7 @@ RSpec.describe Dependabot::Apm::Version do
         1.0.0
       ).map { |v| described_class.new(v) }
 
-      expect(ordered.each_cons(2).all? { |a, b| a < b }).to be(true)
+      expect(ordered.each_cons(2).all? { |a, b| T.must(a) < T.must(b) }).to be(true)
     end
   end
 end

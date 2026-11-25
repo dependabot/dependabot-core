@@ -134,6 +134,36 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
     end
 
+    context "when the update produces no changes" do
+      {
+        "npm8/simple" => [described_class::NpmNoChangeError, "npm"],
+        "yarn/simple" => [described_class::YarnNoChangeError, "yarn"],
+        "pnpm/simple" => [described_class::PnpmNoChangeError, "pnpm"]
+      }.each do |fixture, (error_class, package_manager)|
+        context "with #{package_manager}" do
+          let(:files) { project_dependency_files(fixture) }
+
+          it "raises a #{package_manager}-specific NoChangeError when no files are updated" do
+            allow(updater).to receive_messages(updated_manifest_files: [], updated_lockfiles: [])
+
+            expect { updated_files }.to raise_error(
+              error_class,
+              "No files were updated! Package manager: #{package_manager}"
+            )
+          end
+
+          it "raises a #{package_manager}-specific NoChangeError when updated files are unchanged" do
+            allow(updater).to receive_messages(updated_manifest_files: files, updated_lockfiles: [])
+
+            expect { updated_files }.to raise_error(
+              error_class,
+              "Updated files are unchanged! Package manager: #{package_manager}"
+            )
+          end
+        end
+      end
+    end
+
     context "with multiple dependencies" do
       let(:files) { project_dependency_files("npm6_and_yarn/multiple_updates") }
 
@@ -1973,7 +2003,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
           it "doesn't update any files and raises with npm package manager" do
             expect { updated_files }.to raise_error(
-              described_class::NoChangeError,
+              described_class::NpmNoChangeError,
               /No files were updated! Package manager: npm/
             )
           end
@@ -3032,6 +3062,71 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             "package.json",
             "yarn.lock"
           )
+        end
+
+        context "when cacheFolder is configured" do
+          let(:files) do
+            project_dependency_files(project_name).tap do |dependency_files|
+              yarnrc_yml = dependency_files.find { |file| file.name == ".yarnrc.yml" }
+              T.must(yarnrc_yml).content = "nodeLinker: node-modules\ncacheFolder: .custom-cache\n"
+            end
+          end
+
+          before do
+            custom_cache_dir = File.join(repo_contents_path, ".custom-cache")
+            FileUtils.mkdir_p(custom_cache_dir)
+            FileUtils.cp_r(Dir.glob(File.join(repo_contents_path, ".yarn/cache/*")), custom_cache_dir)
+          end
+
+          it "updates the configured cache folder" do
+            expect(updated_files.map(&:name))
+              .to include(".custom-cache/fetch-factory-npm-0.0.2-816f8766e1-200ddd8ae3.zip")
+          end
+        end
+
+        context "when cacheFolder contains spaces" do
+          let(:files) do
+            project_dependency_files(project_name).tap do |dependency_files|
+              yarnrc_yml = dependency_files.find { |file| file.name == ".yarnrc.yml" }
+              T.must(yarnrc_yml).content = "nodeLinker: node-modules\ncacheFolder: \".custom cache\"\n"
+            end
+          end
+
+          before do
+            custom_cache_dir = File.join(repo_contents_path, ".custom cache")
+            FileUtils.mkdir_p(custom_cache_dir)
+            FileUtils.cp_r(Dir.glob(File.join(repo_contents_path, ".yarn/cache/*")), custom_cache_dir)
+          end
+
+          it "updates the configured cache folder" do
+            expect(updated_files.map(&:name))
+              .to include(".custom cache/fetch-factory-npm-0.0.2-816f8766e1-200ddd8ae3.zip")
+          end
+        end
+      end
+
+      describe "with installStatePath containing spaces" do
+        let(:project_name) { "yarn_berry/simple_nopnp" }
+        let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+        let(:files) do
+          project_dependency_files(project_name) + [
+            Dependabot::DependencyFile.new(
+              name: ".yarnrc.yml",
+              content: "installStatePath: \".yarn/custom state.gz\"\n"
+            )
+          ]
+        end
+
+        before do
+          Dir.chdir(repo_contents_path) do
+            File.open(".gitignore", "a") { |f| f.puts("\n!.yarn/custom state.gz") }
+            Dependabot::SharedHelpers.run_shell_command("git commit -am allow-custom-install-state")
+          end
+        end
+
+        it "includes the configured install state file" do
+          expect(updated_files.map(&:name))
+            .to contain_exactly("package.json", "yarn.lock", ".yarn/custom state.gz")
         end
       end
 

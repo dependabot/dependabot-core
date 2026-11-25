@@ -3,6 +3,7 @@
 
 require "dependabot/shared_helpers"
 require "dependabot/python/file_parser"
+require "dependabot/python/subprocess_error_context"
 require "json"
 require "sorbet-runtime"
 
@@ -17,16 +18,25 @@ module Dependabot
           lockfile: T.nilable(Dependabot::DependencyFile),
           language_version_manager: LanguageVersionManager,
           dependency_files: T.nilable(T::Array[Dependabot::DependencyFile]),
-          repo_contents_path: T.nilable(String)
+          repo_contents_path: T.nilable(String),
+          credentials: T::Array[Dependabot::Credential]
         )
           .void
       end
-      def initialize(dependency:, lockfile:, language_version_manager:, dependency_files: nil, repo_contents_path: nil)
+      def initialize(
+        dependency:,
+        lockfile:,
+        language_version_manager:,
+        dependency_files: nil,
+        repo_contents_path: nil,
+        credentials: []
+      )
         @dependency = dependency
         @lockfile = lockfile
         @language_version_manager = language_version_manager
         @dependency_files = dependency_files
         @repo_contents_path = repo_contents_path
+        @credentials = credentials
       end
 
       sig { params(constraint: T.nilable(String)).returns(String) }
@@ -91,6 +101,9 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       attr_reader :repo_contents_path
 
+      sig { returns(T::Array[Dependabot::Credential]) }
+      attr_reader :credentials
+
       sig { returns(Dependabot::Dependency) }
       def current_dependency
         T.must(dependency)
@@ -149,6 +162,14 @@ module Dependabot
       sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
       def run_command(command, fingerprint: nil)
         SharedHelpers.run_shell_command(command, env: pipenv_env_variables, fingerprint: fingerprint)
+      rescue SharedHelpers::HelperSubprocessFailed => e
+        SubprocessErrorContext.attach(
+          e,
+          command: command,
+          dependency_files: dependency_files || [lockfile].compact,
+          credentials: credentials
+        )
+        raise
       end
 
       sig { returns(T.nilable(String)) }
@@ -156,17 +177,25 @@ module Dependabot
         if current_dependency.requirements.any?
           T.must(T.must(current_dependency.requirements.first).groups).first&.to_s
         else
-          parsed_lockfile = JSON.parse(T.must(T.must(lockfile).content))
-          Python::FileParser::DEPENDENCY_GROUP_KEYS.each do |keys|
-            section = keys.fetch(:lockfile)
-            section_data = parsed_lockfile_section(parsed_lockfile, section)
-            next unless section_data
-
-            return section if section_data.key?(dependency_name)
-          end
-
-          nil
+          transitive_lockfile_section
         end
+      end
+
+      sig { returns(T.nilable(String)) }
+      def transitive_lockfile_section
+        parsed_lockfile = JSON.parse(T.must(T.must(lockfile).content))
+        sections = Python::FileParser::DEPENDENCY_GROUP_KEYS.filter_map do |keys|
+          section = keys.fetch(:lockfile)
+          section_data = parsed_lockfile_section(parsed_lockfile, section)
+          next unless section_data
+
+          section if section_data.key?(dependency_name)
+        end
+
+        original_version = current_dependency.previous_version || current_dependency.version
+        sections.find do |section|
+          parsed_lockfile.dig(section, dependency_name, "version")&.gsub(/^===?/, "") == original_version
+        end || sections.first
       end
 
       sig do

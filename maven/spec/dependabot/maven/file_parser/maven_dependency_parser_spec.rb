@@ -630,7 +630,7 @@ RSpec.describe Dependabot::Maven::FileParser::MavenDependencyParser do
 
       # The file updater matches groups against the XML node's scope, e.g. a versioned
       # dependencyManagement entry (no scope) used as test scope in <dependencies>.
-      it "keeps the XML requirement, file and groups and adds what the scan resolved" do
+      it "keeps the XML requirement, file, groups and classifier and adds what the scan resolved" do
         expect(merged).to eq(
           [{
             requirement: "${guava.version}",
@@ -638,11 +638,24 @@ RSpec.describe Dependabot::Maven::FileParser::MavenDependencyParser do
             groups: [],
             source: nil,
             metadata: {
-              packaging_type: "jar", classifier: "jdk8", scope: "test",
+              packaging_type: "jar", classifier: nil, scope: "test",
               pom_file: "pom.xml", property_name: "guava.version"
             }
           }]
         )
+      end
+    end
+
+    context "with a declared requirement that omits an unset classifier" do
+      let(:requirements) do
+        [
+          requirement(requirement: "9.6", file: "pom.xml", metadata: { packaging_type: "jar" }),
+          requirement(requirement: "9.6", metadata: { classifier: "linux", pom_file: "pom.xml" })
+        ]
+      end
+
+      it "doesn't take the scanned classifier" do
+        expect(merged.first[:metadata]).to eq(packaging_type: "jar", pom_file: "pom.xml")
       end
     end
 

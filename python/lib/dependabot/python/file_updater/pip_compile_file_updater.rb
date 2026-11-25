@@ -334,7 +334,8 @@ module Dependabot
             dependency_name: T.must(dependency).name,
             old_requirement: old_req.requirement_string,
             new_requirement: "==#{T.must(dependency).version}",
-            index_urls: @index_urls
+            index_urls: @index_urls,
+            dependency_file_name: file.name
           ).updated_content
         end
 
@@ -354,7 +355,8 @@ module Dependabot
             dependency_name: T.must(dependency).name,
             old_requirement: old_req.requirement_string,
             new_requirement: T.must(T.must(new_req).requirement_string),
-            index_urls: @index_urls
+            index_urls: @index_urls,
+            dependency_file_name: file.name
           ).updated_content
         end
 

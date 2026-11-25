@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only rubygems_response fixture.
+
 require "octokit"
 require "spec_helper"
 require "dependabot/credential"

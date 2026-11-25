@@ -1,24 +1,33 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/bazel/file_fetcher/bzl_file_fetcher"
 
 RSpec.describe Dependabot::Bazel::FileFetcher::BzlFileFetcher do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Dependabot::Bazel::FileFetcher) }
   let(:fetcher) { instance_double(Dependabot::Bazel::FileFetcher) }
+  sig { returns(Dependabot::DependencyFile) }
   let(:module_file) do
     Dependabot::DependencyFile.new(
       name: "MODULE.bazel",
       content: module_content
     )
   end
+  sig { returns(String) }
   let(:module_content) { "" }
+  sig { returns(Dependabot::Bazel::FileFetcher::BzlFileFetcher) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:bzl_file_fetcher) do
     described_class.new(module_file: module_file, fetcher: fetcher)
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#fetch_bzl_files" do
     context "with use_extension pointing to a .bzl file" do
+      sig { returns(String) }
       let(:module_content) do
         <<~BAZEL
           bazel_dep(name = "rules_cc", version = "0.1.1")
@@ -39,6 +48,7 @@ RSpec.describe Dependabot::Bazel::FileFetcher::BzlFileFetcher do
     end
 
     context "with use_repo_rule pointing to a .bzl file" do
+      sig { returns(String) }
       let(:module_content) do
         <<~BAZEL
           use_repo_rule("//build:repo_rules.bzl", "my_rule")
@@ -58,6 +68,7 @@ RSpec.describe Dependabot::Bazel::FileFetcher::BzlFileFetcher do
     end
 
     context "with external repo references" do
+      sig { returns(String) }
       let(:module_content) do
         <<~BAZEL
           my_ext = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
@@ -71,6 +82,7 @@ RSpec.describe Dependabot::Bazel::FileFetcher::BzlFileFetcher do
     end
 
     context "with recursive .bzl dependencies via load()" do
+      sig { returns(String) }
       let(:module_content) do
         <<~BAZEL
           my_ext = use_extension("//tools:extensions.bzl", "my_ext")
@@ -95,6 +107,7 @@ RSpec.describe Dependabot::Bazel::FileFetcher::BzlFileFetcher do
     end
 
     context "with circular .bzl dependencies" do
+      sig { returns(String) }
       let(:module_content) do
         <<~BAZEL
           my_ext = use_extension("//a:first.bzl", "ext")
@@ -119,6 +132,7 @@ RSpec.describe Dependabot::Bazel::FileFetcher::BzlFileFetcher do
     end
 
     context "when a .bzl file cannot be fetched" do
+      sig { returns(String) }
       let(:module_content) do
         <<~BAZEL
           my_ext = use_extension("//tools:missing.bzl", "ext")
@@ -136,6 +150,7 @@ RSpec.describe Dependabot::Bazel::FileFetcher::BzlFileFetcher do
 
   describe "extract_bzl_load_dependencies (via fetch_bzl_files)" do
     context "with load() statements" do
+      sig { returns(String) }
       let(:module_content) do
         <<~BAZEL
           my_ext = use_extension("//tools:defs.bzl", "ext")
@@ -163,6 +178,7 @@ RSpec.describe Dependabot::Bazel::FileFetcher::BzlFileFetcher do
     end
 
     context "with Label() references" do
+      sig { returns(String) }
       let(:module_content) do
         <<~BAZEL
           my_ext = use_extension("//java/kotlin-extractor:deps.bzl", "ext")
@@ -190,6 +206,7 @@ RSpec.describe Dependabot::Bazel::FileFetcher::BzlFileFetcher do
     end
 
     context "with external repo load() statements" do
+      sig { returns(String) }
       let(:module_content) do
         <<~BAZEL
           my_ext = use_extension("//tools:defs.bzl", "ext")
@@ -212,6 +229,7 @@ RSpec.describe Dependabot::Bazel::FileFetcher::BzlFileFetcher do
 
   describe "extract_bzl_file_paths" do
     context "with use_extension referencing non-.bzl paths" do
+      sig { returns(String) }
       let(:module_content) do
         <<~BAZEL
           my_ext = use_extension("//tools:extensions.bzl", "ext")

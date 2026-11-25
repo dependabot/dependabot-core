@@ -15,6 +15,11 @@ module Dependabot
       class PipfileLockDocument
         extend T::Sig
 
+        class PreservedMetadata < T::ImmutableStruct
+          const :requires, Object
+          const :sources, Object
+        end
+
         sig { params(file: Dependabot::DependencyFile).returns(PipfileLockDocument) }
         def self.from_file(file)
           new(data: T.cast(JSON.parse(T.must(file.content)), Object), context: file.path)
@@ -52,7 +57,45 @@ module Dependabot
           PipfileDocument::Entry.new(name: name, value: value, context: "#{@context} #{group} entry").lookup_version
         end
 
+        sig { params(group: String).returns(T::Array[String]) }
+        def dependency_names(group)
+          value = @data[group]
+          value.nil? ? [] : object_value(value, group).keys
+        end
+
+        sig { returns(PreservedMetadata) }
+        def preserved_metadata
+          fields = metadata
+          PreservedMetadata.new(requires: fields["requires"], sources: fields["sources"])
+        end
+
+        sig { params(metadata: PreservedMetadata, checksum: String).returns(String) }
+        def restored_content(metadata:, checksum:)
+          fields = self.metadata
+          hash = object_value(fields["hash"], "_meta.hash")
+          hash["sha256"] = checksum
+          fields["hash"] = hash
+          fields["requires"] = metadata.requires
+          fields["sources"] = metadata.sources
+
+          JSON.pretty_generate(@data.merge("_meta" => fields), indent: "    ")
+              .gsub(/\{\n\s*\}/, "{}")
+              .gsub(/\}\z/, "}\n")
+        end
+
         private
+
+        sig { returns(PyprojectValueParser::ObjectHash) }
+        def metadata
+          object_value(@data["_meta"], "_meta")
+        end
+
+        sig { params(value: Object, field: String).returns(PyprojectValueParser::ObjectHash) }
+        def object_value(value, field)
+          PyprojectValueParser.object_hash(value, "#{@context} #{field}")
+        rescue TypeError => e
+          raise Dependabot::DependencyFileNotParseable.new(@context, e.message)
+        end
 
         sig { params(group: String).returns(T.nilable(PyprojectValueParser::ObjectHash)) }
         def section(group)

@@ -1,6 +1,7 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "rspec"
 require "webmock/rspec"
 require "webmock/http_lib_adapters/excon_adapter"
@@ -15,10 +16,14 @@ require_relative "dependabot/shared_examples"
 # image's package cache).
 ENV["DEPENDABOT_SKIP_REGISTRY_UPDATE"] = "1"
 
+extend T::Sig # rubocop:disable Style/MixinUsage
+
+sig { returns(String) }
 def common_dir
-  @common_dir ||= Gem::Specification.find_by_name("dependabot-common").gem_dir
+  @common_dir ||= T.let(Gem::Specification.find_by_name("dependabot-common").gem_dir, T.nilable(String))
 end
 
+sig { params(path: String).returns(T::Boolean) }
 def require_common_spec(path)
   require "#{common_dir}/spec/dependabot/#{path}"
 end
@@ -36,10 +41,4 @@ RSpec.configure do |config|
     # NOTE: Julia's registry is locally cached and accessed via Pkg through DependabotHelper.jl.
     # Tests use real registry calls for integration tests and mocks for unit tests as appropriate.
   end
-end
-
-def fixture(*args)
-  File.read(
-    File.join("spec", "fixtures", *args)
-  )
 end

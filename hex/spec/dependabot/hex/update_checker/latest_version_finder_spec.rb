@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -6,8 +6,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/hex/update_checker/latest_version_finder"
 
-namespace = Dependabot::Hex::UpdateChecker
-RSpec.describe namespace::LatestVersionFinder do
+RSpec.describe Dependabot::Hex::UpdateChecker::LatestVersionFinder do
   before do
     stub_request(:get, hex_url).to_return(status: 200, body: hex_response)
   end

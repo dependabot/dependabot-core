@@ -162,7 +162,7 @@ module Dependabot
             req.merge(
               source: source_with_values(
                 req,
-                "ref" => T.cast(new_tag[:tag], String),
+                "ref" => new_tag.tag,
                 "branch" => nil
               )
             )
@@ -172,23 +172,15 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def fetch_latest_version_for_tag
-        tag = latest_version_tag
-        tag && tag_commit_sha(tag)
+        latest_version_tag&.commit_sha
       end
 
-      sig { returns(T.nilable(T::Hash[Symbol, Object])) }
+      sig { returns(T.nilable(Dependabot::GitTagDetails)) }
       def latest_version_tag
         @latest_version_tag ||= T.let(
           git_commit_checker.local_tag_for_latest_version(update_cooldown),
-          T.nilable(T::Hash[Symbol, Object])
+          T.nilable(Dependabot::GitTagDetails)
         )
-      end
-
-      sig { params(tag: T::Hash[Symbol, Object]).returns(T.nilable(String)) }
-      def tag_commit_sha(tag)
-        return tag.commit_sha if tag.is_a?(Dependabot::GitTagDetails)
-
-        T.cast(tag[:commit_sha], T.nilable(String))
       end
 
       # --- Versioned branch support ---

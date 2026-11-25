@@ -408,7 +408,8 @@ module Dependabot
             content: T.must(file.content),
             dependency_name: dependency.name,
             old_requirement: req.requirement_string,
-            new_requirement: updated_req
+            new_requirement: updated_req,
+            dependency_file_name: file.name
           ).updated_content
         end
 

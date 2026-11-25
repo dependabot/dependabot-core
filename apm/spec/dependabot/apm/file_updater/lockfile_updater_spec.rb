@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only apm_output fixture used by the parent hook.
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
@@ -45,7 +47,7 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
   context "when apm lock succeeds" do
     before do
       allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("lock") do
-        File.write("apm.lock.yaml", "lockfile_version: '1'\n# #{File.read('apm.yml').lines.last.strip}\n")
+        File.write("apm.lock.yaml", "lockfile_version: '1'\n# #{File.read('apm.yml').lines.fetch(-1).strip}\n")
         ""
       end
     end

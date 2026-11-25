@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only hex_response fixture.
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/hex/metadata_finder"

@@ -41,6 +41,8 @@ module Dependabot
     TOP_LEVEL_DEPENDENCY_TYPES = %w(direct production development).freeze
     # Default cooldown period (in days) applied when `default-days` is not configured.
     DEFAULT_COOLDOWN_DAYS = 3
+    # dependabot-api's runner type for a job on a self-hosted GitHub Actions runner
+    RUNNER_TYPE_SELF_HOSTED = "actions_self_hosted"
     PERMITTED_KEYS = %i(
       allowed_updates
       command
@@ -68,6 +70,7 @@ module Dependabot
       repo_private
       multi_ecosystem_update
       blocked_versions
+      runner_type
     ).freeze
 
     sig { returns(T::Array[Dependabot::Job::AllowedUpdate]) }
@@ -129,6 +132,11 @@ module Dependabot
 
     sig { returns(T::Array[Dependabot::Job::BlockedVersion]) }
     attr_reader :blocked_versions
+
+    # `actions` or `actions_self_hosted`, or nil when dependabot-api doesn't send it (older versions, including older
+    # GHES releases)
+    sig { returns(T.nilable(String)) }
+    attr_reader :runner_type
 
     sig { params(blocked_versions: T::Array[T::Hash[String, Object]]).void }
     def blocked_versions=(blocked_versions)
@@ -249,6 +257,7 @@ module Dependabot
       @dependency_group_to_refresh = T.let(definition.dependency_group_to_refresh, T.nilable(String))
       @repo_private = T.let(definition.repo_private, T.nilable(T::Boolean))
       @blocked_versions = T.let(definition.blocked_versions, T::Array[BlockedVersion])
+      @runner_type = T.let(definition.runner_type, T.nilable(String))
 
       @update_config = T.let(calculate_update_config, Dependabot::Config::UpdateConfig)
 
@@ -279,6 +288,12 @@ module Dependabot
     sig { returns(T.nilable(T::Boolean)) }
     def repo_private?
       @repo_private
+    end
+
+    # A self-hosted runner runs in the customer's network, which the customer controls
+    sig { returns(T::Boolean) }
+    def self_hosted_runner?
+      runner_type == RUNNER_TYPE_SELF_HOSTED
     end
 
     sig { returns(T.nilable(String)) }

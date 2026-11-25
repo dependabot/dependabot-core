@@ -92,7 +92,10 @@ defmodule DependencyHelper do
       |> URI.merge("/repos/#{organization}")
       |> to_string()
 
-    update_repos("hexpm:#{organization}", %{url: url, public_key: nil, auth_key: token})
+    update_repos(
+      "hexpm:#{organization}",
+      %{url: url, public_key: nil, auth_key: token, oauth_exchange: false}
+    )
 
     set_credentials(tail)
   end

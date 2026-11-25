@@ -1,12 +1,19 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
+require "spec_helper"
 require "dependabot/helm/package/package_details_fetcher"
 require "excon"
 
 RSpec.describe Dependabot::Helm::Package::PackageDetailsFetcher do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(String) }
   let(:repo_name) { "prometheus-community" }
+  sig { returns(String) }
   let(:url) { "https://api.github.com/repos/#{repo_name}/helm-charts/releases" }
+  sig { returns(Dependabot::Dependency) }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "prometheus-community",
@@ -16,19 +23,22 @@ RSpec.describe Dependabot::Helm::Package::PackageDetailsFetcher do
     )
   end
 
+  sig { returns(T::Array[Dependabot::Credential]) }
   let(:credentials) do
     [
       Dependabot::Credential.new(
-        type: "git_source",
-        host: "github.com",
-        username: "test-user",
-        password: "test-password"
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "test-user",
+        "password" => "test-password"
       )
     ]
   end
+  sig { returns(Dependabot::Helm::Package::PackageDetailsFetcher) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:fetcher) do
     described_class.new(dependency: dependency, credentials: credentials)
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#fetch_tag_and_release_date_from_chart" do
     context "when the API call fails" do
@@ -49,6 +59,7 @@ RSpec.describe Dependabot::Helm::Package::PackageDetailsFetcher do
   end
 
   describe "#parse_github_response" do
+    sig { returns(Excon::Response) }
     let(:response) do
       Excon::Response.new(
         status: 200,
@@ -60,8 +71,8 @@ RSpec.describe Dependabot::Helm::Package::PackageDetailsFetcher do
 
     it "parses the response and returns GitTagWithDetail objects" do
       result = fetcher.parse_github_response(response)
-      expect(result.first.tag).to eq("v2.0.0")
-      expect(result.first.release_date).to eq("2024-01-01T00:00:00Z")
+      expect(result.fetch(0).tag).to eq("v2.0.0")
+      expect(result.fetch(0).release_date).to eq("2024-01-01T00:00:00Z")
     end
 
     it "returns an empty array for invalid JSON" do
@@ -71,8 +82,12 @@ RSpec.describe Dependabot::Helm::Package::PackageDetailsFetcher do
   end
 
   describe "#fetch_tag_and_release_date_helm_chart_index" do
+    # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+    sig { returns(String) }
     let(:index_url) { "https://repo.broadcom.com/bitnami-files/index.yaml" }
+    sig { returns(String) }
     let(:chart_name) { "mongodb" }
+    sig { returns(String) }
     let(:yaml_body) do
       {
         "entries" => {
@@ -83,6 +98,7 @@ RSpec.describe Dependabot::Helm::Package::PackageDetailsFetcher do
         }
       }.to_yaml
     end
+    # rubocop:enable RSpec/ScatteredLet
 
     before do
       allow(Excon).to receive(:get).and_return(Excon::Response.new(status: 200, body: yaml_body))

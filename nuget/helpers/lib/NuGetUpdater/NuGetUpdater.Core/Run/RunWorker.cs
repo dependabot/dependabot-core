@@ -210,6 +210,28 @@ public class RunWorker
             .SelectMany(c => c.UpdateTypes ?? [])
             .ToHashSet();
 
+        if (!job.SecurityUpdatesOnly)
+        {
+            var matchingAllowRules = job.AllowedUpdates
+                .Where(a => a.MatchesDependencyName(dependency.Name))
+                .Where(a => a.DependencyType switch
+                {
+                    ApiModel.DependencyType.All => true,
+                    ApiModel.DependencyType.Indirect => !dependency.IsTopLevel,
+                    // NuGet reports dependencies as production.
+                    ApiModel.DependencyType.Development => false,
+                    _ => dependency.IsTopLevel,
+                })
+                .ToArray();
+            // a matching rule with null or empty update types permits everything, matching the Ruby updater's behavior
+            if (matchingAllowRules.Length > 0 && matchingAllowRules.All(a => a.UpdateTypes is { Length: > 0 }))
+            {
+                // the guard above ensures every UpdateTypes is non-null
+                var allowedUpdateTypes = matchingAllowRules.SelectMany(a => a.UpdateTypes!).ToHashSet();
+                ignoredUpdateTypes.UnionWith(Enum.GetValues<ConditionUpdateType>().Except(allowedUpdateTypes));
+            }
+        }
+
         // if an update type isn't explicitly allowed by a group matcher, add it to the ignored set
         foreach (var groupMatcher in groupMatchers)
         {

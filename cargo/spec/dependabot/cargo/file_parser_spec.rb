@@ -562,6 +562,45 @@ RSpec.describe Dependabot::Cargo::FileParser do
             index: "sparse+https://private.example.com/index/"
           )
         end
+
+        context "when the registry config request is forbidden" do
+          before do
+            stub_request(:get, "https://private.example.com/index/config.json")
+              .to_return(status: 403, body: "Forbidden")
+          end
+
+          it "raises a PrivateSourceAuthenticationFailure for the registry" do
+            expect { dependencies }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+              expect(error.source).to eq("https://private.example.com/index/")
+            end
+          end
+        end
+
+        context "when the registry config request fails" do
+          before do
+            stub_request(:get, "https://private.example.com/index/config.json")
+              .to_return(status: 502, body: "")
+          end
+
+          it "raises a PrivateSourceBadResponse for the registry" do
+            expect { dependencies }.to raise_error(Dependabot::PrivateSourceBadResponse)
+          end
+        end
+
+        context "when the registry config is not valid JSON" do
+          before do
+            stub_request(:get, "https://private.example.com/index/config.json")
+              .to_return(status: 200, body: "<html>login</html>")
+          end
+
+          it "attaches only the registry host to the parse error" do
+            expect { dependencies }.to raise_error(JSON::ParserError) do |error|
+              context = T.must(Dependabot::ErrorReportContext.build(error: error))
+              expect(context).to include("host" => "private.example.com", "http-status" => 200)
+              expect(context.values.join).not_to include("config.json")
+            end
+          end
+        end
       end
 
       context "when the input is unparseable" do

@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -10,6 +10,10 @@ require "dependabot/helm/helpers"
 require "dependabot/shared_helpers"
 
 RSpec.describe Dependabot::Helm::FileUpdater::LockFileGenerator do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Dependabot::Helm::FileUpdater::LockFileGenerator) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:generator) do
     described_class.new(
       dependencies: dependencies,
@@ -19,6 +23,7 @@ RSpec.describe Dependabot::Helm::FileUpdater::LockFileGenerator do
     )
   end
 
+  sig { returns(T::Array[Dependabot::Dependency]) }
   let(:dependencies) do
     [
       Dependabot::Dependency.new(
@@ -44,6 +49,7 @@ RSpec.describe Dependabot::Helm::FileUpdater::LockFileGenerator do
     ]
   end
 
+  sig { returns(T::Array[Dependabot::DependencyFile]) }
   let(:dependency_files) do
     [
       Dependabot::DependencyFile.new(
@@ -59,6 +65,7 @@ RSpec.describe Dependabot::Helm::FileUpdater::LockFileGenerator do
     ]
   end
 
+  sig { returns(String) }
   let(:chart_yaml_content) do
     <<~YAML
       apiVersion: v2
@@ -73,6 +80,7 @@ RSpec.describe Dependabot::Helm::FileUpdater::LockFileGenerator do
     YAML
   end
 
+  sig { returns(String) }
   let(:chart_lock_content) do
     <<~YAML
       dependencies:
@@ -84,6 +92,7 @@ RSpec.describe Dependabot::Helm::FileUpdater::LockFileGenerator do
     YAML
   end
 
+  sig { returns(String) }
   let(:updated_chart_yaml_content) do
     <<~YAML
       apiVersion: v2
@@ -98,6 +107,7 @@ RSpec.describe Dependabot::Helm::FileUpdater::LockFileGenerator do
     YAML
   end
 
+  sig { returns(String) }
   let(:updated_chart_lock_content) do
     <<~YAML
       dependencies:
@@ -109,10 +119,14 @@ RSpec.describe Dependabot::Helm::FileUpdater::LockFileGenerator do
     YAML
   end
 
+  sig { returns(String) }
   let(:repo_contents_path) { "/tmp/dependabot/repo" }
+  sig { returns(T::Array[Dependabot::Credential]) }
   let(:credentials) { [] }
 
-  let(:chart_lock) { dependency_files.find { |f| f.name == "Chart.lock" } }
+  sig { returns(Dependabot::DependencyFile) }
+  let(:chart_lock) { T.must(dependency_files.find { |f| f.name == "Chart.lock" }) }
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#updated_chart_lock" do
     before do
@@ -150,6 +164,7 @@ RSpec.describe Dependabot::Helm::FileUpdater::LockFileGenerator do
     end
 
     context "with a different directory" do
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       let(:dependency_files) do
         [
           Dependabot::DependencyFile.new(
@@ -175,6 +190,7 @@ RSpec.describe Dependabot::Helm::FileUpdater::LockFileGenerator do
     end
 
     context "with credentials" do
+      sig { returns(T::Array[Dependabot::Credential]) }
       let(:credentials) do
         [
           Dependabot::Credential.new(

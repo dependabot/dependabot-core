@@ -5,6 +5,7 @@ require "open3"
 require "dependabot/dependency"
 require "dependabot/python/requirement_parser"
 require "dependabot/python/file_parser/python_requirement_parser"
+require "dependabot/python/file_parser/pipfile_lock_document"
 require "dependabot/python/file_updater"
 require "dependabot/python/language_version_manager"
 require "dependabot/shared_helpers"
@@ -60,10 +61,10 @@ module Dependabot
           @requirements_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
           @updated_dependency_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
           @updated_pipfile_content = T.let(nil, T.nilable(String))
-          @parsed_lockfile = T.let(nil, T.nilable(T::Hash[String, T::Hash[String, Object]]))
+          @parsed_lockfile = T.let(nil, T.nilable(FileParser::PipfileLockDocument))
           @pipenv_runner = T.let(nil, T.nilable(PipenvRunner))
           @language_version_manager = T.let(nil, T.nilable(LanguageVersionManager))
-          @sanitized_setup_file_content = T.let({}, T.untyped)
+          @sanitized_setup_file_content = T.let({}, T::Hash[String, String])
           @python_requirement_parser = T.let(nil, T.nilable(FileParser::PythonRequirementParser))
         end
 
@@ -128,7 +129,7 @@ module Dependabot
         def generated_requirements_files(type)
           return [] unless lockfile
 
-          pipfile_lock_deps = parsed_lockfile[type]&.keys&.sort || []
+          pipfile_lock_deps = parsed_lockfile.dependency_names(type).sort
           return [] unless pipfile_lock_deps.any?
 
           regex = RequirementParser::INSTALL_REQ_WITH_REQUIREMENT
@@ -208,7 +209,10 @@ module Dependabot
 
         sig { returns(T::Hash[Symbol, String]) }
         def updated_generated_files
-          @updated_generated_files ||=
+          return @updated_generated_files if @updated_generated_files
+
+          metadata = parsed_lockfile.preserved_metadata
+          @updated_generated_files =
             SharedHelpers.in_a_temporary_repo_directory(T.must(dependency_files.first).directory, repo_contents_path) do
               SharedHelpers.with_git_configured(credentials: credentials) do
                 write_temporary_dependency_files(prepared_pipfile_content)
@@ -217,7 +221,7 @@ module Dependabot
                 pipenv_runner&.run_upgrade("==#{dependency&.version}")
 
                 result = { lockfile: File.read("Pipfile.lock") }
-                result[:lockfile] = post_process_lockfile(result[:lockfile])
+                result[:lockfile] = post_process_lockfile(result[:lockfile], metadata: metadata)
 
                 # Generate updated requirement.txt entries, if needed.
                 if generate_updated_requirements_files?
@@ -232,21 +236,18 @@ module Dependabot
             end
         end
 
-        sig { params(updated_lockfile_content: String).returns(String) }
-        def post_process_lockfile(updated_lockfile_content)
-          pipfile_hash = pipfile_hash_for(updated_pipfile_content.to_s)
-          original_reqs = T.must(parsed_lockfile["_meta"])["requires"]
-          original_source = T.must(parsed_lockfile["_meta"])["sources"]
-
-          new_lockfile = updated_lockfile_content.dup
-          new_lockfile_json = JSON.parse(new_lockfile)
-          new_lockfile_json["_meta"]["hash"]["sha256"] = pipfile_hash
-          new_lockfile_json["_meta"]["requires"] = original_reqs
-          new_lockfile_json["_meta"]["sources"] = original_source
-
-          JSON.pretty_generate(new_lockfile_json, indent: "    ")
-              .gsub(/\{\n\s*\}/, "{}")
-              .gsub(/\}\z/, "}\n")
+        sig do
+          params(
+            updated_lockfile_content: String,
+            metadata: FileParser::PipfileLockDocument::PreservedMetadata
+          ).returns(String)
+        end
+        def post_process_lockfile(updated_lockfile_content, metadata:)
+          file = updated_file(file: T.must(lockfile), content: updated_lockfile_content)
+          FileParser::PipfileLockDocument.from_file(file).restored_content(
+            metadata: metadata,
+            checksum: pipfile_hash_for(updated_pipfile_content.to_s)
+          )
         end
 
         sig { returns(Integer) }
@@ -313,8 +314,8 @@ module Dependabot
 
         sig { params(file: Dependabot::DependencyFile).returns(String) }
         def sanitized_setup_file_content(file)
-          @sanitized_setup_file_content ||= {}
-          return @sanitized_setup_file_content[file.name] if @sanitized_setup_file_content[file.name]
+          cached = @sanitized_setup_file_content[file.name]
+          return cached if cached
 
           @sanitized_setup_file_content[file.name] =
             SetupFileSanitizer
@@ -329,35 +330,21 @@ module Dependabot
           end
         end
 
-        sig do
-          params(
-            pipfile_content: String
-          ).returns(
-            T.nilable(
-              T.any(
-                T::Hash[String, T.untyped],
-                String,
-                T::Array[T::Hash[String, T.untyped]]
-              )
-            )
-          )
-        end
+        sig { params(pipfile_content: String).returns(String) }
         def pipfile_hash_for(pipfile_content)
           SharedHelpers.in_a_temporary_directory do |dir|
             File.write(File.join(dir, "Pipfile"), pipfile_content)
-            T.cast(
-              SharedHelpers.run_helper_subprocess(
-                command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
-                function: "get_pipfile_hash",
-                args: [T.cast(dir, Pathname).to_s]
-              ),
-              T.nilable(
-                T.any(
-                  T::Hash[String, T.untyped],
-                  String,
-                  T::Array[T::Hash[String, T.untyped]]
-                )
-              )
+            result = SharedHelpers.run_helper_subprocess(
+              command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
+              function: "get_pipfile_hash",
+              args: [dir.to_s]
+            )
+            next result if result.is_a?(String)
+
+            raise SharedHelpers::HelperSubprocessFailed.new(
+              message: "get_pipfile_hash result must be a string",
+              error_class: "TypeError",
+              error_context: { function: "get_pipfile_hash" }
             )
           end
         end
@@ -381,7 +368,7 @@ module Dependabot
         def language_version_manager
           @language_version_manager ||=
             LanguageVersionManager.new(
-              python_requirement_parser: python_requirement_parser
+              python_requirement_parser: python_requirement_parser, highest_for_major_version: true
             )
         end
 
@@ -391,13 +378,15 @@ module Dependabot
             PipenvRunner.new(
               dependency: T.must(dependency),
               lockfile: lockfile,
-              language_version_manager: language_version_manager
+              language_version_manager: language_version_manager,
+              dependency_files: dependency_files,
+              credentials: credentials
             )
         end
 
-        sig { returns(T::Hash[String, T::Hash[String, T.untyped]]) }
+        sig { returns(FileParser::PipfileLockDocument) }
         def parsed_lockfile
-          @parsed_lockfile ||= JSON.parse(T.must(lockfile&.content))
+          @parsed_lockfile ||= FileParser::PipfileLockDocument.from_file(T.must(lockfile))
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }

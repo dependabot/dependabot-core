@@ -187,12 +187,40 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
       it "reports unhandled dependencies that failed to update" do
         expect(mock_error_handler).to receive(:handle_dependency_error)
           .with(
-            error: kind_of(Dependabot::DependabotError),
+            error: an_object_having_attributes(
+              class: Dependabot::DependabotError,
+              message: "Security update failed for #{failed_dependency.name} #{failed_dependency.version}",
+              backtrace: a_collection_including(a_kind_of(String))
+            ),
             dependency: failed_dependency,
             dependency_group: dependency_group
           )
 
         perform
+      end
+
+      it "attaches the failure's context to the error report" do
+        allow(job).to receive(:security_advisories).and_return(
+          [
+            Dependabot::Job::SecurityAdvisoryEntry.new(
+              dependency_name: failed_dependency.name.upcase,
+              affected_versions: ["< 2.0.0"],
+              patched_versions: ["2.0.0"]
+            )
+          ]
+        )
+        reported_error = nil
+        allow(mock_error_handler).to receive(:handle_dependency_error) { |error:, **| reported_error = error }
+
+        perform
+
+        expect(Dependabot::ErrorReportContext.build(error: reported_error)).to eq(
+          "security-update-skip-reasons" => ["not-attempted"],
+          "security-update-directories" => ["/"],
+          "advisory-count" => 1,
+          "advisory-has-patched-version" => true,
+          "group-updated-dependency-count" => 1
+        )
       end
     end
 
@@ -294,6 +322,123 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
         },
         dependency: nil
       )
+      expect(mock_service).to receive(:create_pull_request)
+
+      perform
+    end
+
+    context "when the group's update-types rules reject the dependency" do
+      let(:dependency_group) do
+        Dependabot::DependencyGroup.new(
+          name: "security",
+          rules: { "patterns" => ["*"], "update-types" => ["patch"] }
+        ).tap { |group| group.dependencies.push(dependency) }
+      end
+
+      before do
+        allow(stub_update_checker).to receive_messages(latest_version: "9.0.0", up_to_date?: false)
+      end
+
+      it "reports a diagnosed failure instead of deferring when no update is possible" do
+        expect(mock_error_handler).not_to receive(:handle_dependency_error)
+        expect(mock_service).to receive(:record_update_job_error)
+          .with(hash_including(error_type: "security_update_not_possible"))
+
+        perform
+      end
+
+      it "reports a concrete failure diagnosed in another directory once after all directories" do
+        allow(job.source).to receive(:directories).and_return(%w(/ /))
+        # The first directory can update (deferred); the second cannot (diagnosed).
+        allow(stub_update_checker).to receive(:can_update?).and_return(true, false)
+        expect(mock_error_handler).not_to receive(:handle_dependency_error)
+        expect(mock_service).to receive(:record_update_job_error)
+          .with(hash_including(error_type: "security_update_not_possible")).once
+
+        perform
+      end
+
+      it "leaves it to an individual update instead of reporting an unknown error" do
+        allow(stub_update_checker).to receive(:can_update?).and_return(true)
+        expect(mock_error_handler).not_to receive(:handle_dependency_error)
+        expect(mock_service).not_to receive(:record_update_job_error)
+        expect(mock_service).not_to receive(:create_pull_request)
+
+        perform
+      end
+
+      context "when the job's advisories do not cover the installed version" do
+        before do
+          allow(stub_update_checker).to receive(:vulnerable?).and_return(false)
+        end
+
+        it "reports that no security update is needed when no update is possible" do
+          expect(mock_error_handler).not_to receive(:handle_dependency_error)
+          expect(mock_service).to receive(:record_update_job_error)
+            .with(error_type: "security_update_not_needed", error_details: { "dependency-name": dependency.name })
+
+          perform
+        end
+
+        it "keeps the unknown error when the job has no advisory for the dependency" do
+          # Without an advisory the job cannot tell whether the version is affected, so "not needed" would hide it.
+          allow(job).to receive(:security_advisories_for).and_return([])
+          expect(mock_error_handler).to receive(:handle_dependency_error)
+            .with(error: kind_of(Dependabot::DependabotError), dependency: dependency, dependency_group: anything)
+          expect(mock_service).not_to receive(:record_update_job_error)
+
+          perform
+        end
+
+        it "reports why the update failed with the unknown error" do
+          allow(job).to receive(:security_advisories_for).and_return([])
+          reported_error = nil
+          allow(mock_error_handler).to receive(:handle_dependency_error) { |error:, **| reported_error = error }
+
+          perform
+
+          expect(Dependabot::ErrorReportContext.build(error: reported_error)).to include(
+            "security-update-skip-reasons" => ["/: update-types-rejected"],
+            "security-update-directories" => ["/"],
+            "advisory-count" => 0,
+            "advisory-has-patched-version" => false,
+            "lowest-security-fix-version" => "2.0.0",
+            "group-updated-dependency-count" => 0
+          )
+        end
+
+        context "when the installed version is a git SHA" do
+          let(:dependency) do
+            dependency_snapshot.all_dependencies.find { |candidate| candidate.name == "dummy-git-dependency" }
+          end
+
+          it "keeps the unknown error, since the version cannot be checked against the advisories" do
+            expect(dependency.version).to eq("20151f9b67c8a04461fa0ee28385b6187b86587b")
+            expect(mock_error_handler).to receive(:handle_dependency_error)
+              .with(error: kind_of(Dependabot::DependabotError), dependency: dependency, dependency_group: anything)
+            expect(mock_service).not_to receive(:record_update_job_error)
+
+            perform
+          end
+        end
+
+        it "reports that no security update is needed when the dependency is up to date" do
+          allow(stub_update_checker).to receive(:up_to_date?).and_return(true)
+          expect(mock_error_handler).not_to receive(:handle_dependency_error)
+          expect(mock_service).to receive(:record_update_job_error)
+            .with(error_type: "security_update_not_needed", error_details: { "dependency-name": dependency.name })
+
+          perform
+        end
+      end
+    end
+
+    it "reports that no security update is needed when all versions are ignored and none is vulnerable" do
+      allow(stub_update_checker).to receive(:vulnerable?).and_return(false)
+      allow(stub_update_checker).to receive(:lowest_security_fix_version).and_raise(Dependabot::AllVersionsIgnored)
+      expect(mock_error_handler).not_to receive(:handle_dependency_error)
+      expect(mock_service).to receive(:record_update_job_error)
+        .with(error_type: "security_update_not_needed", error_details: { "dependency-name": dependency.name })
       expect(mock_service).to receive(:create_pull_request)
 
       perform

@@ -50,6 +50,12 @@ module Dependabot
         end
       end
 
+      sig { params(type: String).returns(T.nilable(T::Array[String])) }
+      def dependency_names(type)
+        value = @data[type]
+        object_hash(value, type).keys if value
+      end
+
       sig { returns(T.nilable(String)) }
       def name
         value = @data["name"]

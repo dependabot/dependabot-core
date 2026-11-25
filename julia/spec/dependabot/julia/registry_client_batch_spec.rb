@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -6,6 +6,9 @@ require "dependabot/julia/registry_client"
 require "dependabot/dependency"
 
 RSpec.describe Dependabot::Julia::RegistryClient do
+  extend T::Sig
+
+  sig { returns(T::Array[Dependabot::Credential]) }
   let(:credentials) { [] }
   let(:custom_registries) { [] }
   let(:client) do

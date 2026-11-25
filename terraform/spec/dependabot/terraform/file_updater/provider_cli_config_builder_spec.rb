@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -8,14 +8,18 @@ require "dependabot/dependency_file"
 require "dependabot/terraform/file_updater/provider_cli_config_builder"
 
 RSpec.describe Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder do
+  extend T::Sig
+
   # Builds a JSON string matching the hcl2json output format for a
   # terraform required_providers block.
+  sig { params(providers: T::Hash[String, Object]).returns(String) }
   def providers_json(providers)
     JSON.generate(
       "terraform" => [{ "required_providers" => [providers] }]
     )
   end
 
+  sig { returns(Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   subject(:builder) do
     described_class.new(
       dependency: dependency,
@@ -23,6 +27,8 @@ RSpec.describe Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder do
     )
   end
 
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Dependabot::Dependency) }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "hashicorp/aws",
@@ -44,6 +50,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder do
     )
   end
 
+  sig { returns(Dependabot::DependencyRequirement::Source) }
   let(:source) do
     {
       type: "provider",
@@ -52,7 +59,9 @@ RSpec.describe Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder do
     }
   end
 
+  sig { returns(T::Array[Dependabot::DependencyFile]) }
   let(:terraform_files) { [] }
+  # rubocop:enable RSpec/ScatteredLet
 
   # Stub the hcl2json binary — the external boundary. parse_hcl_file writes
   # file.content to tmp.tf then runs hcl2json, so we set file content to
@@ -70,6 +79,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder do
 
   describe "#env" do
     context "when the dependency is a git source (not a provider)" do
+      sig { returns(Dependabot::Dependency) }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "origin_label",
@@ -105,6 +115,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder do
     end
 
     context "when no terraform files are provided" do
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       let(:terraform_files) { [] }
 
       it "returns an empty hash" do
@@ -113,6 +124,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder do
     end
 
     context "when the only provider in the file is the target provider" do
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       let(:terraform_files) do
         [
           Dependabot::DependencyFile.new(
@@ -130,6 +142,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder do
     end
 
     context "when there are non-target providers" do
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       let(:terraform_files) do
         [
           Dependabot::DependencyFile.new(
@@ -151,7 +164,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder do
       end
 
       it "generates config with dev_overrides for the non-target provider only" do
-        config_path = builder.env["TF_CLI_CONFIG_FILE"]
+        config_path = builder.env.fetch("TF_CLI_CONFIG_FILE")
         config_content = File.read(config_path)
 
         expect(config_content).to include("registry.terraform.io/acme-corp/nonexistent")
@@ -159,7 +172,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder do
       end
 
       it "generates valid terraform CLI config structure" do
-        config_path = builder.env["TF_CLI_CONFIG_FILE"]
+        config_path = builder.env.fetch("TF_CLI_CONFIG_FILE")
         config_content = File.read(config_path)
 
         expect(config_content).to include("provider_installation {")
@@ -168,6 +181,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder do
       end
 
       context "when the target requirement source uses string keys" do
+        sig { returns(Dependabot::DependencyRequirement::Source) }
         let(:source) do
           {
             "type" => "provider",
@@ -186,6 +200,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder do
     end
 
     context "when providers span multiple files" do
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       let(:terraform_files) do
         [
           Dependabot::DependencyFile.new(
@@ -206,7 +221,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder do
       after { builder.cleanup }
 
       it "collects providers from all files" do
-        config_path = builder.env["TF_CLI_CONFIG_FILE"]
+        config_path = builder.env.fetch("TF_CLI_CONFIG_FILE")
         config_content = File.read(config_path)
 
         expect(config_content).to include("registry.terraform.io/hashicorp/azurerm")
@@ -215,6 +230,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder do
     end
 
     context "with a provider using a two-part source address" do
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       let(:terraform_files) do
         [
           Dependabot::DependencyFile.new(
@@ -230,13 +246,14 @@ RSpec.describe Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder do
       after { builder.cleanup }
 
       it "prepends the default registry hostname" do
-        config_content = File.read(builder.env["TF_CLI_CONFIG_FILE"])
+        config_content = File.read(builder.env.fetch("TF_CLI_CONFIG_FILE"))
 
         expect(config_content).to include("registry.terraform.io/datadog/datadog")
       end
     end
 
     context "with a provider using a three-part source address (custom registry)" do
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       let(:terraform_files) do
         [
           Dependabot::DependencyFile.new(
@@ -252,13 +269,14 @@ RSpec.describe Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder do
       after { builder.cleanup }
 
       it "uses the source address as-is" do
-        config_content = File.read(builder.env["TF_CLI_CONFIG_FILE"])
+        config_content = File.read(builder.env.fetch("TF_CLI_CONFIG_FILE"))
 
         expect(config_content).to include("custom.registry.io/org/custom")
       end
     end
 
     context "with a provider that has no explicit source" do
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       let(:terraform_files) do
         [
           Dependabot::DependencyFile.new(
@@ -274,13 +292,14 @@ RSpec.describe Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder do
       after { builder.cleanup }
 
       it "defaults to registry.terraform.io/hashicorp/<name>" do
-        config_content = File.read(builder.env["TF_CLI_CONFIG_FILE"])
+        config_content = File.read(builder.env.fetch("TF_CLI_CONFIG_FILE"))
 
         expect(config_content).to include("registry.terraform.io/hashicorp/random")
       end
     end
 
     context "with mixed-case provider source addresses" do
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       let(:terraform_files) do
         [
           Dependabot::DependencyFile.new(
@@ -296,7 +315,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder do
       after { builder.cleanup }
 
       it "normalizes source addresses to lowercase" do
-        config_content = File.read(builder.env["TF_CLI_CONFIG_FILE"])
+        config_content = File.read(builder.env.fetch("TF_CLI_CONFIG_FILE"))
 
         expect(config_content).to include("registry.terraform.io/datadog/datadog")
         expect(config_content).not_to include("DataDog")
@@ -304,6 +323,8 @@ RSpec.describe Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder do
     end
 
     context "when the same provider appears in multiple files" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(String) }
       let(:provider_json) do
         providers_json(
           "aws" => { "source" => "hashicorp/aws", "version" => ">= 3.0" },
@@ -311,17 +332,19 @@ RSpec.describe Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder do
         )
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       let(:terraform_files) do
         [
           Dependabot::DependencyFile.new(name: "a.tf", content: provider_json),
           Dependabot::DependencyFile.new(name: "b.tf", content: provider_json)
         ]
       end
+      # rubocop:enable RSpec/ScatteredLet
 
       after { builder.cleanup }
 
       it "deduplicates provider sources" do
-        config_content = File.read(builder.env["TF_CLI_CONFIG_FILE"])
+        config_content = File.read(builder.env.fetch("TF_CLI_CONFIG_FILE"))
 
         occurrences = config_content.scan("registry.terraform.io/hashicorp/random").length
         expect(occurrences).to eq(1)
@@ -329,6 +352,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder do
     end
 
     context "when a provider entry is a string rather than a hash" do
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       let(:terraform_files) do
         [
           Dependabot::DependencyFile.new(
@@ -347,6 +371,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder do
     end
 
     context "when the hcl2json parser returns empty output" do
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       let(:terraform_files) do
         [Dependabot::DependencyFile.new(name: "bad.tf", content: "{}")]
       end
@@ -365,6 +390,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder do
     end
 
     context "when env has been called and created temp files" do
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       let(:terraform_files) do
         [
           Dependabot::DependencyFile.new(
@@ -378,10 +404,11 @@ RSpec.describe Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder do
       end
 
       it "removes the config file and dev_override directory" do
-        config_path = builder.env["TF_CLI_CONFIG_FILE"]
+        config_path = builder.env.fetch("TF_CLI_CONFIG_FILE")
 
         config_content = File.read(config_path)
-        dev_dir = config_content.match(/"([^"]*dependabot-tf-dev[^"]*)"/)[1]
+        match = T.must(config_content.match(/"([^"]*dependabot-tf-dev[^"]*)"/))
+        dev_dir = T.must(match[1])
 
         expect(File.exist?(config_path)).to be true
         expect(Dir.exist?(dev_dir)).to be true

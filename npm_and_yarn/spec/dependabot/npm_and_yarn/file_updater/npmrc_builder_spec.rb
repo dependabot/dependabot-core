@@ -1197,6 +1197,38 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
           expect(npmrc_content).to include("@dependabot:registry=https://pkgs.dev.azure.com/dependabot/my-project/_packaging/my-feed/npm/registry/")
         end
       end
+
+      context "with a committed .npmrc and a replaces-base credential" do
+        let(:dependency_files) do
+          project_dependency_files("pnpm/private_source") +
+            [Dependabot::DependencyFile.new(name: ".npmrc", content: "auto-install-peers=true\n")]
+        end
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "npm_registry",
+              "registry" => "artifactory.example.com/artifactory/api/npm/npm",
+              "token" => "my_token",
+              "replaces-base" => true
+            }
+          )]
+        end
+
+        before do
+          stub_request(:get, %r{https://artifactory\.example\.com/artifactory/api/npm/npm/.*})
+            .to_return(status: 404)
+        end
+
+        it "adds the replaces-base registry as the global registry" do
+          expect(npmrc_content)
+            .to eq(
+              "auto-install-peers=true\n" \
+              "registry = https://artifactory.example.com/artifactory/api/npm/npm\n" \
+              "//artifactory.example.com/artifactory/api/npm/npm/:_authToken=my_token\n" \
+              "always-auth = true\n"
+            )
+        end
+      end
     end
 
     context "when dealing with registry scope generation" do

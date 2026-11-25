@@ -1,7 +1,8 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "shared_contexts"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
@@ -14,12 +15,14 @@ RSpec.describe(Dependabot::Bundler::UpdateChecker::ConflictingDependencyResolver
     described_class.new(
       dependency_files: dependency_files,
       repo_contents_path: nil,
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }],
+      credentials: [Dependabot::Credential.new(
+        {
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }
+      )],
       options: {}
     )
   end

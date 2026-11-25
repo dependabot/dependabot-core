@@ -1,7 +1,9 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "rspec/its"
+require "rspec/sorbet"
 require "webmock/rspec"
 require "webmock/http_lib_adapters/excon_adapter"
 require "debug"
@@ -27,6 +29,8 @@ require "functions"
 
 require "gem_net_http_adapter"
 
+extend T::Sig # rubocop:disable Style/MixinUsage
+
 RSpec.configure do |config|
   config.color = true
   config.order = :rand
@@ -34,6 +38,9 @@ RSpec.configure do |config|
   config.raise_errors_for_deprecations!
 end
 
+RSpec::Sorbet.allow_doubles!
+
+sig { params(project: String).returns(T::Array[T::Hash[Symbol, String]]) }
 def project_dependency_files(project)
   project_path = File.expand_path(File.join("../../spec/fixtures/projects/bundler2", project))
 
@@ -53,6 +60,7 @@ def project_dependency_files(project)
   end
 end
 
+sig { params(name: String).returns(String) }
 def fixture(*name)
-  File.read(File.join("../../spec/fixtures", File.join(*name)))
+  File.read(File.join("../../spec/fixtures", File.join(name)))
 end

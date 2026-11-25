@@ -1,11 +1,14 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/nix/flake_nix_parser"
 
 RSpec.describe Dependabot::Nix::FlakeNixParser do
-  def fixture(name)
+  extend T::Sig
+
+  sig { params(name: String).returns(String) }
+  def flake_fixture(name)
     File.read(
       File.join(__dir__, "fixtures", name)
     )
@@ -13,10 +16,11 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
 
   describe ".find_input_url" do
     context "with dot-notation inputs" do
-      let(:content) { fixture("flake.nix") }
+      sig { returns(String) }
+      let(:content) { flake_fixture("flake.nix") }
 
       it "finds a URL with a ref" do
-        result = described_class.find_input_url(content, "nixpkgs")
+        result = T.must(described_class.find_input_url(content, "nixpkgs"))
 
         expect(result).not_to be_nil
         expect(result.scheme).to eq("github")
@@ -27,7 +31,7 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
       end
 
       it "finds a URL without a ref" do
-        result = described_class.find_input_url(content, "flake-utils")
+        result = T.must(described_class.find_input_url(content, "flake-utils"))
 
         expect(result).not_to be_nil
         expect(result.scheme).to eq("github")
@@ -43,10 +47,11 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
     end
 
     context "with tag-pinned inputs" do
-      let(:content) { fixture("flake_with_tag.nix") }
+      sig { returns(String) }
+      let(:content) { flake_fixture("flake_with_tag.nix") }
 
       it "finds the tag ref" do
-        result = described_class.find_input_url(content, "devenv")
+        result = T.must(described_class.find_input_url(content, "devenv"))
 
         expect(result).not_to be_nil
         expect(result.scheme).to eq("github")
@@ -57,10 +62,11 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
     end
 
     context "with attribute set syntax" do
-      let(:content) { fixture("flake_with_versioned_branch.nix") }
+      sig { returns(String) }
+      let(:content) { flake_fixture("flake_with_versioned_branch.nix") }
 
       it "finds URL inside attribute set block" do
-        result = described_class.find_input_url(content, "home-manager")
+        result = T.must(described_class.find_input_url(content, "home-manager"))
 
         expect(result).not_to be_nil
         expect(result.scheme).to eq("github")
@@ -70,7 +76,7 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
       end
 
       it "still finds dot-notation inputs" do
-        result = described_class.find_input_url(content, "nixpkgs")
+        result = T.must(described_class.find_input_url(content, "nixpkgs"))
 
         expect(result).not_to be_nil
         expect(result.ref).to eq("nixos-24.11")
@@ -78,6 +84,7 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
     end
 
     context "with gitlab URL" do
+      sig { returns(String) }
       let(:content) do
         <<~NIX
           {
@@ -88,7 +95,7 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
       end
 
       it "parses gitlab scheme" do
-        result = described_class.find_input_url(content, "mylib")
+        result = T.must(described_class.find_input_url(content, "mylib"))
 
         expect(result).not_to be_nil
         expect(result.scheme).to eq("gitlab")
@@ -99,6 +106,7 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
     end
 
     context "with sourcehut URL" do
+      sig { returns(String) }
       let(:content) do
         <<~NIX
           {
@@ -109,7 +117,7 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
       end
 
       it "parses sourcehut scheme with tilde prefix" do
-        result = described_class.find_input_url(content, "mylib")
+        result = T.must(described_class.find_input_url(content, "mylib"))
 
         expect(result).not_to be_nil
         expect(result.scheme).to eq("sourcehut")
@@ -120,6 +128,7 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
     end
 
     context "with query parameters" do
+      sig { returns(String) }
       let(:content) do
         <<~NIX
           {
@@ -130,7 +139,7 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
       end
 
       it "captures query params separately" do
-        result = described_class.find_input_url(content, "nixpkgs")
+        result = T.must(described_class.find_input_url(content, "nixpkgs"))
 
         expect(result).not_to be_nil
         expect(result.ref).to eq("nixos-unstable")
@@ -139,6 +148,7 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
     end
 
     context "with a generic Git URL" do
+      sig { returns(String) }
       let(:content) do
         <<~NIX
           {
@@ -149,7 +159,7 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
       end
 
       it "parses the ref and query" do
-        result = described_class.find_input_url(content, "mylib")
+        result = T.must(described_class.find_input_url(content, "mylib"))
 
         expect(result).not_to be_nil
         expect(result.scheme).to eq("git")
@@ -159,6 +169,7 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
     end
 
     context "with similar input names" do
+      sig { returns(String) }
       let(:content) do
         <<~NIX
           {
@@ -170,7 +181,7 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
       end
 
       it "does not match a longer name containing the input name" do
-        result = described_class.find_input_url(content, "nixpkgs")
+        result = T.must(described_class.find_input_url(content, "nixpkgs"))
 
         expect(result).not_to be_nil
         expect(result.owner).to eq("NixOS")
@@ -179,6 +190,7 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
     end
 
     context "with commented-out input" do
+      sig { returns(String) }
       let(:content) do
         <<~NIX
           {
@@ -190,7 +202,7 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
       end
 
       it "skips the commented line and finds the real input" do
-        result = described_class.find_input_url(content, "nixpkgs")
+        result = T.must(described_class.find_input_url(content, "nixpkgs"))
 
         expect(result).not_to be_nil
         expect(result.ref).to eq("nixos-unstable")
@@ -198,6 +210,7 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
     end
 
     context "with block-commented input" do
+      sig { returns(String) }
       let(:content) do
         <<~NIX
           {
@@ -209,7 +222,7 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
       end
 
       it "skips the block comment and finds the real input" do
-        result = described_class.find_input_url(content, "nixpkgs")
+        result = T.must(described_class.find_input_url(content, "nixpkgs"))
 
         expect(result).not_to be_nil
         expect(result.ref).to eq("nixos-unstable")
@@ -217,6 +230,7 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
     end
 
     context "with indirect/shorthand URL" do
+      sig { returns(String) }
       let(:content) do
         <<~NIX
           {
@@ -227,7 +241,7 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
       end
 
       it "parses the indirect URL" do
-        result = described_class.find_input_url(content, "nixpkgs")
+        result = T.must(described_class.find_input_url(content, "nixpkgs"))
 
         expect(result).not_to be_nil
         expect(result.scheme).to eq("indirect")
@@ -237,6 +251,7 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
     end
 
     context "with a NixOS channel tarball URL" do
+      sig { returns(String) }
       let(:content) do
         <<~NIX
           {
@@ -247,7 +262,7 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
       end
 
       it "parses the channel name as the ref" do
-        result = described_class.find_input_url(content, "nixpkgs")
+        result = T.must(described_class.find_input_url(content, "nixpkgs"))
 
         expect(result).not_to be_nil
         expect(result.scheme).to eq("tarball")
@@ -259,7 +274,8 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
 
   describe ".update_input_ref" do
     context "with dot-notation input" do
-      let(:content) { fixture("flake_with_tag.nix") }
+      sig { returns(String) }
+      let(:content) { flake_fixture("flake_with_tag.nix") }
 
       it "rewrites the ref in the URL" do
         updated = described_class.update_input_ref(content, "devenv", "v0.6.2")
@@ -277,7 +293,8 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
     end
 
     context "with attribute set syntax" do
-      let(:content) { fixture("flake_with_versioned_branch.nix") }
+      sig { returns(String) }
+      let(:content) { flake_fixture("flake_with_versioned_branch.nix") }
 
       it "rewrites the ref inside the attribute set" do
         updated = described_class.update_input_ref(content, "home-manager", "release-25.05")
@@ -294,6 +311,7 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
     end
 
     context "with query parameters" do
+      sig { returns(String) }
       let(:content) do
         <<~NIX
           {
@@ -311,6 +329,7 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
     end
 
     context "with a generic Git URL" do
+      sig { returns(String) }
       let(:content) do
         <<~NIX
           {
@@ -330,7 +349,8 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
     end
 
     context "when input has no ref" do
-      let(:content) { fixture("flake.nix") }
+      sig { returns(String) }
+      let(:content) { flake_fixture("flake.nix") }
 
       it "returns nil when there is no ref to update" do
         updated = described_class.update_input_ref(content, "flake-utils", "v2.0")
@@ -339,7 +359,8 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
     end
 
     context "when input is not found" do
-      let(:content) { fixture("flake.nix") }
+      sig { returns(String) }
+      let(:content) { flake_fixture("flake.nix") }
 
       it "returns nil" do
         updated = described_class.update_input_ref(content, "nonexistent", "v1.0")
@@ -348,6 +369,7 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
     end
 
     context "with indirect/shorthand URL" do
+      sig { returns(String) }
       let(:content) do
         <<~NIX
           {
@@ -366,6 +388,7 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
     end
 
     context "with a NixOS channel tarball URL" do
+      sig { returns(String) }
       let(:content) do
         <<~NIX
           {

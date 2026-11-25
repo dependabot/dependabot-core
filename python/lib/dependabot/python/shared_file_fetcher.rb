@@ -8,6 +8,7 @@ require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/python/language_version_manager"
 require "dependabot/python/requirement_parser"
+require "dependabot/python/requirement_references"
 require "dependabot/python/file_parser/pyproject_files_parser"
 require "dependabot/python/file_parser/python_requirement_parser"
 require "dependabot/errors"
@@ -21,8 +22,8 @@ module Dependabot
 
       abstract!
 
-      CHILD_REQUIREMENT_REGEX = /^-r\s?(?<path>.*\.(?:txt|in))/
-      CONSTRAINT_REGEX = /^-c\s?(?<path>.*\.(?:txt|in))/
+      CHILD_REQUIREMENT_REGEX = RequirementReferences::CHILD_REQUIREMENT_REGEX
+      CONSTRAINT_REGEX = RequirementReferences::CONSTRAINT_REGEX
       DEPENDENCY_TYPES = %w(packages dev-packages).freeze
       MAX_FILE_SIZE = 500_000
 

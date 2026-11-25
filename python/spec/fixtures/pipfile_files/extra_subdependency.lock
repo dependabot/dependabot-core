@@ -64,6 +64,9 @@
             "version": "==1.0"
         },
         "raven": {
+            "extras": [
+                "flask"
+            ],
             "hashes": [
                 "sha256:1a7b595391c4557d8a9d9245138158130e43dcad02757f18d0a458e55c1e7162",
                 "sha256:6d98c03c789e2d15dc61992e5e2c1ef0018c467d3ce7b9aa5830e7940a77b69a"

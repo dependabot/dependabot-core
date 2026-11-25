@@ -54,6 +54,17 @@ module Dependabot
         edges(name).values.uniq
       end
 
+      # `name@version` for every package the lockfile holds, without peer suffixes.
+      sig { returns(T::Set[String]) }
+      def locked_packages
+        %w(packages snapshots).each_with_object(T.let(Set.new, T::Set[String])) do |section, locked|
+          entries = @document[section]
+          next unless entries.is_a?(Hash)
+
+          entries.each_key { |key| locked << key.to_s.delete_prefix("/").sub(/\(.*\z/, "") }
+        end
+      end
+
       private
 
       sig do

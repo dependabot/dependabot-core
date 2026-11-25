@@ -66,6 +66,11 @@ module Dependabot
 
       sig { override.returns(String) }
       def maven_repo_url
+        unless dependency.top_level?
+          return dependency.source_string("url", allowed_types: ["maven_repo"]) ||
+                 Gradle::FileParser::RepositoriesFinder::CENTRAL_REPO_URL
+        end
+
         requirement = dependency.requirements.find(&:source)
         return Gradle::FileParser::RepositoriesFinder::CENTRAL_REPO_URL unless requirement
 

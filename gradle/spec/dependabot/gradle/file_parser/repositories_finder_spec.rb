@@ -185,6 +185,44 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
         end
       end
 
+      context "with trailing lambda repository declarations (e.g. mavenContent filter blocks)" do
+        let(:dependency_files) { [buildfile, settings_file] }
+        let(:buildfile_fixture_name) { "basic_build.gradle" }
+        let(:settings_file) do
+          Dependabot::DependencyFile.new(
+            name: "settings.gradle.kts",
+            content: <<~KOTLIN
+              dependencyResolutionManagement {
+                  repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+                  repositories {
+                      google {
+                          mavenContent {
+                              includeGroupAndSubgroups("androidx")
+                              includeGroupAndSubgroups("com.android")
+                              includeGroupAndSubgroups("com.google")
+                          }
+                      }
+                      mavenCentral {
+                          content {
+                              excludeGroup("com.example.internal")
+                          }
+                      }
+                  }
+              }
+            KOTLIN
+          )
+        end
+
+        it "finds the Google Maven and Maven Central repositories" do
+          expect(repository_urls).to match_array(
+            %w(
+              https://maven.google.com
+              https://repo.maven.apache.org/maven2
+            )
+          )
+        end
+      end
+
       context "when the declaration gets URLs from a variable" do
         let(:buildfile_fixture_name) { "variable_repos_build.gradle" }
 

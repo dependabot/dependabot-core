@@ -11,7 +11,8 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementReplacer do
       content: requirement_content,
       dependency_name: dependency_name,
       old_requirement: old_requirement,
-      new_requirement: new_requirement
+      new_requirement: new_requirement,
+      dependency_file_name: "requirements/bounded.in"
     )
   end
 
@@ -32,6 +33,21 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementReplacer do
       it { is_expected.to eq(requirement_content) }
     end
 
+    context "when the old requirement is not declared in the file" do
+      let(:old_requirement) { "==1.0.0" }
+
+      it "raises with the file and requirements attached as error report context" do
+        expect { updated_content }.to raise_error(RuntimeError, "Declaration not found for attrs!") do |error|
+          expect(Dependabot::ErrorReportContext.build(error: error)).to eq(
+            "dependency-file" => "requirements/bounded.in",
+            "dependency-name" => "attrs",
+            "old-requirement" => "==1.0.0",
+            "new-requirement" => ">=17.3.0"
+          )
+        end
+      end
+    end
+
     context "with multiple requirements" do
       let(:dependency_name) { "django" }
       let(:requirement_content) { "django>=1.11,<1.12" }
@@ -45,6 +61,31 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementReplacer do
         let(:requirement_content) { "django  >= 1.11, < 1.12" }
 
         it { is_expected.to eq("django  >= 1.11.5") }
+      end
+    end
+
+    context "when the dependency is declared twice and one declaration starts with the other" do
+      let(:dependency_name) { "example-alpha" }
+      let(:requirement_content) do
+        "example-alpha>=2.7.0\nexample-alpha>=2.7.0,<3.0.0\nexample-alpha>=2.7.0, <3.0.0\n"
+      end
+      let(:old_requirement) { ">=2.7.0" }
+      let(:new_requirement) { ">=3.1.0" }
+
+      it "updates only the declaration that has the old requirement" do
+        expect(updated_content).to eq(
+          "example-alpha>=3.1.0\nexample-alpha>=2.7.0,<3.0.0\nexample-alpha>=2.7.0, <3.0.0\n"
+        )
+      end
+
+      context "when the longer declaration is the one that changes" do
+        let(:requirement_content) { "example-alpha>=2.7.0\nexample-alpha>=2.7.0,<3.0.0\n" }
+        let(:old_requirement) { ">=2.7.0,<3.0.0" }
+        let(:new_requirement) { ">=3.1.0,<4.0.0" }
+
+        it "updates the longer declaration and not the shorter one" do
+          expect(updated_content).to eq("example-alpha>=2.7.0\nexample-alpha>=3.1.0,<4.0.0\n")
+        end
       end
     end
 

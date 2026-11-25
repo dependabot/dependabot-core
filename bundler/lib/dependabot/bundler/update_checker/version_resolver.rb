@@ -177,6 +177,9 @@ module Dependabot
         rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
           raise if e.is_a?(VersionDetails::InvalidResult)
 
+          # Checked first: the message names other gems, which the heuristics
+          # below could mistake for an expected failure.
+          raise_if_checksum_mismatch(e)
           return if error_due_to_restrictive_upper_bound?(e)
           return if circular_dependency_at_new_version?(e)
 

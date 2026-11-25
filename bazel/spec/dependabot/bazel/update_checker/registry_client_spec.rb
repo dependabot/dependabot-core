@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -7,11 +7,20 @@ require "octokit"
 require "dependabot/bazel/update_checker"
 
 RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(T::Array[Dependabot::Credential]) }
   let(:credentials) { [] }
+  sig { returns(Dependabot::Bazel::UpdateChecker::RegistryClient) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:client) { described_class.new(credentials: credentials) }
+  # Sorbet cannot check the variadic public_send forwarding below with a typed receiver.
   let(:octokit_client) { instance_double(Octokit::Client) }
+  sig { returns(Dependabot::Clients::GithubWithRetries) }
   let(:github_client) { instance_double(Dependabot::Clients::GithubWithRetries) }
+  sig { returns(Sawyer::Agent) }
   let(:sawyer_agent) { instance_double(Sawyer::Agent) }
+  # rubocop:enable RSpec/ScatteredLet
 
   before do
     allow(client).to receive(:github_client).and_return(github_client)

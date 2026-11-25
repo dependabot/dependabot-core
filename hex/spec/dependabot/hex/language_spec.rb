@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/hex/language"
@@ -6,8 +6,12 @@ require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::Hex::Language do
+  extend T::Sig
+
+  sig { returns(Dependabot::Hex::Language) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   subject(:language) { described_class.new(version) }
 
+  sig { returns(String) }
   let(:version) { "1.17.3" }
 
   describe "#version" do

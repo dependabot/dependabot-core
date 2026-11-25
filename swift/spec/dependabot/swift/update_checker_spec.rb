@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve child-only fixtures and shared-example fixtures.
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/git_commit_checker"

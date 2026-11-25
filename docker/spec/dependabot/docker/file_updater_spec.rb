@@ -148,6 +148,19 @@ RSpec.describe Dependabot::Docker::FileUpdater do
 
     its(:length) { is_expected.to eq(1) }
 
+    context "when no dependency file has a changed requirement" do
+      let(:files) { [Dependabot::DependencyFile.new(content: dockerfile_body, name: "Dockerfile.dev")] }
+
+      it "raises with error report context attached" do
+        expect { updated_files }.to raise_error(RuntimeError, "No files changed!") do |error|
+          expect(Dependabot::ErrorReportContext.build(error: error)).to eq(
+            "dependency-names" => ["ubuntu"],
+            "dependency-files" => ["Dockerfile.dev"]
+          )
+        end
+      end
+    end
+
     describe "the updated Dockerfile" do
       subject(:updated_dockerfile) do
         updated_files.find { |f| f.name == "Dockerfile" }

@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve child-only version fixtures and class-scope generated examples.
+
 require "spec_helper"
 require "dependabot/swift/requirement"
 require "dependabot/swift/version"

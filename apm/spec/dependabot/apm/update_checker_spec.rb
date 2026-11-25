@@ -1,7 +1,8 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/apm/update_checker"
 require "dependabot/apm/version"
@@ -11,6 +12,11 @@ require "dependabot/package/release_cooldown_options"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Apm::UpdateChecker do
+  extend T::Sig
+
+  sig { returns(T::Array[Dependabot::Credential]) }
+  let(:credentials) { github_credentials.map { |credential| Dependabot::Credential.new(credential) } }
+
   let(:dependency_name) { "microsoft/edge-ai" }
   let(:reference) { "v1.0.0" }
   let(:dependency_version) do
@@ -51,7 +57,7 @@ RSpec.describe Dependabot::Apm::UpdateChecker do
     described_class.new(
       dependency: dependency,
       dependency_files: [],
-      credentials: github_credentials,
+      credentials: credentials,
       security_advisories: security_advisories,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
@@ -241,7 +247,7 @@ RSpec.describe Dependabot::Apm::UpdateChecker do
       let(:shared_metadata_fetcher) do
         Dependabot::GitMetadataFetcher.new(
           url: "https://github.com/#{dependency_name}",
-          credentials: github_credentials
+          credentials: credentials
         )
       end
 
@@ -507,7 +513,7 @@ RSpec.describe Dependabot::Apm::UpdateChecker do
       let(:shared_metadata_fetcher) do
         Dependabot::GitMetadataFetcher.new(
           url: "https://github.com/#{dependency_name}",
-          credentials: github_credentials
+          credentials: credentials
         )
       end
 

@@ -1,0 +1,19 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    business (1.4.0)
+    statesman (1.2.1)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  business (~> 1.4.0)
+  statesman (~> 1.2.0)
+
+CHECKSUMS
+  business (1.4.0) sha256=ee37a49ec4d20a3c9b2bda65f62ac53257daa52f7657e4d77b8aacf6a337f925
+  statesman (1.2.1) sha256=e65a37e5e65a37e5e65a37e5e65a37e5e65a37e5e65a37e5e65a37e5e65a37e5
+
+BUNDLED WITH
+   4.0.14

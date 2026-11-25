@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only current_ref fixture.
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/git_ref"

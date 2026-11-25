@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only current_channel fixture.
+
 require "spec_helper"
 require "dependabot/nix/update_checker/channel_version_finder"
 

@@ -1,20 +1,28 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/source"
 require "dependabot/apm/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Apm::FileFetcher do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(T::Array[Dependabot::Credential]) }
   let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
+  sig { returns(Dependabot::Source) }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -22,14 +30,17 @@ RSpec.describe Dependabot::Apm::FileFetcher do
       directory: "/"
     )
   end
+  sig { returns(String) }
   let(:url) { "https://api.github.com/repos/example/agent-repo/contents/" }
+  sig { returns(Dependabot::Apm::FileFetcher) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:file_fetcher_instance) do
     described_class.new(source: source, credentials: credentials, repo_contents_path: nil)
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   before do
     allow(file_fetcher_instance)
-      .to receive_messages(commit: "sha", allow_beta_ecosystems?: true)
+      .to receive_messages(commit: "sha")
   end
 
   it_behaves_like "a dependency file fetcher"
@@ -42,6 +53,7 @@ RSpec.describe Dependabot::Apm::FileFetcher do
   end
 
   describe "#fetch_files" do
+    sig { returns(T::Array[Dependabot::DependencyFile]) }
     subject(:fetched_files) { file_fetcher_instance.files }
 
     before do
@@ -77,7 +89,7 @@ RSpec.describe Dependabot::Apm::FileFetcher do
       end
 
       it "fetches the lockfile as an updatable file" do
-        lockfile = fetched_files.find { |f| f.name == "apm.lock.yaml" }
+        lockfile = T.must(fetched_files.find { |f| f.name == "apm.lock.yaml" })
         expect(lockfile.support_file?).to be(false)
       end
     end
@@ -100,6 +112,7 @@ RSpec.describe Dependabot::Apm::FileFetcher do
   end
 
   describe "#ecosystem_versions" do
+    sig { returns(T.nilable(T::Hash[Symbol, T.anything])) }
     subject(:ecosystem_versions) { file_fetcher_instance.ecosystem_versions }
 
     before do
@@ -128,17 +141,6 @@ RSpec.describe Dependabot::Apm::FileFetcher do
 
     it "reports the apm version from the lockfile" do
       expect(ecosystem_versions).to eq(package_managers: { "apm" => "0.4.2" })
-    end
-  end
-
-  context "when the beta ecosystems flag is disabled" do
-    before do
-      allow(file_fetcher_instance).to receive(:allow_beta_ecosystems?).and_return(false)
-    end
-
-    it "raises a DependencyFileNotFound error pointing at enable-beta-ecosystems" do
-      expect { file_fetcher_instance.files }
-        .to raise_error(Dependabot::DependencyFileNotFound, /enable-beta-ecosystems: true/)
     end
   end
 end

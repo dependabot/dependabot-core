@@ -9,6 +9,7 @@ require "sorbet-runtime"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
+require "dependabot/file_parsers/hcl2_json_document"
 require "dependabot/git_commit_checker"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
@@ -24,6 +25,8 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
 
       include FileSelector
+
+      HclDocument = Dependabot::FileParsers::Hcl2JsonDocument
 
       DEFAULT_REGISTRY = "registry.opentofu.org"
       DEFAULT_NAMESPACE = "hashicorp"
@@ -72,13 +75,10 @@ module Dependabot
           begin
             lookup = T.let({}, T::Hash[String, T::Hash[Symbol, String]])
             opentofu_files.each do |file|
-              parsed_file(file).fetch("locals", []).each do |locals_block|
-                locals_block.each do |var_name, value|
-                  next unless value.is_a?(String)
-                  next if value.include?("${")
+              parsed_file(file).local_strings.each do |var_name, value|
+                next if value.include?("${")
 
-                  lookup[var_name] = { value: value, file: file.name }
-                end
+                lookup[var_name] = { value: value, file: file.name }
               end
             end
             lookup
@@ -99,12 +99,9 @@ module Dependabot
         { value: T.must(local_entry[:value]), variable: var_name, file: T.must(local_entry[:file]) }
       end
 
-      sig { params(details: T.any(String, T::Hash[String, T.untyped])).returns(T::Boolean) }
-      def builtin_provider?(details)
-        return false unless details.is_a?(Hash)
-
-        source_address = details["source"]
-        return false unless source_address.is_a?(String)
+      sig { params(source_address: T.nilable(String)).returns(T::Boolean) }
+      def builtin_provider?(source_address)
+        return false unless source_address
 
         normalized = source_address.downcase
         BUILTIN_PROVIDER_NAMESPACES.any? { |ns| normalized.start_with?("#{ns}/") }
@@ -116,45 +113,33 @@ module Dependabot
         opentofu_files.each do |file|
           next if file.support_file?
 
-          modules = parsed_file(file).fetch("module", {})
-          # If override.tf files are present, we need to merge the modules
-          if override_opentofu_files.any?
-            override_opentofu_files.each do |override_file|
-              override_modules = parsed_file(override_file).fetch("module", {})
-              modules = merge_modules(override_modules, modules)
-            end
-          end
-
-          modules.each do |name, details|
-            details = details.first
-
-            source = source_from(details)
+          document = parsed_file(file)
+          overrides = override_opentofu_files.map { |override_file| parsed_file(override_file) }
+          document.module_declarations(overrides: overrides).each do |details|
+            source = source_from(details.source)
             # nil sources are unpinned (e.g. OCI without a tag/digest); paths are local.
             next if source.nil? || source[:type] == "path"
 
             # Cannot update modules using early evaluation yet
             if source[:type] == "interpolation"
               Dependabot.logger.warn(
-                "Cannot parse module source name with early evaluation for #{name} in #{file.name}."
+                "Cannot parse module source name with early evaluation for #{details.name} in #{file.name}."
               )
               next
             end
 
-            dependency_set << build_opentofu_dependency(file, name, source, details)
+            dependency_set << build_opentofu_dependency(file, details.name, source, details)
           end
 
-          parsed_file(file).fetch("terraform", []).each do |opentofu|
-            required_providers = opentofu.fetch("required_providers", {})
-            required_providers.each do |provider|
-              provider.each do |name, details|
-                if builtin_provider?(details)
-                  Dependabot.logger.info("Skipping built-in provider #{name} in #{file.name}")
-                  next
-                end
-
-                dependency_set << build_provider_dependency(file, name, details)
-              end
+          parsed_file(file).provider_declarations.each do |provider|
+            deprecated_provider_error(file) if provider.is_a?(HclDocument::DeprecatedProvider)
+            source_address = provider.source
+            if builtin_provider?(source_address)
+              Dependabot.logger.info("Skipping built-in provider #{provider.name} in #{file.name}")
+              next
             end
+
+            dependency_set << build_provider_dependency(file, provider.name, source_address, provider.version)
           end
         end
       end
@@ -162,11 +147,8 @@ module Dependabot
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
       def parse_terragrunt_files(dependency_set)
         terragrunt_files.each do |file|
-          modules = parsed_file(file).fetch("terraform", [])
-          modules.each do |details|
-            next unless details["source"]
-
-            source = source_from(details)
+          parsed_file(file).terragrunt_sources.each do |raw_source|
+            source = source_from(raw_source)
             # nil sources are unpinned; paths are local.
             next if source.nil? || source[:type] == "path"
 
@@ -188,7 +170,7 @@ module Dependabot
           file: Dependabot::DependencyFile,
           name: String,
           source: T::Hash[Symbol, T.untyped],
-          details: T.untyped
+          details: HclDocument::ModuleDeclaration
         )
           .returns(Dependabot::Dependency)
       end
@@ -197,11 +179,11 @@ module Dependabot
         # the source or the source name provides this uniqueness
         dep_name = case source[:type]
                    when "registry" then source[:module_identifier]
-                   when "provider" then details["source"]
+                   when "provider" then details.source
                    when "git" then git_dependency_name(name, source)
                    else name
                    end
-        version_req = details["version"]&.strip
+        version_req = details.version&.strip
 
         req_file = file.name
         resolved = version_req ? resolve_local_reference(version_req) : nil
@@ -234,21 +216,19 @@ module Dependabot
         params(
           file: Dependabot::DependencyFile,
           name: String,
-          details: T.any(String, T::Hash[String, T.untyped])
+          source_address: T.nilable(String),
+          requirement: T.nilable(String)
         )
           .returns(Dependabot::Dependency)
       end
-      def build_provider_dependency(file, name, details = {})
-        deprecated_provider_error(file) if deprecated_provider?(details)
-
-        source_address = T.cast(details, T::Hash[String, T.untyped]).fetch("source", nil)
-        version_req = details["version"]&.strip
+      def build_provider_dependency(file, name, source_address, requirement)
+        version_req = requirement&.strip
         hostname, namespace, name = provider_source_from(source_address, name)
         dependency_name = source_address ? "#{namespace}/#{name}" : name
 
         Dependency.new(
-          name: T.must(dependency_name),
-          version: determine_version_for(T.must(hostname), T.must(namespace), T.must(name), version_req),
+          name: dependency_name,
+          version: determine_version_for(hostname, namespace, name, version_req),
           package_manager: "opentofu",
           requirements: [
             { requirement: version_req,
@@ -273,13 +253,6 @@ module Dependabot
         )
       end
 
-      sig { params(details: Object).returns(T::Boolean) }
-      def deprecated_provider?(details)
-        # The old syntax for terraform providers v0.12- looked like
-        # "tls ~> 2.1" which gets parsed as a string instead of a hash
-        details.is_a?(String)
-      end
-
       sig { params(file: Dependabot::DependencyFile, source: T::Hash[Symbol, String]).returns(Dependabot::Dependency) }
       def build_terragrunt_dependency(file, source)
         dep_name = Source.from_url(source[:url]) ? T.must(Source.from_url(source[:url])).repo : source[:url]
@@ -299,9 +272,8 @@ module Dependabot
       end
 
       # Full docs at https://opentofu.org/docs/language/modules/sources/
-      sig { params(details_hash: T::Hash[String, String]).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
-      def source_from(details_hash)
-        raw_source = details_hash.fetch("source")
+      sig { params(raw_source: String).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      def source_from(raw_source)
         bare_source = RegistryClient.get_proxied_source(raw_source)
         source_type = source_type(bare_source)
 
@@ -325,7 +297,7 @@ module Dependabot
         source_details
       end
 
-      sig { params(source_address: T.nilable(String), name: String).returns(T::Array[String]) }
+      sig { params(source_address: T.nilable(String), name: String).returns([String, String, String]) }
       def provider_source_from(source_address, name)
         matches = source_address&.match(PROVIDER_SOURCE_ADDRESS)
         matches = {} if matches.nil?
@@ -468,31 +440,9 @@ module Dependabot
       # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
 
-      # == Returns:
-      # A Hash representing each module found in the specified file
-      #
-      # E.g.
-      # {
-      #   "module" => {
-      #     {
-      #       "consul" => [
-      #         {
-      #           "source"=>"consul/aws",
-      #           "version"=>"0.1.0"
-      #         }
-      #       ]
-      #     }
-      #   },
-      #   "terragrunt"=>[
-      #     {
-      #       "include"=>[{ "path"=>"${find_in_parent_folders()}" }],
-      #       "terraform"=>[{ "source" => "git::git@github.com:gruntwork-io/modules-example.git//consul?ref=v0.0.2" }]
-      #     }
-      #   ],
-      # }
-      sig { params(file: Dependabot::DependencyFile).returns(T::Hash[String, T.untyped]) }
+      sig { params(file: Dependabot::DependencyFile).returns(HclDocument) }
       def parsed_file(file)
-        @parsed_buildfile ||= T.let({}, T.nilable(T::Hash[String, T.untyped]))
+        @parsed_buildfile ||= T.let({}, T.nilable(T::Hash[String, HclDocument]))
         @parsed_buildfile[file.name] ||= SharedHelpers.in_a_temporary_directory do
           File.write("tmp.tf", file.content)
 
@@ -512,7 +462,7 @@ module Dependabot
             )
           end
 
-          JSON.parse(stdout)
+          HclDocument.from_helper_output(stdout, file: file)
         end
       rescue SharedHelpers::HelperSubprocessFailed => e
         msg = e.message.strip
@@ -556,20 +506,19 @@ module Dependabot
       def determine_version_for(hostname, namespace, name, constraint)
         return constraint if constraint&.match?(/\A\d/)
 
-        lockfile_content
-          .dig("provider", "#{hostname}/#{namespace}/#{name}", 0, "version")
+        lockfile_content&.provider_version("#{hostname}/#{namespace}/#{name}")
       end
 
-      sig { returns(T::Hash[String, T.untyped]) }
+      sig { returns(T.nilable(HclDocument)) }
       def lockfile_content
         @lockfile_content ||= T.let(
           begin
             lockfile = dependency_files.find do |file|
               file.name == ".terraform.lock.hcl"
             end
-            lockfile ? parsed_file(lockfile) : {}
+            parsed_file(lockfile) if lockfile
           end,
-          T.nilable(T::Hash[String, T.untyped])
+          T.nilable(HclDocument)
         )
       end
 

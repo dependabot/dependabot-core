@@ -817,6 +817,48 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       expect(described_class.package_manager_version("pnpm")).to eq("12.10.1")
     end
 
+    it "records the version for subprocess error context" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack pnpm@8 -v",
+        fingerprint: "corepack pnpm@8 -v",
+        env: nil
+      ).and_return("8.15.9\n")
+
+      described_class.package_manager_version("pnpm@8")
+
+      expect(described_class.package_manager_version_for("pnpm@8")).to eq("8.15.9")
+    ensure
+      Thread.current[:npm_and_yarn_package_manager_versions] = nil
+    end
+
+    it "does not record output that only starts with a version" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack pnpm@8 -v",
+        fingerprint: "corepack pnpm@8 -v",
+        env: nil
+      ).and_return("8.15.9 warning: https://user:token@npm.example.com/private\n")
+
+      described_class.package_manager_version("pnpm@8")
+
+      expect(described_class.package_manager_version_for("pnpm@8")).to be_nil
+    ensure
+      Thread.current[:npm_and_yarn_package_manager_versions] = nil
+    end
+
+    it "records a version printed by an in-project version command" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "yarn --version",
+        fingerprint: "yarn --version",
+        env: nil
+      ).and_return("3.6.4\n")
+
+      described_class.yarn_major_version
+
+      expect(described_class.package_manager_version_for("yarn")).to eq("3.6.4")
+    ensure
+      Thread.current[:npm_and_yarn_package_manager_versions] = nil
+    end
+
     it "passes env through to the corepack version command" do
       env = { "COREPACK_NPM_REGISTRY" => "https://packages.example.com/artifactory/api/npm/npm" }
 
@@ -1203,6 +1245,124 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
     it "returns true if lockfile is nil" do
       expect(described_class.parse_npm8?(nil_lockfile)).to be true
+    end
+  end
+
+  describe "subprocess error context" do
+    let(:files) { [] }
+    let(:failure) do
+      Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+        message: "request to https://npm.example.com/private-pkg failed",
+        error_context: { command: "secret command line", fingerprint: "fingerprint" }
+      )
+    end
+
+    before do
+      described_class.dependency_files = files
+      described_class.credentials = []
+      described_class.register_package_manager_version("npm", "10.9.2")
+      described_class.register_package_manager_version("pnpm@8", "8.15.9")
+      described_class.register_package_manager_version("yarn", "4.5.0")
+      allow(described_class).to receive(:setup_yarn_berry)
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_raise(failure)
+    end
+
+    after do
+      described_class.dependency_files = []
+      described_class.credentials = []
+      Thread.current[:npm_and_yarn_package_manager_versions] = nil
+    end
+
+    def context_for
+      yield
+      raise "expected a subprocess failure"
+    rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+      expect(e).to be(failure)
+      Dependabot::ErrorReportContext.build(error: e)
+    end
+
+    context "when npm fails with a private registry configured" do
+      let(:files) do
+        [Dependabot::DependencyFile.new(name: ".npmrc", content: "registry=https://npm.example.com/org/path/\n")]
+      end
+
+      it "attaches the subcommand, version and registry host, but no command line or URL" do
+        context = context_for { described_class.run_npm_command("install --ignore-scripts private-pkg@1.0.0") }
+
+        expect(context).to include(
+          "command-name" => "npm install",
+          "package-manager-version" => "10.9.2",
+          "registry-host" => "npm.example.com"
+        )
+        expect(context.values.flatten.join(" ")).not_to match(%r{private-pkg|--ignore-scripts|/org/path|secret})
+      end
+    end
+
+    context "when pnpm runs through a major-only Corepack selector" do
+      it "reports the version read for the same selector" do
+        context = context_for { described_class.package_manager_run_command("pnpm@8", "update left-pad") }
+
+        expect(context).to include("command-name" => "pnpm update", "package-manager-version" => "8.15.9")
+      end
+
+      it "omits the version when none was read for that selector" do
+        context = context_for { described_class.package_manager_run_command("pnpm@7", "update left-pad") }
+
+        expect(context).not_to have_key("package-manager-version")
+      end
+    end
+
+    it "omits a version recorded for another project" do
+      described_class.dependency_files = [
+        Dependabot::DependencyFile.new(name: "package.json", content: "{}", directory: "/other")
+      ]
+
+      context = context_for { described_class.run_npm_command("install") }
+
+      expect(context).not_to have_key("package-manager-version")
+    end
+
+    it "omits a version recorded in another working directory" do
+      context = Dir.mktmpdir { |dir| Dir.chdir(dir) { context_for { described_class.run_npm_command("install") } } }
+
+      expect(context).not_to have_key("package-manager-version")
+    end
+
+    it "reports an exact Corepack selector as the version" do
+      context = context_for { described_class.package_manager_run_command("npm@10.8.2", "install") }
+
+      expect(context).to include("command-name" => "npm install", "package-manager-version" => "10.8.2")
+    end
+
+    context "when a Yarn command fails with YN0001" do
+      let(:failure) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "YN0001: │ Error: left-pad@npm:9.9.9: No candidates found",
+          error_context: { command: "yarn up left-pad@9.9.9", fingerprint: "yarn up" }
+        )
+      end
+
+      it "attaches the Yarn version and the default registry host" do
+        context = context_for { described_class.run_yarn_command("up left-pad@9.9.9") }
+
+        expect(context).to include(
+          "command-name" => "yarn up",
+          "package-manager-version" => "4.5.0",
+          "registry-host" => "registry.npmjs.org"
+        )
+      end
+    end
+
+    it "reports only the package manager for a command that isn't allowlisted" do
+      context = context_for { described_class.run_pnpm_command("--secret-flag value") }
+
+      expect(context).to include("command-name" => "pnpm")
+    end
+
+    it "re-raises the original failure when building the context fails" do
+      allow(Dependabot::NpmAndYarn::SubprocessErrorContext).to receive(:attach).and_raise(TypeError)
+
+      expect { described_class.run_npm_command("install") }.to raise_error(failure)
     end
   end
 

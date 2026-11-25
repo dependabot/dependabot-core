@@ -8,6 +8,7 @@ require "nokogiri"
 require "sorbet-runtime"
 require "dependabot/registry_client"
 require "dependabot/cargo"
+require "dependabot/cargo/registry_response"
 require "dependabot/package/package_release"
 require "dependabot/package/package_details"
 
@@ -84,10 +85,15 @@ module Dependabot
 
           Dependabot.logger.info("Calling #{url} to fetch metadata for #{dependency.name} from #{index}")
 
-          response = fetch_response(url, hdrs)
+          response = RegistryClient.get(url: url, headers: hdrs)
           return {} if response.status == 404
 
-          @crates_listing = T.let(parse_response(response, index), T.nilable(T::Hash[String, T.anything]))
+          RegistryResponse.raise_for_error_status!(response, index.delete_prefix("sparse+")) if index != CRATES_IO_API
+
+          @crates_listing = T.let(
+            RegistryResponse.with_parse_error_context(response, url) { parse_response(response, index) },
+            T.nilable(T::Hash[String, T.anything])
+          )
 
           Dependabot.logger.info("Fetched metadata for #{dependency.name} from #{index} successfully")
 
@@ -115,15 +121,6 @@ module Dependabot
 
           token = registry_creds["token"] || "placeholder_token"
           { "Authorization" => token }
-        end
-
-        sig { params(url: String, headers: T::Hash[String, String]).returns(Excon::Response) }
-        def fetch_response(url, headers)
-          Excon.get(
-            url,
-            idempotent: true,
-            **SharedHelpers.excon_defaults(headers: headers)
-          )
         end
 
         sig { params(response: Excon::Response, index: String).returns(T::Hash[String, T.anything]) }

@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -18,6 +18,7 @@ module Dependabot
         extend T::Sig
 
         require_relative "shared_bundler_helpers"
+        require_relative "force_update_result"
 
         include SharedBundlerHelpers
 
@@ -105,7 +106,7 @@ module Dependabot
           end
 
           in_a_native_bundler_context(error_handling: false) do |tmp_dir|
-            updated_deps, specs = NativeHelpers.run_bundler_subprocess(
+            result = NativeHelpers.run_bundler_subprocess(
               bundler_version: bundler_version,
               function: "force_update",
               options: options,
@@ -119,8 +120,13 @@ module Dependabot
                 update_multiple_dependencies: update_multiple_dependencies?
               }
             )
-            dependencies_from(updated_deps, specs)
+            updates = ForceUpdateResult.from_helper_result(T.cast(result, Object), dependencies: original_dependencies)
+            dependencies_from(updates)
           rescue SharedHelpers::HelperSubprocessFailed => e
+            raise if e.is_a?(ForceUpdateResult::InvalidResult)
+
+            raise_if_checksum_mismatch(e)
+
             msg = e.error_class + " with message: " + e.message
             raise Dependabot::DependencyFileNotResolvable, msg
           end
@@ -147,14 +153,8 @@ module Dependabot
             ).parse
         end
 
-        sig do
-          params(
-            updated_deps: T::Array[T::Hash[String, T.untyped]],
-            specs: T::Array[T::Hash[String, T.untyped]]
-          )
-            .returns(T::Array[Dependabot::Dependency])
-        end
-        def dependencies_from(updated_deps, specs)
+        sig { params(updates: T::Array[ForceUpdateResult::Update]).returns(T::Array[Dependabot::Dependency]) }
+        def dependencies_from(updates)
           # You might think we'd want to remove dependencies whose version
           # hadn't changed from this array. We don't. We still need to unlock
           # them to get Bundler to resolve, because unlocking them is what
@@ -162,29 +162,27 @@ module Dependabot
           #
           # This is kind of a bug in Bundler, and we should try to fix it,
           # but resolving it won't necessarily be easy.
-          updated_deps.filter_map do |dep|
-            original_dep =
-              original_dependencies.find { |d| d.name == dep.fetch("name") }
-            spec = specs.find { |d| d.fetch("name") == dep.fetch("name") }
+          updates.filter_map do |update|
+            next if update.version.to_s == update.dependency.version
 
-            next if T.must(spec).fetch("version") == T.must(original_dep).version
-
-            build_dependency(original_dep, spec)
+            build_dependency(update)
           end
         end
 
-        sig { params(original_dep: T.untyped, updated_spec: T.untyped).returns(Dependabot::Dependency) }
-        def build_dependency(original_dep, updated_spec)
+        sig { params(update: ForceUpdateResult::Update).returns(Dependabot::Dependency) }
+        def build_dependency(update)
+          original_dep = update.dependency
+          version = update.version.to_s
           Dependency.new(
-            name: updated_spec.fetch("name"),
-            version: updated_spec.fetch("version"),
+            name: original_dep.name,
+            version: version,
             requirements:
               RequirementsUpdater.new(
                 requirements: original_dep.requirements,
                 update_strategy: requirements_update_strategy,
                 updated_source: source_for(original_dep),
-                latest_version: updated_spec.fetch("version"),
-                latest_resolvable_version: updated_spec.fetch("version")
+                latest_version: version,
+                latest_resolvable_version: version
               ).updated_requirements,
             previous_version: original_dep.version,
             previous_requirements: original_dep.requirements,
@@ -211,12 +209,6 @@ module Dependabot
             dependency_files.find { |f| f.name == "gems.locked" }
         end
 
-        sig { returns(String) }
-        def sanitized_lockfile_body
-          re = FileUpdater::LockfileUpdater::LOCKFILE_ENDING
-          T.must(T.must(lockfile).content).gsub(re, "")
-        end
-
         sig { void }
         def write_temporary_dependency_files
           dependency_files.each do |file|
@@ -224,8 +216,6 @@ module Dependabot
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(path, file.content)
           end
-
-          File.write(T.must(lockfile).name, sanitized_lockfile_body) if lockfile
         end
 
         sig { override.returns(String) }

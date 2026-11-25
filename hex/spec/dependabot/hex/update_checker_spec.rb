@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only ref fixtures.
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
@@ -550,12 +552,12 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           )]
         end
 
-        # This needs to changes to the Elixir helper
-        it "raises a helpful error" do
+        it "uses proxy-compatible metadata authentication without an OAuth exchange" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
           expect { latest_resolvable_version }
             .to raise_error(error_class) do |error|
               expect(error.source).to eq("dependabot")
+              expect(error.cause.message).not_to include("Failed to exchange API key for OAuth token")
             end
         end
       end
@@ -1057,7 +1059,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
     end
 
     it "delegates to the RequirementsUpdater" do
-      expect(described_class::RequirementsUpdater)
+      expect(Dependabot::Hex::UpdateChecker::RequirementsUpdater)
         .to receive(:new)
         .with(
           requirements: dependency_requirements,
@@ -1114,7 +1116,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       end
 
       it "delegates to the RequirementsUpdater" do
-        expect(described_class::RequirementsUpdater)
+        expect(Dependabot::Hex::UpdateChecker::RequirementsUpdater)
           .to receive(:new)
           .with(
             requirements: dependency_requirements,

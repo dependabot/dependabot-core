@@ -181,6 +181,36 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::JsonLock do
         end
       end
     end
+
+    describe "requirement maps" do
+      subject(:requires) { reader.legacy_dependencies.fetch("example").requires }
+
+      it "leaves absent requirements unspecified" do
+        expect(requires).to be_nil
+      end
+
+      [nil, {}, { "child" => "npm:other@^2", "@scope/local" => "file:../local" }].each do |value|
+        context "with requires set to #{value.inspect}" do
+          let(:entry) { super().merge("requires" => value) }
+
+          it "preserves the requirement map" do
+            expect(requires).to eq(value)
+          end
+        end
+      end
+
+      [[], { "child" => false }].each do |value|
+        context "with malformed requires #{value.inspect}" do
+          let(:entry) { super().merge("requires" => value) }
+
+          it "reports the consumed field and file" do
+            expect { requires }.to raise_error(Dependabot::DependencyFileNotParseable, /requires/) do |error|
+              expect(error.file_name).to eq("package-lock.json")
+            end
+          end
+        end
+      end
+    end
   end
 
   describe "#details" do

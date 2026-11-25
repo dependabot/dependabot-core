@@ -29,6 +29,17 @@ RSpec.describe Dependabot::CommandHelpers do
         expect(elapsed_time).to be > 0
       end
 
+      it "captures both streams in stdout when requested" do
+        command = [[RbConfig.ruby, RbConfig.ruby], "-e", "$stdout.write('a' * 4096); $stderr.write('b' * 4096)"]
+        stdout, stderr, status, = described_class.capture3_with_timeout(command, stderr_to_stdout: true)
+
+        expect(stdout.count("a")).to eq(4096)
+        expect(stdout.count("b")).to eq(4096)
+        expect(stdout.bytesize).to eq(8192)
+        expect(stderr).to eq("")
+        expect(status).to be_success
+      end
+
       it "passes environment, stdin, and spawn options to an argument vector" do
         options = { chdir: Dir.tmpdir }
         command = [

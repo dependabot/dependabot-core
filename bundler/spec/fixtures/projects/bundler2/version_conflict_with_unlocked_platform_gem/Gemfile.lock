@@ -1,0 +1,20 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    diff-lcs (1.2.0)
+    rspec-mocks (3.5.0)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.5.0)
+    rspec-support (3.5.0)
+
+PLATFORMS
+  x64-mingw-ucrt
+
+DEPENDENCIES
+  diff-lcs (= 1.2.0)
+  rspec-mocks (= 3.5.0)
+  rspec-support (= 3.5.0)
+  tzinfo-data
+
+BUNDLED WITH
+   2.3.13

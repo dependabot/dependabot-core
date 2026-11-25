@@ -1,12 +1,17 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/swift/package_manager"
 require "dependabot/ecosystem"
+require "spec_helper"
 
 RSpec.describe Dependabot::Swift::PackageManager do
+  extend T::Sig
+
+  sig { returns(Dependabot::Swift::PackageManager) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   subject(:package_manager) { described_class.new(version) }
 
+  sig { returns(String) }
   let(:version) { "6.0.2" }
 
   describe "#version" do

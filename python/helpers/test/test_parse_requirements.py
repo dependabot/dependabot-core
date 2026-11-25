@@ -17,6 +17,11 @@ def parse(fixture_dir):
     return result
 
 
+def parse_roots(fixture_dir, root_files):
+    path = os.path.join(FIXTURES, fixture_dir)
+    return json.loads(parse_requirements(path, root_files))["result"]
+
+
 def find_dep(deps, name):
     return next((d for d in deps if d["name"] == name), None)
 
@@ -101,3 +106,15 @@ class TestParseRequirementsTxt:
         files = {d["file"] for d in deps}
         assert any("requirements.txt" in f for f in files)
         assert any("requirements-dev.txt" in f for f in files)
+
+    def test_flags_requirements_included_via_constraint(self):
+        deps = parse_roots("requirements", ["with_constraints.txt"])
+        flags = {(d["file"], d["constraint"]) for d in deps}
+        assert flags == {
+            ("with_constraints.txt", False),
+            ("constraints.txt", True),
+        }
+
+    def test_parses_only_the_given_root_files(self):
+        deps = parse_roots("requirements", ["requirements-dev.txt"])
+        assert {d["file"] for d in deps} == {"requirements-dev.txt"}

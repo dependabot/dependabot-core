@@ -212,6 +212,95 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
       end
     end
 
+    context "with an extra index that serves only HTML" do
+      let(:credentials) do
+        [Dependabot::Credential.new(
+          { "type" => "python_index", "index-url" => "https://mirror.example.test/simple" }
+        )]
+      end
+      let(:mirror_url) { "https://mirror.example.test/simple/#{dependency_name}/" }
+
+      before do
+        stub_request(:get, json_url).to_return(
+          status: 200,
+          body: JSON.generate(
+            "releases" => {
+              "2.31.0" => [{ "url" => "https://files.example.test/requests-2.31.0.tar.gz",
+                             "upload_time" => "2024-01-02T00:00:00Z" }],
+              "2.32.0" => [{ "url" => "https://files.example.test/requests-2.32.0.tar.gz",
+                             "upload_time" => "2024-06-14T00:00:00Z" }],
+              "2.33.0rc1" => [{ "url" => "https://files.example.test/requests-2.33.0rc1.tar.gz",
+                                "upload_time" => "2024-08-01T00:00:00Z" }]
+            }
+          )
+        )
+        stub_request(:get, mirror_url).to_return(
+          status: 200,
+          headers: { "Content-Type" => "text/html" },
+          body: '<a href="../files/requests-2.31.0.tar.gz">requests-2.31.0.tar.gz</a>' \
+                '<a href="../files/requests-2.32.0.tar.gz">requests-2.32.0.tar.gz</a>' \
+                '<a href="../files/requests-2.33.0.tar.gz">requests-2.33.0.tar.gz</a>'
+        )
+      end
+
+      it "dates the mirror's copy of a version from the index that has a date" do
+        dates = fetch.releases.map { |release| [release.version.to_s, release.url, release.released_at] }
+
+        expect(dates).to contain_exactly(
+          ["2.31.0", "https://files.example.test/requests-2.31.0.tar.gz", Time.utc(2024, 1, 2)],
+          ["2.32.0", "https://files.example.test/requests-2.32.0.tar.gz", Time.utc(2024, 6, 14)],
+          ["2.33.0rc1", "https://files.example.test/requests-2.33.0rc1.tar.gz", Time.utc(2024, 8, 1)],
+          ["2.31.0", "https://mirror.example.test/simple/files/requests-2.31.0.tar.gz", Time.utc(2024, 1, 2)],
+          ["2.32.0", "https://mirror.example.test/simple/files/requests-2.32.0.tar.gz", Time.utc(2024, 6, 14)],
+          ["2.33.0", "https://mirror.example.test/simple/files/requests-2.33.0.tar.gz", nil]
+        )
+      end
+    end
+
+    context "with an extra index that serves PEP 691 JSON with some upload times missing" do
+      let(:credentials) do
+        [Dependabot::Credential.new(
+          { "type" => "python_index", "index-url" => "https://mirror.example.test/simple" }
+        )]
+      end
+      let(:mirror_url) { "https://mirror.example.test/simple/#{dependency_name}/" }
+
+      before do
+        stub_request(:get, json_url).to_return(
+          status: 200,
+          body: JSON.generate(
+            "releases" => {
+              "2.32.0" => [{ "url" => "https://files.example.test/requests-2.32.0.tar.gz",
+                             "upload_time" => "2024-06-14T00:00:00Z" }]
+            }
+          )
+        )
+        stub_request(:get, mirror_url).to_return(
+          status: 200,
+          headers: { "Content-Type" => "application/vnd.pypi.simple.v1+json" },
+          body: JSON.dump(
+            "meta" => { "api-version" => "1.1" },
+            "name" => dependency_name,
+            "files" => [
+              { "filename" => "requests-2.32.0.tar.gz", "url" => "../files/requests-2.32.0.tar.gz",
+                "upload-time" => "2024-06-10T00:00:00Z" },
+              { "filename" => "requests-2.32.0-py3-none-any.whl", "url" => "../files/requests-2.32.0-py3-none-any.whl" }
+            ]
+          )
+        )
+      end
+
+      it "keeps each reported date and gives an undated copy the earliest date for its version" do
+        dates = fetch.releases.map { |release| [release.url, release.released_at] }
+
+        expect(dates).to contain_exactly(
+          ["https://files.example.test/requests-2.32.0.tar.gz", Time.utc(2024, 6, 14)],
+          ["https://mirror.example.test/simple/files/requests-2.32.0.tar.gz", Time.utc(2024, 6, 10)],
+          ["https://mirror.example.test/simple/files/requests-2.32.0-py3-none-any.whl", Time.utc(2024, 6, 10)]
+        )
+      end
+    end
+
     context "with a valid JSON response" do
       before do
         stub_request(:get, json_url).to_return(

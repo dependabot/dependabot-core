@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the name fixture defined only in child contexts.
+
 require "spec_helper"
 require "dependabot/opentofu"
 require_common_spec "shared_examples_for_autoloading"

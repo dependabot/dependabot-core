@@ -177,6 +177,26 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
       end
     end
 
+    context "when the registry cannot be reached" do
+      let(:error) { Dependabot::RegistryError.new(429, "RegistryError: 429 response status") }
+
+      before do
+        allow(stub_update_checker).to receive(:latest_version).and_raise(error)
+        allow(job).to receive_messages(
+          dependencies: ["dummy-pkg-a"],
+          blocked_versions_for?: false,
+          security_updates_only?: false
+        )
+      end
+
+      it "reports the error and keeps the pull request open" do
+        expect(mock_error_handler).to receive(:handle_dependency_error).with(error: error, dependency: dependency)
+        expect(mock_service).not_to receive(:close_pull_request)
+
+        expect { perform }.not_to raise_error
+      end
+    end
+
     context "when all versions are ignored only on the resolvable-version path" do
       # Regression: the cooldown fallback can let the `all_versions_ignored?` guard pass
       # while `can_update?` still raises AllVersionsIgnored via a different finder. Driving

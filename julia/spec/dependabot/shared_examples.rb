@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve dynamic described_class constant references in these shared examples.
+
 require "spec_helper"
 
 RSpec.shared_examples "a dependabot ecosystem module" do

@@ -97,7 +97,7 @@ module Dependabot
       timeout: TIMEOUTS::DEFAULT,
       output_observer: nil
     )
-      stdout = T.let("", String)
+      stdout = T.let(+"", String)
       stderr = T.let("", String)
       status = T.let(nil, T.nilable(ProcessStatus))
       pid = T.let(nil, T.nilable(Integer))
@@ -172,10 +172,10 @@ module Dependabot
 
               # 4. Append data to the appropriate stream
               if io == stdout_io
-                stdout += data
+                stdout << data
               else
                 stderr += data unless stderr_to_stdout
-                stdout += data if stderr_to_stdout
+                stdout << data if stderr_to_stdout
               end
 
               # Observe the output if an observer is provided.
