@@ -33,7 +33,8 @@ module Functions
     LockfileUpdater.new(
       gemfile_name: args.fetch(:gemfile_name),
       lockfile_name: args.fetch(:lockfile_name),
-      dependencies: args.fetch(:dependencies)
+      dependencies: args.fetch(:dependencies),
+      conservative: args.fetch(:conservative, false)
     ).run
   end
 
