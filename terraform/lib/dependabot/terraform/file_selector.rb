@@ -42,34 +42,6 @@ module Dependabot
       def lockfile
         dependency_files.find { |f| lockfile?(f.name) }
       end
-
-      sig do
-        params(
-          modules: T::Hash[String, T::Array[T::Hash[String, Object]]],
-          base_modules: T::Hash[String,
-                                T::Array[T::Hash[String,
-                                                 Object]]]
-        )
-          .returns(T::Hash[String,
-                           T::Array[T::Hash[String,
-                                            Object]]])
-      end
-      def merge_modules(modules, base_modules)
-        merged_modules = base_modules.dup
-
-        modules.each do |key, value|
-          merged_modules[key] =
-            if merged_modules.key?(key)
-              T.must(merged_modules[key]).map do |base_value|
-                base_value.merge(T.must(value.first))
-              end
-            else
-              value
-            end
-        end
-
-        merged_modules
-      end
     end
   end
 end

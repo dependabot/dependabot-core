@@ -134,6 +134,36 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
     end
 
+    context "when the update produces no changes" do
+      {
+        "npm8/simple" => [described_class::NpmNoChangeError, "npm"],
+        "yarn/simple" => [described_class::YarnNoChangeError, "yarn"],
+        "pnpm/simple" => [described_class::PnpmNoChangeError, "pnpm"]
+      }.each do |fixture, (error_class, package_manager)|
+        context "with #{package_manager}" do
+          let(:files) { project_dependency_files(fixture) }
+
+          it "raises a #{package_manager}-specific NoChangeError when no files are updated" do
+            allow(updater).to receive_messages(updated_manifest_files: [], updated_lockfiles: [])
+
+            expect { updated_files }.to raise_error(
+              error_class,
+              "No files were updated! Package manager: #{package_manager}"
+            )
+          end
+
+          it "raises a #{package_manager}-specific NoChangeError when updated files are unchanged" do
+            allow(updater).to receive_messages(updated_manifest_files: files, updated_lockfiles: [])
+
+            expect { updated_files }.to raise_error(
+              error_class,
+              "Updated files are unchanged! Package manager: #{package_manager}"
+            )
+          end
+        end
+      end
+    end
+
     context "with multiple dependencies" do
       let(:files) { project_dependency_files("npm6_and_yarn/multiple_updates") }
 
@@ -1973,7 +2003,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
           it "doesn't update any files and raises with npm package manager" do
             expect { updated_files }.to raise_error(
-              described_class::NoChangeError,
+              described_class::NpmNoChangeError,
               /No files were updated! Package manager: npm/
             )
           end

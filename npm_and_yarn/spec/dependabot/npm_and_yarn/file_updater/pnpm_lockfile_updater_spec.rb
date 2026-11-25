@@ -876,9 +876,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     context "with an err_pnpm_meta_fetch_fail response" do
       let(:project_name) { "pnpm/meta_fetch_fail" }
 
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: fixture("pnpm_errors", "pnpm11", "network_error.txt"),
+            error_context: {}
+          )
+        )
+      end
+
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
-          .to raise_error(Dependabot::DependencyFileNotResolvable)
+          .to raise_error(Dependabot::DependencyFileNotResolvable, /fetch failed/)
       end
     end
 
@@ -1206,6 +1215,520 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
             .ordered
 
           updated_pnpm_lock_content
+        end
+      end
+    end
+  end
+
+  describe "when the requirement was widened by adding an alternative" do
+    let(:project_name) { "pnpm/simple" }
+    let(:version) { "0.0.2" }
+    let(:requirements) do
+      [{ file: "package.json", requirement: "^0.0.1 || ^0.0.2", groups: ["dependencies"], source: nil }]
+    end
+    let(:previous_requirements) do
+      [{ file: "package.json", requirement: "^0.0.1", groups: ["dependencies"], source: nil }]
+    end
+    let(:commands) { [] }
+    let(:package_json_at_update) { [] }
+
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, *_args|
+        commands << command.split.first(2).join(" ")
+        package_json_at_update << File.read("package.json") if command.include?("--no-save")
+        ""
+      end
+    end
+
+    # The locked version still satisfies the widened range, so pnpm only moves it when asked to while that range
+    # is in the manifest
+    context "when the lockfile stays behind the new version" do
+      it "runs the update again once the manifest has the widened range" do
+        updated_pnpm_lock_content
+
+        expect(commands.first(3))
+          .to eq(["update fetch-factory@0.0.2", "install --lockfile-only", "update fetch-factory@0.0.2"])
+        requirements_seen = package_json_at_update.first(2).map do |content|
+          JSON.parse(content).dig("dependencies", "fetch-factory")
+        end
+        expect(requirements_seen).to eq(["^0.0.1", "^0.0.1 || ^0.0.2"])
+      end
+    end
+
+    context "when the importer already has the new version" do
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .with("install --lockfile-only") do
+            locked_at_old_version = "specifier: ^0.0.1\n    version: 0.0.1"
+            locked_at_new_version = "specifier: ^0.0.1 || ^0.0.2\n    version: 0.0.2"
+            File.write("pnpm-lock.yaml", File.read("pnpm-lock.yaml").sub(locked_at_old_version, locked_at_new_version))
+            ""
+          end
+      end
+
+      it "updates only once" do
+        updated_pnpm_lock_content
+
+        expect(commands.count { |c| c.start_with?("update fetch-factory") }).to eq(1)
+      end
+    end
+
+    context "when the new version is only in the lockfile for something else" do
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .with("install --lockfile-only") do
+            commands << "install --lockfile-only"
+            other_entry = "\n  /fetch-factory@0.0.2:\n    resolution: {integrity: sha512-other}\n    dev: false\n"
+            File.write("pnpm-lock.yaml", File.read("pnpm-lock.yaml").rstrip + "\n" + other_entry)
+            ""
+          end
+      end
+
+      it "still updates, because the dependency itself is locked to the old version" do
+        updated_pnpm_lock_content
+
+        expect(commands.first(3))
+          .to eq(["update fetch-factory@0.0.2", "install --lockfile-only", "update fetch-factory@0.0.2"])
+      end
+    end
+  end
+
+  describe "when the widened requirement is in a workspace package" do
+    let(:project_name) { "pnpm/simple" }
+    let(:version) { "0.0.2" }
+    let(:requirements) do
+      [{ file: "packages/a/package.json", requirement: "^0.0.1 || ^0.0.2", groups: ["dependencies"], source: nil }]
+    end
+    let(:previous_requirements) do
+      [{ file: "packages/a/package.json", requirement: "^0.0.1", groups: ["dependencies"], source: nil }]
+    end
+    let(:commands) { [] }
+    let(:root_version) { "0.0.1" }
+    let(:package_version) { "0.0.1" }
+    let(:workspace_lockfile) do
+      <<~YAML
+        lockfileVersion: '6.0'
+
+        importers:
+
+          .:
+            dependencies:
+              fetch-factory:
+                specifier: ^0.0.1
+                version: #{root_version}
+
+          packages/a:
+            dependencies:
+              fetch-factory:
+                specifier: ^0.0.1 || ^0.0.2
+                version: #{package_version}
+      YAML
+    end
+
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, *_args|
+        commands << command.split.first(2).join(" ")
+        File.write("pnpm-lock.yaml", workspace_lockfile) if command == "install --lockfile-only"
+        ""
+      end
+    end
+
+    context "when that package is still locked to the old version and another importer has the new one" do
+      let(:root_version) { "0.0.2" }
+
+      it "updates again" do
+        updated_pnpm_lock_content
+
+        expect(commands.first(3))
+          .to eq(["update fetch-factory@0.0.2", "install --lockfile-only", "update fetch-factory@0.0.2"])
+      end
+    end
+
+    context "when that package has the new version and another importer is still on the old one" do
+      let(:package_version) { "0.0.2" }
+
+      it "does not update again" do
+        updated_pnpm_lock_content
+
+        expect(commands.count { |c| c.start_with?("update fetch-factory@") }).to eq(1)
+      end
+    end
+  end
+
+  describe "when the widened requirement is a catalog entry used only by a child workspace" do
+    let(:project_name) { "pnpm/catalog_monorepo" }
+    let(:pnpm_lock) { files.find { |f| f.name == "pnpm-lock.yaml" } }
+    let(:dependencies) do
+      [
+        create_dependency(
+          name: "eslint",
+          required_version: "^9.12.0 || ^10.0.0",
+          previous_required_version: "^9.12.0",
+          version: "10.0.0",
+          file: "pnpm-workspace.yaml"
+        )
+      ]
+    end
+    let(:workspace_files) do
+      { "pnpm-workspace.yaml" => files.find { |f| f.name == "pnpm-workspace.yaml" }.content }
+    end
+    let(:commands) { [] }
+    let(:lockfile_change) { ->(lockfile) { lockfile } }
+
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, *_args|
+        commands << command.split.first(2).join(" ")
+        if command == "install --lockfile-only"
+          File.write("pnpm-lock.yaml", lockfile_change.call(File.read("pnpm-lock.yaml")))
+        end
+        ""
+      end
+    end
+
+    # The root importer does not use eslint, so only the catalog and the child importer say what it is locked to
+    context "when the catalog is still locked to the old version" do
+      it "updates again" do
+        updated_pnpm_lock_content
+
+        expect(commands.first(2)).to eq(["install --lockfile-only", "update eslint@10.0.0"])
+      end
+    end
+
+    context "when the catalog and the child importer already have the new version" do
+      let(:lockfile_change) do
+        lambda do |lockfile|
+          catalog_at_old = "eslint:\n      specifier: ^9.12.0\n      version: 9.12.0"
+          catalog_at_new = "eslint:\n      specifier: ^9.12.0 || ^10.0.0\n      version: 10.0.0"
+          lockfile.sub(catalog_at_old, catalog_at_new).sub("version: 9.12.0(jiti@2.4.0)", "version: 10.0.0(jiti@2.4.0)")
+        end
+      end
+
+      it "does not update again" do
+        updated_pnpm_lock_content
+
+        expect(commands.grep(/\Aupdate eslint@/)).to be_empty
+      end
+    end
+
+    context "when the lockfile has no catalogs section" do
+      let(:lockfile_change) { ->(lockfile) { lockfile.sub(/^catalogs:\n.*?\n\nimporters:/m, "importers:") } }
+
+      it "reads the importer that uses the dependency, and updates again" do
+        updated_pnpm_lock_content
+
+        expect(commands.first(2)).to eq(["install --lockfile-only", "update eslint@10.0.0"])
+      end
+    end
+  end
+
+  # Runs pnpm: the retry uses the same `update -r` command as the first update, which also moves the root importer
+  describe "when a widened requirement is in the root package.json of a workspace" do
+    let(:project_name) { "pnpm/widened_root_requirement_workspace" }
+    let(:dependency_name) { "semver" }
+    let(:version) { "7.7.2" }
+    let(:previous_version) { "6.3.2" }
+    let(:requirements) do
+      [{ file: "package.json", requirement: "^5.7.0 || ^6.3.0 || ^7.7.2", groups: ["dependencies"], source: nil }]
+    end
+    let(:previous_requirements) do
+      [{ file: "package.json", requirement: "^5.7.0 || ^6.3.0", groups: ["dependencies"], source: nil }]
+    end
+
+    it "locks the root importer to the new version" do
+      root = YAML.safe_load_stream(updated_pnpm_lock_content).last.dig("importers", ".", "dependencies", "semver")
+
+      expect(root).to eq("specifier" => "^5.7.0 || ^6.3.0 || ^7.7.2", "version" => "7.7.2")
+    end
+  end
+
+  describe "when the lockfile has an environment document before the project document" do
+    let(:project_name) { "pnpm/simple" }
+    let(:version) { "0.0.2" }
+    let(:requirements) do
+      [{ file: "package.json", requirement: "^0.0.1 || ^0.0.2", groups: ["dependencies"], source: nil }]
+    end
+    let(:previous_requirements) do
+      [{ file: "package.json", requirement: "^0.0.1", groups: ["dependencies"], source: nil }]
+    end
+    let(:commands) { [] }
+
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, *_args|
+        commands << command.split.first(2).join(" ")
+        if command == "install --lockfile-only"
+          environment = "---\nlockfileVersion: '9.0'\nimporters:\n  .:\n    configDependencies: {}\n---\n"
+          other_entry = "\n  /fetch-factory@0.0.2:\n    resolution: {integrity: sha512-other}\n    dev: false\n"
+          File.write("pnpm-lock.yaml", "#{environment}#{File.read('pnpm-lock.yaml').rstrip}\n#{other_entry}")
+        end
+        ""
+      end
+    end
+
+    it "reads the project document, which is the last one" do
+      updated_pnpm_lock_content
+
+      expect(commands.first(3))
+        .to eq(["update fetch-factory@0.0.2", "install --lockfile-only", "update fetch-factory@0.0.2"])
+    end
+  end
+
+  describe "when a catalog requirement already allows the new version" do
+    let(:project_name) { "pnpm/catalog_prettier" }
+    let(:pnpm_lock) { files.find { |f| f.name == "pnpm-lock.yaml" } }
+    let(:dependencies) do
+      [
+        create_dependency(
+          name: "prettier",
+          required_version: "^3.3.0",
+          previous_required_version: "^3.3.0",
+          version: "3.3.3",
+          file: "pnpm-workspace.yaml"
+        )
+      ]
+    end
+    let(:workspace_files) do
+      { "pnpm-workspace.yaml" => files.find { |f| f.name == "pnpm-workspace.yaml" }.content }
+    end
+    let(:commands) { [] }
+
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, *_args|
+        commands << command.split.first(2).join(" ")
+        ""
+      end
+    end
+
+    # Only the catalog file is written, and `pnpm install` keeps a locked version that the range allows
+    context "when the lockfile stays behind the new version" do
+      it "updates the dependency after the install" do
+        updated_pnpm_lock_content
+
+        expect(commands.first(2)).to eq(["install --lockfile-only", "update prettier@3.3.3"])
+      end
+    end
+
+    context "when the catalog and the importer already have the new version" do
+      # The package keys stay at 3.4.2, so searching the lockfile text for prettier@3.3.3 would find nothing: it is
+      # the catalog and the importer that say the dependency is not behind
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .with("install --lockfile-only") do
+            catalogs = "catalogs:\n  default:\n    prettier:\n      specifier: ^3.3.0\n      version: 3.3.3\n\n" \
+                       "importers:"
+            importer_at_old = "specifier: 'catalog:'\n        version: 3.4.2"
+            importer_at_new = "specifier: 'catalog:'\n        version: 3.3.3"
+            lockfile = File.read("pnpm-lock.yaml").sub(importer_at_old, importer_at_new).sub("importers:", catalogs)
+            File.write("pnpm-lock.yaml", lockfile)
+            ""
+          end
+      end
+
+      it "does not update it again" do
+        updated_pnpm_lock_content
+
+        expect(commands.grep(/\Aupdate prettier@/)).to be_empty
+      end
+    end
+
+    context "when the lockfile has no catalogs section and the catalog-backed importer is behind" do
+      # The new version is in the lockfile for something else, so a text search would find it
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .with("install --lockfile-only") do
+            commands << "install --lockfile-only"
+            importer_at_old = "specifier: 'catalog:'\n        version: 3.4.2"
+            importer_at_new = "specifier: 'catalog:'\n        version: 3.3.0"
+            lockfile = File.read("pnpm-lock.yaml").sub(importer_at_old, importer_at_new)
+            File.write("pnpm-lock.yaml", "#{lockfile.rstrip}\n\n  prettier@3.3.3: {}\n")
+            ""
+          end
+      end
+
+      it "reads the importer and updates it" do
+        updated_pnpm_lock_content
+
+        expect(commands.first(2)).to eq(["install --lockfile-only", "update prettier@3.3.3"])
+      end
+    end
+
+    context "when a git dependency is updated together with the catalog dependency" do
+      let(:files) do
+        project_dependency_files(project_name).map do |file|
+          next file unless file.name == "package.json"
+
+          manifest = JSON.parse(file.content)
+          manifest["dependencies"] = { "git-package" => "github:org/git-package#v1.0.0" }
+          Dependabot::DependencyFile.new(name: file.name, content: JSON.pretty_generate(manifest))
+        end
+      end
+      let(:git_source) do
+        { type: "git", url: "https://github.com/org/git-package", branch: nil, ref: "v2.0.0" }
+      end
+      let(:dependencies) do
+        [
+          create_dependency(
+            name: "prettier",
+            required_version: "^3.3.0",
+            previous_required_version: "^3.3.0",
+            version: "3.3.3",
+            file: "pnpm-workspace.yaml"
+          ),
+          Dependabot::Dependency.new(
+            name: "git-package",
+            version: "a" * 40,
+            previous_version: "b" * 40,
+            package_manager: "npm_and_yarn",
+            requirements: [
+              { file: "package.json", requirement: nil, groups: ["dependencies"], source: git_source }
+            ],
+            previous_requirements: [
+              { file: "package.json", requirement: nil, groups: ["dependencies"],
+                source: git_source.merge(ref: "v1.0.0") }
+            ]
+          )
+        ]
+      end
+      let(:full_commands) { [] }
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, *_args|
+          full_commands << command
+          ""
+        end
+      end
+
+      it "updates only the dependency that is behind, not the git dependency" do
+        updated_pnpm_lock_content
+
+        updates = full_commands.select { |command| command.start_with?("update ") && command.include?("--no-save") }
+        expect(updates).to eq(["update prettier@3.3.3  --lockfile-only --no-save -r"])
+      end
+    end
+
+    context "when another declaration of the dependency changes" do
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "prettier",
+            version: "3.3.3",
+            package_manager: "npm_and_yarn",
+            requirements: [
+              { file: "pnpm-workspace.yaml", requirement: "^3.3.0", groups: ["dependencies"], source: nil },
+              { file: "package.json", requirement: "3.3.3", groups: ["devDependencies"], source: nil }
+            ],
+            previous_requirements: [
+              { file: "pnpm-workspace.yaml", requirement: "^3.3.0", groups: ["dependencies"], source: nil },
+              { file: "package.json", requirement: "3.3.0", groups: ["devDependencies"], source: nil }
+            ]
+          )
+        ]
+      end
+
+      it "still updates the catalog dependency after the install" do
+        updated_pnpm_lock_content
+
+        expect(commands.first(2)).to eq(["install --lockfile-only", "update prettier@3.3.3"])
+      end
+    end
+
+    context "with several catalogs" do
+      let(:catalogs_section) do
+        "catalogs:\n  default:\n    prettier:\n      specifier: ^3.3.0\n      version: #{default_version}\n" \
+          "  named:\n    prettier:\n      specifier: #{named_specifier}\n      version: #{named_version}\n\n" \
+          "importers:"
+      end
+      let(:default_version) { "3.3.3" }
+      let(:named_specifier) { "^3.3.0" }
+      let(:named_version) { "3.3.0" }
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .with("install --lockfile-only") do
+            commands << "install --lockfile-only"
+            File.write("pnpm-lock.yaml", File.read("pnpm-lock.yaml").sub("importers:", catalogs_section))
+            ""
+          end
+      end
+
+      context "when a catalog with the same range is still locked to the old version" do
+        it "updates it, although the first catalog has the new version" do
+          updated_pnpm_lock_content
+
+          expect(commands.first(2)).to eq(["install --lockfile-only", "update prettier@3.3.3"])
+        end
+      end
+
+      context "when the other catalog uses another range" do
+        let(:named_specifier) { "^2.0.0" }
+        let(:named_version) { "2.8.8" }
+
+        it "does not update it again" do
+          updated_pnpm_lock_content
+
+          expect(commands.grep(/\Aupdate prettier@/)).to be_empty
+        end
+      end
+    end
+
+    context "when the catalog is locked to the old version and the new version is in the lockfile for something else" do
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .with("install --lockfile-only") do
+            commands << "install --lockfile-only"
+            catalogs = "catalogs:\n  default:\n    prettier:\n      specifier: ^3.3.0\n      version: 3.3.0\n\n" \
+                       "importers:"
+            lockfile = File.read("pnpm-lock.yaml").sub("importers:", catalogs)
+            File.write("pnpm-lock.yaml", "#{lockfile.rstrip}\n\n  prettier@3.3.3: {}\n")
+            ""
+          end
+      end
+
+      it "still updates it" do
+        updated_pnpm_lock_content
+
+        expect(commands.first(2)).to eq(["install --lockfile-only", "update prettier@3.3.3"])
+      end
+    end
+
+    # An unused catalog entry still makes the dependency top-level, but pnpm 11.23+ refuses to pin a package that no
+    # manifest declares
+    context "when pnpm refuses to pin the dependency because nothing declares it directly" do
+      let(:pinned_update) { "update prettier@3.3.3  --lockfile-only --no-save -r" }
+      let(:unpinned_update) { "update prettier  --lockfile-only --no-save -r" }
+      let(:fingerprint) { { fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r" } }
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .with(pinned_update, fingerprint)
+          .and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: "ERR_PNPM_UPDATE_VERSION_ON_INDIRECT_DEP  \"prettier\" (requested \"3.3.3\") is not a " \
+                       "direct dependency, so the requested version cannot be recorded.",
+              error_context: {}
+            )
+          )
+      end
+
+      it "retries the update without a version" do
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .with(unpinned_update, fingerprint)
+
+        updated_pnpm_lock_content
+      end
+
+      context "when the retry resolves a version above the requested one" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+            .with(unpinned_update, fingerprint) do
+              File.write("pnpm-lock.yaml", File.read("pnpm-lock.yaml").gsub("3.4.2", "3.5.0"))
+              ""
+            end
+        end
+
+        it "refuses the lockfile" do
+          expect { updated_pnpm_lock_content }.to raise_error(
+            Dependabot::DependencyFileNotResolvable, /resolved prettier to 3\.5\.0, above the requested 3\.3\.3/
+          )
         end
       end
     end

@@ -292,6 +292,8 @@ module Dependabot
 
               run_pnpm_install
 
+              update_again_if_lockfile_behind(pnpm_lock, catalog_update: !updated_pnpm_workspace_content.nil?)
+
               updated_content = File.read(pnpm_lock.name)
               if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
                 run_pnpm_deep_update_fallback
@@ -311,9 +313,9 @@ module Dependabot
           end
         end
 
-        sig { returns(T.nilable(String)) }
-        def run_pnpm_update_packages
-          run_pnpm_update_specs(dependencies.map { |d| "#{d.name}@#{d.version}" })
+        sig { params(deps: T::Array[Dependabot::Dependency]).returns(T.nilable(String)) }
+        def run_pnpm_update_packages(deps = dependencies)
+          run_pnpm_update_specs(deps.map { |d| "#{d.name}@#{d.version}" })
         rescue SharedHelpers::HelperSubprocessFailed => e
           indirect = Helpers.pnpm_indirect_dependency_names(e.message)
           raise if indirect.empty?
@@ -325,9 +327,9 @@ module Dependabot
             "pnpm refused to pin #{indirect.join(', ')} because they are not direct dependencies; " \
             "retrying the update without a version for them"
           )
-          @unpinned_dependency_names = indirect
+          @unpinned_dependency_names |= indirect
           run_pnpm_update_specs(
-            dependencies.map { |d| indirect.include?(d.name) ? d.name : "#{d.name}@#{d.version}" }
+            deps.map { |d| indirect.include?(d.name) ? d.name : "#{d.name}@#{d.version}" }
           )
         end
 
@@ -509,6 +511,119 @@ module Dependabot
           cmd = "update #{specs.join(' ')}  --lockfile-only --no-save -r"
           fingerprint = "update <dependency_updates>  --lockfile-only --no-save -r"
           run_pnpm_command_with_release_age_gate(cmd, fingerprint)
+        end
+
+        # `pnpm install` keeps a locked version that the manifest still allows, so a dependency can stay behind the
+        # update: with a requirement widened by another alternative (it is only in the manifest after the first
+        # update and install), and with a catalog dependency whose range already allows the new version (a catalog
+        # update only writes the workspace file). Ask pnpm to move it, with the same recovery as the first update for a
+        # dependency that pnpm refuses to pin.
+        sig { params(pnpm_lock: Dependabot::DependencyFile, catalog_update: T::Boolean).void }
+        def update_again_if_lockfile_behind(pnpm_lock, catalog_update:)
+          lockfile_content = File.read(pnpm_lock.name)
+          lockfile = parsed_lockfile(lockfile_content)
+          behind = dependencies.select do |dep|
+            next false unless dep.top_level? && dep.version
+
+            requirements_to_check(dep, catalog_update).any? do |req|
+              locked = locked_versions(lockfile, req, dep.name)
+              next !lockfile_content.include?("#{dep.name}@#{dep.version}") if locked.empty?
+
+              locked.any? { |version| version != dep.version }
+            end
+          end
+          return if behind.empty?
+
+          run_pnpm_update_packages(behind)
+        end
+
+        # The requirements whose dependency may be left at its locked version: the ones widened with another
+        # alternative ("^1.0.0 || ^2.0.0"), and, for a catalog update, each one that did not change (another
+        # declaration of the dependency can change in the same update). Only requirements from the registry count:
+        # a git dependency is locked to a URL, never to the version that is asked for.
+        sig do
+          params(dep: Dependabot::Dependency, catalog_update: T::Boolean)
+            .returns(T::Array[Dependabot::DependencyRequirement])
+        end
+        def requirements_to_check(dep, catalog_update)
+          pairs = dep.requirements.zip(dep.previous_requirements || [])
+          unchanged, changed = pairs.partition do |new_req, old_req|
+            new_req.requirement_string == old_req&.requirement_string
+          end
+          widened = changed.map(&:first).select { |req| req.requirement_string&.include?("||") }
+
+          (catalog_update ? widened + unchanged.map(&:first) : widened).select { |req| registry_requirement?(req) }
+        end
+
+        sig { params(req: Dependabot::DependencyRequirement).returns(T::Boolean) }
+        def registry_requirement?(req)
+          !req.requirement_string.nil? && req.source_string("type") != "git"
+        end
+
+        sig { params(content: String).returns(T.nilable(T::Hash[String, Object])) }
+        def parsed_lockfile(content)
+          # pnpm 11+ can write the lockfile as two YAML documents, an environment one and then the project's
+          documents = T.cast(YAML.safe_load_stream(content), T::Array[Object])
+          parsed = documents.last
+          parsed.is_a?(Hash) ? mapping(parsed) : nil
+        rescue Psych::Exception
+          nil
+        end
+
+        sig { params(value: T.nilable(Object)).returns(T::Hash[String, Object]) }
+        def mapping(value)
+          return {} unless value.is_a?(Hash)
+
+          value.to_h { |key, entry| [T.cast(key, Object).to_s, T.cast(entry, Object)] }
+        end
+
+        # The versions a requirement is locked to: for a requirement of the workspace file (a catalog), those of the
+        # catalogs with that range, or those of the importers that use the dependency when the lockfile has no such
+        # catalog; otherwise the one in the importer of the manifest. Empty when the lockfile does not say.
+        sig do
+          params(lockfile: T.nilable(T::Hash[String, Object]), req: Dependabot::DependencyRequirement, name: String)
+            .returns(T::Array[String])
+        end
+        def locked_versions(lockfile, req, name)
+          return [] unless lockfile
+
+          entries = if File.basename(T.must(req.file)) == PNPMPackageManager::PNPM_WS_YML_FILENAME
+                      catalog_entries(lockfile, name, req.requirement_string)
+                    else
+                      importer_entries(lockfile, name, T.must(req.file))
+                    end
+
+          entries.map do |entry|
+            locked = entry.is_a?(Hash) ? mapping(entry)["version"] : entry
+            locked.to_s.split("(").first.to_s.delete_prefix("/")
+          end
+        end
+
+        sig do
+          params(lockfile: T::Hash[String, Object], name: String, range: T.nilable(String)).returns(T::Array[Object])
+        end
+        def catalog_entries(lockfile, name, range)
+          entries = mapping(lockfile["catalogs"]).values.filter_map { |catalog| mapping(catalog)[name] }
+          return importer_entries(lockfile, name, nil) if entries.empty?
+
+          with_range = entries.select { |entry| mapping(entry)["specifier"] == range }
+          with_range.empty? ? entries : with_range
+        end
+
+        # The entries for a dependency in the importer of a manifest, or in every importer when there is no manifest
+        sig { params(lockfile: T::Hash[String, Object], name: String, file_name: T.nilable(String)).returns(T::Array[Object]) }
+        def importer_entries(lockfile, name, file_name)
+          importers = if lockfile.key?("importers")
+                        all = mapping(lockfile["importers"])
+                        file_name ? [all[Pathname.new(file_name).dirname.to_s]].compact : all.values
+                      else
+                        [lockfile]
+                      end
+
+          groups = %w(dependencies devDependencies optionalDependencies)
+          importers.flat_map do |importer|
+            groups.filter_map { |group| mapping(mapping(importer)[group])[name] }.first(1)
+          end
         end
 
         sig { returns(T.nilable(String)) }

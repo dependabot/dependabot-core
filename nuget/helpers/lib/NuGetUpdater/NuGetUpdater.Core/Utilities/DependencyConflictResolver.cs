@@ -127,21 +127,24 @@ public class PackageManager
     }
 
     // Method to find the best match framework of a given package's target framework availability
-    public static NuGetFramework? FindBestMatchFramework(IEnumerable<NuGet.Packaging.PackageDependencyGroup> dependencySet, string targetFrameworkString)
+    public static NuGetFramework? FindBestMatchFramework(IEnumerable<NuGet.Packaging.PackageDependencyGroup> dependencySet, NuGetFramework targetFramework)
     {
-        // Parse the given target framework string into a NuGetFramework object
-        var targetFramework = NuGetFramework.ParseFolder(targetFrameworkString);
         var frameworkReducer = new FrameworkReducer();
 
         // Collect all target frameworks from the dependency set
         var availableFrameworks = dependencySet.Select(dg => dg.TargetFramework).ToList();
 
-        // Return bestmatch framework
-        return frameworkReducer.GetNearest(targetFramework, availableFrameworks);
+        var nearest = frameworkReducer.GetNearest(targetFramework, availableFrameworks);
+        if (nearest is null && targetFramework is AssetTargetFallbackFramework assetFallback)
+        {
+            nearest = frameworkReducer.GetNearest(assetFallback.AsFallbackFramework(), availableFrameworks);
+        }
+
+        return nearest;
     }
 
     // Method to get the dependencies of a package
-    public async Task<List<PackageToUpdate>?> GetDependenciesAsync(PackageToUpdate package, string targetFramework, string projectDirectory, ILogger logger)
+    public async Task<List<PackageToUpdate>?> GetDependenciesAsync(PackageToUpdate package, NuGetFramework targetFramework, string projectDirectory, ILogger logger)
     {
         if (!NuGetVersion.TryParse(package.NewVersion, out var otherVersion))
         {
@@ -291,7 +294,7 @@ public class PackageManager
     }
 
     // Method to get the dependencies of a package and add them as a dependency
-    public async Task PopulatePackageDependenciesAsync(List<PackageToUpdate> packages, string targetFramework, string projectDirectory, ILogger logger)
+    public async Task PopulatePackageDependenciesAsync(List<PackageToUpdate> packages, NuGetFramework targetFramework, string projectDirectory, ILogger logger)
     {
         // Loop through each package and get their dependencies
         foreach (PackageToUpdate package in packages)
@@ -332,7 +335,7 @@ public class PackageManager
     }
 
     // Method to update the version of a desired package based off framework
-    public async Task<string> UpdateVersion(List<PackageToUpdate> existingPackages, PackageToUpdate package, string targetFramework, string projectDirectory, ILogger logger)
+    public async Task<string> UpdateVersion(List<PackageToUpdate> existingPackages, PackageToUpdate package, NuGetFramework targetFramework, string projectDirectory, ILogger logger)
     {
         // Bool to track if the package was in the original existing list
         bool inExisting = true;
@@ -424,8 +427,6 @@ public class PackageManager
                     }
                 }
 
-                var projectFramework = NuGetFramework.Parse(targetFramework);
-
                 // Get the parent packages of the package and check the compatibility between its family
                 HashSet<PackageToUpdate> parentPackages = GetParentPackages(package);
 
@@ -464,7 +465,7 @@ public class PackageManager
                             string? currentVersionString = parent.CurrentVersion;
                             NuGetVersion currentVersionParent = NuGetVersion.Parse(currentVersionString!);
 
-                            var result = await VersionFinder.GetVersionsByNameAsync([projectFramework], parent.PackageName, currentVersionParent, nugetContext, logger, CancellationToken.None);
+                            var result = await VersionFinder.GetVersionsByNameAsync([targetFramework], parent.PackageName, currentVersionParent, nugetContext, logger, CancellationToken.None);
                             var versions = result.GetVersions();
                             NuGetVersion? latestVersion = versions.Where(v => !v.IsPrerelease).Max();
 
@@ -505,7 +506,7 @@ public class PackageManager
     }
 
     // Method to determine if a parent and child are compatible with their versions
-    public async Task<bool> IsCompatibleAsync(PackageToUpdate parent, PackageToUpdate child, string targetFramework, string projectDirectory, ILogger logger)
+    public async Task<bool> IsCompatibleAsync(PackageToUpdate parent, PackageToUpdate child, NuGetFramework targetFramework, string projectDirectory, ILogger logger)
     {
         // Get the dependencies of the parent
         List<PackageToUpdate>? dependencies = await GetDependenciesAsync(parent, targetFramework, projectDirectory, logger);
@@ -547,7 +548,7 @@ public class PackageManager
     }
 
     // Method to find a compatible version with the child for the parent to update to
-    public async Task<NuGetVersion?> FindCompatibleVersionAsync(List<PackageToUpdate> existingPackages, PackageToUpdate possibleParent, PackageToUpdate possibleDependency, string targetFramework, ILogger logger)
+    public async Task<NuGetVersion?> FindCompatibleVersionAsync(List<PackageToUpdate> existingPackages, PackageToUpdate possibleParent, PackageToUpdate possibleDependency, NuGetFramework targetFramework, ILogger logger)
     {
         string packageId = possibleParent.PackageName;
         string? currentVersionString = possibleParent.CurrentVersion;
@@ -557,9 +558,7 @@ public class PackageManager
 
         // Create a NugetContext instance to get the latest versions of the parent
         NuGetContext nugetContext = new NuGetContext(Path.GetDirectoryName(projectPath));
-        var projectFramework = NuGetFramework.Parse(targetFramework);
-
-        var result = await VersionFinder.GetVersionsByNameAsync([projectFramework], possibleParent.PackageName, CurrentVersion, nugetContext, logger, CancellationToken.None);
+        var result = await VersionFinder.GetVersionsByNameAsync([targetFramework], possibleParent.PackageName, CurrentVersion, nugetContext, logger, CancellationToken.None);
         var versions = result.GetVersions();
 
         // If there are no versions
@@ -611,7 +610,7 @@ public class PackageManager
     }
 
     // Method to determine if all the parents of a given package are compatible with the parent's desired version
-    public async Task<bool> AreAllParentsCompatibleAsync(List<PackageToUpdate> existingPackages, PackageToUpdate possibleParent, string targetFramework, string projectDirectory, ILogger logger)
+    public async Task<bool> AreAllParentsCompatibleAsync(List<PackageToUpdate> existingPackages, PackageToUpdate possibleParent, NuGetFramework targetFramework, string projectDirectory, ILogger logger)
     {
         // Get the possibleParent parentPackages
         HashSet<PackageToUpdate> parentPackages = GetParentPackages(possibleParent);
