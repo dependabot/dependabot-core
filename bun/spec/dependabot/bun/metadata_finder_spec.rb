@@ -93,6 +93,43 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
       it { is_expected.to be_nil }
     end
 
+    context "when the latest repository is a legacy array" do
+      let(:npm_latest_version_response) do
+        JSON.generate(repository: [123, "https://github.com/wrong/repo", "jshttp/etag"])
+      end
+      let(:npm_all_versions_response) { "{}" }
+
+      it "selects the first shorthand without fetching history" do
+        expect(source_url).to eq("https://github.com/jshttp/etag")
+        expect(WebMock).not_to have_requested(:get, npm_url)
+      end
+    end
+
+    context "when a non-200 latest response contains a source" do
+      let(:npm_latest_version_response) { '{"repository":"other/repository"}' }
+      let(:npm_all_versions_response) { '{"versions":{"1.0.0":{"repository":"jshttp/etag"}}}' }
+
+      before do
+        stub_request(:get, npm_url + "/latest").to_return(status: 404, body: npm_latest_version_response)
+      end
+
+      it "uses the source without fetching history" do
+        expect(source_url).to eq("https://github.com/other/repository")
+        expect(WebMock).not_to have_requested(:get, npm_url)
+      end
+    end
+
+    context "when the repository URL cannot be resolved and its directory is malformed" do
+      let(:npm_latest_version_response) do
+        JSON.generate(repository: { url: "not a URL", directory: 42 }, homepage: "https://github.com/jshttp/etag")
+      end
+      let(:npm_all_versions_response) { "{}" }
+
+      it "uses the homepage without validating the unused directory" do
+        expect(source_url).to eq("https://github.com/jshttp/etag")
+      end
+    end
+
     context "when there is a github link in the npm response" do
       let(:npm_latest_version_response) do
         fixture("npm_responses", "etag-1.0.0.json")

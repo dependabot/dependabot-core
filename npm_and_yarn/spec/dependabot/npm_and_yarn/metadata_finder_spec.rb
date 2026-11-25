@@ -94,6 +94,32 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       it { is_expected.to be_nil }
     end
 
+    context "when the latest repository is a legacy array" do
+      let(:npm_latest_version_response) do
+        JSON.generate(repository: [123, "https://github.com/wrong/repo", "jshttp/etag"], bugs: 42)
+      end
+      let(:npm_all_versions_response) { "{}" }
+
+      it "selects the first shorthand without inspecting later source candidates" do
+        expect(source_url).to eq("https://github.com/jshttp/etag")
+        expect(WebMock).not_to have_requested(:get, npm_url)
+      end
+    end
+
+    context "when a non-200 latest response contains a source" do
+      let(:npm_latest_version_response) { '{"repository":"other/repository"}' }
+      let(:npm_all_versions_response) { '{"versions":{"1.0.0":{"repository":"jshttp/etag"}}}' }
+
+      before do
+        stub_request(:get, npm_url + "/latest").to_return(status: 404, body: npm_latest_version_response)
+      end
+
+      it "uses the history instead of the non-200 response" do
+        expect(source_url).to eq("https://github.com/jshttp/etag")
+        expect(WebMock).to have_requested(:get, npm_url).once
+      end
+    end
+
     context "when there is a github link in the npm response" do
       let(:npm_latest_version_response) do
         fixture("npm_responses", "etag-1.0.0.json")
@@ -505,9 +531,15 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       let(:npm_all_versions_response) do
         JSON.dump(
           {
+            "time" => "not a publication time map",
             "versions" => {
+              "3.0.0" => {
+                "deprecated" => "Use 2.0.0 instead",
+                "repository" => "other/repository"
+              },
               "2.0.0" => {
                 "repository" => { "url" => "typescript-eslint/typescript-eslint" },
+                "dist" => 42,
                 "homepage" => "https://typescript-eslint.io/typescript-eslint/typescript-eslint"
               },
               "1.0.0" => {
@@ -524,7 +556,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
         stub_request(:get, "https://typescript-eslint.io/status").to_return(status: 404)
       end
 
-      it "returns the repository source without probing the homepage" do
+      it "returns the first non-deprecated source without reading unrelated metadata or probing the homepage" do
         expect(source_url).to eq("https://github.com/typescript-eslint/typescript-eslint")
         expect(WebMock).not_to have_requested(:get, "https://typescript-eslint.io/status")
       end
@@ -625,6 +657,12 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
           "for npm-package-json-lint since your current version."
         )
       end
+    end
+
+    context "when the current releaser has no publication time" do
+      let(:npm_all_versions_response) { '{"versions":{"1.6.0":{"_npmUser":{"name":"new-user"}}}}' }
+
+      it { is_expected.to be_nil }
     end
   end
 
@@ -730,6 +768,21 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
           "Review the package contents before updating."
         )
       end
+
+      context "when a script has a non-string value" do
+        let(:npm_all_versions_response) do
+          JSON.generate(
+            versions: {
+              "1.1.0" => { scripts: { postinstall: 1 } },
+              "1.2.0" => { scripts: { postinstall: "1" } }
+            }
+          )
+        end
+
+        it "compares scripts without coercing the values" do
+          expect(install_script_changes).to include("modifies `postinstall` script")
+        end
+      end
     end
 
     context "when only non-install scripts change" do
@@ -812,6 +865,14 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
           "[package versions](https://www.npmjs.com/package/attestation-pkg?activeTab=versions) " \
           "before updating."
         )
+      end
+
+      context "when dist is malformed" do
+        let(:npm_all_versions_response) { '{"versions":{"1.1.0":{"dist":42},"1.2.0":{}}}' }
+
+        it "raises instead of treating it as no attestation" do
+          expect { attestation_changes }.to raise_error(TypeError, "Integer does not have #dig method")
+        end
       end
     end
 
