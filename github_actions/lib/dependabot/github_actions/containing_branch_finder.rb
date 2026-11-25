@@ -27,7 +27,11 @@ module Dependabot
         if current_branch
           current_branch.delete_prefix("HEAD -> ")
         elsif branches_including_ref.size > 1
-          raise "Multiple ambiguous branches (#{branches_including_ref.join(', ')}) include #{sha}!"
+          # Release SHAs often sit on several release and backport branches, so there is no single branch to follow.
+          Dependabot.logger.info(
+            "Multiple branches include #{sha}, so no branch to follow: #{branches_including_ref.join(', ')}"
+          )
+          nil
         else
           branches_including_ref.first
         end
