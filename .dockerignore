@@ -18,6 +18,8 @@
 */Gemfile.lock
 !updater/Gemfile.lock
 **/node_modules
+/cargo/helpers/target
+/cargo/helpers/install-dir
 git.store
 .DS_Store
 *.pyc

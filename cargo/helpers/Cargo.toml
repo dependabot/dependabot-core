@@ -1,0 +1,12 @@
+[package]
+name = "dependabot-cargo-lock-graph"
+version = "0.1.0"
+edition = "2024"
+publish = false
+license = "MIT"
+
+[dependencies]
+cargo-lock = "11"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "1"
