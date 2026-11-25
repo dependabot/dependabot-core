@@ -1258,7 +1258,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     context "when the importer already has the new version" do
       before do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
-          .with("install --lockfile-only") do
+          .with("install --lockfile-only --no-frozen-lockfile") do
             locked_at_old_version = "specifier: ^0.0.1\n    version: 0.0.1"
             locked_at_new_version = "specifier: ^0.0.1 || ^0.0.2\n    version: 0.0.2"
             File.write("pnpm-lock.yaml", File.read("pnpm-lock.yaml").sub(locked_at_old_version, locked_at_new_version))
@@ -1276,7 +1276,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     context "when the new version is only in the lockfile for something else" do
       before do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
-          .with("install --lockfile-only") do
+          .with("install --lockfile-only --no-frozen-lockfile") do
             commands << "install --lockfile-only"
             other_entry = "\n  /fetch-factory@0.0.2:\n    resolution: {integrity: sha512-other}\n    dev: false\n"
             File.write("pnpm-lock.yaml", File.read("pnpm-lock.yaml").rstrip + "\n" + other_entry)
@@ -1328,7 +1328,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     before do
       allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, *_args|
         commands << command.split.first(2).join(" ")
-        File.write("pnpm-lock.yaml", workspace_lockfile) if command == "install --lockfile-only"
+        File.write("pnpm-lock.yaml", workspace_lockfile) if command == "install --lockfile-only --no-frozen-lockfile"
         ""
       end
     end
@@ -1378,7 +1378,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     before do
       allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, *_args|
         commands << command.split.first(2).join(" ")
-        if command == "install --lockfile-only"
+        if command == "install --lockfile-only --no-frozen-lockfile"
           File.write("pnpm-lock.yaml", lockfile_change.call(File.read("pnpm-lock.yaml")))
         end
         ""
@@ -1455,7 +1455,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     before do
       allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, *_args|
         commands << command.split.first(2).join(" ")
-        if command == "install --lockfile-only"
+        if command == "install --lockfile-only --no-frozen-lockfile"
           environment = "---\nlockfileVersion: '9.0'\nimporters:\n  .:\n    configDependencies: {}\n---\n"
           other_entry = "\n  /fetch-factory@0.0.2:\n    resolution: {integrity: sha512-other}\n    dev: false\n"
           File.write("pnpm-lock.yaml", "#{environment}#{File.read('pnpm-lock.yaml').rstrip}\n#{other_entry}")
@@ -1583,6 +1583,44 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     end
   end
 
+  describe "when pnpm-workspace.yaml sets frozenLockfile: true" do
+    let(:project_name) { "pnpm/frozen_lockfile_workspace_setting" }
+    let(:dependency_name) { "zod" }
+    let(:version) { "4.6.6" }
+    let(:previous_version) { "3.25.76" }
+    let(:requirements) do
+      [{ file: "package.json", requirement: "4.6.6", groups: ["dependencies"], source: nil }]
+    end
+    let(:previous_requirements) do
+      [{ file: "package.json", requirement: "3.25.76", groups: ["dependencies"], source: nil }]
+    end
+    let(:commands) { [] }
+
+    # Every command succeeds without changing the lockfile, so the fallbacks run as well
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, *_args|
+        commands << command
+        ""
+      end
+    end
+
+    it "turns the setting off for pnpm install, which would refuse to rewrite the lockfile" do
+      updated_pnpm_lock_content
+
+      installs = commands.grep(/\Ainstall /)
+      expect(installs).not_to be_empty
+      expect(installs).to all(start_with("install --lockfile-only --no-frozen-lockfile"))
+    end
+
+    it "does not pass the option to pnpm update, which rejects it as an unknown option" do
+      updated_pnpm_lock_content
+
+      updates = commands.grep(/(\A|\s)update /)
+      expect(updates).not_to be_empty
+      expect(updates.grep(/frozen-lockfile/)).to be_empty
+    end
+  end
+
   describe "security_updates_only flag" do
     let(:project_name) { "pnpm/simple" }
     let(:files) { project_dependency_files(project_name) }
@@ -1606,15 +1644,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         )
       end
 
-      it "does not pass --no-frozen-lockfile to pnpm update, which rejects it as an unknown option" do
-        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-          expect(cmd).not_to include("frozen-lockfile")
-          ""
-        end.at_least(:once)
-
-        updater.send(:run_pnpm_update_packages)
-      end
-
       it "passes --config.minimum-release-age=0 --config.minimum-release-age-strict=false to pnpm update" do
         expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
           # Override any minimumReleaseAge set in pnpm-workspace.yaml: security fixes must not be
@@ -1631,15 +1660,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
           expect(cmd).to include("--config.minimum-release-age=0")
           expect(cmd).to include("--config.minimum-release-age-strict=false")
-          ""
-        end
-
-        updater.send(:run_pnpm_install)
-      end
-
-      it "turns off a frozenLockfile setting, which would refuse the rewrite of the lockfile" do
-        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-          expect(cmd).to start_with("install --lockfile-only --no-frozen-lockfile")
           ""
         end
 
