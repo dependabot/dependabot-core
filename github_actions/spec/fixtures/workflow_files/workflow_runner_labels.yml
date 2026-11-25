@@ -1,0 +1,81 @@
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v1
+  lint:
+    runs-on: [ubuntu-22.04]
+    steps:
+      - run: echo lint
+  mac:
+    runs-on: "macos-14-xlarge"
+    steps:
+      - run: echo mac
+  windows:
+    runs-on: windows-2022
+    steps:
+      - run: echo windows
+  arm:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - run: echo arm
+  anchored:
+    runs-on: &macos-15 macos-15
+    steps:
+      - run: echo anchored
+  aliased:
+    runs-on: *macos-15
+    steps:
+      - run: echo aliased
+  anchored-list:
+    runs-on: &arm-list [ubuntu-24.04-arm]
+    steps:
+      - run: echo anchored-list
+  aliased-list:
+    runs-on: *arm-list
+    steps:
+      - run: echo aliased-list
+  anchored-item:
+    runs-on: [&win windows-2022]
+    steps:
+      - run: echo anchored-item
+  self-hosted:
+    runs-on: [Self-Hosted, ubuntu-22.04]
+    steps:
+      - run: echo self-hosted
+  scale-set:
+    runs-on: ubuntu-24
+    steps:
+      - run: echo scale-set
+  gpu:
+    runs-on: [ubuntu-22.04, gpu]
+    steps:
+      - run: echo gpu
+  template: &job-template
+    runs-on: windows-2022
+    steps:
+      - run: echo template
+  reused: *job-template
+  latest:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo latest
+  matrix:
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, windows-2022]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - run: echo matrix
+  larger:
+    runs-on:
+      group: ubuntu-runners
+      labels: ubuntu-22.04
+    steps:
+      - run: echo larger
+  unversioned:
+    runs-on: windows-11-arm
+    steps:
+      - run: echo unversioned
