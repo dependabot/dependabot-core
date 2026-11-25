@@ -426,9 +426,10 @@ module Dependabot
       # a wrapper binary that only allows non-mutating commands. Without this,
       # whenever the credentials are deemed to be invalid, they're erased.
       run_shell_command(
-        "git config --global credential.helper " \
-        "'!#{credential_helper_path} --file #{git_store_path}'",
-        allow_unsafe_shell_command: true,
+        [
+          "git", "config", "--global", "credential.helper",
+          "!#{credential_helper_path} --file #{git_store_path}"
+        ],
         fingerprint: "git config --global credential.helper '<helper_command>'"
       )
 
