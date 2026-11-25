@@ -404,7 +404,11 @@ module Dependabot
 
         sig { returns(String) }
         def commit_ref
-          T.must(latest_version_tag&.commit_sha)
+          tag = latest_version_tag
+          return T.must(tag.commit_sha) if tag
+
+          # Untagged SHA pin: the proposed release is the commit itself
+          T.cast(available_release, String)
         end
 
         sig { returns(T.nilable(T.any(Dependabot::Version, String))) }
