@@ -98,22 +98,18 @@ module Dependabot
             .returns(T.nilable(Dependabot::Package::NpmLockfileDetails))
         end
         def details(dependency_name, requirement, _manifest_name, strict: false)
-          details_candidates =
-            parsed
-            .select { |k, _| k.split(/(?<=\w)\@/)[0] == dependency_name }
+          candidates = parsed
+          unless strict
+            candidates = candidates.select { |key, _| key.split(/(?<=\w)\@/)[0] == dependency_name }
+            # Preserve the sole-entry fallback even when the requirement differs.
+            return T.must(candidates.first).last.lookup_details if candidates.one?
+          end
 
-          # If there's only one entry for this dependency, use it, even if
-          # the requirement in the lockfile doesn't match
-          details = if details_candidates.one? && !strict
-                      T.must(details_candidates.first).last
-                    else
-                      details_candidates.find do |descriptor_key, _|
-                        descriptor_key_includes_requirement?(descriptor_key, dependency_name, requirement)
-                      end&.last
-                    end
-          return if details.nil?
-
-          details.lookup_details
+          # A Berry key can group descriptors with different package names.
+          match = candidates.find do |descriptor_key, _|
+            descriptor_key_includes_requirement?(descriptor_key, dependency_name, requirement)
+          end
+          match&.last&.lookup_details
         end
 
         private

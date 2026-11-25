@@ -34,6 +34,36 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::YarnLock do
       .to have_attributes(version: "1.2.0")
   end
 
+  context "with grouped Yarn Berry descriptors" do
+    let(:file) { Dependabot::DependencyFile.new(name: "yarn.lock", content: lockfile_content) }
+    let(:lockfile_content) do
+      <<~YAML
+        __metadata:
+          version: 8
+
+        "aa-printer@npm:prettier@2.8.0, prettier@npm:2.8.0":
+          version: 2.8.0
+          resolution: "prettier@npm:2.8.0"
+
+        "local-@npm:^1.0.0, local-@workspace:packages/local":
+          version: 0.0.0-use.local
+          resolution: "local-@workspace:packages/local"
+      YAML
+    end
+
+    before { allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_call_original }
+
+    it "finds the strict descriptor when an alias starts the group" do
+      expect(reader.details("prettier", "2.8.0", ".yarnrc.yml", strict: true))
+        .to have_attributes(version: "2.8.0", resolution: "prettier@npm:2.8.0")
+    end
+
+    it "finds the workspace resolution of a package whose name ends in a hyphen" do
+      expect(reader.details("local-", "^1.0.0", ".yarnrc.yml", strict: true))
+        .to have_attributes(resolution: "local-@workspace:packages/local")
+    end
+  end
+
   context "when the requirement is only a prefix of another descriptor" do
     let(:result) do
       {
