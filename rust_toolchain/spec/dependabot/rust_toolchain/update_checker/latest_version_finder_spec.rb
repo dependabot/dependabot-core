@@ -72,6 +72,7 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker::LatestVersionFinder do
 
   let(:package_details_fetcher) { instance_double(Dependabot::RustToolchain::Package::PackageDetailsFetcher) }
   let(:mock_versions) { [] }
+  let(:release_dates) { {} }
 
   before do
     allow(Dependabot::RustToolchain::Package::PackageDetailsFetcher)
@@ -81,7 +82,9 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker::LatestVersionFinder do
       .to receive(:fetch)
       .and_return(Dependabot::Package::PackageDetails.new(
                     dependency: dependency,
-                    releases: mock_versions.map { |v| Dependabot::Package::PackageRelease.new(version: v) },
+                    releases: mock_versions.map do |v|
+                      Dependabot::Package::PackageRelease.new(version: v, released_at: release_dates[v.to_s])
+                    end,
                     dist_tags: nil
                   ))
   end
@@ -122,6 +125,29 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker::LatestVersionFinder do
     it "allows the release and marks the dependency when its date is unavailable" do
       expect(version_finder.latest_version).to eq(Dependabot::RustToolchain::Version.new("1.73"))
       expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+    end
+
+    context "when the newest release is inside the cooldown window" do
+      let(:mock_versions) do
+        [Dependabot::RustToolchain::Version.new("1.73"), Dependabot::RustToolchain::Version.new("1.74")]
+      end
+      let(:release_dates) { { "1.73" => Time.now.utc - (30 * 86_400), "1.74" => Time.now.utc - (2 * 86_400) } }
+
+      it "skips it and proposes the newest release outside the window" do
+        expect(version_finder.latest_version).to eq(Dependabot::RustToolchain::Version.new("1.73"))
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be_nil
+      end
+    end
+
+    context "when every release is outside the cooldown window" do
+      let(:mock_versions) do
+        [Dependabot::RustToolchain::Version.new("1.73"), Dependabot::RustToolchain::Version.new("1.74")]
+      end
+      let(:release_dates) { { "1.73" => Time.now.utc - (30 * 86_400), "1.74" => Time.now.utc - (10 * 86_400) } }
+
+      it "proposes the newest release" do
+        expect(version_finder.latest_version).to eq(Dependabot::RustToolchain::Version.new("1.74"))
+      end
     end
   end
 
