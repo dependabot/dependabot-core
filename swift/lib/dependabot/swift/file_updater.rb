@@ -181,7 +181,8 @@ module Dependabot
           manifest: T.must(updated_manifest || manifest),
           repo_contents_path: T.must(repo_contents_path),
           credentials: credentials,
-          target_version: dependency.version
+          target_version: dependency.version,
+          remove_host_only_pins: true
         ).updated_lockfile_content
       end
 
