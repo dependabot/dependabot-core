@@ -548,6 +548,41 @@ RSpec.describe namespace::SubdependencyVersionResolver do
           end
         end
 
+        context "when the committed .npmrc sets a longer gate and credentials have a scope" do
+          # A scoped credential makes the .npmrc be generated from credentials, so the committed gate must be carried
+          # into it; otherwise npm would run with no gate at all
+          let(:dependency_files) do
+            project_dependency_files("npm8/subdependency_update") +
+              [Dependabot::DependencyFile.new(name: ".npmrc", content: "min-release-age=7\n")]
+          end
+          let(:credentials) do
+            [Dependabot::Credential.new(
+              {
+                "type" => "npm_registry",
+                "registry" => "npm.pkg.github.com",
+                "token" => "my_token",
+                "scope" => "@my-company"
+              }
+            )]
+          end
+          let(:npmrc_seen_by_npm) { [] }
+
+          before do
+            allow(Dependabot::NpmAndYarn::NativeHelpers).to receive(:run_npm8_subdependency_update_command) do
+              npmrc_seen_by_npm << File.read(".npmrc")
+              ""
+            end
+          end
+
+          it "keeps the committed gate in the .npmrc npm reads" do
+            latest_resolvable_version
+
+            expect(Dependabot::NpmAndYarn::NativeHelpers)
+              .to have_received(:run_npm8_subdependency_update_command).with(["acorn"], min_release_age_arg: nil)
+            expect(npmrc_seen_by_npm.first).to include("min-release-age=7")
+          end
+        end
+
         context "when the running npm does not support --min-release-age" do
           let(:npm_supports_min_release_age) { false }
 

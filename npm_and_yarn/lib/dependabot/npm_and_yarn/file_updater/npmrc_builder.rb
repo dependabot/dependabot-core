@@ -22,10 +22,11 @@ module Dependabot
 
         SCOPED_REGISTRY = /^\s*@(?<scope>\S+):registry\s*=\s*(?<registry>\S+)/
 
-        # npm 12 settings that decide whether git and remote tarball dependencies may be installed.
-        # Helpers.npm_allow_flags only adds its permissive defaults when these are unset, so a .npmrc generated from
-        # credentials must keep them from the committed .npmrc for the written config and the CLI flags to agree.
-        POLICY_KEY = /^\s*["']?(?:allow-git|allow-remote)["']?\s*=/
+        # npm settings that restrict what may be installed: the npm 12 allow-git and allow-remote policies, and the
+        # min-release-age gate. Helpers.npm_allow_flags only adds its permissive defaults when the allow policies are
+        # unset, and the --min-release-age flag is left out when the committed gate is at least the cooldown, so a
+        # .npmrc generated from credentials must keep these lines for the written config and the CLI flags to agree.
+        POLICY_KEY = /^\s*["']?(?:allow-git|allow-remote|min-release-age)["']?\s*=/
 
         sig { params(content: T.nilable(String)).returns(T::Array[String]) }
         def self.policy_lines(content)
