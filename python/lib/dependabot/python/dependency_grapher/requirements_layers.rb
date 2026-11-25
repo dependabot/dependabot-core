@@ -5,7 +5,7 @@ require "sorbet-runtime"
 
 require "dependabot/dependency_file"
 require "dependabot/dependency_graphers/base"
-require "dependabot/python/requirement_references"
+require "dependabot/python/requirements_file_parser"
 
 module Dependabot
   module Python
@@ -56,9 +56,15 @@ module Dependabot
             path.match?(DEPEND_TXT_REGEX)
         end
 
-        sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
-        def initialize(dependency_files:)
+        sig do
+          params(
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            requirements_file_result: T.nilable(RequirementsFileParser::Result)
+          ).void
+        end
+        def initialize(dependency_files:, requirements_file_result: nil)
           @dependency_files = dependency_files
+          @requirements_file_result = requirements_file_result
         end
 
         # Builds one manifest group per requirements layer. A layer's primary is its compiled `.txt` (the
@@ -128,7 +134,7 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def constraints_files
-          requirement_family_files.select { |f| File.basename(f.name).include?("constraint") }
+          requirement_family_files.select { |file| File.basename(file.name).include?("constraint") }
         end
 
         # Collects sibling files referenced via `-r`/`-c`, walking the chain transitively. Returns only newly
@@ -141,25 +147,24 @@ module Dependabot
         sig { params(seeds: T::Array[Dependabot::DependencyFile]).returns(T::Array[Dependabot::DependencyFile]) }
         def referenced_requirement_files(seeds)
           by_name = requirement_family_files.to_h { |f| [f.name, f] }
-          seen = T.let(Set.new(seeds.map(&:name)), T::Set[String])
-          queue = T.let(seeds.dup, T::Array[Dependabot::DependencyFile])
-          collected = T.let([], T::Array[Dependabot::DependencyFile])
+          seed_names = seeds.map(&:name)
+          requirements_file_result
+            .reachable_local_files(seed_names)
+            .filter_map { |path| by_name[path] unless seed_names.include?(path) }
+        end
 
-          until queue.empty?
-            current = T.must(queue.shift)
-            RequirementReferences.paths(current).each do |path|
-              next if seen.include?(path)
-
-              seen << path
-              referenced = by_name[path]
-              next if referenced.nil?
-
-              collected << referenced
-              queue << referenced
-            end
-          end
-
-          collected
+        sig { returns(RequirementsFileParser::Result) }
+        def requirements_file_result
+          @requirements_file_result ||= T.let(
+            RequirementsFileParser.new(
+              dependency_files: dependency_files,
+              requirement_files: requirement_family_files.filter_map do |file|
+                file.name if file.name.end_with?(".in") ||
+                             self.class.manifest_txt_filename?(file.name)
+              end
+            ).parse,
+            T.nilable(RequirementsFileParser::Result)
+          )
         end
 
         # Returns a support-file copy of the given file so it can be parsed for cross-reference resolution

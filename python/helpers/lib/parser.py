@@ -3,15 +3,10 @@ import io
 import json
 import os.path
 import re
+import urllib.parse
+import urllib.request
 
 import configparser
-import setuptools
-import pip._internal.req.req_file
-from pip._internal.network.session import PipSession
-from pip._internal.req.constructors import (
-    install_req_from_line,
-    install_req_from_parsed_requirement,
-)
 
 from packaging.requirements import InvalidRequirement, Requirement
 # TODO: Replace 3p package `tomli` with 3.11's new stdlib `tomllib` once we
@@ -21,6 +16,7 @@ import tomli
 # Inspired by pips internal check:
 # https://github.com/pypa/pip/blob/0bb3ac87f5bb149bd75cceac000844128b574385/src/pip/_internal/req/req_file.py#L35
 COMMENT_RE = re.compile(r'(^|\s+)#.*$')
+REQUIREMENTS_SCHEMA_VERSION = 1
 
 
 def parse_pep621_pep735_dependencies(pyproject_path):
@@ -171,64 +167,518 @@ def parse_pep621_pep735_dependencies(pyproject_path):
     return json.dumps({"result": dependencies})
 
 
-def parse_requirements(directory, root_files=None):
-    # Without root_files, every requirements file on disk is parsed as a root.
-    # With them, the remaining files are only read through `-r`/`-c` lines,
-    # as pip would.
-    requirement_packages = []
-    if root_files is None:
-        reqs_files = glob.glob(os.path.join(directory, '*.txt')) \
-            + glob.glob(os.path.join(directory, '**', '*.txt')) \
-            + glob.glob(os.path.join(directory, '*.in')) \
-            + glob.glob(os.path.join(directory, '**', '*.in'))
-    else:
-        reqs_files = [os.path.join(directory, f) for f in root_files]
+def _parse_requirements_result(directory, requirement_files=None):
+    try:
+        return RequirementsFileParser(
+            directory,
+            requirement_files=requirement_files
+        ).parse()
+    except Exception as e:
+        print(json.dumps({"error": repr(e)}))
+        exit(1)
 
-    def version_from_install_req(install_req):
+
+def parse_requirements(directory, requirement_files=None):
+    result = _parse_requirements_result(directory, requirement_files)
+    return json.dumps({
+        "result": [
+            declaration
+            for declaration in result["declarations"]
+            if not declaration["local"]
+        ]
+    })
+
+
+def parse_requirements_v2(directory, requirement_files=None):
+    result = _parse_requirements_result(directory, requirement_files)
+    return json.dumps({"result": result})
+
+
+class TrackingLineIterator:
+    def __init__(self, content):
+        self._lines = iter(enumerate(content.splitlines(), start=1))
+        self.last_line_number = None
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        line = next(self._lines)
+        self.last_line_number = line[0]
+        return line
+
+
+class RequirementsFileParser:
+    def __init__(self, directory, requirement_files=None):
+        import pip._internal.req.req_file as req_file
+        from pip._internal.exceptions import InstallationError
+        from pip._internal.network.session import PipSession
+        from pip._internal.req.constructors import (
+            install_req_from_parsed_requirement,
+        )
+
+        self.directory = os.path.abspath(directory)
+        self.requirement_files = requirement_files
+        self.req_file = req_file
+        self.installation_error = InstallationError
+        self.install_req_from_parsed_requirement = (
+            install_req_from_parsed_requirement
+        )
+        self.session = PipSession()
+        self.line_parser = self.req_file.get_line_parser(None)
+        self.pip_parser = self.req_file.RequirementsFileParser(
+            self.session,
+            self.line_parser
+        )
+        self.direct_requirements = {}
+        self.edges = []
+        self.has_index_options = set()
+        self.has_local_path = set()
+        self.source_spans = {}
+
+    def parse(self):
+        original_directory = os.getcwd()
+        os.chdir(self.directory)
+        try:
+            files = self._parse_local_files()
+            components = self._components(files)
+            declarations = self._declarations(components)
+            component_ids = {
+                filename: component["id"]
+                for component in components
+                for filename in component["files"]
+            }
+
+            return {
+                "schema_version": REQUIREMENTS_SCHEMA_VERSION,
+                "declarations": declarations,
+                "files": [
+                    {
+                        "path": filename,
+                        "component_id": component_ids[filename],
+                    }
+                    for filename in sorted(files)
+                ],
+                "edges": self.edges,
+                "roots": sorted({
+                    root
+                    for component in components
+                    for root in component["roots"]
+                }),
+                "components": components,
+            }
+        finally:
+            os.chdir(original_directory)
+
+    def _parse_local_files(self):
+        if self.requirement_files is None:
+            files = {
+                self._relative_path(path)
+                for suffix in ("*.txt", "*.in")
+                for path in glob.glob(
+                    os.path.join(self.directory, "**", suffix),
+                    recursive=True
+                )
+            }
+        else:
+            files = {
+                self._relative_local_path(
+                    os.path.join(self.directory, filename)
+                )
+                for filename in self.requirement_files
+            }
+        pending = sorted(files)
+        parsed = set()
+
+        while pending:
+            filename = pending.pop(0)
+            if filename in parsed:
+                continue
+
+            parsed.add(filename)
+            absolute_path = os.path.join(self.directory, filename)
+            self.source_spans[filename] = self._physical_line_spans(
+                absolute_path
+            )
+            direct_requirements = []
+
+            for line in self.pip_parser._parse_file(absolute_path, False):
+                if self._has_index_options(line):
+                    self.has_index_options.add(filename)
+
+                parsed_requirement = self.req_file.handle_line(
+                    line,
+                    session=self.session
+                )
+                if parsed_requirement is not None:
+                    direct_requirements.append(parsed_requirement)
+                    if self._is_local_path(parsed_requirement):
+                        self.has_local_path.add(filename)
+                    continue
+
+                edge = self._edge_from_line(filename, line)
+                if edge is None:
+                    continue
+
+                self.edges.append(edge)
+                if edge["remote"]:
+                    continue
+
+                target = edge["to"]
+                target_path = os.path.join(self.directory, target)
+                if not os.path.isfile(target_path):
+                    raise self.installation_error(
+                        "Could not open requirements file: "
+                        f"[Errno 2] No such file or directory: '{target_path}'"
+                    )
+
+                if target not in files:
+                    files.add(target)
+                    pending.append(target)
+
+            self.direct_requirements[filename] = direct_requirements
+
+        return files
+
+    @staticmethod
+    def _has_index_options(line):
+        return bool(
+            getattr(line.opts, "index_url", None) or
+            getattr(line.opts, "extra_index_urls", None) or
+            getattr(line.opts, "no_index", False)
+        )
+
+    def _edge_from_line(self, filename, line):
+        if line.requirement is not None:
+            return None
+
+        if line.opts.requirements:
+            target = line.opts.requirements[0]
+            edge_type = "requirement"
+        elif line.opts.constraints:
+            target = line.opts.constraints[0]
+            edge_type = "constraint"
+        else:
+            return None
+
+        resolved_target, remote = self._resolve_reference(filename, target)
+        return {
+            "from": filename,
+            "to": resolved_target,
+            "type": edge_type,
+            "remote": remote,
+            "source": self._source_span(filename, line.lineno),
+        }
+
+    def _resolve_reference(self, filename, target):
+        parsed = urllib.parse.urlparse(target)
+        if parsed.scheme and parsed.scheme != "file":
+            return target, True
+
+        target_path = self._file_url_path(target)
+
+        if not os.path.isabs(target_path):
+            target_path = os.path.join(
+                os.path.dirname(os.path.join(self.directory, filename)),
+                target_path
+            )
+
+        return self._relative_local_path(target_path), False
+
+    def _components(self, files):
+        local_edges = [edge for edge in self.edges if not edge["remote"]]
+        neighbours = {filename: set() for filename in files}
+        for edge in local_edges:
+            neighbours[edge["from"]].add(edge["to"])
+            neighbours[edge["to"]].add(edge["from"])
+
+        components = []
+        remaining = set(files)
+        while remaining:
+            first = min(remaining, key=self._file_sort_key)
+            component_files = set()
+            pending = [first]
+            while pending:
+                filename = pending.pop()
+                if filename in component_files:
+                    continue
+
+                component_files.add(filename)
+                pending.extend(neighbours[filename] - component_files)
+
+            remaining -= component_files
+            components.append(
+                self._component(
+                    f"component-{len(components)}",
+                    component_files,
+                    local_edges
+                )
+            )
+
+        return components
+
+    def _component(self, component_id, files, local_edges):
+        component_edges = [
+            edge for edge in local_edges
+            if edge["from"] in files and edge["to"] in files
+        ]
+        incoming = {filename: 0 for filename in files}
+        for edge in component_edges:
+            incoming[edge["to"]] += 1
+
+        roots = {
+            filename for filename, count in incoming.items()
+            if count == 0
+        }
+        roots |= {
+            edge["to"]
+            for edge in component_edges
+            if edge["type"] == "constraint"
+            and edge["from"] in roots
+            and edge["from"].endswith(".in")
+            and edge["to"] == f"{edge['from'][:-3]}.txt"
+        }
+
+        reasons = []
+        if any(edge["remote"] and edge["from"] in files
+               for edge in self.edges):
+            reasons.append("remote_reference")
+        if self._has_cycle(files, component_edges):
+            reasons.append("cycle")
+        if self.has_local_path.intersection(files):
+            reasons.append("local_path")
+
+        return {
+            "id": component_id,
+            "files": sorted(files),
+            "roots": sorted(roots, key=self._file_sort_key),
+            "status": "partial" if reasons else "complete",
+            "reasons": reasons,
+            "has_index_options": bool(
+                self.has_index_options.intersection(files)
+            ),
+        }
+
+    def _has_cycle(self, files, edges):
+        children = {filename: [] for filename in files}
+        for edge in edges:
+            children[edge["from"]].append(edge["to"])
+
+        visiting = set()
+        visited = set()
+
+        def visit(filename):
+            if filename in visiting:
+                return True
+            if filename in visited:
+                return False
+
+            visiting.add(filename)
+            if any(visit(child) for child in children[filename]):
+                return True
+            visiting.remove(filename)
+            visited.add(filename)
+            return False
+
+        return any(visit(filename) for filename in files)
+
+    def _declarations(self, components):
+        declarations = {}
+        for component in components:
+            for requirement, constraint in self._component_requirements(
+                component
+            ):
+                declaration = self._declaration(
+                    requirement,
+                    constraint=constraint
+                )
+                if declaration is None:
+                    continue
+
+                source = declaration["source"]
+                key = (
+                    declaration["file"],
+                    source["start_line"],
+                    source["end_line"],
+                )
+                previous = declarations.get(key)
+                if previous is None:
+                    declarations[key] = declaration
+                elif previous["constraint"] and not declaration["constraint"]:
+                    declarations[key] = declaration
+
+        return list(declarations.values())
+
+    def _component_requirements(self, component):
+        if component["status"] == "complete":
+            return (
+                (requirement, None)
+                for root in component["roots"]
+                for requirement in self.req_file.parse_requirements(
+                    os.path.join(self.directory, root),
+                    session=self.session
+                )
+            )
+
+        if component["roots"] and "cycle" not in component["reasons"]:
+            return self._partial_component_requirements(component)
+
+        return (
+            (requirement, None)
+            for filename in component["files"]
+            for requirement in self.direct_requirements[filename]
+        )
+
+    def _partial_component_requirements(self, component):
+        component_files = set(component["files"])
+        edges = {
+            filename: [
+                edge for edge in self.edges
+                if not edge["remote"] and
+                edge["from"] == filename and
+                edge["to"] in component_files
+            ]
+            for filename in component_files
+        }
+        pending = [(root, False) for root in component["roots"]]
+        visited = set()
+
+        while pending:
+            filename, constraint = pending.pop(0)
+            state = (filename, constraint)
+            if state in visited:
+                continue
+
+            visited.add(state)
+            for requirement in self.direct_requirements[filename]:
+                yield requirement, constraint
+
+            for edge in edges[filename]:
+                # pip derives the child's role from this edge, not its parent.
+                pending.append((edge["to"], edge["type"] == "constraint"))
+
+    def _declaration(self, parsed_requirement, constraint=None):
+        install_req = self.install_req_from_parsed_requirement(
+            parsed_requirement
+        )
+        if install_req.req is None:
+            return None
+
+        filename, line_number = self._requirement_source(parsed_requirement)
+        return {
+            "name": install_req.req.name,
+            "version": self._version_from_install_req(install_req),
+            "markers": str(install_req.markers) or None,
+            "file": filename,
+            "requirement": str(install_req.specifier) or None,
+            "source_requirement": parsed_requirement.requirement,
+            "extras": sorted(list(install_req.extras)),
+            "constraint": (
+                parsed_requirement.constraint
+                if constraint is None
+                else constraint
+            ),
+            "editable": parsed_requirement.is_editable,
+            "local": install_req.link is not None and install_req.link.is_file,
+            "hashes": self._hashes(parsed_requirement),
+            "source": self._source_span(filename, line_number),
+        }
+
+    def _is_local_path(self, parsed_requirement):
+        install_req = self.install_req_from_parsed_requirement(
+            parsed_requirement
+        )
+        return install_req.link is not None and install_req.link.is_file
+
+    def _requirement_source(self, parsed_requirement):
+        match = re.fullmatch(
+            r"line (?P<line>\d+) of (?P<filename>.*)",
+            parsed_requirement.line_source or ""
+        )
+        if match is None:
+            raise ValueError(
+                "pip requirement did not include a source location"
+            )
+
+        return (
+            self._relative_local_path(
+                self._file_url_path(match.group("filename"))
+            ),
+            int(match.group("line"))
+        )
+
+    def _source_span(self, filename, start_line):
+        end_line = self.source_spans[filename].get(start_line)
+        if end_line is None:
+            raise ValueError(
+                f"pip requirement source line {start_line} was not found "
+                f"in {filename}"
+            )
+
+        return {
+            "start_line": start_line,
+            "end_line": end_line,
+        }
+
+    def _physical_line_spans(self, filename):
+        with open(filename, "rb") as file:
+            content = self.req_file._decode_req_file(
+                file.read(),
+                filename
+            )
+
+        lines = TrackingLineIterator(content)
+        spans = {}
+        for start_line, _ in self.req_file.join_lines(lines):
+            spans[start_line] = lines.last_line_number
+        return spans
+
+    def _relative_path(self, path):
+        return os.path.relpath(path, self.directory)
+
+    @staticmethod
+    def _file_url_path(path):
+        parsed = urllib.parse.urlparse(path)
+        if parsed.scheme == "file":
+            return urllib.request.url2pathname(parsed.path)
+
+        return path
+
+    def _relative_local_path(self, path):
+        absolute_path = os.path.abspath(path)
+        common_path = os.path.commonpath([self.directory, absolute_path])
+        if common_path != self.directory:
+            raise self.installation_error(
+                "Requirements file is outside the fetched source directory: "
+                f"'{absolute_path}'"
+            )
+
+        return self._relative_path(absolute_path)
+
+    @staticmethod
+    def _file_sort_key(filename):
+        return (0 if filename.endswith(".txt") else 1, filename)
+
+    @staticmethod
+    def _version_from_install_req(install_req):
         if install_req.is_pinned:
             return next(iter(install_req.specifier)).version
 
-    for reqs_file in reqs_files:
-        try:
-            requirements = pip._internal.req.req_file.parse_requirements(
-                reqs_file,
-                session=PipSession()
-            )
-            for parsed_req in requirements:
-                install_req = install_req_from_parsed_requirement(parsed_req)
-                if install_req.req is None:
-                    continue
-
-                # Ignore file: requirements
-                if install_req.link is not None and install_req.link.is_file:
-                    continue
-
-                pattern = r"-[cr] (.*) \(line \d+\)"
-                abs_path = re.search(pattern, install_req.comes_from).group(1)
-
-                # Ignore dependencies from remote constraint files
-                if not os.path.isfile(abs_path):
-                    continue
-
-                rel_path = os.path.relpath(abs_path, directory)
-
-                requirement_packages.append({
-                    "name": install_req.req.name,
-                    "version": version_from_install_req(install_req),
-                    "markers": str(install_req.markers) or None,
-                    "file": rel_path,
-                    "requirement": str(install_req.specifier) or None,
-                    "extras": sorted(list(install_req.extras)),
-                    "constraint": parsed_req.constraint
-                })
-        except Exception as e:
-            print(json.dumps({"error": repr(e)}))
-            exit(1)
-
-    return json.dumps({"result": requirement_packages})
+    @staticmethod
+    def _hashes(parsed_requirement):
+        hashes = (parsed_requirement.options or {}).get("hashes", {})
+        return [
+            f"{algorithm}:{digest}"
+            for algorithm in sorted(hashes)
+            for digest in hashes[algorithm]
+        ]
 
 
 def parse_setup(directory):
+    global setuptools
+    import setuptools
+    from pip._internal.req.constructors import install_req_from_line
+
     def version_from_install_req(install_req):
         if install_req.is_pinned:
             return next(iter(install_req.specifier)).version

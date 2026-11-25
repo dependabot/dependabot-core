@@ -878,7 +878,9 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
           ""
         end
 
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_call_original
         allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+          .with(hash_including(function: "get_dependency_hash"))
           .and_return(nil, [{ "hash" => "456def" }])
       end
 
@@ -927,7 +929,10 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
           ""
         end
 
-        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_return(nil)
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_call_original
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+          .with(hash_including(function: "get_dependency_hash"))
+          .and_return(nil)
       end
 
       it "raises DependencyFileNotResolvable instead of returning an empty hash list" do

@@ -203,6 +203,24 @@ RSpec.describe Dependabot::Python::DependencyGrapher::RequirementsLayers do
       end
     end
 
+    context "with independent layers that reference distinct pin files" do
+      let(:dependency_files) do
+        [
+          file("requirements-prod.txt", "-c prod-pins.txt\nfoo==1.0\n"),
+          file("prod-pins.txt", "foo<2.0\n"),
+          file("requirements-dev.txt", "-c dev-pins.txt\nbar==2.0\n"),
+          file("dev-pins.txt", "bar<3.0\n")
+        ]
+      end
+
+      it "keeps arbitrary constraint targets scoped to their referencing layer" do
+        groups = layers.groups.to_h { |group| [group.primary.name, group.files.map(&:name)] }
+
+        expect(groups.fetch("requirements-prod.txt")).to contain_exactly("requirements-prod.txt", "prod-pins.txt")
+        expect(groups.fetch("requirements-dev.txt")).to contain_exactly("requirements-dev.txt", "dev-pins.txt")
+      end
+    end
+
     # Regression: a constraints file that is itself an aggregate of `-r` lines (as in aio-libs/aiohttp's
     # requirements/constraints.in). It joins every layer via `constraints_files`, so the siblings it
     # references must be pulled in too - otherwise pip opens it in a layer that lacks them and the graph

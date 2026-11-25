@@ -10,13 +10,12 @@ require "dependabot/shared_helpers"
 require "dependabot/python/requirement"
 require "dependabot/errors"
 require "dependabot/python/language"
-require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/pip_compile_file_matcher"
 require "dependabot/python/language_version_manager"
 require "dependabot/python/package_manager"
 require "dependabot/python/marker_evaluator"
-require "dependabot/python/requirement_references"
+require "dependabot/python/requirements_file_parser"
 
 module Dependabot
   module Python
@@ -46,11 +45,6 @@ module Dependabot
         ].freeze,
         T::Array[T::Hash[Symbol, String]]
       )
-      REQUIREMENT_FILE_EVALUATION_ERRORS = %w(
-        InstallationError RequirementsFileParseError InvalidMarker
-        InvalidRequirement ValueError RecursionError
-      ).freeze
-
       # we use this placeholder version in case we are not able to detect any
       # PIP version from shell, we are ensuring that the actual update is not blocked
       # in any way if any metric collection exception start happening
@@ -335,46 +329,30 @@ module Dependabot
       # Without roots every requirements file is parsed as its own manifest, so `-c` entries are kept as
       # requirements of the constraints file. From roots, they follow pip and only pin versions.
       sig do
-        params(parsed: T::Array[PepDependency])
-          .returns([T::Array[PepDependency], T::Array[PepDependency]])
+        params(parsed: T::Array[RequirementsFileParser::Declaration])
+          .returns(
+            [
+              T::Array[RequirementsFileParser::Declaration],
+              T::Array[RequirementsFileParser::Declaration]
+            ]
+          )
       end
       def split_constraints(parsed)
-        return [parsed, []] unless requirement_roots
+        return [parsed, []] unless options[:requirement_roots]
 
         parsed.partition { |dep| !dep.constraint }
       end
 
-      sig { params(constraints: T::Array[PepDependency]).returns(T::Hash[String, String]) }
+      sig do
+        params(
+          constraints: T::Array[RequirementsFileParser::Declaration]
+        ).returns(T::Hash[String, String])
+      end
       def constraint_pins(constraints)
         constraints.each_with_object({}) do |dep, pins|
           version = dep.version
           pins[NameNormaliser.normalise(dep.name)] ||= version if version
         end
-      end
-
-      # Updates need every file parsed as a manifest so they can update pins in constraints files, so parsing
-      # from roots is opt-in. A root is any requirements file not pulled in by another via `-r`/`-c`, as pip
-      # would only read those through the reference. A reference loop leaves files no root reaches; parse
-      # everything so pip reports it.
-      sig { returns(T.nilable(T::Array[String])) }
-      def requirement_roots
-        return unless options[:requirement_roots]
-
-        references = requirement_files.to_h do |file|
-          [Pathname.new(file.name).cleanpath.to_path, RequirementReferences.paths(file)]
-        end
-        roots = references.keys - references.values.flatten
-        # A root pip-compile input may constrain itself to its own output, which is still installed directly.
-        roots |= roots.filter_map { |name| name.sub(/\.in\z/, ".txt") if name.end_with?(".in") } & references.keys
-        roots if reaches_every_file?(roots, references)
-      end
-
-      sig { params(roots: T::Array[String], references: T::Hash[String, T::Array[String]]).returns(T::Boolean) }
-      def reaches_every_file?(roots, references)
-        reached = T.let(Set.new(roots), T::Set[String])
-        queue = roots.dup
-        references.fetch(T.must(queue.shift), []).each { |path| queue << path if reached.add?(path) } until queue.empty?
-        references.keys.all? { |name| reached.include?(name) }
       end
 
       sig { params(name: T.nilable(String), version: T.nilable(String)).returns(T::Boolean) }
@@ -393,7 +371,7 @@ module Dependabot
         end
       end
 
-      sig { params(dep: PepDependency).returns(T::Boolean) }
+      sig { params(dep: RequirementsFileParser::Declaration).returns(T::Boolean) }
       def blocking_marker?(dep)
         marker = dep.markers
         return false if marker.nil? || marker == "None"
@@ -427,29 +405,16 @@ module Dependabot
         )
       end
 
-      sig { returns(T::Array[PepDependency]) }
+      sig { returns(T::Array[RequirementsFileParser::Declaration]) }
       def parsed_requirement_files
-        SharedHelpers.in_a_temporary_directory do
-          write_temporary_dependency_files
-
-          result = SharedHelpers.run_helper_subprocess(
-            command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
-            function: "parse_requirements",
-            args: [Dir.pwd, requirement_roots].compact
-          )
-
-          requirements = PepDependency.from_requirements_helper_result(result)
-          check_requirements(requirements)
-          requirements
+        requirements = requirements_file_result.declarations.reject do |declaration|
+          declaration.local || declaration.editable
         end
-      rescue SharedHelpers::HelperSubprocessFailed => e
-        evaluation_errors = REQUIREMENT_FILE_EVALUATION_ERRORS
-        raise unless e.message.start_with?(*evaluation_errors)
-
-        raise Dependabot::DependencyFileNotEvaluatable, e.message
+        check_requirements(requirements)
+        requirements
       end
 
-      sig { params(requirements: T::Array[PepDependency]).void }
+      sig { params(requirements: T::Array[RequirementsFileParser::Declaration]).void }
       def check_requirements(requirements)
         requirements.each do |dep|
           requirement = dep.requirement
@@ -476,25 +441,12 @@ module Dependabot
         true if get_original_file(PoetryPackageManager::LOCKFILE_NAME)
       end
 
-      sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def write_temporary_dependency_files
-        dependency_files
-          .reject { |f| f.name == ".python-version" }
-          .each do |file|
-            path = file.name
-            FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, remove_imports(file))
-          end
-      end
-
-      sig { params(file: T.untyped).returns(T.untyped) }
-      def remove_imports(file)
-        return file.content if file.path.end_with?(".tar.gz", ".whl", ".zip")
-
-        file.content.lines
-            .reject { |l| l.match?(/^['"]?(?<path>\..*?)(?=\[|#|'|"|$)/) }
-            .reject { |l| l.match?(/^(?:-e)\s+['"]?(?<path>.*?)(?=\[|#|'|"|$)/) }
-            .join
+      sig { returns(RequirementsFileParser::Result) }
+      def requirements_file_result
+        @requirements_file_result ||= T.let(
+          RequirementsFileParser.new(dependency_files: dependency_files).parse,
+          T.nilable(RequirementsFileParser::Result)
+        )
       end
 
       sig { params(name: String, extras: T::Array[String]).returns(String) }

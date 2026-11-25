@@ -89,13 +89,18 @@ RSpec.describe Dependabot::Python::FileParser::PepDependency do
         "markers" => "None",
         "file" => "requirements.txt",
         "requirement" => "==2.31.0",
+        "source_requirement" => "requests[security]==2.31.0",
         "extras" => ["security"],
-        "unknown" => true
+        "constraint" => false,
+        "editable" => false,
+        "local" => false,
+        "hashes" => ["sha256:abc"],
+        "source" => { "start_line" => 1, "end_line" => 1 }
       }
     end
     let(:result) { [record] }
 
-    it "returns typed records without changing the helper fields" do
+    it "accepts the legacy projection of a structured declaration" do
       expect(dependencies.first).to be_a(described_class)
       expect(dependencies.first).to have_attributes(
         name: "requests",
@@ -104,8 +109,9 @@ RSpec.describe Dependabot::Python::FileParser::PepDependency do
         file: "requirements.txt",
         requirement: "==2.31.0",
         extras: ["security"],
-        source_requirement: nil,
-        requirement_type: nil
+        source_requirement: "requests[security]==2.31.0",
+        requirement_type: nil,
+        constraint: false
       )
     end
 

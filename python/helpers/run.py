@@ -10,6 +10,8 @@ if __name__ == "__main__":
     # to that once we drop support for 3.9.
     if args["function"] == "parse_requirements":
         print(parser.parse_requirements(*args["args"]))
+    elif args["function"] == "parse_requirements_v2":
+        print(parser.parse_requirements_v2(*args["args"]))
     elif args["function"] == "parse_setup":
         print(parser.parse_setup(args["args"][0]))
     elif args["function"] == "parse_pep621_pep735_dependencies":

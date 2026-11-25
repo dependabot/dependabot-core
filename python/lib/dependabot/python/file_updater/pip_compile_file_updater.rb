@@ -13,6 +13,7 @@ require "dependabot/python/language_version_manager"
 require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/authed_url_builder"
+require "dependabot/python/requirements_file_parser"
 
 module Dependabot
   module Python
@@ -759,12 +760,13 @@ module Dependabot
           ordered_filenames = T.let([], T::Array[String])
 
           while (remaining_filenames = filenames - ordered_filenames).any?
-            ordered_filenames +=
-              remaining_filenames
-              .reject do |fn|
-                unupdated_reqs = (requirement_map[fn] || []) - ordered_filenames
-                unupdated_reqs.intersect?(filenames)
-              end
+            ready = remaining_filenames.reject do |fn|
+              unupdated_reqs = (requirement_map[fn] || []) - ordered_filenames
+              unupdated_reqs.intersect?(filenames)
+            end
+            return ordered_filenames + remaining_filenames if ready.empty?
+
+            ordered_filenames += ready
           end
 
           ordered_filenames
@@ -772,22 +774,25 @@ module Dependabot
 
         sig { returns(T::Hash[String, T::Array[String]]) }
         def requirement_map
-          child_req_regex = Python::SharedFileFetcher::CHILD_REQUIREMENT_REGEX
           @requirement_map ||=
-            pip_compile_files.each_with_object({}) do |file, req_map|
-              paths = T.must(file.content).scan(child_req_regex).flatten
-              current_dir = File.dirname(file.name)
-
-              req_map[file.name] =
-                paths.map do |path|
-                  path = File.join(current_dir, path) if current_dir != "."
-                  path = Pathname.new(path).cleanpath.to_path
-                  path = path.gsub(/\.txt$/, ".in")
+            pip_compile_files.to_h do |file|
+              paths =
+                requirements_file_result.local_paths_from(file.name, edge_types: ["requirement"]).filter_map do |path|
+                  path = path.gsub(/\.txt\z/, ".in")
                   next if path == file.name
 
                   path
-                end.uniq.compact
+                end.uniq
+              [file.name, paths]
             end
+        end
+
+        sig { returns(RequirementsFileParser::Result) }
+        def requirements_file_result
+          @requirements_file_result ||= T.let(
+            RequirementsFileParser.new(dependency_files: dependency_files).parse,
+            T.nilable(RequirementsFileParser::Result)
+          )
         end
 
         sig { returns(Dependabot::Python::FileParser::PythonRequirementParser) }
