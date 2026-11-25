@@ -1,0 +1,10 @@
+{
+  "name": "direct-dev-transitive-production",
+  "dependencies": {
+    "debug": "4.3.4"
+  },
+  "devDependencies": {
+    "ms": "2.1.2",
+    "etag": "1.8.1"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "app",
+  "version": "1.0.0",
+  "dependencies": {
+    "debug": "4.3.4"
+  },
+  "devDependencies": {
+    "ms": "2.1.2"
+  }
+}
