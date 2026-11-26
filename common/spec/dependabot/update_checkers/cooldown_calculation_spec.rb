@@ -120,4 +120,21 @@ RSpec.describe Dependabot::UpdateCheckers::CooldownCalculation do
       expect(described_class.cooldown_date_unavailable?(dependency)).to be false
     end
   end
+
+  describe ".mark_update_deferred" do
+    sig { returns(Dependabot::Dependency) }
+    let(:dependency) do
+      Dependabot::Dependency.new(name: "my-dep", version: "1.0.0", requirements: [], package_manager: "bundler")
+    end
+
+    it "is not deferred by default" do
+      expect(described_class.update_deferred?(dependency)).to be false
+    end
+
+    it "records that an update was withheld by cooldown" do
+      described_class.mark_update_deferred(dependency)
+
+      expect(described_class.update_deferred?(dependency)).to be true
+    end
+  end
 end
