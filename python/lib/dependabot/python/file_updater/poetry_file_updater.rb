@@ -15,6 +15,7 @@ require "dependabot/python/file_parser/poetry_lock"
 require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/poetry_plugin_installer"
+require "dependabot/python/poetry_project"
 require "dependabot/python/poetry_subdependency_pin"
 require "dependabot/python/subprocess_error_context"
 require "dependabot/package/release_cooldown_options"
@@ -25,6 +26,7 @@ module Dependabot
       class PoetryFileUpdater
         require_relative "pyproject_preparer"
         require_relative "poetry_file_updater/pep621_updater"
+        require_relative "poetry_file_updater/native_declaration_updater"
         extend T::Sig
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -99,12 +101,9 @@ module Dependabot
           content = T.must(pyproject).content
           return content unless requirement_changed?(T.must(pyproject), dependency)
 
-          updated_content = content.dup
-
-          dependency.requirements.zip(T.must(dependency.previous_requirements)).each do |new_r, old_r|
-            next unless new_r.file == pyproject&.name && T.must(old_r).file == pyproject&.name
-
-            updated_content = replace_dep(dependency, T.must(updated_content), new_r, T.must(old_r))
+          native = NativeDeclarationUpdater.update_if_enabled(dependency, T.must(content), T.must(pyproject).name)
+          updated_content = native.unapplied.reduce(native.content) do |acc, (new_r, old_r)|
+            replace_dep(dependency, acc, new_r, old_r)
           end
 
           raise DependencyFileContentNotChanged, "Content did not change!" if content == updated_content

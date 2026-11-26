@@ -57,3 +57,32 @@ class TestRunRouting:
         assert "result" in result
         names = {p["name"] for p in result["result"]["locked"]}
         assert "urllib3" in names
+
+    def test_update_poetry_declarations_routing(self):
+        content = '[tool.poetry.dependencies]\nrequests = "^2.0"\n'
+        edits = [{
+            "name": "requests",
+            "group": "dependencies",
+            "old_requirement": "^2.0",
+            "new_requirement": "^2.32",
+        }]
+        result = run_helper("update_poetry_declarations", [content, edits])
+
+        assert result["result"] == {
+            "content": '[tool.poetry.dependencies]\nrequests = "^2.32"\n',
+            "applied": [True],
+        }
+
+    def test_update_poetry_declarations_exits_non_zero_on_error(self):
+        input_json = json.dumps({
+            "function": "update_poetry_declarations",
+            "args": ["not [valid toml", []],
+        })
+        result = subprocess.run(
+            [sys.executable, RUN_PY], input=input_json,
+            capture_output=True, text=True, cwd=HELPERS_DIR,
+        )
+
+        assert result.returncode == 1
+        error = json.loads(result.stdout)
+        assert error["error_class"] == "UnexpectedCharError"
