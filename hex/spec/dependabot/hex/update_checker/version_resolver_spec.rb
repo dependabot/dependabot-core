@@ -78,38 +78,82 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
   before { mixfile_fixture_body.gsub!("~> 1.3.0", ">= 1.3.0") }
 
   shared_context "with local nested Git dependencies" do
+    let(:git_fixture_mixfile) do
+      lambda do |app, dependencies|
+        module_name = app.to_s.split("_").map(&:capitalize).join
+        dependency_lines = dependencies.map { |dependency| "      #{dependency}" }.join(",\n")
+
+        <<~ELIXIR
+          defmodule #{module_name}.MixProject do
+            use Mix.Project
+
+            def project do
+              [
+                app: :#{app},
+                version: "0.1.0",
+                deps: [
+          #{dependency_lines}
+                ]
+              ]
+            end
+          end
+        ELIXIR
+      end
+    end
+    let(:initialize_git_repository) do
+      lambda do |path|
+        Dependabot::SharedHelpers.run_shell_command(
+          ["git", "-C", path, "init", "--quiet", "--initial-branch=main"]
+        )
+      end
+    end
+    let(:commit_git_repository) do
+      lambda do |path, message|
+        Dependabot::SharedHelpers.run_shell_command(["git", "-C", path, "add", "."])
+        Dependabot::SharedHelpers.run_shell_command(
+          [
+            "git", "-C", path,
+            "-c", "user.name=Dependabot",
+            "-c", "user.email=support@dependabot.com",
+            "commit", "--quiet", "-m", message
+          ]
+        )
+        Dependabot::SharedHelpers.run_shell_command(["git", "-C", path, "rev-parse", "HEAD"]).strip
+      end
+    end
+
     let(:constraint_git_repo) { Dir.mktmpdir("dependabot-hex-constraint-git") }
     let(:constraint_git_url) { "file://#{constraint_git_repo}" }
     let(:constraint_git_revision) do
       File.write(
         File.join(constraint_git_repo, "mix.exs"),
-        mixfile_for(:constraint_git, ['{:poison, "< 3.0.0"}'])
+        git_fixture_mixfile.call(:constraint_git, ['{:poison, "< 3.0.0"}'])
       )
-      initialize_git_fixture(constraint_git_repo)
-      commit_git_fixture(constraint_git_repo, "Constrain poison")
+      initialize_git_repository.call(constraint_git_repo)
+      commit_git_repository.call(constraint_git_repo, "Constrain poison")
     end
     let(:constraint_git_head_revision) do
       constraint_git_revision
       File.write(File.join(constraint_git_repo, "README.md"), "new source revision\n")
-      commit_git_fixture(constraint_git_repo, "Advance constraint source")
+      commit_git_repository.call(constraint_git_repo, "Advance constraint source")
     end
     let(:outer_git_repo) { Dir.mktmpdir("dependabot-hex-outer-git") }
     let(:outer_git_url) { "file://#{outer_git_repo}" }
     let(:outer_git_locked_revision) do
       File.write(
         File.join(outer_git_repo, "mix.exs"),
-        mixfile_for(
+        git_fixture_mixfile.call(
           :outer_git,
           [%({:constraint_git, git: "#{constraint_git_url}", ref: "#{constraint_git_revision}"})]
         )
       )
-      initialize_git_fixture(outer_git_repo)
-      commit_git_fixture(outer_git_repo, "Add nested Git dependency")
+      initialize_git_repository.call(outer_git_repo)
+      commit_git_repository.call(outer_git_repo, "Add nested Git dependency")
     end
     let(:outer_git_head_revision) do
       outer_git_locked_revision
       File.write(File.join(outer_git_repo, "README.md"), "candidate\n")
-      commit_git_fixture(outer_git_repo, "Advance target")
+      commit_git_repository.call(outer_git_repo, "Advance target")
     end
 
     after do
