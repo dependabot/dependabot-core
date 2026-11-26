@@ -345,6 +345,102 @@ RSpec.describe Dependabot::Python::Package::PackageRegistryFinder do
           expect(registry_urls).to contain_exactly("https://pypi.org/simple/", "https://pypi.weasyldev.com/weasyl/source/+simple/")
         end
       end
+
+      context "with multiple requirements files each having different extra-index-url" do
+        let(:requirements_cpu) do
+          Dependabot::DependencyFile.new(
+            name: "requirements_cpu.txt",
+            content: fixture("requirements", "torch_cpu.txt")
+          )
+        end
+        let(:requirements_gpu) do
+          Dependabot::DependencyFile.new(
+            name: "requirements_gpu.txt",
+            content: fixture("requirements", "torch_gpu.txt")
+          )
+        end
+
+        context "when dependency is only in requirements_cpu.txt" do
+          let(:dependency_files) { [requirements_cpu, requirements_gpu] }
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "torch",
+              version: "2.0.0+cpu",
+              requirements: [{
+                requirement: "==2.0.0+cpu",
+                file: "requirements_cpu.txt",
+                groups: ["dependencies"],
+                source: nil
+              }],
+              package_manager: "pip"
+            )
+          end
+
+          it "only uses the extra-index-url from requirements_cpu.txt" do
+            expect(registry_urls).to contain_exactly(
+              "https://pypi.org/simple/",
+              "https://download.pytorch.org/whl/cpu/"
+            )
+          end
+        end
+
+        context "when dependency is only in requirements_gpu.txt" do
+          let(:dependency_files) { [requirements_cpu, requirements_gpu] }
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "torch",
+              version: "2.0.0+cu118",
+              requirements: [{
+                requirement: "==2.0.0+cu118",
+                file: "requirements_gpu.txt",
+                groups: ["dependencies"],
+                source: nil
+              }],
+              package_manager: "pip"
+            )
+          end
+
+          it "only uses the extra-index-url from requirements_gpu.txt" do
+            expect(registry_urls).to contain_exactly(
+              "https://pypi.org/simple/",
+              "https://download.pytorch.org/whl/cu118/"
+            )
+          end
+        end
+
+        context "when dependency is in both files" do
+          let(:dependency_files) { [requirements_cpu, requirements_gpu] }
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "torch",
+              version: "2.0.0+cpu",
+              requirements: [
+                {
+                  requirement: "==2.0.0+cpu",
+                  file: "requirements_cpu.txt",
+                  groups: ["dependencies"],
+                  source: nil
+                },
+                {
+                  requirement: "==2.0.0+cu118",
+                  file: "requirements_gpu.txt",
+                  groups: ["dependencies"],
+                  source: nil
+                }
+              ],
+              package_manager: "pip"
+            )
+          end
+
+          it "uses extra-index-url from both files" do
+            expect(registry_urls).to contain_exactly(
+              "https://pypi.org/simple/",
+              "https://download.pytorch.org/whl/cpu/",
+              "https://download.pytorch.org/whl/cu118/"
+            )
+          end
+        end
+      end
     end
   end
 end
