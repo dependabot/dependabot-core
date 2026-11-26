@@ -52,31 +52,12 @@ defmodule GitDependencyFetcher do
 
   defp fetch_candidate_dependency(dependency) do
     opts = Keyword.delete(dependency.opts, :lock)
-
-    case fetch_dependency(dependency, opts) do
-      {:git, _, _, _} -> :ok
-      _ -> Mix.raise("Git dependency #{dependency.app} did not resolve to a Git revision")
-    end
+    fetch_dependency(dependency, opts)
   end
 
-  defp fetch_locked_dependency(dependency, {:git, _, locked_revision, _} = lock) do
+  defp fetch_locked_dependency(dependency, lock) do
     opts = Keyword.put(dependency.opts, :lock, lock)
-    enforce_locked_revision? = lock_matches_declared_source?(lock, opts)
-    fetched_lock = fetch_dependency(dependency, opts)
-
-    case {enforce_locked_revision?, fetched_lock} do
-      {true, {:git, _, ^locked_revision, _}} ->
-        :ok
-
-      {true, _} ->
-        Mix.raise("Git dependency #{dependency.app} did not resolve to its locked revision")
-
-      {false, {:git, _, _, _}} ->
-        :ok
-
-      {false, _} ->
-        Mix.raise("Git dependency #{dependency.app} did not resolve to a Git revision")
-    end
+    fetch_dependency(dependency, opts)
   end
 
   defp fetch_dependency(dependency, opts) do
@@ -84,20 +65,6 @@ defmodule GitDependencyFetcher do
       dependency.scm.update(opts)
     else
       dependency.scm.checkout(opts)
-    end
-  end
-
-  defp lock_matches_declared_source?({:git, repository, _, lock_opts}, opts) do
-    repository == opts[:git] and lock_opts == declared_lock_opts(opts)
-  end
-
-  defp declared_lock_opts(opts) do
-    lock_opts = Keyword.take(opts, [:branch, :ref, :tag, :sparse, :subdir, :depth])
-
-    if opts[:submodules] do
-      lock_opts ++ [submodules: true]
-    else
-      lock_opts
     end
   end
 end

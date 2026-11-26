@@ -21,8 +21,7 @@ module Dependabot
         RESULT_FILE = ".dependabot-result"
         RESOLUTION_TIMEOUT = 30
         GIT_FETCH_TIMEOUT = 120
-        RESOLUTION_DIVERGENCE_HEADERS =
-          ["Dependencies have diverged:", "** (Mix) Dependencies have diverged:"].freeze
+        RESOLUTION_DIVERGENCE_HEADER = "Dependencies have diverged:"
         RESOLUTION_DIVERGENCE_TRAILER = "** (Mix) Can't continue due to errors on dependencies"
         MALFORMED_REQUIREMENT =
           %r{
@@ -136,7 +135,7 @@ module Dependabot
         def confirmed_resolution_divergence?(message)
           lines = message.lines.map(&:strip).reject(&:empty?)
 
-          lines.any? { |line| RESOLUTION_DIVERGENCE_HEADERS.include?(line) } &&
+          lines.include?(RESOLUTION_DIVERGENCE_HEADER) &&
             lines.last == RESOLUTION_DIVERGENCE_TRAILER
         end
 
