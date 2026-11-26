@@ -50,11 +50,7 @@ module Dependabot
         )
 
         @latest_resolvable_version_with_no_unlock ||=
-          if git_dependency?
-            latest_resolvable_commit_with_unchanged_git_source
-          else
-            fetch_latest_resolvable_version(unlock_requirement: false)
-          end
+          fetch_latest_resolvable_version(unlock_requirement: false)
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
@@ -83,7 +79,7 @@ module Dependabot
       def latest_resolvable_version_for_git_dependency
         # If the gem isn't pinned, the latest version is just the latest
         # commit for the specified branch.
-        return latest_resolvable_commit_with_unchanged_git_source unless git_commit_checker.pinned?
+        return fetch_latest_resolvable_version(unlock_requirement: false) unless git_commit_checker.pinned?
 
         # If the dependency is pinned to a tag that looks like a version then
         # we want to update that tag. The latest version will then be the SHA
@@ -96,11 +92,6 @@ module Dependabot
 
         # If the dependency is pinned then there's nothing we can do.
         dependency.version
-      end
-
-      sig { returns(T.any(String, T.nilable(Dependabot::Version))) }
-      def latest_resolvable_commit_with_unchanged_git_source
-        fetch_latest_resolvable_version(unlock_requirement: false)
       end
 
       sig { returns(T::Boolean) }

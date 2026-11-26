@@ -21,6 +21,8 @@ module Dependabot
         RESULT_FILE = ".dependabot-result"
         RESOLUTION_TIMEOUT = 30
         GIT_FETCH_TIMEOUT = 120
+        RESOLUTION_DIVERGENCE_HEADERS =
+          ["Dependencies have diverged:", "** (Mix) Dependencies have diverged:"].freeze
         MALFORMED_REQUIREMENT =
           %r{
             \A\*\*[ ]\(Mix\)[ ]Required[ ]version[ ].+[ ]for[ ]package[ ].+[ ]is[ ]incorrectly[ ]specified
@@ -65,6 +67,7 @@ module Dependabot
         def fetch_latest_resolvable_version
           latest_resolvable_version = resolve
 
+          return if latest_resolvable_version.nil?
           return latest_resolvable_version if latest_resolvable_version.match?(/^[0-9a-f]{40}$/)
 
           version_class.new(latest_resolvable_version)
@@ -73,16 +76,10 @@ module Dependabot
           error = handle_hex_errors(sanitized_error)
           return if error.nil?
 
-          if sanitized_error.equal?(e)
-            raise if error.equal?(e)
-
-            raise error, cause: nil
-          end
-
-          raise error, cause: nil
+          CredentialHelpers.raise_translated_error(original_error: e, error: error)
         end
 
-        sig { returns(String) }
+        sig { returns(T.nilable(String)) }
         def resolve
           Dir.mktmpdir("dependabot-hex-home") do |hex_home|
             SharedHelpers.in_a_temporary_directory do
@@ -108,7 +105,7 @@ module Dependabot
           )
         end
 
-        sig { params(env: T::Hash[String, String]).returns(String) }
+        sig { params(env: T::Hash[String, String]).returns(T.nilable(String)) }
         def run_elixir_update_checker(env)
           SharedHelpers.run_shell_command(
             mix_run_command(elixir_helper_check_update_path, dependency.name),
@@ -117,6 +114,10 @@ module Dependabot
             timeout: RESOLUTION_TIMEOUT
           )
           File.read(RESULT_FILE)
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          return if confirmed_resolution_divergence?(e.message)
+
+          raise
         end
 
         sig do
@@ -127,12 +128,12 @@ module Dependabot
           source = CredentialHelpers.authentication_source(error.message)
           return Dependabot::PrivateSourceAuthenticationFailure.new(source) if source
 
-          # Ignore dependencies which don't resolve due to mis-matching
-          # environment specifications.
-          # TODO: Update the environment specifications instead
-          return if error.message.include?("Dependencies have diverged")
-
           handle_project_error(error) || error
+        end
+
+        sig { params(message: String).returns(T::Boolean) }
+        def confirmed_resolution_divergence?(message)
+          message.lines.any? { |line| RESOLUTION_DIVERGENCE_HEADERS.include?(line.strip) }
         end
 
         sig { params(script: String, args: String).returns(T::Array[String]) }

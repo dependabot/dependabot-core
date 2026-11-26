@@ -77,6 +77,47 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
   # Prepare the mixfile in the same way the FilePreparer would
   before { mixfile_fixture_body.gsub!("~> 1.3.0", ">= 1.3.0") }
 
+  shared_context "with local nested Git dependencies" do
+    let(:constraint_git_repo) { Dir.mktmpdir("dependabot-hex-constraint-git") }
+    let(:constraint_git_url) { "file://#{constraint_git_repo}" }
+    let(:constraint_git_revision) do
+      File.write(
+        File.join(constraint_git_repo, "mix.exs"),
+        mixfile_for(:constraint_git, ['{:poison, "< 3.0.0"}'])
+      )
+      initialize_git_fixture(constraint_git_repo)
+      commit_git_fixture(constraint_git_repo, "Constrain poison")
+    end
+    let(:constraint_git_head_revision) do
+      constraint_git_revision
+      File.write(File.join(constraint_git_repo, "README.md"), "new source revision\n")
+      commit_git_fixture(constraint_git_repo, "Advance constraint source")
+    end
+    let(:outer_git_repo) { Dir.mktmpdir("dependabot-hex-outer-git") }
+    let(:outer_git_url) { "file://#{outer_git_repo}" }
+    let(:outer_git_locked_revision) do
+      File.write(
+        File.join(outer_git_repo, "mix.exs"),
+        mixfile_for(
+          :outer_git,
+          [%({:constraint_git, git: "#{constraint_git_url}", ref: "#{constraint_git_revision}"})]
+        )
+      )
+      initialize_git_fixture(outer_git_repo)
+      commit_git_fixture(outer_git_repo, "Add nested Git dependency")
+    end
+    let(:outer_git_head_revision) do
+      outer_git_locked_revision
+      File.write(File.join(outer_git_repo, "README.md"), "candidate\n")
+      commit_git_fixture(outer_git_repo, "Advance target")
+    end
+
+    after do
+      FileUtils.remove_entry(constraint_git_repo)
+      FileUtils.remove_entry(outer_git_repo)
+    end
+  end
+
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { resolver.latest_resolvable_version }
 
@@ -90,12 +131,30 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
     end
 
     context "when an unchanged Git dependency constrains the target" do
-      let(:mixfile_fixture_name) { "git_source_shared_constraint" }
-      let(:lockfile_fixture_name) { "git_source" }
+      include_context "with local nested Git dependencies"
       let(:dependency_name) { "poison" }
       let(:version) { "2.2.0" }
       let(:dependency_requirements) do
         [{ file: "mix.exs", requirement: ">= 2.2.0", groups: [], source: nil }]
+      end
+      let(:mixfile_fixture_body) do
+        mixfile_for(
+          :dependabot_test,
+          [
+            '{:plug, "1.2.0"}',
+            '{:poison, ">= 2.2.0"}',
+            %({:constraint_git, git: "#{constraint_git_url}", ref: "#{constraint_git_revision}"})
+          ]
+        )
+      end
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "mix.lock",
+          content: git_source_lockfile(
+            "\"constraint_git\": {:git, \"#{constraint_git_url}\", \"#{constraint_git_revision}\", " \
+            "[ref: \"#{constraint_git_revision}\"]}"
+          )
+        )
       end
 
       before do
@@ -117,8 +176,8 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       context "when the Git dependency is scoped to another environment" do
         before do
           mixfile_fixture_body.sub!(
-            'ref: "v1.2.0"',
-            'ref: "v1.2.0", only: :test'
+            %(ref: "#{constraint_git_revision}"),
+            %(ref: "#{constraint_git_revision}", only: :test)
           )
         end
 
@@ -136,7 +195,10 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
         let(:lockfile) do
           Dependabot::DependencyFile.new(
             name: "mix.lock",
-            content: fixture("lockfiles", "git_source").sub(
+            content: git_source_lockfile(
+              "\"constraint_git\": {:git, \"#{constraint_git_url}\", \"#{constraint_git_revision}\", " \
+              "[ref: \"#{constraint_git_revision}\"]}"
+            ).sub(
               "496bef96634a49d7803ab2671482f0c5ce9ce0b7b9bc25bc0ae8e09859dd2004",
               "0" * 64
             )
@@ -152,68 +214,142 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
     end
 
     context "when an unchanged Git dependency has a locked Git child" do
-      let(:mixfile_fixture_name) { "git_source_shared_constraint" }
-      let(:lockfile_fixture_name) { "git_source" }
+      include_context "with local nested Git dependencies"
       let(:dependency_name) { "poison" }
       let(:version) { "2.2.0" }
       let(:dependency_requirements) do
         [{ file: "mix.exs", requirement: ">= 2.2.0", groups: [], source: nil }]
       end
-      let(:outer_git_repo) { Dir.mktmpdir("dependabot-hex-outer-git") }
-      let(:outer_git_url) { "file://#{outer_git_repo}" }
-      let(:outer_git_revision) do
-        File.write(
-          File.join(outer_git_repo, "mix.exs"),
-          <<~ELIXIR
-            defmodule OuterGit.MixProject do
-              use Mix.Project
-
-              def project do
-                [
-                  app: :outer_git,
-                  version: "0.1.0",
-                  deps: [{:phoenix, github: "dependabot-fixtures/phoenix", ref: "v1.2.0"}]
-                ]
-              end
-            end
-          ELIXIR
-        )
-        Dependabot::SharedHelpers.run_shell_command(["git", "-C", outer_git_repo, "init", "--quiet"])
-        Dependabot::SharedHelpers.run_shell_command(["git", "-C", outer_git_repo, "add", "mix.exs"])
-        Dependabot::SharedHelpers.run_shell_command(
-          [
-            "git", "-C", outer_git_repo,
-            "-c", "user.name=Dependabot",
-            "-c", "user.email=support@dependabot.com",
-            "commit", "--quiet", "-m", "Add nested Git dependency"
-          ]
-        )
-        Dependabot::SharedHelpers.run_shell_command(
-          ["git", "-C", outer_git_repo, "rev-parse", "HEAD"]
-        ).strip
-      end
       let(:mixfile_fixture_body) do
-        fixture("mixfiles", mixfile_fixture_name).sub(
-          '{:phoenix, github: "dependabot-fixtures/phoenix", ref: "v1.2.0"}',
-          %({:outer_git, git: "#{outer_git_url}", ref: "#{outer_git_revision}"})
+        mixfile_for(
+          :dependabot_test,
+          [
+            '{:plug, "1.2.0"}',
+            '{:poison, ">= 2.2.0"}',
+            %({:outer_git, git: "#{outer_git_url}", ref: "#{outer_git_locked_revision}"})
+          ]
         )
       end
       let(:lockfile) do
-        outer_lock = <<~LOCK
-          %{"outer_git": {:git, "#{outer_git_url}", "#{outer_git_revision}",
-            [ref: "#{outer_git_revision}"]},
-        LOCK
-        content = fixture("lockfiles", lockfile_fixture_name).sub(
-          "%{",
-          "#{outer_lock}  "
+        Dependabot::DependencyFile.new(
+          name: "mix.lock",
+          content: git_source_lockfile(
+            "\"outer_git\": {:git, \"#{outer_git_url}\", \"#{outer_git_locked_revision}\", " \
+            "[ref: \"#{outer_git_locked_revision}\"]}",
+            "\"constraint_git\": {:git, \"#{constraint_git_url}\", \"#{constraint_git_revision}\", " \
+            "[ref: \"#{constraint_git_revision}\"]}"
+          )
         )
-        Dependabot::DependencyFile.new(name: "mix.lock", content: content)
       end
-
-      after { FileUtils.remove_entry(outer_git_repo) }
 
       it "recursively fetches both Git dependencies before updating" do
         expect(latest_resolvable_version).to be < Gem::Version.new("3.0.0")
+      end
+    end
+
+    context "when the target Git dependency has a locked Git child" do
+      include_context "with local nested Git dependencies"
+      let(:dependency_name) { "outer_git" }
+      let(:version) { outer_git_locked_revision }
+      let(:dependency_requirements) do
+        [
+          {
+            file: "mix.exs",
+            requirement: nil,
+            groups: [],
+            source: { type: "git", url: outer_git_url, branch: "main", ref: nil }
+          }
+        ]
+      end
+      let(:constraint_checkouts_seen) { [] }
+      let(:mixfile_fixture_body) do
+        mixfile_for(
+          :dependabot_test,
+          [
+            '{:poison, ">= 2.2.0"}',
+            %({:outer_git, git: "#{outer_git_url}", branch: "main"})
+          ]
+        )
+      end
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "mix.lock",
+          content: git_source_lockfile(
+            %("outer_git": {:git, "#{outer_git_url}", "#{outer_git_locked_revision}", [branch: "main"]}),
+            "\"constraint_git\": {:git, \"#{constraint_git_url}\", \"#{constraint_git_revision}\", " \
+            "[ref: \"#{constraint_git_revision}\"]}"
+          )
+        )
+      end
+
+      before do
+        outer_git_head_revision
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(array_including(end_with("/check_update.exs"), dependency_name), anything)
+          .and_wrap_original do |original, command, **options|
+            constraint_checkouts_seen << File.exist?("deps/constraint_git/mix.exs")
+            original.call(command, **options)
+          end
+      end
+
+      it "fetches the candidate and its locked Git children before updating" do
+        expect(latest_resolvable_version).to eq(outer_git_head_revision)
+        expect(constraint_checkouts_seen).to contain_exactly(true)
+      end
+    end
+
+    context "when an unrelated dependency changes from Git to Hex" do
+      let(:dependency_name) { "poison" }
+      let(:version) { "2.2.0" }
+      let(:dependency_requirements) do
+        [{ file: "mix.exs", requirement: ">= 2.2.0", groups: [], source: nil }]
+      end
+      let(:mixfile_fixture_body) do
+        mixfile_for(
+          :dependabot_test,
+          ['{:poison, ">= 2.2.0"}', '{:phoenix, "1.2.0"}']
+        )
+      end
+      let(:lockfile_fixture_name) { "git_source" }
+
+      before { stub_update_result("2.2.0") }
+
+      it "ignores the stale Git lock during bootstrap" do
+        expect(latest_resolvable_version).to eq(Dependabot::Hex::Version.new("2.2.0"))
+      end
+    end
+
+    context "when an unrelated Git dependency changes ref" do
+      include_context "with local nested Git dependencies"
+      let(:dependency_name) { "poison" }
+      let(:version) { "2.2.0" }
+      let(:dependency_requirements) do
+        [{ file: "mix.exs", requirement: ">= 2.2.0", groups: [], source: nil }]
+      end
+      let(:mixfile_fixture_body) do
+        mixfile_for(
+          :dependabot_test,
+          [
+            '{:poison, ">= 2.2.0"}',
+            %({:constraint_git, git: "#{constraint_git_url}", ref: "#{constraint_git_head_revision}"})
+          ]
+        )
+      end
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "mix.lock",
+          content: git_source_lockfile(
+            "\"constraint_git\": {:git, \"#{constraint_git_url}\", \"#{constraint_git_revision}\", " \
+            "[ref: \"#{constraint_git_revision}\"]}"
+          )
+        )
+      end
+
+      before { stub_update_result("2.2.0") }
+
+      it "allows Mix to reconcile the changed source" do
+        expect(latest_resolvable_version).to eq(Dependabot::Hex::Version.new("2.2.0"))
       end
     end
 
@@ -254,10 +390,13 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       let(:lockfiles_seen_by_update) { [] }
 
       before do
-        allow(resolver).to receive(:run_elixir_update_checker) do
-          lockfiles_seen_by_update << File.read("mix.lock")
-          "1.3.6"
-        end
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(array_including(end_with("/check_update.exs"), dependency_name), anything) do
+            lockfiles_seen_by_update << File.read("mix.lock")
+            File.write(".dependabot-result", "1.3.6")
+            ""
+          end
       end
 
       it "keeps the original target entry on disk for the update task" do
@@ -633,6 +772,55 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       end
     end
 
+    context "with a confirmed Mix dependency divergence" do
+      let(:resolution_error) do
+        helper_failure("warning: project output\n** (Mix) Dependencies have diverged:\n")
+      end
+
+      before { stub_resolution_failure(resolution_error) }
+
+      it "returns no resolvable version" do
+        expect(latest_resolvable_version).to be_nil
+        expect(mix_attempts).to contain_exactly(:resolution)
+      end
+    end
+
+    context "when Git bootstrap output mentions dependency divergence before failing" do
+      let(:bootstrap_error) do
+        helper_failure("project output: Dependencies have diverged\nfatal: Git checkout failed")
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(array_including(end_with("/fetch_git_dependencies.exs"), dependency_name), anything)
+          .and_raise(bootstrap_error)
+      end
+
+      it "preserves the operational failure" do
+        expect { latest_resolvable_version }.to raise_error do |error|
+          expect(error).to equal(bootstrap_error)
+        end
+      end
+    end
+
+    context "with a repository public-key authentication failure" do
+      let(:resolution_error) do
+        helper_failure('Downloading public key for repo "dependabot" failed with code: 401')
+      end
+
+      before { stub_resolution_failure(resolution_error) }
+
+      it "raises an authentication error without retrying" do
+        expect { latest_resolvable_version }
+          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+            expect(error.source).to eq("dependabot")
+            expect(error.cause).to be_nil
+          end
+        expect(mix_attempts).to contain_exactly(:resolution)
+      end
+    end
+
     context "when a resolution error contains a raw repository URL query pair" do
       let(:repository_url) { "https://private.example?access_token=secret%2Bvalue" }
       let(:credentials) do
@@ -786,6 +974,61 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
         message: message,
         error_context: error_context
       )
+    end
+
+    def mixfile_for(app, dependencies)
+      module_name = app.to_s.split("_").map(&:capitalize).join
+      dependency_lines = dependencies.map { |dependency| "      #{dependency}" }.join(",\n")
+
+      <<~ELIXIR
+        defmodule #{module_name}.MixProject do
+          use Mix.Project
+
+          def project do
+            [
+              app: :#{app},
+              version: "0.1.0",
+              deps: [
+        #{dependency_lines}
+              ]
+            ]
+          end
+        end
+      ELIXIR
+    end
+
+    def git_source_lockfile(*entries)
+      content = fixture("lockfiles", "git_source").sub(/^  "phoenix":.*\n/, "")
+      insertion = entries.map { |entry| "  #{entry},\n" }.join
+      content.sub("%{", "%{\n#{insertion}")
+    end
+
+    def initialize_git_fixture(path)
+      Dependabot::SharedHelpers.run_shell_command(
+        ["git", "-C", path, "init", "--quiet", "--initial-branch=main"]
+      )
+    end
+
+    def commit_git_fixture(path, message)
+      Dependabot::SharedHelpers.run_shell_command(["git", "-C", path, "add", "."])
+      Dependabot::SharedHelpers.run_shell_command(
+        [
+          "git", "-C", path,
+          "-c", "user.name=Dependabot",
+          "-c", "user.email=support@dependabot.com",
+          "commit", "--quiet", "-m", message
+        ]
+      )
+      Dependabot::SharedHelpers.run_shell_command(["git", "-C", path, "rev-parse", "HEAD"]).strip
+    end
+
+    def stub_update_result(version)
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with(array_including(end_with("/check_update.exs"), dependency_name), anything) do
+          File.write(".dependabot-result", version)
+          ""
+        end
     end
 
     def stub_resolution_failure(error, cause: nil)
