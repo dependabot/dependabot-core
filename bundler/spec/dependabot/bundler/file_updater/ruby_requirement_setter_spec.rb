@@ -149,7 +149,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
           bundler_project_dependency_file("gemfile", filename: "Gemfile").content
         end
 
-        it { is_expected.to include("ruby '3.3.11'\n") }
+        it { is_expected.to include("ruby '3.3.13'\n") }
         it { is_expected.to include(%(gem "business", "~> 1.4.0")) }
       end
 
@@ -161,7 +161,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
           bundler_project_dependency_file("gemfile", filename: "Gemfile").content
         end
 
-        it { is_expected.to include("ruby '3.4.9'\n") }
+        it { is_expected.to include("ruby '3.4.12'\n") }
         it { is_expected.to include(%(gem "business", "~> 1.4.0")) }
       end
 
@@ -173,7 +173,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
           bundler_project_dependency_file("gemfile", filename: "Gemfile").content
         end
 
-        it { is_expected.to include("ruby '4.0.5'\n") }
+        it { is_expected.to include("ruby '4.0.9'\n") }
         it { is_expected.to include(%(gem "business", "~> 1.4.0")) }
       end
 
