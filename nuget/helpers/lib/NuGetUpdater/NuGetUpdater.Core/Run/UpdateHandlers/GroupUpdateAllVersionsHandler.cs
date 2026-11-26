@@ -183,89 +183,103 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
         var updatedDependenciesWithDirectories = new List<ReportedDependencyWithDirectory>();
         var allUpdatedDependencyFiles = ImmutableArray.Create<DependencyFile>();
         var updatedGroupDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var directoryDiscovery in directoryDiscoveries)
+        var trackers = new List<ModifiedFilesTracker>();
+        try
         {
-            var discoveryResult = directoryDiscovery.DiscoveryResult;
-            var updatedDependencyList = directoryDiscovery.UpdatedDependencyList;
-            var tracker = new ModifiedFilesTracker(originalRepoContentsPath, initialFiles, logger);
-            await tracker.StartTrackingAsync(discoveryResult);
-            try
+            foreach (var directoryDiscovery in directoryDiscoveries)
             {
-                foreach (var (projectPath, dependency) in directoryDiscovery.UpdateOperations)
+                var discoveryResult = directoryDiscovery.DiscoveryResult;
+                var updatedDependencyList = directoryDiscovery.UpdatedDependencyList;
+                var tracker = new ModifiedFilesTracker(originalRepoContentsPath, initialFiles, logger);
+                await tracker.StartTrackingAsync(discoveryResult);
+                trackers.Add(tracker);
+                try
                 {
-                    if (!job.IsUpdatePermitted(dependency))
+                    foreach (var (projectPath, dependency) in directoryDiscovery.UpdateOperations)
                     {
-                        continue;
-                    }
+                        if (!job.IsUpdatePermitted(dependency))
+                        {
+                            continue;
+                        }
 
-                    if (!groupMatcher.IsMatch(dependency.Name))
-                    {
-                        continue;
-                    }
+                        if (!groupMatcher.IsMatch(dependency.Name))
+                        {
+                            continue;
+                        }
 
-                    if (job.IsDependencyIgnoredByNameOnly(dependency.Name))
-                    {
-                        logger.Info($"Skipping ignored dependency {dependency.Name}.");
-                        continue;
-                    }
+                        if (job.IsDependencyIgnoredByNameOnly(dependency.Name))
+                        {
+                            logger.Info($"Skipping ignored dependency {dependency.Name}.");
+                            continue;
+                        }
 
-                    var dependencyInfo = RunWorker.GetDependencyInfo(job, dependency, groupMatchers: [groupMatcher], allowCooldown: true);
-                    var analysisResult = await analyzeWorker.RunAsync(repoContentsPath.FullName, discoveryResult, dependencyInfo);
-                    if (analysisResult.Error is not null)
-                    {
-                        logger.Error($"Error analyzing {dependency.Name} in {projectPath}: {analysisResult.Error.GetReport()}");
-                        await apiHandler.RecordUpdateJobError(analysisResult.Error, logger);
-                        return false;
-                    }
+                        var dependencyInfo = RunWorker.GetDependencyInfo(job, dependency, groupMatchers: [groupMatcher], allowCooldown: true);
+                        var analysisResult = await analyzeWorker.RunAsync(repoContentsPath.FullName, discoveryResult, dependencyInfo);
+                        if (analysisResult.Error is not null)
+                        {
+                            logger.Error($"Error analyzing {dependency.Name} in {projectPath}: {analysisResult.Error.GetReport()}");
+                            await apiHandler.RecordUpdateJobError(analysisResult.Error, logger);
+                            return false;
+                        }
 
-                    if (!analysisResult.CanUpdate)
-                    {
-                        logger.Info($"No updatable version found for {dependency.Name} in {projectPath}.");
-                        continue;
-                    }
+                        if (!analysisResult.CanUpdate)
+                        {
+                            logger.Info($"No updatable version found for {dependency.Name} in {projectPath}.");
+                            continue;
+                        }
 
-                    var isUpdateAllowed = groupMatcher.IsAllowedByVersion(NuGetVersion.Parse(dependency.Version!), NuGetVersion.Parse(analysisResult.UpdatedVersion));
-                    if (!isUpdateAllowed)
-                    {
-                        logger.Info($"Dependency {dependency.Name} skipped for group {group.Name} because update type was not allowed.");
-                        continue;
-                    }
+                        var isUpdateAllowed = groupMatcher.IsAllowedByVersion(NuGetVersion.Parse(dependency.Version!), NuGetVersion.Parse(analysisResult.UpdatedVersion));
+                        if (!isUpdateAllowed)
+                        {
+                            logger.Info($"Dependency {dependency.Name} skipped for group {group.Name} because update type was not allowed.");
+                            continue;
+                        }
 
-                    var projectDiscovery = discoveryResult.GetProjectDiscoveryFromPath(projectPath);
-                    var updaterResult = await updaterWorker.RunAsync(repoContentsPath.FullName, projectPath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, dependency.IsTopLevel);
-                    if (updaterResult.Error is not null)
-                    {
-                        logger.Error($"Error updating {dependency.Name} in {projectPath}: {updaterResult.Error.GetReport()}");
-                        await apiHandler.RecordUpdateJobError(updaterResult.Error, logger);
-                        continue;
-                    }
+                        var projectDiscovery = discoveryResult.GetProjectDiscoveryFromPath(projectPath);
+                        var updaterResult = await updaterWorker.RunAsync(repoContentsPath.FullName, projectPath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, dependency.IsTopLevel);
+                        if (updaterResult.Error is not null)
+                        {
+                            logger.Error($"Error updating {dependency.Name} in {projectPath}: {updaterResult.Error.GetReport()}");
+                            await apiHandler.RecordUpdateJobError(updaterResult.Error, logger);
+                            continue;
+                        }
 
-                    if (updaterResult.UpdateOperations.Length == 0)
-                    {
-                        continue;
-                    }
+                        if (updaterResult.UpdateOperations.Length == 0)
+                        {
+                            continue;
+                        }
 
-                    var patchedUpdateOperations = RunWorker.PatchInOldVersions(updaterResult.UpdateOperations, projectDiscovery);
-                    var updatedDependenciesForThis = patchedUpdateOperations
-                        .Select(o => o.ToReportedDependency(projectPath, updatedDependencyList.Dependencies, analysisResult.UpdatedDependencies))
-                        .ToArray();
+                        var patchedUpdateOperations = RunWorker.PatchInOldVersions(updaterResult.UpdateOperations, projectDiscovery);
+                        var updatedDependenciesForThis = patchedUpdateOperations
+                            .Select(o => o.ToReportedDependency(projectPath, updatedDependencyList.Dependencies, analysisResult.UpdatedDependencies))
+                            .ToArray();
 
-                    updatedDependencies.AddRange(updatedDependenciesForThis);
-                    updatedDependenciesWithDirectories.AddRange(
-                        updatedDependenciesForThis.Select(
-                            d => ReportedDependencyWithDirectory.From(d, directoryDiscovery.Directory)));
-                    updateOperationsPerformed.AddRange(patchedUpdateOperations);
-                    updatedGroupDirectories.Add(directoryDiscovery.Directory);
-                    foreach (var o in patchedUpdateOperations)
-                    {
-                        logger.Info($"Update operation performed: {o.GetReport(includeFileNames: true)}");
+                        updatedDependencies.AddRange(updatedDependenciesForThis);
+                        updatedDependenciesWithDirectories.AddRange(
+                            updatedDependenciesForThis.Select(
+                                d => ReportedDependencyWithDirectory.From(d, directoryDiscovery.Directory)));
+                        updateOperationsPerformed.AddRange(patchedUpdateOperations);
+                        updatedGroupDirectories.Add(directoryDiscovery.Directory);
+                        foreach (var o in patchedUpdateOperations)
+                        {
+                            logger.Info($"Update operation performed: {o.GetReport(includeFileNames: true)}");
+                        }
                     }
                 }
+                finally
+                {
+                    var updatedDependencyFiles = await tracker.StopTrackingAsync();
+                    allUpdatedDependencyFiles = ModifiedFilesTracker.MergeUpdatedFileSet(allUpdatedDependencyFiles, updatedDependencyFiles);
+                }
             }
-            finally
+        }
+        finally
+        {
+            // each directory starts from the files the directories before it changed, so restoring in reverse order
+            // ends with the original contents for later groups and ungrouped updates
+            for (var i = trackers.Count - 1; i >= 0; i--)
             {
-                var updatedDependencyFiles = await tracker.StopTrackingAsync(restoreOriginalContents: true);
-                allUpdatedDependencyFiles = ModifiedFilesTracker.MergeUpdatedFileSet(allUpdatedDependencyFiles, updatedDependencyFiles);
+                await trackers[i].RestoreOriginalContentsAsync();
             }
         }
 
