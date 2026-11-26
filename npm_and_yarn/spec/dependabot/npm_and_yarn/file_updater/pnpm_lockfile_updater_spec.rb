@@ -507,8 +507,39 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
-    # pnpm 12 does not enforce engines.pnpm and succeeds here, but a repository pinned to pnpm 10 or 11 still gets
-    # this error from pnpm, so the pnpm 11 output is replayed.
+    # pnpm 12 lists only the engines that failed, on one line (12.22) or wrapped after `wanted:` (12.18). When more
+    # than one failed, the first is reported.
+    context "when pnpm 12 reports an unsupported engine" do
+      let(:project_name) { "pnpm/simple" }
+
+      {
+        "unsupported_engine_node" => ["Node", ">=26.13.0 <27", "24.22.3"],
+        "unsupported_engine_node_wrapped" => ["Node", ">=26.13.0 <27", "24.22.3"],
+        "unsupported_engine_pnpm" => ["pnpm", "^10.26.0", "12.22.0"],
+        "unsupported_engine_node_and_pnpm" => ["Node", "20.11.1", "24.22.3"]
+      }.each do |scenario, (tool_name, requirement, current)|
+        context "with #{scenario}" do
+          before do
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: fixture("pnpm_errors", "pnpm12", "#{scenario}.txt"),
+                error_context: {}
+              )
+            )
+          end
+
+          it "reports the #{tool_name} requirement" do
+            expect { updated_pnpm_lock_content }.to raise_error(Dependabot::ToolVersionNotSupported) do |error|
+              expect(error.tool_name).to eq(tool_name)
+              expect(error.detected_version).to eq(requirement)
+              expect(error.supported_versions).to eq(current)
+            end
+          end
+        end
+      end
+    end
+
+    # A repository pinned to pnpm 10 or 11 gets this error in the older layout, so the pnpm 11 output is replayed.
     context "when pnpm 11 reports an unsupported engine for pnpm" do
       let(:project_name) { "pnpm/unsupported_engine_pnpm" }
 

@@ -155,6 +155,13 @@ module Dependabot
         ERR_PNPM_UNSUPPORTED_ENGINE = /ERR_PNPM_UNSUPPORTED_ENGINE/
         PACAKGE_MANAGER = /Your (?<pkg_mgr>.*) version is incompatible with/
         VERSION_REQUIREMENT = /Expected version: (?<supported_ver>.*)\nGot: (?<detected_ver>.*)\n/
+        # pnpm 12 lists only the engines that failed: `Unsupported engine for <dir>: wanted: {"node":">=26"}
+        # (current: {"node":"24.22.3"})`
+        UNSUPPORTED_ENGINE_WANTED = /
+          Unsupported\ engine\ for\ [^\n]*?:\ wanted:\ \{"(?<engine>[^"]+)":"(?<requirement>[^"]*)"
+          [^\n]*?\(current:\ (?<current>\{[^\n]*?\})\)
+        /x
+        ENGINE_TOOL_NAMES = T.let({ "node" => "Node" }.freeze, T::Hash[String, String])
 
         # No version of a package that pnpm has to resolve is old enough for the minimumReleaseAge window. pnpm 10,
         # 11 and 12 all report a pick that is too young this way. Entries already in the lockfile that fail
@@ -1373,6 +1380,7 @@ module Dependabot
           match_version = error_message.match(VERSION_REQUIREMENT)
 
           raise_old_lockfile_engine_conflict(match_pkg_mgr, match_version, pnpm_lock)
+          raise_wanted_engine_error(error_message)
 
           unless match_pkg_mgr && match_version &&
                  match_pkg_mgr.named_captures && match_version.named_captures
@@ -1395,6 +1403,22 @@ module Dependabot
           end
 
           nil
+        end
+
+        sig { params(error_message: String).void }
+        def raise_wanted_engine_error(error_message)
+          match = error_message.match(UNSUPPORTED_ENGINE_WANTED)
+          return unless match
+
+          engine = T.must(match[:engine])
+          current = T.must(match[:current])[/"#{Regexp.escape(engine)}":"([^"]*)"/, 1].to_s
+
+          Dependabot.logger.warn(error_message)
+          raise Dependabot::ToolVersionNotSupported.new(
+            ENGINE_TOOL_NAMES.fetch(engine, engine),
+            T.must(match[:requirement]),
+            current
+          )
         end
 
         sig do
