@@ -133,6 +133,22 @@ RSpec.describe Dependabot::Bazel::FileUpdater::LockfileUpdater do
           .to raise_error(Dependabot::DependencyFileNotResolvable, /Bazel binary not available/)
       end
 
+      it "reports missing registry modules instead of missing Bazel" do
+        allow(lockfile_updater).to receive(:generate_lockfile_content).and_raise(
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: <<~ERROR,
+              ERROR: module libprotobuf-mutator@1.4 not found in registries:
+              * file:///dependabot_tmp_dir/tools/thirdparty/registry/modules/libprotobuf-mutator/1.4/MODULE.bazel: not found
+              * https://bcr.bazel.build/modules/libprotobuf-mutator/1.4/MODULE.bazel: not found
+            ERROR
+            error_context: {}
+          )
+        )
+
+        expect { lockfile_updater.updated_lockfile }
+          .to raise_error(Dependabot::DependencyFileNotResolvable, /Dependency not found in Bazel Central Registry/)
+      end
+
       it "handles network errors gracefully" do
         allow(lockfile_updater).to receive(:generate_lockfile_content).and_raise(
           Dependabot::SharedHelpers::HelperSubprocessFailed.new(
