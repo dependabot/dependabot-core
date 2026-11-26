@@ -80,7 +80,8 @@ module Dependabot
             when String then pin
             end
           end
-          pins << dependency.version if dependency.version
+          version = dependency.version
+          pins << version if version
 
           pins.any? do |pin|
             next false unless Version.correct?(pin)
