@@ -491,4 +491,123 @@ RSpec.describe GithubApi::DependencySubmission do
         .to eq("54bf0378f9dd16ad2b60250c6156132f3ec9232e85b6ef87958aa439e29a4cec")
     end
   end
+
+  context "with a manifest-set descriptor" do
+    subject(:submission) do
+      described_class.new(
+        job_id: "9999",
+        branch: "main",
+        sha: "fake-sha",
+        package_manager: "pip",
+        manifest_snapshots: [
+          Dependabot::DependencyGraphers::ManifestGroupSnapshot.new(manifest_file: manifest, resolved_dependencies: {})
+        ],
+        manifest_set: descriptor
+      )
+    end
+
+    let(:job_directory) { "/api/" }
+    let(:manifest) do
+      Dependabot::DependencyFile.new(name: "requirements.txt", content: "", directory: job_directory)
+    end
+    let(:descriptor) do
+      Dependabot::ManifestSets::Descriptor.present(
+        ecosystem: "pypi",
+        directory: "api",
+        owner: "pip",
+        graph_version: "1",
+        files: [
+          Dependabot::ManifestSets::InputFile.new(path: "api/requirements.in", blob_oid: "1" * 40),
+          Dependabot::ManifestSets::InputFile.new(path: "api/requirements.txt", blob_oid: "2" * 40)
+        ]
+      )
+    end
+
+    it "adds the descriptor to the snapshot metadata as a JSON string" do
+      metadata = submission.payload[:metadata]
+
+      expect(metadata[:manifest_set]).to be_a(String)
+      expect(JSON.parse(metadata[:manifest_set])).to eq(
+        "schema_version" => 1,
+        "ecosystem" => "pypi",
+        "directory" => "api",
+        "owner" => "pip",
+        "graph_version" => "1",
+        "state" => "present",
+        "files" => [
+          { "path" => "api/requirements.in", "blob_oid" => "1" * 40 },
+          { "path" => "api/requirements.txt", "blob_oid" => "2" * 40 }
+        ]
+      )
+      expect(metadata[:scanned_manifest_path]).to eq("pypi::/api/")
+    end
+
+    it "keeps every metadata value a string and leaves room for the keys added downstream" do
+      metadata = submission.payload[:metadata]
+
+      expect(metadata.values).to all(be_a(String))
+      expect(metadata.size + described_class::DOWNSTREAM_METADATA_KEYS.size)
+        .to be <= described_class::MAX_METADATA_ENTRIES
+    end
+
+    context "when the descriptor is absent for the repository root" do
+      let(:job_directory) { "/" }
+      let(:manifest) { Dependabot::DependencyFile.new(name: "", content: "", directory: job_directory) }
+      let(:descriptor) do
+        Dependabot::ManifestSets::Descriptor.absent(ecosystem: "pypi", directory: ".", owner: "pip", graph_version: "1")
+      end
+
+      it "carries an explicitly empty file list" do
+        envelope = JSON.parse(submission.payload[:metadata][:manifest_set])
+
+        expect(envelope).to include("directory" => ".", "state" => "absent", "files" => [])
+      end
+    end
+
+    context "when the descriptor is unresolvable" do
+      let(:descriptor) do
+        Dependabot::ManifestSets::Descriptor.unresolvable(
+          ecosystem: "pypi", directory: "api", owner: "pip", graph_version: "1", reason: "input_limit"
+        )
+      end
+
+      it "carries the reason and no file list" do
+        envelope = JSON.parse(submission.payload[:metadata][:manifest_set])
+
+        expect(envelope).to include("state" => "unresolvable", "reason" => "input_limit")
+        expect(envelope).not_to have_key("files")
+      end
+    end
+
+    context "when the descriptor names another directory" do
+      let(:job_directory) { "/web" }
+
+      it "refuses to build the submission" do
+        expect { submission }.to raise_error(ArgumentError, %r{api.*pypi::/web})
+      end
+    end
+
+    context "when the descriptor names another ecosystem" do
+      let(:descriptor) do
+        Dependabot::ManifestSets::Descriptor.absent(
+          ecosystem: "golang",
+          directory: "api",
+          owner: "go_modules",
+          graph_version: "1"
+        )
+      end
+
+      it "refuses to build the submission" do
+        expect { submission }.to raise_error(ArgumentError, /golang::api/)
+      end
+    end
+
+    context "without a descriptor" do
+      let(:descriptor) { nil }
+
+      it "adds no manifest_set metadata" do
+        expect(submission.payload[:metadata]).not_to have_key(:manifest_set)
+      end
+    end
+  end
 end

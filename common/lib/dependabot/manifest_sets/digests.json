@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "algorithm": "sha256",
+  "files": [
+    {
+      "path": "catalog.json",
+      "sha256": "741936599de1a6c7e648c7a366f0ee386d5bc30e9a3d7d1de266dc0e48488391"
+    },
+    {
+      "path": "catalog.schema.json",
+      "sha256": "f14901df4b08dabc5573b6f830b926add92824ab1ee91e60b52ad80a3d46caa5"
+    },
+    {
+      "path": "fixtures/filenames.json",
+      "sha256": "5b41c6f739803bc6669974dd0f03c61f33b41357aae8d92912a66322113cfbdc"
+    },
+    {
+      "path": "fixtures/invalid_catalogs.json",
+      "sha256": "35913245644c60f65e9cdc7efa412b0378029f69da4350c235fe5bb1e84f6949"
+    },
+    {
+      "path": "fixtures/owners.json",
+      "sha256": "0fadbbe86029774d9e33aec815563ae9515a60991a922010947bee2fd2c3da62"
+    }
+  ]
+}
