@@ -12,14 +12,16 @@ require "dependabot/python/language_version_manager"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/pip_compile_file_matcher"
 require "dependabot/python/pipenv_runner"
+require "dependabot/python/poetry_project"
 require "dependabot/python/requirement_references"
 require "dependabot/python/shared_file_fetcher"
 require "toml-rb"
 
 module Dependabot
   module Python
-    class DependencyGrapher < Dependabot::DependencyGraphers::Base
+    class DependencyGrapher < Dependabot::DependencyGraphers::Base # rubocop:disable Metrics/ClassLength
       require_relative "dependency_grapher/lockfile_generator"
+      require_relative "dependency_grapher/poetry_native_graph"
       require_relative "dependency_grapher/requirements_layers"
 
       sig { override.returns(Dependabot::DependencyFile) }
@@ -85,7 +87,48 @@ module Dependabot
         groups + non_requirements_manifest_groups
       end
 
+      # With the native Poetry helper enabled, graph every version Poetry
+      # locked, not just one per package.
+      sig { override.returns(T::Hash[String, Dependabot::DependencyGraphers::ResolvedDependency]) }
+      def resolved_dependencies
+        prepare! unless prepared
+
+        graph = native_poetry_graph
+        return super unless graph
+
+        @dependencies.each_with_object({}) do |dep, resolved|
+          entries = graph.resolved_for(dep) || [default_resolved_dependency(dep)]
+          entries.each { |entry| resolved[entry.package_url] ||= entry }
+        end
+      end
+
       private
+
+      sig { returns(T.nilable(PoetryNativeGraph)) }
+      def native_poetry_graph
+        return @native_poetry_graph if defined?(@native_poetry_graph)
+        return @native_poetry_graph = nil unless python_package_manager == PoetryPackageManager::NAME
+
+        @native_poetry_graph = T.let(
+          PoetryNativeGraph.build(
+            pyproject: pyproject_toml,
+            lockfile: poetry_lock,
+            dependency_names: dependency_name_set,
+            purl_builder: ->(dependency) { build_purl(dependency) }
+          ),
+          T.nilable(PoetryNativeGraph)
+        )
+      end
+
+      sig { params(dep: Dependabot::Dependency).returns(Dependabot::DependencyGraphers::ResolvedDependency) }
+      def default_resolved_dependency(dep)
+        Dependabot::DependencyGraphers::ResolvedDependency.new(
+          package_url: build_purl(dep),
+          direct: dep.top_level?,
+          runtime: dep.production?,
+          dependencies: safe_fetch_subdependencies(dep).map { |child| build_purl(child) }
+        )
+      end
 
       # When a pip/pip-compile directory is split into requirements layers, any non-requirements manifest
       # sharing that directory (setup.py, setup.cfg, pyproject.toml) would otherwise fall outside every layer

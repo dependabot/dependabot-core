@@ -195,6 +195,27 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         end
       end
 
+      context "with the native Poetry helper enabled" do
+        before { Dependabot::Experiments.register(:enable_native_poetry_helper, true) }
+
+        let(:pyproject_fixture_name) { "poetry_v2_pep621_only_main_env_marker.toml" }
+        let(:poetry_lock_fixture_name) { "poetry_v2_pep621_only_main_env_marker.lock" }
+
+        it "marks a main-group package as production even when its markers exclude the runner" do
+          colorama = dependencies.find { |d| d.name == "colorama" }
+
+          expect(colorama.subdependency_metadata).to eq([{ production: true }])
+        end
+
+        it "doesn't shell out to poetry show" do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+          dependencies
+
+          expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command)
+            .with(a_string_including("poetry show"))
+        end
+      end
+
       describe "Poetry v2 lock file groups and markers" do
         it "includes packages with groups field" do
           # appdirs has groups = ["dev"] in the v2 lock file

@@ -1,7 +1,7 @@
 import sys
 import json
 
-from lib import parser, hasher
+from lib import parser, hasher, poetry_project
 
 if __name__ == "__main__":
     args = json.loads(sys.stdin.read())
@@ -14,6 +14,8 @@ if __name__ == "__main__":
         print(parser.parse_setup(args["args"][0]))
     elif args["function"] == "parse_pep621_pep735_dependencies":
         print(parser.parse_pep621_pep735_dependencies(args["args"][0]))
+    elif args["function"] == "parse_poetry_project":
+        print(poetry_project.parse_poetry_project(args["args"][0]))
     elif args["function"] == "get_dependency_hash":
         print(hasher.get_dependency_hash(*args["args"]))
     elif args["function"] == "get_pipfile_hash":
