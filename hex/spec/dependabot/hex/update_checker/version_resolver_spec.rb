@@ -1059,9 +1059,11 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       before { stub_resolution_failure(resolution_error) }
 
       it "preserves the operational failure" do
-        expect { latest_resolvable_version }.to raise_error do |error|
-          expect(error).to equal(resolution_error)
-        end
+        expect { latest_resolvable_version }
+          .to raise_error(
+            Dependabot::Hex::UpdateChecker::VersionResolver::ResolutionSubprocessFailed,
+            resolution_error.message
+          )
         expect(mix_attempts).to contain_exactly(:resolution)
       end
     end
