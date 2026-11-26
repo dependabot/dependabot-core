@@ -704,27 +704,22 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       end
     end
 
-    {
-      "with an invalid requirement diagnostic" =>
-        "** (Version.InvalidRequirementError) invalid requirement: >= nope",
-      "with Hex 2.5.4's malformed root requirement diagnostic" =>
-        "** (Mix) Required version >= nope for package jason is incorrectly specified (from: mix.exs)",
-      "with Hex 2.5.4's malformed requirement diagnostic in a complex umbrella path" =>
-        "** (Mix) Required version >= nope for package jason is incorrectly specified " \
-        "(from: umbrella apps/geschäft/mix.exs)",
-      "with the target missing from the active environment" =>
-        "** (Mix) Unknown dependency plug for environment prod"
-    }.each do |description, diagnostic|
-      context description do
-        let(:project_error) do
-          helper_failure("warning: project output\n#{diagnostic}\n    stack trace")
-        end
+    context "with recognized project diagnostics" do
+      it "reports each diagnostic as a user-facing project error" do
+        [
+          "** (Version.InvalidRequirementError) invalid requirement: >= nope",
+          "** (Mix) Required version >= nope for package jason is incorrectly specified (from: mix.exs)",
+          "** (Mix) Required version >= nope for package jason is incorrectly specified " \
+          "(from: umbrella apps/geschäft/mix.exs)",
+          "** (Mix) Unknown dependency plug for environment prod"
+        ].each do |diagnostic|
+          aggregate_failures(diagnostic) do
+            project_error = helper_failure("warning: project output\n#{diagnostic}\n    stack trace")
+            stub_resolution_failure(project_error)
 
-        before { stub_resolution_failure(project_error) }
-
-        it "reports the user-facing project error" do
-          expect { latest_resolvable_version }
-            .to raise_error(Dependabot::DependencyFileNotResolvable, diagnostic)
+            expect { resolver.latest_resolvable_version }
+              .to raise_error(Dependabot::DependencyFileNotResolvable, diagnostic)
+          end
         end
       end
     end
@@ -853,32 +848,31 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       end
     end
 
-    {
-      "with a qualified fetch failure and ambiguous access diagnostic" => <<~ERROR,
-        Failed to fetch record for private_repo/plug from registry
-        This could be because the package does not exist, it was spelled incorrectly or you don't have permissions to it
-        ** (Mix) Hex dependency resolution failed
-      ERROR
-      "when diagnostics mention multiple private sources" => <<~ERROR,
-        Failed to fetch record for first_repo/plug from registry
-        :timeout
-        Failed to fetch record for second_repo/jason from registry
-        Authentication failed (401)
-        ** (Mix) Hex dependency resolution failed
-      ERROR
-      "with an unknown package in the lockfile" =>
-        "Unknown package version plug 9.9.9 in lockfile",
-      "with an unexpected helper exception" =>
-        "** (RuntimeError) unexpected helper failure"
-    }.each do |description, diagnostic|
-      context description do
-        let(:untranslated_error) { helper_failure(diagnostic) }
+    context "with untranslated helper diagnostics" do
+      it "preserves each original helper failure" do
+        [
+          <<~ERROR,
+            Failed to fetch record for private_repo/plug from registry
+            This could be because the package does not exist, it was spelled incorrectly or you don't have permissions to it
+            ** (Mix) Hex dependency resolution failed
+          ERROR
+          <<~ERROR,
+            Failed to fetch record for first_repo/plug from registry
+            :timeout
+            Failed to fetch record for second_repo/jason from registry
+            Authentication failed (401)
+            ** (Mix) Hex dependency resolution failed
+          ERROR
+          "Unknown package version plug 9.9.9 in lockfile",
+          "** (RuntimeError) unexpected helper failure"
+        ].each do |diagnostic|
+          aggregate_failures(diagnostic) do
+            untranslated_error = helper_failure(diagnostic)
+            stub_resolution_failure(untranslated_error)
 
-        before { stub_resolution_failure(untranslated_error) }
-
-        it "preserves the original helper failure" do
-          expect { latest_resolvable_version }.to raise_error do |error|
-            expect(error).to equal(untranslated_error)
+            expect { resolver.latest_resolvable_version }.to raise_error do |error|
+              expect(error).to equal(untranslated_error)
+            end
           end
         end
       end
