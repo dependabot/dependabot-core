@@ -269,11 +269,17 @@ module Dependabot
       def group_pr_name
         return dependency_name_group_pr_name if dependency_group&.group_by_dependency_name?
 
-        if source.directories
+        if multi_directory_source?
           grouped_directory_name
         else
           grouped_name
         end
+      end
+
+      sig { returns(T::Boolean) }
+      def multi_directory_source?
+        directories = source.directories
+        !directories.nil? && directories.count > 1
       end
 
       sig { returns(String) }
@@ -435,7 +441,7 @@ module Dependabot
       def version_commit_message_intro
         return dependency_name_group_intro if dependency_group&.group_by_dependency_name? && source.directories
 
-        return multi_directory_group_intro if dependency_group && source.directories
+        return multi_directory_group_intro if dependency_group && multi_directory_source?
 
         return group_intro if dependency_group
 
