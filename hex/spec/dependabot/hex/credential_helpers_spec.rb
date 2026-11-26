@@ -258,6 +258,37 @@ RSpec.describe Dependabot::Hex::CredentialHelpers do
       end
     end
 
+    context "when repository public key download fails for another reason" do
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "hex_repository",
+              "repo" => "dependabot",
+              "url" => "https://repo.example.com",
+              "public-key-fingerprint" => public_key_fingerprint
+            }
+          )
+        ]
+      end
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "Downloading public key failed with code \"500\"\n",
+          error_context: {}
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_raise(error)
+      end
+
+      it "re-raises the original failure unchanged" do
+        expect { configure }.to raise_error do |raised_error|
+          expect(raised_error).to equal(error)
+        end
+      end
+    end
+
     context "with a supplied repository public key" do
       include_context "with a real credential helper"
       let(:repository_name) { "dependabot" }
