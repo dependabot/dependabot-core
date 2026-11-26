@@ -1,0 +1,14 @@
+defmodule DependabotTest.Mixfile do
+  use Mix.Project
+
+  def project do
+    [
+      app: :dependabot_test,
+      version: "0.1.0",
+      aliases: [run: &ignore_run/1],
+      deps: [{:plug, "~> 1.3.0"}]
+    ]
+  end
+
+  defp ignore_run(_args), do: :ok
+end

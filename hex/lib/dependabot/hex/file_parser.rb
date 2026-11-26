@@ -81,6 +81,10 @@ module Dependabot
             env: mix_env,
             fingerprint: "mix run parse_deps.exs"
           )
+          unless File.exist?(RESULT_FILE)
+            raise DependencyFileNotEvaluatable, "Hex dependency parser did not produce a result"
+          end
+
           JSON.parse(File.read(RESULT_FILE))
         end
       rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e

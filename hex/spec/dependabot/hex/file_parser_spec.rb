@@ -365,6 +365,19 @@ RSpec.describe Dependabot::Hex::FileParser do
       its(:length) { is_expected.to eq(2) }
     end
 
+    context "when a project run alias exits without invoking the parser" do
+      let(:mixfile_fixture_name) { "run_alias_noop" }
+      let(:files) { [mixfile] }
+
+      it "raises a DependencyFileNotEvaluatable error" do
+        expect { dependencies }
+          .to raise_error(
+            Dependabot::DependencyFileNotEvaluatable,
+            "Hex dependency parser did not produce a result"
+          )
+      end
+    end
+
     context "when the parser helper writes a result alongside stdout output" do
       around do |example|
         inherited_mix_exs = ENV.fetch("MIX_EXS", nil)
