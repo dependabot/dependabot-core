@@ -169,7 +169,7 @@ module Dependabot
           )
           File.read(RESULT_FILE)
         rescue SharedHelpers::HelperSubprocessFailed => e
-          return if confirmed_resolution_divergence?(e.message)
+          return if confirmed_resolution_divergence?(e)
 
           raise
         end
@@ -218,9 +218,17 @@ module Dependabot
           handle_project_error(error) || error
         end
 
-        sig { params(message: String).returns(T::Boolean) }
-        def confirmed_resolution_divergence?(message)
-          lines = message.lines.map(&:strip).reject(&:empty?)
+        sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T::Boolean) }
+        def confirmed_resolution_divergence?(error)
+          output = [error.message]
+          output << error.stdout if error.is_a?(ResolutionSubprocessFailed)
+
+          output.any? { |stream| confirmed_resolution_divergence_output?(stream) }
+        end
+
+        sig { params(output: String).returns(T::Boolean) }
+        def confirmed_resolution_divergence_output?(output)
+          lines = output.lines.map(&:strip).reject(&:empty?)
 
           lines.include?(RESOLUTION_DIVERGENCE_HEADER) &&
             lines.last == RESOLUTION_DIVERGENCE_TRAILER

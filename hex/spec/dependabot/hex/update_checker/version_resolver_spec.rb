@@ -324,13 +324,9 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
 
       before do
         outer_git_head_revision
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(array_including(end_with("/check_update.exs"), dependency_name), anything)
-          .and_wrap_original do |original, command, **options|
-            constraint_checkouts_seen << File.exist?("deps/constraint_git/mix.exs")
-            original.call(command, **options)
-          end
+        stub_resolution_success(result: outer_git_head_revision) do
+          constraint_checkouts_seen << File.exist?("deps/constraint_git/mix.exs")
+        end
       end
 
       it "fetches the candidate and its locked Git children before updating" do
@@ -430,13 +426,9 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       let(:lockfiles_seen_by_update) { [] }
 
       before do
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(array_including(end_with("/check_update.exs"), dependency_name), anything) do
-            lockfiles_seen_by_update << File.read("mix.lock")
-            File.write(".dependabot-result", "1.3.6")
-            ""
-          end
+        stub_resolution_success(result: "1.3.6") do
+          lockfiles_seen_by_update << File.read("mix.lock")
+        end
       end
 
       it "keeps the original target entry on disk for the update task" do
@@ -1075,21 +1067,13 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
     end
 
     context "when Git bootstrap output mentions dependency divergence before failing" do
-      let(:bootstrap_error) do
-        helper_failure("project output: Dependencies have diverged\nfatal: Git checkout failed")
-      end
+      let(:bootstrap_error) { "project output: Dependencies have diverged\nfatal: Git checkout failed" }
 
-      before do
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(array_including(end_with("/fetch_git_dependencies.exs"), dependency_name), anything)
-          .and_raise(bootstrap_error)
-      end
+      before { stub_bootstrap_failure(stderr: bootstrap_error) }
 
       it "preserves the operational failure" do
-        expect { latest_resolvable_version }.to raise_error do |error|
-          expect(error).to equal(bootstrap_error)
-        end
+        expect { latest_resolvable_version }
+          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, bootstrap_error)
       end
     end
 
@@ -1533,12 +1517,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
     end
 
     def stub_update_result(version)
-      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
-      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-        .with(array_including(end_with("/check_update.exs"), dependency_name), anything) do
-          File.write(".dependabot-result", version)
-          ""
-        end
+      stub_resolution_success(result: version)
     end
 
     def stub_resolution_failure(error, cause: nil)
@@ -1559,10 +1538,21 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       stub_resolution_output(stdout: "", stderr: error.message, exit_status: exit_status)
     end
 
-    def stub_resolution_success(result: nil, stdout: "")
+    def stub_resolution_success(result: nil, stdout: "", &block)
       stub_resolution_output(stdout: stdout, stderr: "", exit_status: 0) do
+        block&.call
         File.write(".dependabot-result", result) if result
       end
+    end
+
+    def stub_bootstrap_failure(stderr:)
+      allow(Dependabot::CommandHelpers).to receive(:capture3_with_timeout).and_call_original
+      allow(Dependabot::CommandHelpers).to receive(:capture3_with_timeout)
+        .with(
+          array_including(end_with("/fetch_git_dependencies.exs"), dependency_name),
+          timeout: 120
+        )
+        .and_return(["", stderr, Dependabot::CommandHelpers::ProcessStatus.new(nil, 1), 0.1])
     end
 
     def stub_resolution_output(stdout:, stderr:, exit_status: 1, &block)
