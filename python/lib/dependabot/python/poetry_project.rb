@@ -95,9 +95,67 @@ module Dependabot
         end
       end
 
+      class DeclaredSource < T::ImmutableStruct
+        extend T::Sig
+
+        # Nil for a named package index; "git", "directory", "file" or "url"
+        # for a direct source.
+        const :type, T.nilable(String)
+        const :url, T.nilable(String)
+        # Name of a `[[tool.poetry.source]]` entry.
+        const :name, T.nilable(String)
+        # Set only for git dependencies; Poetry's own `reference` merges these.
+        const :tag, T.nilable(String)
+        const :branch, T.nilable(String)
+        const :rev, T.nilable(String)
+
+        sig { returns(T::Boolean) }
+        def direct?
+          DIRECT_SOURCE_TYPES.include?(type)
+        end
+      end
+
+      # One entry per declaration. A name declared with several constraints
+      # (one per marker) appears several times, as does a name declared in
+      # several groups.
+      class DeclaredDependency < T::ImmutableStruct
+        extend T::Sig
+
+        const :name, String
+        const :constraint, String
+        const :groups, T::Array[String]
+        const :markers, T.nilable(String)
+        const :extras, T::Array[String]
+        const :optional, T::Boolean
+        const :source, T.nilable(DeclaredSource)
+
+        sig { returns(T::Boolean) }
+        def main?
+          groups.include?(MAIN_GROUP)
+        end
+      end
+
       sig { returns(T::Boolean) }
       def self.enabled?
         Dependabot::Experiments.enabled?(EXPERIMENT)
+      end
+
+      # Loads the project when the experiment is on. Returns nil, so callers
+      # keep their existing code path, when it's off, when there's no
+      # pyproject.toml, or when Poetry can't load the project.
+      sig do
+        params(
+          pyproject: T.nilable(Dependabot::DependencyFile),
+          lockfile: T.nilable(Dependabot::DependencyFile)
+        ).returns(T.nilable(PoetryProject))
+      end
+      def self.load_if_enabled(pyproject:, lockfile:)
+        return unless enabled? && pyproject
+
+        load(pyproject: pyproject, lockfile: lockfile)
+      rescue SharedHelpers::HelperSubprocessFailed => e
+        Dependabot.logger.warn("Native Poetry helper failed, using the existing Poetry code path: #{e.message}")
+        nil
       end
 
       sig do
@@ -131,10 +189,17 @@ module Dependabot
           Values.array(hash.fetch("locked", []), "locked packages").map { |entry| locked_package_from(entry) },
           T::Array[LockedPackage]
         )
+        @declared_dependencies = T.let(
+          Values.array(hash.fetch("declared", []), "declared dependencies").map { |entry| declared_from(entry) },
+          T::Array[DeclaredDependency]
+        )
       end
 
       sig { returns(T::Array[LockedPackage]) }
       attr_reader :locked_packages
+
+      sig { returns(T::Array[DeclaredDependency]) }
+      attr_reader :declared_dependencies
 
       sig { returns(T::Boolean) }
       def groups_and_markers_locked?
@@ -175,6 +240,36 @@ module Dependabot
           dependencies: Values.array(hash.fetch("dependencies", []), "locked dependencies").flat_map do |dep|
             links_from(dep)
           end
+        )
+      end
+
+      sig { params(entry: Object).returns(DeclaredDependency) }
+      def declared_from(entry)
+        hash = Values.object_hash(entry, "declared dependency")
+        DeclaredDependency.new(
+          name: NameNormaliser.normalise(Values.string(hash["name"], "declared dependency name")),
+          constraint: Values.string(hash["constraint"], "declared dependency constraint"),
+          groups: Values.string_array(hash.fetch("groups", []), "declared dependency groups"),
+          markers: Values.optional_string(hash["markers"], "declared dependency markers"),
+          extras: Values.string_array(hash.fetch("extras", []), "declared dependency extras"),
+          optional: hash["optional"] == true,
+          source: declared_source_from(hash["source"], hash["git_ref"])
+        )
+      end
+
+      sig { params(source: T.nilable(Object), git_ref: T.nilable(Object)).returns(T.nilable(DeclaredSource)) }
+      def declared_source_from(source, git_ref)
+        return if source.nil?
+
+        fields = Values.object_hash(source, "declared source")
+        ref = git_ref.nil? ? {} : Values.object_hash(git_ref, "declared git reference")
+        DeclaredSource.new(
+          type: Values.optional_string(fields["type"], "declared source type"),
+          url: Values.optional_string(fields["url"], "declared source url"),
+          name: Values.optional_string(fields["name"], "declared source name"),
+          tag: Values.optional_string(ref["tag"], "declared git tag"),
+          branch: Values.optional_string(ref["branch"], "declared git branch"),
+          rev: Values.optional_string(ref["rev"], "declared git rev")
         )
       end
 

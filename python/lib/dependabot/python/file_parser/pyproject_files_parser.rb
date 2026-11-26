@@ -14,7 +14,7 @@ require "dependabot/python/poetry_project"
 module Dependabot
   module Python
     class FileParser
-      class PyprojectFilesParser
+      class PyprojectFilesParser # rubocop:disable Metrics/ClassLength
         extend T::Sig
 
         POETRY_DEPENDENCY_TYPES = %w(dependencies dev-dependencies).freeze
@@ -62,6 +62,9 @@ module Dependabot
 
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
         def parse_poetry_dependencies
+          project = native_project
+          return parse_native_poetry_dependencies(project) if project
+
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
           POETRY_DEPENDENCY_TYPES.each do |type|
@@ -72,6 +75,101 @@ module Dependabot
             dependencies += parse_poetry_dependency_group(group, dependencies_by_name)
           end
           dependencies
+        end
+
+        # Builds Poetry dependencies from Poetry's own view of the project
+        # instead of reading [tool.poetry] tables directly. The Dependency
+        # shape matches parse_poetry_dependencies.
+        sig { params(project: PoetryProject).returns(Dependabot::FileParsers::Base::DependencySet) }
+        def parse_native_poetry_dependencies(project)
+          dependencies = Dependabot::FileParsers::Base::DependencySet.new
+          merged = merged_poetry_groups
+
+          project.declared_dependencies.each do |declared|
+            requirements = (declared.groups - merged).filter_map do |group|
+              native_poetry_requirement(declared, group)
+            end
+            next if requirements.empty?
+
+            dependencies << Dependency.new(
+              name: declared.name,
+              version: project.locked_versions_of(declared.name).first&.version,
+              requirements: requirements,
+              package_manager: "pip"
+            )
+          end
+
+          dependencies + toml_poetry_dependencies_for(merged)
+        end
+
+        # Poetry merges [tool.poetry] declarations into matching [project] or
+        # [dependency-groups] ones (intersecting constraints, adding sources),
+        # so its view no longer holds the [tool.poetry] text the file updater
+        # rewrites. Those groups are still read from the TOML.
+        sig { returns(T::Array[String]) }
+        def merged_poetry_groups
+          merged = pyproject_document.dependency_group_names
+          merged += [PoetryProject::MAIN_GROUP] if pyproject_document.pep621_dependency_tables?
+          merged
+        end
+
+        sig { params(groups: T::Array[String]).returns(Dependabot::FileParsers::Base::DependencySet) }
+        def toml_poetry_dependencies_for(groups)
+          dependencies = Dependabot::FileParsers::Base::DependencySet.new
+          if groups.include?(PoetryProject::MAIN_GROUP)
+            main = pyproject_document.poetry_dependencies("dependencies")
+            dependencies += parse_poetry_dependency_group("dependencies", main)
+          end
+          pyproject_document.poetry_groups.each do |group, dependencies_by_name|
+            dependencies += parse_poetry_dependency_group(group, dependencies_by_name) if groups.include?(group)
+          end
+          dependencies
+        end
+
+        sig do
+          params(
+            declared: PoetryProject::DeclaredDependency,
+            group: String
+          ).returns(T.nilable(Dependabot::Dependency::RequirementInput))
+        end
+        def native_poetry_requirement(declared, group)
+          source = declared.source
+          type = native_poetry_group_label(declared, group)
+
+          if source && source.type == "git"
+            tag = source.tag
+            url = source.url
+            return tag && url ? git_requirement(url, tag, type) : nil
+          end
+          return if source&.direct?
+
+          check_requirements(declared.constraint)
+          {
+            requirement: declared.constraint,
+            file: T.must(pyproject).name,
+            source: resolve_source(source&.name),
+            groups: [type]
+          }
+        end
+
+        # Requirement groups name the TOML table a declaration lives in, which
+        # the regex-based file updater relies on. Poetry reports
+        # [tool.poetry.dependencies] as "main" and the legacy
+        # [tool.poetry.dev-dependencies] table as the "dev" group.
+        sig { params(declared: PoetryProject::DeclaredDependency, group: String).returns(String) }
+        def native_poetry_group_label(declared, group)
+          return "dependencies" if group == PoetryProject::MAIN_GROUP
+          return "dev-dependencies" if group == "dev" && legacy_dev_dependency_names.include?(declared.name)
+
+          group
+        end
+
+        sig { returns(T::Set[String]) }
+        def legacy_dev_dependency_names
+          @legacy_dev_dependency_names ||= T.let(
+            pyproject_document.poetry_dependencies("dev-dependencies").keys.to_set { |name| normalise(name) },
+            T.nilable(T::Set[String])
+          )
         end
 
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
@@ -314,24 +412,25 @@ module Dependabot
           )
         end
 
-        sig { returns(T::Array[T.nilable(String)]) }
-        def parse_production_dependency_names
-          native_production_dependency_names || shell_production_dependency_names
-        end
-
         # Reads production membership from the lockfile through Poetry itself.
         # Unlike `poetry show --only main`, this doesn't depend on the Python
-        # version Dependabot happens to run under. Returns nil to fall back to
-        # the shell-out when the experiment is off or Poetry can't load the
-        # project.
-        sig { returns(T.nilable(T::Array[T.nilable(String)])) }
-        def native_production_dependency_names
-          return unless PoetryProject.enabled?
+        # version Dependabot happens to run under.
+        sig { returns(T::Array[T.nilable(String)]) }
+        def parse_production_dependency_names
+          native_project&.production_dependency_names || shell_production_dependency_names
+        end
 
-          PoetryProject.load(pyproject: T.must(pyproject), lockfile: lockfile).production_dependency_names
-        rescue SharedHelpers::HelperSubprocessFailed => e
-          Dependabot.logger.warn("Native Poetry helper failed, falling back to `poetry show`: #{e.message}")
-          nil
+        # Loaded once and shared by every Poetry read in this parser. Nil when
+        # the experiment is off or Poetry can't load the project, in which
+        # case the parser reads the TOML itself as before.
+        sig { returns(T.nilable(PoetryProject)) }
+        def native_project
+          return @native_project if defined?(@native_project)
+
+          @native_project = T.let(
+            using_poetry? ? PoetryProject.load_if_enabled(pyproject: pyproject, lockfile: lockfile) : nil,
+            T.nilable(PoetryProject)
+          )
         end
 
         sig { returns(T::Array[T.nilable(String)]) }

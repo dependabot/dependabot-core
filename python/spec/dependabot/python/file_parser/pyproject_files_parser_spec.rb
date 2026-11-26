@@ -826,6 +826,59 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
     end
   end
 
+  describe "declared Poetry dependencies from the native helper" do
+    after { Dependabot::Experiments.reset! }
+
+    def top_level_dependencies(native:)
+      Dependabot::Experiments.register(:enable_native_poetry_helper, native)
+      described_class.new(dependency_files: files).dependency_set.dependencies.select(&:top_level?)
+                     .map { |dep| [dep.name, dep.version, dep.requirements] }
+    end
+
+    {
+      "basic_poetry_dependencies.toml" => nil,
+      "different_requirements_legacy.toml" => nil,
+      "multiple_constraint_dependency.toml" => nil,
+      "git_dependency_with_tag.toml" => nil,
+      "package_specify_source.toml" => nil,
+      "poetry_group_dependencies.toml" => nil,
+      "pep621_hybrid_version_in_both.toml" => nil,
+      "pep621_dynamic_dependencies.toml" => nil,
+      "pep621_dynamic_optional_dependencies.toml" => nil,
+      "poetry_v2_hybrid.toml" => "poetry_v2_hybrid.lock",
+      "python_310_django.toml" => "python_310_django.lock"
+    }.each do |pyproject_name, lock_name|
+      context "with #{pyproject_name}" do
+        let(:pyproject_fixture_name) { pyproject_name }
+        let(:files) do
+          lock = lock_name && Dependabot::DependencyFile.new(
+            name: "poetry.lock", content: fixture("poetry_locks", lock_name)
+          )
+          [pyproject, lock].compact
+        end
+
+        it "matches reading the TOML directly" do
+          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_call_original
+
+          native = top_level_dependencies(native: true)
+
+          expect(Dependabot::SharedHelpers).to have_received(:run_helper_subprocess)
+            .with(hash_including(function: "parse_poetry_project")).once
+          expect(native).to match_array(top_level_dependencies(native: false))
+        end
+      end
+    end
+
+    context "when Poetry rejects the project" do
+      # `default = true` sources were removed in Poetry 2.
+      let(:pyproject_fixture_name) { "private_source.toml" }
+
+      it "falls back to reading the TOML directly" do
+        expect(top_level_dependencies(native: true)).to eq(top_level_dependencies(native: false))
+      end
+    end
+  end
+
   describe "parse standard python files" do
     subject(:dependencies) { parser.dependency_set.dependencies }
 

@@ -6,6 +6,7 @@ require "dependabot/dependency_file"
 require "dependabot/python/file_parser/poetry_lock"
 require "dependabot/python/file_parser/pyproject_document"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/poetry_project"
 
 module Dependabot
   module Python
@@ -25,10 +26,19 @@ module Dependabot
       # rather than risk locking a version outside its intended scope.
       class ScopeNotReproducible < StandardError; end
 
-      sig { params(lockfile: T.nilable(Dependabot::DependencyFile), name: String).void }
-      def initialize(lockfile, name)
+      # With a native PoetryProject, scopes come from Poetry's own reading of
+      # the lockfile instead of parsing poetry.lock here.
+      sig do
+        params(
+          lockfile: T.nilable(Dependabot::DependencyFile),
+          name: String,
+          project: T.nilable(PoetryProject)
+        ).void
+      end
+      def initialize(lockfile, name, project: nil)
         @lockfile = lockfile
         @name = name
+        @project = project
       end
 
       # Updates every declaration of the dependency in place; a sub-dependency isn't declared anywhere,
@@ -92,11 +102,29 @@ module Dependabot
 
       sig { returns(T::Array[FileParser::PoetryLock::Scope]) }
       def locked_entries
+        project = @project
+        return native_entries(project) if project
         return [] unless @lockfile
 
         FileParser::PoetryLock.from_content(T.must(@lockfile.content))
                               .records_for(@name) { |name| NameNormaliser.normalise(name) }
                               .map(&:scope)
+      end
+
+      sig { params(project: PoetryProject).returns(T::Array[FileParser::PoetryLock::Scope]) }
+      def native_entries(project)
+        project.locked_versions_of(@name).map do |package|
+          groups = package.groups.empty? ? [PoetryProject::MAIN_GROUP] : package.groups
+          markers = package.markers || {}
+          FileParser::PoetryLock::Scope.new(
+            optional: package.optional,
+            groups: groups,
+            markers: groups.to_h do |group|
+              marker = markers[group]
+              [group, marker ? ["(#{marker})"] : []]
+            end
+          )
+        end
       end
 
       sig { params(pin: String, entry: FileParser::PoetryLock::Scope).returns(T::Hash[String, String]) }
