@@ -277,6 +277,93 @@ RSpec.describe Dependabot::Gradle::FileUpdater::WrapperUpdater do
     end
   end
 
+  describe "#update_files with a wrapper symlink" do
+    let(:original_properties) do
+      "distributionUrl=https\\://services.gradle.org/distributions/gradle-8.14.2-bin.zip\n"
+    end
+    let(:updated_properties) do
+      "distributionUrl=https\\://services.gradle.org/distributions/gradle-9.0.0-bin.zip\n"
+    end
+    let(:original_jar) { "original wrapper jar".b }
+    let(:updated_jar) { "updated wrapper jar".b }
+    let(:root_properties_file) do
+      Dependabot::DependencyFile.new(
+        name: "gradle/wrapper/gradle-wrapper.properties",
+        content: original_properties
+      )
+    end
+    let(:root_jar_file) do
+      Dependabot::DependencyFile.new(
+        name: "gradle/wrapper/gradle-wrapper.jar",
+        content: Base64.encode64(original_jar),
+        content_encoding: Dependabot::DependencyFile::ContentEncoding::BASE64
+      )
+    end
+    let(:alias_properties_file) do
+      Dependabot::DependencyFile.new(
+        name: "somewhereElse/gradle/wrapper/gradle-wrapper.properties",
+        content: original_properties,
+        type: "symlink",
+        symlink_target: "gradle/wrapper/gradle-wrapper.properties"
+      )
+    end
+    let(:alias_jar_file) do
+      Dependabot::DependencyFile.new(
+        name: "somewhereElse/gradle/wrapper/gradle-wrapper.jar",
+        content: Base64.encode64(original_jar),
+        content_encoding: Dependabot::DependencyFile::ContentEncoding::BASE64,
+        type: "symlink",
+        symlink_target: "gradle/wrapper/gradle-wrapper.jar"
+      )
+    end
+    let(:dependency_files) do
+      [root_properties_file, root_jar_file, alias_properties_file, alias_jar_file]
+    end
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "gradle-wrapper",
+        version: "9.0.0",
+        requirements: [{
+          file: alias_properties_file.name,
+          requirement: "9.0.0",
+          groups: [],
+          source: {
+            type: "gradle-distribution",
+            url: "https://services.gradle.org/distributions/gradle-9.0.0-bin.zip",
+            property: "distributionUrl"
+          }
+        }],
+        package_manager: "gradle"
+      )
+    end
+
+    it "updates the real wrapper files and preserves symlink aliases" do
+      observed_symlinks = []
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:, **|
+        next "Gradle 8.0\n\nBuild time: 2023-01-01" if command == "gradle --version"
+
+        properties_path = File.join(cwd, "gradle/wrapper/gradle-wrapper.properties")
+        jar_path = File.join(cwd, "gradle/wrapper/gradle-wrapper.jar")
+        observed_symlinks << [File.symlink?(properties_path), File.symlink?(jar_path)]
+        File.write(properties_path, updated_properties)
+        File.binwrite(jar_path, updated_jar)
+        ""
+      end
+
+      updated_files = updater.update_files(alias_properties_file)
+
+      expect(observed_symlinks).to eq([[true, true]])
+      expect(updated_files.find { |file| file.name == root_properties_file.name }.content)
+        .to eq(updated_properties)
+      expect(updated_files.find { |file| file.name == root_jar_file.name }.decoded_content)
+        .to eq(updated_jar)
+      expect(updated_files.find { |file| file.name == alias_properties_file.name })
+        .to eq(alias_properties_file)
+      expect(updated_files.find { |file| file.name == alias_jar_file.name })
+        .to eq(alias_jar_file)
+    end
+  end
+
   describe "#update_files version gating when gradlew is missing" do
     subject(:run_files) { updater.update_files(properties_file) }
 
