@@ -8,6 +8,13 @@ Ruby writes the (prepared) ``pyproject.toml`` and ``poetry.lock`` into
 ``directory`` and sets up credentials as ``POETRY_HTTP_BASIC_*`` environment
 variables before calling this. The helper never reads credentials itself.
 
+``pins`` steer packages that are locked at several versions, one per
+marker. Ruby picks a target for each locked version and passes it with that
+version's groups and markers. Each pin is added to the root package in
+memory as ``name==version ; marker`` in its group, which makes Poetry's
+solver fork per marker the same way it does for a multiple-constraints
+declaration. ``pyproject.toml`` isn't changed.
+
 Like ``poetry_project.py``, this relies on Poetry internals (``Installer``,
 ``Locker``), so every touch point is kept in this file.
 """
@@ -18,6 +25,9 @@ from pathlib import Path
 
 from cleo.io.null_io import NullIO
 from packaging.utils import canonicalize_name
+from poetry.core.packages.dependency import Dependency
+from poetry.core.packages.dependency_group import DependencyGroup
+from poetry.core.version.markers import parse_marker
 from poetry.factory import Factory
 from poetry.installation.installer import Installer
 from poetry.puzzle.exceptions import SolverProblemError
@@ -29,9 +39,13 @@ class PackageNotInProjectError(Exception):
     pass
 
 
-def relock_poetry_project(directory, package_names):
+class InvalidPinError(Exception):
+    pass
+
+
+def relock_poetry_project(directory, package_names, pins=None):
     try:
-        result = _relock(Path(directory), package_names)
+        result = _relock(Path(directory), package_names, pins or [])
     except SolverProblemError as e:
         # Kept apart from other failures so Ruby can map it to a
         # resolvability error without matching on the message.
@@ -42,7 +56,7 @@ def relock_poetry_project(directory, package_names):
     return json.dumps({"result": result})
 
 
-def _relock(directory, package_names):
+def _relock(directory, package_names, pins):
     # Matches the shell path, which runs `poetry config system-git-client
     # true` first. Must be set before Poetry reads its config.
     os.environ["POETRY_SYSTEM_GIT_CLIENT"] = "true"
@@ -50,6 +64,7 @@ def _relock(directory, package_names):
     poetry = Factory().create_poetry(cwd=directory, disable_plugins=True)
     names = [canonicalize_name(n) for n in package_names]
     _check_names(poetry, names)
+    _add_pins(poetry.package, names, pins)
 
     installer = Installer(
         NullIO(),
@@ -98,6 +113,27 @@ def _check_names(poetry, names):
             "The following packages are not dependencies of this project: "
             + ", ".join(missing)
         )
+
+
+def _add_pins(package, names, pins):
+    for pin in pins:
+        name = canonicalize_name(pin["name"])
+        if name not in names:
+            # A pin on a package that isn't re-resolved would be ignored,
+            # because the solver takes it from the locked repository.
+            raise InvalidPinError(f"{pin['name']} is pinned but not updated")
+        markers = pin.get("markers") or {}
+        if not markers:
+            raise InvalidPinError(f"{pin['name']} pin has no groups")
+        for group, marker in markers.items():
+            dependency = Dependency(
+                pin["name"], f"=={pin['version']}", groups=[group]
+            )
+            if marker:
+                dependency.marker = parse_marker(marker)
+            if not package.has_dependency_group(group):
+                package.add_dependency_group(DependencyGroup(group))
+            package.dependency_group(group).add_dependency(dependency)
 
 
 def _locked_versions(poetry, names):

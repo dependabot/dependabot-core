@@ -37,6 +37,15 @@ class TestMultipleLockedVersions:
         }
         assert all(p["groups_from_lockfile"] for p in urllib3)
 
+    def test_reports_the_lowest_python_each_version_installs_for(self):
+        result = parse("multiple_locked_versions")["result"]
+
+        urllib3 = [p for p in result["locked"] if p["name"] == "urllib3"]
+        assert {p["version"]: p["min_python"] for p in urllib3} == {
+            "1.26.20": "3.9",
+            "2.2.1": "3.10",
+        }
+
     def test_links_each_version_to_the_child_it_installs_with(self):
         result = parse("multiple_locked_versions")["result"]
 

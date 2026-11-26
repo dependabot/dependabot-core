@@ -46,15 +46,20 @@ module Dependabot
             .gsub('#{', "{")
         end
 
-        sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(String) }
-        def freeze_top_level_dependencies_except(dependencies)
+        # `unfrozen_names` are left as declared. The native helper passes
+        # packages locked at several versions: freezing one to a single
+        # version would collapse its other locked copies.
+        sig do
+          params(dependencies: T::Array[Dependabot::Dependency], unfrozen_names: T::Array[String]).returns(String)
+        end
+        def freeze_top_level_dependencies_except(dependencies, unfrozen_names: [])
           return pyproject_content unless lockfile
 
           document = FileParser::PyprojectDocument.from_content(pyproject_content)
           return pyproject_content unless document.poetry? || document.poetry_build_backend?
 
           lock = FileParser::PoetryLock.from_content(T.must(T.must(lockfile).content))
-          excluded_names = dependencies.map(&:name) + ["python"]
+          excluded_names = dependencies.map(&:name) + unfrozen_names + ["python"]
           document.freeze_poetry_dependencies(lock: lock, excluding: excluded_names)
           document.freeze_locked_pep621_dependencies(lock: lock, excluding: excluded_names)
           document.to_toml

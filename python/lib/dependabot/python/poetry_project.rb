@@ -80,6 +80,9 @@ module Dependabot
         const :groups_from_lockfile, T::Boolean
         # Group name => PEP 508 marker. Nil before lock format 2.1.
         const :markers, T.nilable(T::Hash[String, T.nilable(String)])
+        # Lowest Python version this locked version is installed for: the
+        # project's `python` constraint narrowed by the package's markers.
+        const :min_python, T.nilable(String)
         const :optional, T::Boolean
         const :source_type, T.nilable(String)
         const :dependencies, T::Array[LockedLink]
@@ -212,6 +215,11 @@ module Dependabot
       end
 
       sig { returns(T::Array[String]) }
+      def names_locked_more_than_once
+        locked_by_name.select { |_name, packages| packages.size > 1 }.keys
+      end
+
+      sig { returns(T::Array[String]) }
       def production_dependency_names
         locked_packages.select(&:production?).map(&:name).uniq
       end
@@ -235,6 +243,7 @@ module Dependabot
           groups: Values.string_array(hash.fetch("groups", []), "locked package groups"),
           groups_from_lockfile: hash["groups_from_lockfile"] == true,
           markers: markers_from(hash["markers"]),
+          min_python: Values.optional_string(hash["min_python"], "locked package min_python"),
           optional: hash["optional"] == true,
           source_type: source_type_from(hash["source"]),
           dependencies: Values.array(hash.fetch("dependencies", []), "locked dependencies").flat_map do |dep|

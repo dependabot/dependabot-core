@@ -14,6 +14,7 @@ require "dependabot/python/file_parser/pyproject_document"
 require "dependabot/python/file_parser/poetry_lock"
 require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/poetry_locked_versions"
 require "dependabot/python/poetry_plugin_installer"
 require "dependabot/python/poetry_project"
 require "dependabot/python/poetry_relocker"
@@ -222,7 +223,9 @@ module Dependabot
         sig { params(pyproject_content: String).returns(String) }
         def freeze_other_dependencies(pyproject_content)
           PyprojectPreparer.new(pyproject_content: pyproject_content, lockfile: lockfile)
-                           .freeze_top_level_dependencies_except(dependencies)
+                           .freeze_top_level_dependencies_except(
+                             dependencies, unfrozen_names: native_poetry_project&.names_locked_more_than_once || []
+                           )
         end
 
         sig { params(pyproject_content: String).returns(String) }
@@ -237,7 +240,7 @@ module Dependabot
 
           versions = T.let({}, T::Hash[String, String])
           dependencies.each do |dep|
-            next if git_dependency_being_updated?(dep)
+            next if git_dependency_being_updated?(dep) || locked_at_several_versions?(dep)
 
             version = dep.version
             versions[NameNormaliser.normalise(dep.name)] = version if version
@@ -250,7 +253,7 @@ module Dependabot
         sig { params(document: FileParser::PyprojectDocument).void }
         def pin_updated_poetry_dependencies(document)
           dependencies.each do |dep|
-            next if git_dependency_being_updated?(dep)
+            next if git_dependency_being_updated?(dep) || locked_at_several_versions?(dep)
 
             pinned_version = exact_poetry_requirement(dep.version)
             next unless pinned_version
@@ -270,7 +273,7 @@ module Dependabot
         sig { params(document: FileParser::PyprojectDocument).void }
         def pin_pep621_subdependencies!(document)
           dependencies.each do |dep|
-            next if git_dependency_being_updated?(dep)
+            next if git_dependency_being_updated?(dep) || locked_at_several_versions?(dep)
             next unless dep.version
 
             PoetrySubdependencyPin.new(lockfile, dep.name, project: native_poetry_project)
@@ -293,6 +296,24 @@ module Dependabot
 
           # Pin with ==version only when cooldown is set so Poetry can't pick a newer excluded release.
           @cooldown ? "==#{version}" : version
+        end
+
+        # Pinned per locked version by the relock helper instead; a single
+        # pin would collapse the other locked copies.
+        sig { params(dep: Dependabot::Dependency).returns(T::Boolean) }
+        def locked_at_several_versions?(dep)
+          PoetryLockedVersions.targets_from(dep).any?
+        end
+
+        # Targets for the dependencies being updated, plus holds for every
+        # other package locked at several versions.
+        sig { returns(T::Array[PoetryRelocker::Pin]) }
+        def locked_version_pins
+          targets = dependencies.flat_map do |dep|
+            PoetryLockedVersions.targets_from(dep).map { |target| target.to_pin(dep.name) }
+          end
+          holds = PoetryLockedVersions.hold_pins(native_poetry_project, except: dependencies.map(&:name))
+          targets + holds
         end
 
         sig { params(dep: Dependabot::Dependency).returns(T::Boolean) }
@@ -321,10 +342,18 @@ module Dependabot
 
         sig { returns(String) }
         def relock
+          pins = locked_version_pins
           native = PoetryRelocker.relock_if_enabled(
-            package_names: [dependency.name], dependency_files: dependency_files, credentials: credentials
+            package_names: [dependency.name, *pins.map(&:name)].uniq,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            pins: pins
           )
-          return native.lockfile if native
+          return native.lockfile if native && PoetryLockedVersions.pins_applied?(pins, native.versions)
+          # `poetry update` would collapse packages locked at several versions.
+          if pins.any?
+            raise DependencyFileNotResolvable, "Couldn't keep every locked version while updating #{dependency.name}"
+          end
 
           poetry_plugin_installer.install_required_plugins
 

@@ -18,6 +18,7 @@ require "dependabot/python/requirement"
 require "dependabot/python/native_helpers"
 require "dependabot/python/authed_url_builder"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/poetry_locked_versions"
 require "dependabot/python/poetry_plugin_installer"
 require "dependabot/python/poetry_relocker"
 require "dependabot/python/poetry_subdependency_pin"
@@ -27,7 +28,7 @@ module Dependabot
   module Python
     class UpdateChecker
       # This class does version resolution for pyproject.toml files.
-      class PoetryVersionResolver
+      class PoetryVersionResolver # rubocop:disable Metrics/ClassLength
         extend T::Sig
         extend T::Helpers
 
@@ -77,14 +78,19 @@ module Dependabot
             dependency: Dependabot::Dependency,
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Dependabot::Credential],
-            repo_contents_path: T.nilable(String)
+            repo_contents_path: T.nilable(String),
+            latest_version_finder: T.nilable(LatestVersionFinder)
           ).void
         end
-        def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
+        def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:, latest_version_finder: nil)
           @dependency               = dependency
           @dependency_files         = dependency_files
           @credentials              = credentials
           @repo_contents_path       = repo_contents_path
+          # Only needed to pick per-version targets for a package locked at
+          # several versions (native helper only).
+          @latest_version_finder    = latest_version_finder
+          @locked_version_targets = T.let({}, T::Hash[String, T::Array[PoetryLockedVersions::Target]])
           @error_handler = T.let(
             PoetryErrorHandler.new(dependencies: dependency, dependency_files: dependency_files),
             Dependabot::Python::PoetryErrorHandler
@@ -120,11 +126,21 @@ module Dependabot
           @resolvable[version] = false
         end
 
+        # The per-locked-version targets behind a version this resolver
+        # returned, or nil if the dependency is locked once.
+        sig { params(version: String).returns(T.nilable(T::Array[PoetryLockedVersions::Target])) }
+        def locked_version_targets(version)
+          @locked_version_targets[version]
+        end
+
         private
 
         sig { params(requirement: T.nilable(String)).returns(T.nilable(String)) }
         def fetch_latest_resolvable_version_string(requirement:)
           return @latest_resolvable_version_string[requirement] if @latest_resolvable_version_string.key?(requirement)
+
+          locked = locked_versions
+          return @latest_resolvable_version_string[requirement] = resolve_locked_versions(locked, requirement) if locked
 
           @latest_resolvable_version_string[requirement] ||=
             SharedHelpers.in_a_temporary_directory do
@@ -141,6 +157,77 @@ module Dependabot
                 handle_poetry_errors(e)
               end
             end
+        end
+
+        # A package locked at several versions gets a target per locked
+        # version, applied as marker-scoped pins. There's no shell fallback:
+        # `poetry update <name>` would collapse the copies to one version.
+        sig { returns(T.nilable(PoetryLockedVersions)) }
+        def locked_versions
+          return @locked_versions if defined?(@locked_versions)
+
+          locked = PoetryLockedVersions.for(@latest_version_finder && native_poetry_project, dependency.name)
+          @locked_versions = T.let(locked, T.nilable(PoetryLockedVersions))
+        end
+
+        # Returns the highest target that moved, or the current version when
+        # none did, so the update checker sees "no update".
+        sig { params(locked: PoetryLockedVersions, requirement: T.nilable(String)).returns(T.nilable(String)) }
+        def resolve_locked_versions(locked, requirement)
+          # An exact requirement asks whether every copy can move to one
+          # version (security fixes and `resolvable?`). That's never true for
+          # copies split by Python version, so it's declined.
+          return nil if requirement&.start_with?("==")
+
+          targets = locked.targets(requirements: [requirement, *declared_requirement_strings].compact) do |min_python|
+            releases_for(min_python)
+          end
+          version = PoetryLockedVersions.highest_moved(targets)
+          return dependency.version unless version
+          return nil unless relock_locked_versions(targets)
+
+          @locked_version_targets[version] = targets
+          version
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          raise unless PoetryRelocker.resolution_failure?(e)
+
+          Dependabot.logger.info("Poetry couldn't apply #{dependency.name} targets #{targets&.map(&:version)}: #{e}")
+          nil
+        end
+
+        sig { params(targets: T::Array[PoetryLockedVersions::Target]).returns(T.nilable(PoetryRelocker::Result)) }
+        def relock_locked_versions(targets)
+          SharedHelpers.in_a_temporary_directory do
+            SharedHelpers.with_git_configured(credentials: credentials) do
+              write_temporary_dependency_files(update_pyproject: false)
+              add_auth_env_vars
+              language_version_manager.install_required_python
+
+              pins = targets.map { |t| t.to_pin(dependency.name) } + hold_pins
+              result = PoetryRelocker.relock_if_enabled(
+                package_names: pins.map(&:name).uniq,
+                pins: pins,
+                dependency_files: dependency_files,
+                credentials: credentials
+              )
+              next result if result && PoetryLockedVersions.pins_applied?(pins, result.versions)
+
+              Dependabot.logger.info("Native Poetry re-lock didn't apply #{dependency.name} targets; declining")
+              nil
+            end
+          end
+        end
+
+        sig { params(min_python: T.nilable(String)).returns(T::Array[Gem::Version]) }
+        def releases_for(min_python)
+          language_version = min_python && Python::Version.new(min_python)
+          releases = T.must(@latest_version_finder).eligible_releases(language_version: language_version) || []
+          releases.map(&:version)
+        end
+
+        sig { returns(T::Array[String]) }
+        def declared_requirement_strings
+          dependency.requirements.select { |r| r.file == pyproject&.name }.filter_map(&:requirement_string)
         end
 
         sig { params(content: String).returns(T.nilable(String)) }
@@ -215,9 +302,19 @@ module Dependabot
 
         sig { returns(T.nilable(PoetryRelocker::Result)) }
         def native_relock
+          pins = hold_pins
           PoetryRelocker.relock_if_enabled(
-            package_names: [dependency.name], dependency_files: dependency_files, credentials: credentials
+            package_names: [dependency.name, *pins.map(&:name)].uniq,
+            pins: pins,
+            dependency_files: dependency_files,
+            credentials: credentials
           )
+        end
+
+        # Keeps other packages locked at several versions where they are.
+        sig { returns(T::Array[PoetryRelocker::Pin]) }
+        def hold_pins
+          PoetryLockedVersions.hold_pins(native_poetry_project, except: [dependency.name])
         end
 
         # Using `--lock` avoids doing an install.
@@ -328,7 +425,9 @@ module Dependabot
         def freeze_other_dependencies(pyproject_content)
           Python::FileUpdater::PyprojectPreparer
             .new(pyproject_content: pyproject_content, lockfile: lockfile)
-            .freeze_top_level_dependencies_except([dependency])
+            .freeze_top_level_dependencies_except(
+              [dependency], unfrozen_names: native_poetry_project&.names_locked_more_than_once || []
+            )
         end
 
         sig { params(pyproject_content: String, updated_requirement: T.nilable(String)).returns(String) }

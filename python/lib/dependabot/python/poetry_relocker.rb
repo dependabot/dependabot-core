@@ -29,6 +29,23 @@ module Dependabot
       # the shell command would fail the same way, so this isn't retried.
       RESOLUTION_ERROR_CLASSES = %w(SolverProblemError).freeze
 
+      # Moves one locked version of a package to `version`. `markers` maps
+      # each group the locked version is in to its marker, as Poetry
+      # reports them. The helper adds `name==version ; marker` to each group
+      # in memory, so Poetry's solver forks per marker.
+      class Pin < T::ImmutableStruct
+        extend T::Sig
+
+        const :name, String
+        const :version, String
+        const :markers, T::Hash[String, T.nilable(String)]
+
+        sig { returns(T::Hash[String, T.any(String, T::Hash[String, T.nilable(String)])]) }
+        def to_helper_args
+          { "name" => name, "version" => version, "markers" => markers }
+        end
+      end
+
       class Result < T::ImmutableStruct
         const :lockfile, String
         # Every locked version of each requested package, keyed by normalised
@@ -45,14 +62,15 @@ module Dependabot
         params(
           package_names: T::Array[String],
           dependency_files: T::Array[Dependabot::DependencyFile],
-          credentials: T::Array[Dependabot::Credential]
+          credentials: T::Array[Dependabot::Credential],
+          pins: T::Array[Pin]
         ).returns(T.nilable(Result))
       end
-      def self.relock_if_enabled(package_names:, dependency_files:, credentials:)
+      def self.relock_if_enabled(package_names:, dependency_files:, credentials:, pins: [])
         return unless PoetryProject.enabled?
         return if PoetryPluginInstaller.from_dependency_files(dependency_files).plugins_required?
 
-        relock(package_names)
+        relock(package_names, pins)
       rescue SharedHelpers::HelperSubprocessFailed => e
         if resolution_failure?(e)
           SubprocessErrorContext.attach(
@@ -70,12 +88,14 @@ module Dependabot
         RESOLUTION_ERROR_CLASSES.include?(error.error_class)
       end
 
-      sig { params(package_names: T::Array[String]).returns(Result) }
-      def self.relock(package_names)
+      sig { params(package_names: T::Array[String], pins: T::Array[Pin]).returns(Result) }
+      def self.relock(package_names, pins = [])
+        args = T.let([Dir.pwd, package_names], T::Array[Object])
+        args << pins.map(&:to_helper_args) if pins.any?
         result = SharedHelpers.run_helper_subprocess(
           command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
           function: "relock_poetry_project",
-          args: [Dir.pwd, package_names]
+          args: args
         )
         parse_result(result)
       end

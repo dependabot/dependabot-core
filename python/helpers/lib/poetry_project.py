@@ -12,6 +12,7 @@ in one place.
 import json
 from pathlib import Path
 
+from poetry.core.packages.utils.utils import get_python_constraint_from_marker
 from poetry.core.version.markers import AnyMarker
 from poetry.factory import Factory
 
@@ -121,6 +122,10 @@ def _locked_packages(poetry):
                 {g: _marker_string(m) for g, m in sorted(info.markers.items())}
                 if info else None
             ),
+            "min_python": _min_python(
+                poetry.package.python_constraint,
+                package_markers[_key(pkg)],
+            ),
             "source": _source(
                 pkg.source_type,
                 pkg.source_url,
@@ -209,6 +214,23 @@ def _package_marker(info):
     if info is None:
         return AnyMarker()
     return info.get_marker(info.groups)
+
+
+def _min_python(project_python, marker):
+    """Lowest Python version the locked package is installed for.
+
+    Ruby uses it to pick a target per locked version: a package locked once
+    for ``python_version == "3.9"`` and once for ``>= "3.10"`` can only move
+    to releases that support 3.9 and 3.10 respectively. Nil when the range is
+    empty or has no lower bound.
+    """
+    constraint = get_python_constraint_from_marker(marker).intersect(
+        project_python
+    )
+    if constraint.is_empty():
+        return None
+    lowest = constraint.flatten()[0].min
+    return lowest.text if lowest is not None else None
 
 
 def _key(pkg):
