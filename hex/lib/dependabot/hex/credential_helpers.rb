@@ -17,7 +17,10 @@ module Dependabot
       REPOSITORY_URL_ENV = "DEPENDABOT_HEX_REPOSITORY_URL_TOKEN"
       ORGANIZATION_AUTHENTICATION_FAILURE =
         "Failed to authenticate against organization repository with given key"
-      PUBLIC_KEY_AUTHENTICATION_FAILURE = 'Downloading public key failed with code "401"'
+      PUBLIC_KEY_AUTHENTICATION_FAILURES = [
+        'Downloading public key failed with code "401"',
+        'Downloading public key failed with code "403"'
+      ].freeze
       AUTHENTICATION_SOURCE = %r{[A-Za-z0-9_:.\-/]+}
       UNAUTHENTICATED_ORGANIZATION = /
         (?:\A|\n)
@@ -198,7 +201,7 @@ module Dependabot
           )
         )
       rescue SharedHelpers::HelperSubprocessFailed => e
-        raise unless e.message.lines.any? { |line| line.strip == PUBLIC_KEY_AUTHENTICATION_FAILURE }
+        raise unless e.message.lines.any? { |line| PUBLIC_KEY_AUTHENTICATION_FAILURES.include?(line.strip) }
 
         raise Dependabot::PrivateSourceAuthenticationFailure.new(repo), cause: nil
       end
