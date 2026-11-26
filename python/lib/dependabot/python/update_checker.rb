@@ -209,6 +209,11 @@ module Dependabot
 
         return resolver.lowest_resolvable_security_fix_version if resolver_type == :requirements
 
+        if resolver_type == :pipenv
+          security_fix_versions = latest_version_finder.security_fix_versions
+          return security_fix_versions.find { |version| resolver.resolvable?(version: version) }
+        end
+
         resolver.resolvable?(version: fix_version) ? fix_version : nil
       end
 

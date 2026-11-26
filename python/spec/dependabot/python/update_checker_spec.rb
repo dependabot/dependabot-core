@@ -451,6 +451,30 @@ RSpec.describe Dependabot::Python::UpdateChecker do
     end
   end
 
+  describe "#lowest_resolvable_security_fix_version" do
+    it "tries the next safe version when the lowest is unavailable to Pipenv" do
+      first_version = Gem::Version.new("2.1.1")
+      second_version = Gem::Version.new("2.2.0")
+      finder = instance_double(
+        described_class::LatestVersionFinder,
+        security_fix_versions: [first_version, second_version]
+      )
+      resolver = instance_double(described_class::PipenvVersionResolver)
+
+      allow(checker).to receive_messages(
+        vulnerable?: true,
+        resolver_type: :pipenv,
+        lowest_security_fix_version: first_version,
+        latest_version_finder: finder,
+        resolver: resolver
+      )
+      allow(resolver).to receive(:resolvable?).with(version: first_version).and_return(false)
+      allow(resolver).to receive(:resolvable?).with(version: second_version).and_return(true)
+
+      expect(checker.lowest_resolvable_security_fix_version).to eq(second_version)
+    end
+  end
+
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 

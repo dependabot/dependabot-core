@@ -73,6 +73,13 @@ module Dependabot
 
             PyprojectValueParser.string(version, "#{@context} version")
           end
+
+          sig { returns(T.nilable(String)) }
+          def index
+            return if @value.is_a?(String)
+
+            PyprojectValueParser.optional_string(@value["index"], "#{@context} index")
+          end
         end
 
         sig { params(file: Dependabot::DependencyFile).returns(PipfileDocument) }

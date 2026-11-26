@@ -3,6 +3,7 @@
 
 require "dependabot/shared_helpers"
 require "dependabot/python/file_parser"
+require "dependabot/python/name_normaliser"
 require "dependabot/python/subprocess_error_context"
 require "json"
 require "shellwords"
@@ -49,10 +50,13 @@ module Dependabot
         package_spec = "#{dependency_name}#{extras_spec}#{constraint}"
 
         index = dependency_index
-        command = +"pyenv exec pipenv upgrade --verbose"
-        command << " --index #{Shellwords.escape(index)}" if index
-        command << " #{package_spec}"
-        command << " --dev" if lockfile_section == "develop"
+        if index
+          command = ["pyenv", "exec", "pipenv", "upgrade", "--verbose", "--index", index, package_spec]
+          command << "--dev" if lockfile_section == "develop"
+        else
+          command = "pyenv exec pipenv upgrade --verbose #{package_spec}"
+          command << " --dev" if lockfile_section == "develop"
+        end
 
         fingerprint = +"pyenv exec pipenv upgrade --verbose"
         fingerprint << " --index <index>" if index
@@ -82,7 +86,7 @@ module Dependabot
         end
       end
 
-      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
+      sig { params(command: SharedHelpers::Command, fingerprint: T.nilable(String)).returns(String) }
       def run(command, fingerprint: nil)
         run_command(
           "pyenv local #{language_version_manager.python_major_minor}",
@@ -152,7 +156,7 @@ module Dependabot
         section_data = parsed_lockfile_section(parsed_lockfile, lockfile_section)
         return nil unless section_data
 
-        dependency_data = section_data[dependency_name]
+        dependency_data = lockfile_dependency_data(section_data)
         return nil unless dependency_data
 
         dependency_data["extras"]
@@ -160,20 +164,51 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def dependency_index
-        return nil unless lockfile
+        entry = pipfile_dependency_entry
+        return entry.index if entry
 
-        lockfile_content = T.must(lockfile).content
-        return nil unless lockfile_content
+        dependency_lockfile_index
+      end
+
+      sig { returns(T.nilable(FileParser::PipfileDocument::Entry)) }
+      def pipfile_dependency_entry
+        pipfile = dependency_files&.find { |file| file.name == "Pipfile" }
+        return unless pipfile
+
+        group_keys = FileParser::PipfileFilesParser::DEPENDENCY_GROUP_KEYS
+                     .find { |keys| keys.fetch(:lockfile) == lockfile_section }
+        pipfile_group = group_keys&.fetch(:pipfile)
+        return unless pipfile_group
+
+        normalized_dependency_name = NameNormaliser.normalise(dependency_name)
+        document = FileParser::PipfileDocument.from_file(pipfile)
+        document.entries(pipfile_group)
+                .find { |entry| NameNormaliser.normalise(entry.name) == normalized_dependency_name }
+      end
+
+      sig { returns(T.nilable(String)) }
+      def dependency_lockfile_index
+        lockfile_content = lockfile&.content
+        return unless lockfile_content
 
         parsed_lockfile = JSON.parse(lockfile_content)
         section_data = parsed_lockfile_section(parsed_lockfile, lockfile_section)
-        return nil unless section_data
+        return unless section_data
 
-        dependency_data = section_data[dependency_name]
-        return nil unless dependency_data.is_a?(Hash)
+        dependency_data = lockfile_dependency_data(section_data)
+        return unless dependency_data
 
         index = dependency_data["index"]
         index if index.is_a?(String)
+      end
+
+      sig do
+        params(section_data: T::Hash[String, T.untyped])
+          .returns(T.nilable(T::Hash[String, T.untyped]))
+      end
+      def lockfile_dependency_data(section_data)
+        dependency_data = section_data[current_dependency.name] || section_data[dependency_name]
+        dependency_data if dependency_data.is_a?(Hash)
       end
 
       sig { params(updated_lockfile: T::Hash[String, T.untyped]).returns(T.nilable(String)) }
@@ -181,17 +216,18 @@ module Dependabot
         section_data = parsed_lockfile_section(updated_lockfile, lockfile_section)
         return nil unless section_data
 
-        section_data.dig(dependency_name, "version")
-                    &.gsub(/^==/, "")
+        lockfile_dependency_data(section_data)
+          &.dig("version")
+          &.gsub(/^==/, "")
       end
 
-      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
+      sig { params(command: SharedHelpers::Command, fingerprint: T.nilable(String)).returns(String) }
       def run_command(command, fingerprint: nil)
         SharedHelpers.run_shell_command(command, env: pipenv_env_variables, fingerprint: fingerprint)
       rescue SharedHelpers::HelperSubprocessFailed => e
         SubprocessErrorContext.attach(
           e,
-          command: command,
+          command: command.is_a?(Array) ? Shellwords.join(command) : command,
           dependency_files: dependency_files || [lockfile].compact,
           credentials: credentials
         )
@@ -213,14 +249,16 @@ module Dependabot
         sections = Python::FileParser::DEPENDENCY_GROUP_KEYS.filter_map do |keys|
           section = keys.fetch(:lockfile)
           section_data = parsed_lockfile_section(parsed_lockfile, section)
-          next unless section_data
+          next unless section_data && lockfile_dependency_data(section_data)
 
-          section if section_data.key?(dependency_name)
+          section
         end
 
         original_version = current_dependency.previous_version || current_dependency.version
         sections.find do |section|
-          parsed_lockfile.dig(section, dependency_name, "version")&.gsub(/^===?/, "") == original_version
+          section_data = parsed_lockfile_section(parsed_lockfile, section)
+          version = section_data && lockfile_dependency_data(section_data)&.dig("version")
+          version&.gsub(/^===?/, "") == original_version
         end || sections.first
       end
 

@@ -140,7 +140,148 @@ RSpec.describe Dependabot::Python::PipenvRunner do
         runner.run_upgrade("==0.0.2")
 
         expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
-          .with("pyenv exec pipenv upgrade --verbose --index testpypi test-mybug==0.0.2", anything)
+          .with(
+            ["pyenv", "exec", "pipenv", "upgrade", "--verbose", "--index", "testpypi", "test-mybug==0.0.2"],
+            anything
+          )
+      end
+
+      context "when the lockfile uses a normalized package name and stale index" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "python-decouple",
+            version: "3.1",
+            requirements: [{
+              file: "Pipfile",
+              requirement: "*",
+              groups: ["default"],
+              source: nil
+            }],
+            package_manager: "pip",
+            metadata: { original_name: "python_decouple" }
+          )
+        end
+        let(:pipfile) do
+          Dependabot::DependencyFile.new(
+            name: "Pipfile",
+            content: <<~PIPFILE
+              [[source]]
+              url = "https://pypi.org/simple"
+              verify_ssl = true
+              name = "pypi"
+
+              [[source]]
+              url = "https://test.pypi.org/simple/"
+              verify_ssl = true
+              name = "current-index"
+
+              [packages]
+              python_decouple = {version = "*", index = "current-index"}
+            PIPFILE
+          )
+        end
+        let(:lockfile_content) do
+          JSON.generate(
+            "default" => { "python-decouple" => { "version" => "==3.1", "index" => "stale-index" } },
+            "develop" => {}
+          )
+        end
+
+        it "prefers the Pipfile assignment and matches the normalized lockfile name" do
+          runner.run_upgrade("==3.2")
+
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+            .with(
+              ["pyenv", "exec", "pipenv", "upgrade", "--verbose", "--index", "current-index", "python_decouple==3.2"],
+              anything
+            )
+        end
+      end
+
+      context "with a transitive dependency whose lockfile name is normalized" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "python-decouple",
+            version: "3.1",
+            requirements: [],
+            package_manager: "pip",
+            metadata: { original_name: "python_decouple" }
+          )
+        end
+        let(:dependency_files) { [pipfile, lockfile] }
+        let(:pipfile) do
+          Dependabot::DependencyFile.new(
+            name: "Pipfile",
+            content: "[packages]\nrequests = \"*\"\n"
+          )
+        end
+        let(:lockfile_content) do
+          JSON.generate(
+            "default" => { "python-decouple" => { "version" => "==3.1", "index" => "testpypi" } },
+            "develop" => {}
+          )
+        end
+
+        it "selects the section and index using the normalized name" do
+          runner.run_upgrade("==3.2")
+
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+            .with(
+              ["pyenv", "exec", "pipenv", "upgrade", "--verbose", "--index", "testpypi", "python_decouple==3.2"],
+              anything
+            )
+        end
+      end
+
+      context "when the Pipfile entry has no explicit index" do
+        let(:pipfile) do
+          Dependabot::DependencyFile.new(
+            name: "Pipfile",
+            content: "[packages]\ntest-mybug = \"*\"\n"
+          )
+        end
+        let(:lockfile_content) do
+          JSON.generate(
+            "default" => { "test-mybug" => { "version" => "==0.0.1", "index" => "stale-index" } },
+            "develop" => {}
+          )
+        end
+
+        it "does not reuse the stale lockfile index" do
+          runner.run_upgrade("==0.0.2")
+
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+            .with("pyenv exec pipenv upgrade --verbose test-mybug==0.0.2", anything)
+        end
+      end
+
+      context "without a lockfile" do
+        let(:lockfile) { nil }
+        let(:dependency_files) { [pipfile] }
+        let(:pipfile) do
+          Dependabot::DependencyFile.new(
+            name: "Pipfile",
+            content: <<~PIPFILE
+              [[source]]
+              url = "https://test.pypi.org/simple/"
+              verify_ssl = true
+              name = "test pypi"
+
+              [packages]
+              test-mybug = {version = "*", index = "test pypi"}
+            PIPFILE
+          )
+        end
+
+        it "preserves the Pipfile index as a single command argument" do
+          runner.run_upgrade("==0.0.2")
+
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+            .with(
+              ["pyenv", "exec", "pipenv", "upgrade", "--verbose", "--index", "test pypi", "test-mybug==0.0.2"],
+              anything
+            )
+        end
       end
     end
 

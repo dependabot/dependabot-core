@@ -899,6 +899,16 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
     it { is_expected.to eq(Gem::Version.new("2.1.1")) }
 
+    describe "#security_fix_versions" do
+      it "returns eligible safe versions in ascending order" do
+        versions = finder.security_fix_versions
+
+        expect(versions.first).to eq(Gem::Version.new("2.1.1"))
+        expect(versions).to eq(versions.sort)
+        expect(versions).not_to include(Gem::Version.new("2.1.0"))
+      end
+    end
+
     context "when the lowest version has been yanked" do
       let(:pypi_response) do
         fixture("pypi", "pypi_simple_response_yanked.html")
