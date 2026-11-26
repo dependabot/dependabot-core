@@ -132,6 +132,9 @@ function docker_build() {
 
   export UPDATER_IMAGE_NAME="$UPDATER_IMAGE$TAG"
 
+  # A registry cache can resolve FROM to the published image instead of this build.
+  docker tag "$UPDATER_CORE_IMAGE" dependabot-updater-core:local
+
   DOCKERFILE_PATH=$(get_dockerfile_path)
 
   ECOSYSTEM_BUILD=$(_build_cmd_and_cache_args "$ECOSYSTEM" "$UPDATER_IMAGE_NAME")
@@ -139,6 +142,7 @@ function docker_build() {
   # shellcheck disable=SC2086  # word-splitting is intentional for build args
   $ECOSYSTEM_BUILD \
     $DOCKER_BUILD_ARGS \
+    --build-context "$UPDATER_CORE_IMAGE=docker-image://dependabot-updater-core:local" \
     -t "$UPDATER_IMAGE_NAME" \
     -f "$DOCKERFILE_PATH" \
     .
