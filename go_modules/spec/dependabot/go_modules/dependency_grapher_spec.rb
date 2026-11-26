@@ -319,4 +319,30 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
       end
     end
   end
+
+  describe "#manifest_set_input_files" do
+    let(:go_mod) do
+      Dependabot::DependencyFile.new(
+        name: "go.mod",
+        content: fixture("projects", "graphing_dependencies", "go.mod"),
+        directory: "/"
+      )
+    end
+
+    let(:go_sum) do
+      Dependabot::DependencyFile.new(
+        name: "go.sum",
+        content: fixture("projects", "graphing_dependencies", "go.sum"),
+        directory: "/"
+      )
+    end
+
+    let(:dependency_files) { [go_mod, go_sum] }
+
+    before { allow(parser).to receive(:parse).and_return([]) }
+
+    it "reports only go.mod, as go.sum does not determine the resolved dependencies" do
+      expect(grapher.manifest_set_input_files.map(&:name)).to eq(["go.mod"])
+    end
+  end
 end

@@ -18,7 +18,7 @@ require "toml-rb"
 
 module Dependabot
   module Python
-    class DependencyGrapher < Dependabot::DependencyGraphers::Base
+    class DependencyGrapher < Dependabot::DependencyGraphers::Base # rubocop:disable Metrics/ClassLength
       require_relative "dependency_grapher/lockfile_generator"
       require_relative "dependency_grapher/requirements_layers"
 
@@ -86,6 +86,12 @@ module Dependabot
       end
 
       private
+
+      # pip.conf only configures where packages are fetched from, not which are resolved.
+      sig { override.params(file: Dependabot::DependencyFile).returns(T::Boolean) }
+      def manifest_set_input_file?(file)
+        File.basename(file.name) != "pip.conf"
+      end
 
       # When a pip/pip-compile directory is split into requirements layers, any non-requirements manifest
       # sharing that directory (setup.py, setup.cfg, pyproject.toml) would otherwise fall outside every layer
