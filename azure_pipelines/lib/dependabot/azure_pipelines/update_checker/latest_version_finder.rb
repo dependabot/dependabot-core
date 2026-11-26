@@ -74,7 +74,7 @@ module Dependabot
         sig { returns(T::Boolean) }
         def wants_preview?
           releases = available_versions || []
-          pins = dependency.requirements.map(&:requirement)
+          pins = dependency.requirements.map { |requirement| requirement[:requirement] }
           pins << dependency.version
 
           pins.any? do |pin|
@@ -102,8 +102,13 @@ module Dependabot
             .returns(T::Array[Dependabot::Package::PackageRelease])
         end
         def filter_deprecated_versions(releases)
+          # A deprecated task version also makes every earlier version deprecated.
+          latest_deprecated_version = available_versions&.select do |release|
+            deprecated?(release)
+          end&.max_by(&:version)&.version
           filtered = releases.reject do |release|
-            deprecated?(release) && release.version.to_s != dependency.version
+            latest_deprecated_version && release.version <= latest_deprecated_version &&
+              release.version.to_s != dependency.version
           end
 
           if releases.count > filtered.count

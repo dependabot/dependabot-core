@@ -117,6 +117,40 @@ RSpec.describe Dependabot::AzurePipelines::UpdateChecker do
       end
     end
 
+    context "when a newer task version is deprecated" do
+      let(:version) { "2" }
+
+      before do
+        task = JSON.parse(fixture("github", "maven_v4_task.json")).merge("deprecated" => true)
+        stub_request(:get, "#{raw_url}/MavenV4/task.json")
+          .to_return(status: 200, body: JSON.dump(task))
+      end
+
+      it "does not offer any previous version as an update target" do
+        expect(checker.latest_version.to_s).to eq("2")
+        expect(checker).to be_up_to_date
+      end
+
+      context "with a security advisory" do
+        let(:security_advisories) do
+          [Dependabot::SecurityAdvisory.new(
+            dependency_name: "Maven", package_manager: "azure_pipelines", vulnerable_versions: ["<= 2.0.0"]
+          )]
+        end
+
+        it "does not offer a previous deprecated version as a security fix" do
+          finder = described_class::LatestVersionFinder.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: [],
+            security_advisories: security_advisories
+          )
+          expect(finder.lowest_security_fix_version).to be_nil
+        end
+      end
+    end
+
     context "when the task is not one Microsoft ships" do
       let(:dependency) { build_dependency("SonarQubePrepare", "7") }
       let(:dependency_files) do
