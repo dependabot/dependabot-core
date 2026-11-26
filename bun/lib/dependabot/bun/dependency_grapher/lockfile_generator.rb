@@ -49,22 +49,22 @@ module Dependabot
         sig { void }
         def write_temporary_files
           dependency_files.each do |file|
-            next unless file.name.end_with?("package.json", ".npmrc")
+            next unless file.name.end_with?("package.json")
 
             path = file.name
             FileUtils.mkdir_p(File.dirname(path))
             File.write(path, file.content)
           end
 
-          write_npmrc_from_credentials unless dependency_files.any? { |f| f.name.end_with?(".npmrc") }
+          write_npmrc
         end
 
         sig { void }
-        def write_npmrc_from_credentials
+        def write_npmrc
           npmrc_content = FileUpdater::NpmrcBuilder.new(
             credentials: credentials,
             dependency_files: dependency_files
-          ).npmrc_content
+          ).npmrc_content(preserve_existing: true)
 
           return if npmrc_content.strip.empty?
 

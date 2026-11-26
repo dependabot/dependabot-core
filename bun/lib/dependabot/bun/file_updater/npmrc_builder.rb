@@ -32,10 +32,11 @@ module Dependabot
         end
 
         # PROXY WORK
-        sig { returns(String) }
-        def npmrc_content
+        sig { params(preserve_existing: T::Boolean).returns(String) }
+        def npmrc_content(preserve_existing: false)
           initial_content =
-            if npmrc_file then complete_npmrc_from_credentials
+            if npmrc_file
+              preserve_existing ? npmrc_file&.content : complete_npmrc_from_credentials
             else
               build_npmrc_content_from_lockfile
             end

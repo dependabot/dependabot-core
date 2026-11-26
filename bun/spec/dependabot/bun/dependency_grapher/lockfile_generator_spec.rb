@@ -99,6 +99,32 @@ RSpec.describe Dependabot::Bun::DependencyGrapher::LockfileGenerator do
   end
 
   describe "file writing" do
+    it "adds job registry credentials to the routing used for a lockfile-free install" do
+      npmrc = Dependabot::DependencyFile.new(
+        name: ".npmrc",
+        content: "@example:registry=https://packages.example.com/npm/\n",
+        support_file: true
+      )
+      credential = Dependabot::Credential.new(
+        "type" => "npm_registry", "registry" => "packages.example.com/npm", "token" => "job-token"
+      )
+      generator_with_registry = described_class.new(
+        dependency_files: dependency_files + [npmrc],
+        credentials: credentials + [credential]
+      )
+
+      allow(Dependabot::Bun::Helpers).to receive(:run_bun_command) do
+        expect(File.readlines(".npmrc", chomp: true)).to include(
+          "@example:registry=https://packages.example.com/npm/",
+          "//packages.example.com/npm/:_authToken=job-token"
+        )
+        File.write("bun.lock", "{}")
+        ""
+      end
+
+      generator_with_registry.generate
+    end
+
     it "writes package.json and .npmrc files to the temporary directory" do
       npmrc_file = Dependabot::DependencyFile.new(
         name: ".npmrc",

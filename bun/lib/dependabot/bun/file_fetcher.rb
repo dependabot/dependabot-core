@@ -7,6 +7,7 @@ require "dependabot/experiments"
 require "dependabot/logger"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/bun/bunfig_registries"
 require "dependabot/bun/helpers"
 require "dependabot/bun/package_manager"
 require "dependabot/bun/file_parser"
@@ -160,10 +161,21 @@ module Dependabot
         return @npmrc if defined?(@npmrc)
 
         @npmrc ||= T.let(fetch_support_file(BunPackageManager::RC_FILENAME), T.nilable(DependencyFile))
+        @npmrc ||= fetch_file_from_parent_directories(BunPackageManager::RC_FILENAME) unless directory == "/"
+        @npmrc ||= npmrc_from_bunfig
+      end
 
-        return @npmrc if @npmrc || directory == "/"
+      sig { returns(T.nilable(DependencyFile)) }
+      def npmrc_from_bunfig
+        bunfig = fetch_support_file("bunfig.toml")
+        return unless bunfig
 
-        @npmrc = fetch_file_from_parent_directories(BunPackageManager::RC_FILENAME)
+        content = BunfigRegistries.npmrc_content(bunfig)
+        return unless content
+
+        DependencyFile.new(
+          name: BunPackageManager::RC_FILENAME, directory: directory, content: content, support_file: true
+        )
       end
 
       sig { returns(T::Array[DependencyFile]) }
