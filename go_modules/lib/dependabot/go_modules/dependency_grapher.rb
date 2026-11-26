@@ -31,6 +31,13 @@ module Dependabot
 
       private
 
+      # go.sum only verifies checksums and go.env only configures module fetching, so go.mod alone determines
+      # the resolved dependencies.
+      sig { override.params(file: Dependabot::DependencyFile).returns(T::Boolean) }
+      def manifest_set_input_file?(file)
+        file.name == "go.mod"
+      end
+
       sig { override.params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
       def fetch_subdependencies(dependency)
         # go mod graph returns all dependencies it finds, even if it has been pruned. So filter those out.
