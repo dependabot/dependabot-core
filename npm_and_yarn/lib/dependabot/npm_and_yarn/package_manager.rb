@@ -447,17 +447,16 @@ module Dependabot
       private
 
       # The name Corepack is asked to run. An unpinned pnpm with a lockfile older than the default pnpm reads runs
-      # as the pnpm major that wrote it, so the reported version matches the one that updates the lockfile.
+      # as the pnpm major that wrote it, and one whose engines.pnpm the default does not satisfy runs as the pnpm it
+      # accepts, so the reported version matches the one that updates the lockfile.
       sig { params(name: String).returns(String) }
       def runnable_package_manager_name(name)
         return name unless name == PNPMPackageManager::NAME
 
         lockfile = @lockfiles[name.to_sym]
-        matching_major = Helpers.matching_pnpm_major(
-          lockfile_version: lockfile&.content && Helpers.pnpm_lockfile_version(lockfile),
-          package_manager_pin: @manifest_package_manager
-        )
-        matching_major ? "#{name}@#{matching_major}" : name
+        lockfile_version = lockfile&.content && Helpers.pnpm_lockfile_version(lockfile)
+        matching_version = Helpers.pnpm_version_to_run(lockfile_version, @manifest_package_manager, @engines&.[](name))
+        matching_version ? "#{name}@#{matching_version}" : name
       end
 
       sig { params(name: String).void }

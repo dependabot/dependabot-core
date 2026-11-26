@@ -177,6 +177,18 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
         end
       end
 
+      context "when engines.pnpm does not accept the default pnpm" do
+        let(:version) { "9.0" }
+        let(:package_json) { { "engines" => { "pnpm" => "^10.26.0" } } }
+
+        it "reports the pnpm that engines.pnpm accepts" do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
+            .with("pnpm@10", env: nil).and_return("10.34.9")
+
+          expect(helper.package_manager.version.to_s).to eq("10.34.9")
+        end
+      end
+
       context "when packageManager pins pnpm" do
         let(:version) { "6.0" }
         let(:package_json) { { "packageManager" => "pnpm@8.15.9" } }
