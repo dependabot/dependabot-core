@@ -16,6 +16,7 @@ require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/poetry_plugin_installer"
 require "dependabot/python/poetry_project"
+require "dependabot/python/poetry_relocker"
 require "dependabot/python/poetry_subdependency_pin"
 require "dependabot/python/subprocess_error_context"
 require "dependabot/package/release_cooldown_options"
@@ -23,7 +24,7 @@ require "dependabot/package/release_cooldown_options"
 module Dependabot
   module Python
     class FileUpdater
-      class PoetryFileUpdater
+      class PoetryFileUpdater # rubocop:disable Metrics/ClassLength
         require_relative "pyproject_preparer"
         require_relative "poetry_file_updater/pep621_updater"
         require_relative "poetry_file_updater/native_declaration_updater"
@@ -312,16 +313,27 @@ module Dependabot
               add_auth_env_vars
 
               language_version_manager.install_required_python
-              poetry_plugin_installer.install_required_plugins
 
-              # use system git instead of the pure Python dulwich
-              run_poetry_command("pyenv exec poetry config system-git-client true")
-
-              run_poetry_update_command
-
-              File.read("poetry.lock")
+              relock
             end
           end
+        end
+
+        sig { returns(String) }
+        def relock
+          native = PoetryRelocker.relock_if_enabled(
+            package_names: [dependency.name], dependency_files: dependency_files, credentials: credentials
+          )
+          return native.lockfile if native
+
+          poetry_plugin_installer.install_required_plugins
+
+          # use system git instead of the pure Python dulwich
+          run_poetry_command("pyenv exec poetry config system-git-client true")
+
+          run_poetry_update_command
+
+          File.read("poetry.lock")
         end
 
         # Using `--lock` avoids doing an install.

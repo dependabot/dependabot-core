@@ -19,6 +19,7 @@ require "dependabot/python/native_helpers"
 require "dependabot/python/authed_url_builder"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/poetry_plugin_installer"
+require "dependabot/python/poetry_relocker"
 require "dependabot/python/poetry_subdependency_pin"
 require "dependabot/python/subprocess_error_context"
 
@@ -133,17 +134,7 @@ module Dependabot
 
                 language_version_manager.install_required_python
 
-                # Install any required Poetry plugins declared in pyproject.toml
-                poetry_plugin_installer.install_required_plugins
-
-                # use system git instead of the pure Python dulwich
-                run_poetry_command("pyenv exec poetry config system-git-client true")
-
-                # Shell out to Poetry, which handles everything for us.
-                run_poetry_update_command
-
-                updated_lockfile = File.read("poetry.lock")
-                fetch_version_from_lockfile(updated_lockfile)
+                fetch_version_from_lockfile(relock)
               rescue PoetrySubdependencyPin::ScopeNotReproducible
                 nil
               rescue SharedHelpers::HelperSubprocessFailed => e
@@ -202,6 +193,33 @@ module Dependabot
         end
         # rubocop:enable Metrics/AbcSize
 
+        # Re-locks `dependency` in the current directory and returns the new
+        # lockfile. Uses the native helper when it's enabled, otherwise shells
+        # out to Poetry.
+        sig { returns(String) }
+        def relock
+          native = native_relock
+          return native.lockfile if native
+
+          # Install any required Poetry plugins declared in pyproject.toml
+          poetry_plugin_installer.install_required_plugins
+
+          # use system git instead of the pure Python dulwich
+          run_poetry_command("pyenv exec poetry config system-git-client true")
+
+          # Shell out to Poetry, which handles everything for us.
+          run_poetry_update_command
+
+          File.read("poetry.lock")
+        end
+
+        sig { returns(T.nilable(PoetryRelocker::Result)) }
+        def native_relock
+          PoetryRelocker.relock_if_enabled(
+            package_names: [dependency.name], dependency_files: dependency_files, credentials: credentials
+          )
+        end
+
         # Using `--lock` avoids doing an install.
         # Using `--no-interaction` avoids asking for passwords.
         sig { void }
@@ -219,7 +237,7 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory do
             write_temporary_dependency_files(update_pyproject: false)
 
-            run_poetry_update_command
+            run_poetry_update_command unless native_relock
 
             @original_reqs_resolvable = true
           rescue SharedHelpers::HelperSubprocessFailed => e
