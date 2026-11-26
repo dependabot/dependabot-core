@@ -210,6 +210,67 @@ RSpec.describe Dependabot::AzurePipelines::FileUpdater do
       end
     end
 
+    context "with task-looking text inside a script block" do
+      let(:pipeline_content) do
+        <<~YAML
+          steps:
+            - task: Maven@3
+            - script: |
+                - task: Maven@3
+        YAML
+      end
+
+      it "updates the task step but leaves the script text alone" do
+        expect(updater.updated_dependency_files.first.content).to eq(
+          <<~YAML
+            steps:
+              - task: Maven@4
+              - script: |
+                  - task: Maven@3
+          YAML
+        )
+      end
+    end
+
+    context "with a task in a stepList parameter default" do
+      let(:pipeline_content) do
+        <<~YAML
+          parameters:
+            - name: buildSteps
+              type: stepList
+              default:
+                - task: Maven@3
+        YAML
+      end
+
+      it "updates the task in the default step list" do
+        expect(updater.updated_dependency_files.first.content).to include("- task: Maven@4")
+      end
+    end
+
+    # Psych reports columns in characters while the file is rewritten by byte, so a
+    # multi-byte character ahead of the reference must not shift the replacement.
+    context "with multi-byte characters before the task reference" do
+      let(:pipeline_content) { "# Bouw met Maven – één stap\nsteps:\n  - displayName: Bouw ✓\n    task: Maven@3\n" }
+
+      it "rewrites exactly the task reference" do
+        expect(updater.updated_dependency_files.first.content)
+          .to eq("# Bouw met Maven – één stap\nsteps:\n  - displayName: Bouw ✓\n    task: Maven@4\n")
+      end
+    end
+
+    context "with a task referenced by GUID or by its contribution-qualified name" do
+      let(:guid) { "ac4ee482-65da-4485-a532-7b085873e532" }
+      let(:qualified) { "publisher.extension.task.PrivateTask" }
+      let(:pipeline_content) { "steps:\n  - task: #{guid}@3\n  - task: #{qualified}@3\n" }
+      let(:dependencies) { [build_dependency(guid, "3", "4"), build_dependency(qualified, "3", "4")] }
+
+      it "rewrites both references as written" do
+        expect(updater.updated_dependency_files.first.content)
+          .to eq("steps:\n  - task: #{guid}@4\n  - task: #{qualified}@4\n")
+      end
+    end
+
     context "when one file pins the same task at two versions" do
       let(:pipeline_content) { "steps:\n  - task: Maven@2\n  - task: Maven@3\n" }
       let(:dependency) do

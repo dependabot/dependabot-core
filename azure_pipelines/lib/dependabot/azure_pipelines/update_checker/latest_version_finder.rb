@@ -23,7 +23,8 @@ module Dependabot
             Dependabot::AzurePipelines::Package::PackageDetailsFetcher.new(
               dependency: dependency,
               credentials: credentials,
-              fetch_release_dates: !cooldown_options.nil?
+              fetch_release_dates: !cooldown_options.nil?,
+              cooldown_options: cooldown_options
             ).fetch,
             T.nilable(Dependabot::Package::PackageDetails)
           )

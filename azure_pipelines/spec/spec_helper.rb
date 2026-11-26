@@ -10,3 +10,10 @@ def require_common_spec(path)
 end
 
 require "#{common_dir}/spec/spec_helper.rb"
+
+require "dependabot/azure_pipelines/package/azure_devops_http"
+
+RSpec.configure do |config|
+  # Retries back off for real between attempts; specs should not wait for them.
+  config.before { allow(Dependabot::AzurePipelines::Package::AzureDevOpsHttp).to receive(:wait) }
+end

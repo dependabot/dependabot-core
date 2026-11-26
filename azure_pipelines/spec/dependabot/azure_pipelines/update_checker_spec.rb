@@ -146,6 +146,88 @@ RSpec.describe Dependabot::AzurePipelines::UpdateChecker do
     it "holds back a major that is still inside its cooldown window" do
       expect(checker.latest_version.to_s).to eq("3")
     end
+
+    context "when the task comes from an extension installed in an organization" do
+      let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+      let(:dependency) { build_dependency("PrivateTask", "1") }
+      let(:dependency_files) do
+        [Dependabot::DependencyFile.new(name: "azure-pipelines.yml", content: "steps:\n  - task: PrivateTask@1\n")]
+      end
+      let(:credentials) do
+        [Dependabot::Credential.new("type" => "azure_devops_organization", "url" => "https://dev.azure.com/example")]
+      end
+      let(:resource_area) { Dependabot::AzurePipelines::Package::ResourceAreaClient }
+      let(:query_url) { "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery" }
+      let(:day) { 24 * 60 * 60 }
+
+      before do
+        { resource_area::DISTRIBUTED_TASKS_ID => "https://dev.azure.com/example/",
+          resource_area::EXTENSION_MANAGEMENT_ID => "https://extmgmt.dev.azure.com/example/" }.each do |id, location|
+          stub_request(:get, "https://dev.azure.com/example/_apis/resourceareas/#{id}?api-version=#{resource_area::API_VERSION}")
+            .to_return(status: 200, body: JSON.dump("locationUrl" => location))
+        end
+        stub_request(:get, resource_area::GLOBAL_RESOURCE_AREA_URL)
+          .to_return(status: 200, body: JSON.dump("locationUrl" => "https://marketplace.visualstudio.com/"))
+        stub_request(:get, "https://dev.azure.com/example/_apis/distributedtask/tasks?allversions=true&api-version=7.1")
+          .to_return(
+            status: 200,
+            body: JSON.dump(
+              "value" => [1, 2].map do |major|
+                {
+                  "id" => "private-task-guid",
+                  "name" => "PrivateTask",
+                  "version" => { "major" => major, "minor" => 0, "patch" => 0 },
+                  "contributionIdentifier" => "publisher.extension.task",
+                  "contributionVersion" => "#{major}.0.0"
+                }
+              end
+            )
+          )
+        stub_request(
+          :get,
+          "https://extmgmt.dev.azure.com/example/_apis/extensionmanagement/installedextensions?api-version=7.1-preview.1"
+        ).to_return(
+          status: 200,
+          body: JSON.dump(
+            "value" => [{
+              "publisherId" => "publisher",
+              "extensionId" => "extension",
+              "installState" => { "lastUpdated" => installed_at.utc.iso8601 }
+            }]
+          )
+        )
+        stub_request(:post, query_url).to_return(
+          status: 200,
+          body: JSON.dump(
+            "results" => [{
+              "extensions" => [{
+                "versions" => [
+                  { "version" => "1.0.0", "lastUpdated" => (Time.now - (400 * day)).utc.iso8601 },
+                  { "version" => "2.0.0", "lastUpdated" => (Time.now - day).utc.iso8601 }
+                ]
+              }]
+            }]
+          )
+        )
+      end
+
+      context "when the extension was installed before the cooldown began" do
+        let(:installed_at) { Time.now - (30 * day) }
+
+        it "offers the update without querying the Marketplace" do
+          expect(checker.latest_version.to_s).to eq("2")
+          expect(WebMock).not_to have_requested(:post, query_url)
+        end
+      end
+
+      context "when the extension was updated within the cooldown" do
+        let(:installed_at) { Time.now - day }
+
+        it "holds back the version the Marketplace published inside the window" do
+          expect(checker.latest_version.to_s).to eq("1")
+        end
+      end
+    end
   end
 
   describe "#updated_requirements" do
