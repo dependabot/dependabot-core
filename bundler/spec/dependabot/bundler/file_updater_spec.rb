@@ -462,6 +462,32 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         end
       end
 
+      context "with an imported gemspec depending on bundler whose Ruby floor predates Bundler 2" do
+        let(:project_name) { "imports_gemspec_requires_bundler_no_ruby_bundler_2" }
+
+        it "locks the updated gem to the latest version" do
+          expect(Dependabot::Bundler::NativeHelpers)
+            .to receive(:run_bundler_subprocess)
+            .with(hash_including(bundler_version: "2"))
+            .at_least(:once)
+            .and_call_original
+          expect(file.content).to include("business (1.5.0)")
+        end
+      end
+
+      context "with an imported gemspec depending on bundler whose Ruby floor predates Bundler 4" do
+        let(:project_name) { "imports_gemspec_requires_bundler_no_ruby_bundler_4" }
+
+        it "locks the updated gem to the latest version" do
+          expect(Dependabot::Bundler::NativeHelpers)
+            .to receive(:run_bundler_subprocess)
+            .with(hash_including(bundler_version: "4"))
+            .at_least(:once)
+            .and_call_original
+          expect(file.content).to include("business (1.5.0)")
+        end
+      end
+
       context "when the Gemfile specifies a Ruby version" do
         let(:project_name) { "explicit_ruby_in_lockfile" }
 

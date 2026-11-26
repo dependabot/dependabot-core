@@ -1,0 +1,20 @@
+PATH
+  remote: .
+  specs:
+    example (0.9.3)
+      bundler (>= 2.4.0, < 5)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    business (1.4.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  business (~> 1.4.0)
+  example!
+
+BUNDLED WITH
+   2.7.2
