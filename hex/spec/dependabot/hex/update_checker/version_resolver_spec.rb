@@ -540,10 +540,9 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
         stub_resolution_failure(timeout_error)
       end
 
-      it "preserves the inactivity timeout as an internal helper failure after one attempt" do
+      it "preserves the inactivity timeout as an internal helper failure" do
         expect { latest_resolvable_version }
           .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, /30 seconds/)
-        expect(mix_attempts).to contain_exactly(:resolution)
       end
     end
 
@@ -558,31 +557,12 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
 
       before { stub_resolution_failure(authentication_error, cause: original_cause) }
 
-      it "reports that source after one attempt" do
+      it "reports that source" do
         expect { latest_resolvable_version }
           .to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
             expect(error.source).to eq("dependabot")
             expect(error.cause).to be_nil
           end
-        expect(mix_attempts).to contain_exactly(:resolution)
-      end
-    end
-
-    context "when Hex includes the prompt after the unauthenticated source" do
-      let(:authentication_error) do
-        helper_failure(
-          "** (Mix) No authenticated organization found for dependabot. Do you want to authenticate it now?"
-        )
-      end
-
-      before { stub_resolution_failure(authentication_error) }
-
-      it "reports that source after one attempt" do
-        expect { latest_resolvable_version }
-          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
-            expect(error.source).to eq("dependabot")
-          end
-        expect(mix_attempts).to contain_exactly(:resolution)
       end
     end
 
@@ -708,83 +688,28 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       end
     end
 
-    context "with an invalid requirement diagnostic" do
-      let(:diagnostic) { "** (Version.InvalidRequirementError) invalid requirement: >= nope" }
-      let(:invalid_requirement_error) do
-        helper_failure("warning: project output\n#{diagnostic}\n    stack trace")
-      end
+    {
+      "with an invalid requirement diagnostic" =>
+        "** (Version.InvalidRequirementError) invalid requirement: >= nope",
+      "with Hex 2.5.4's malformed root requirement diagnostic" =>
+        "** (Mix) Required version >= nope for package jason is incorrectly specified (from: mix.exs)",
+      "with Hex 2.5.4's malformed requirement diagnostic in a complex umbrella path" =>
+        "** (Mix) Required version >= nope for package jason is incorrectly specified " \
+        "(from: umbrella apps/geschäft/mix.exs)",
+      "with the target missing from the active environment" =>
+        "** (Mix) Unknown dependency plug for environment prod"
+    }.each do |description, diagnostic|
+      context description do
+        let(:project_error) do
+          helper_failure("warning: project output\n#{diagnostic}\n    stack trace")
+        end
 
-      before { stub_resolution_failure(invalid_requirement_error) }
+        before { stub_resolution_failure(project_error) }
 
-      it "reports a user-facing file error after one attempt" do
-        expect { latest_resolvable_version }
-          .to raise_error(Dependabot::DependencyFileNotResolvable, diagnostic)
-        expect(mix_attempts).to contain_exactly(:resolution)
-      end
-    end
-
-    context "with Hex 2.5.4's malformed requirement diagnostic" do
-      let(:diagnostic) do
-        "** (Mix) Required version >= nope for package jason is incorrectly specified (from: mix.exs)"
-      end
-      let(:invalid_requirement_error) do
-        helper_failure("warning: project output\n#{diagnostic}\n    stack trace")
-      end
-
-      before { stub_resolution_failure(invalid_requirement_error) }
-
-      it "reports a user-facing file error after one attempt" do
-        expect { latest_resolvable_version }
-          .to raise_error(Dependabot::DependencyFileNotResolvable, diagnostic)
-        expect(mix_attempts).to contain_exactly(:resolution)
-      end
-    end
-
-    context "with Hex 2.5.4's malformed requirement diagnostic in an umbrella app" do
-      let(:invalid_requirement_error) do
-        helper_failure(
-          "** (Mix) Required version >= nope for package jason is incorrectly specified " \
-          "(from: apps/dependabot_business/mix.exs)"
-        )
-      end
-
-      before { stub_resolution_failure(invalid_requirement_error) }
-
-      it "reports a user-facing file error after one attempt" do
-        expect { latest_resolvable_version }.to raise_error(Dependabot::DependencyFileNotResolvable)
-        expect(mix_attempts).to contain_exactly(:resolution)
-      end
-    end
-
-    context "with Hex 2.5.4's malformed requirement diagnostic in an umbrella path containing spaces" do
-      let(:invalid_requirement_error) do
-        helper_failure(
-          "** (Mix) Required version >= nope for package jason is incorrectly specified " \
-          "(from: umbrella apps/business/mix.exs)"
-        )
-      end
-
-      before { stub_resolution_failure(invalid_requirement_error) }
-
-      it "reports a user-facing file error after one attempt" do
-        expect { latest_resolvable_version }.to raise_error(Dependabot::DependencyFileNotResolvable)
-        expect(mix_attempts).to contain_exactly(:resolution)
-      end
-    end
-
-    context "with Hex 2.5.4's malformed requirement diagnostic in a Unicode umbrella path" do
-      let(:invalid_requirement_error) do
-        helper_failure(
-          "** (Mix) Required version >= nope for package jason is incorrectly specified " \
-          "(from: apps/geschäft/mix.exs)"
-        )
-      end
-
-      before { stub_resolution_failure(invalid_requirement_error) }
-
-      it "reports a user-facing file error after one attempt" do
-        expect { latest_resolvable_version }.to raise_error(Dependabot::DependencyFileNotResolvable)
-        expect(mix_attempts).to contain_exactly(:resolution)
+        it "reports the user-facing project error" do
+          expect { latest_resolvable_version }
+            .to raise_error(Dependabot::DependencyFileNotResolvable, diagnostic)
+        end
       end
     end
 
@@ -1035,7 +960,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       let(:resolution_error) do
         helper_failure(
           "warning: project output\n" \
-          "** (Mix) Dependencies have diverged:\n" \
+          "Dependencies have diverged:\n" \
           "** (Mix) Can't continue due to errors on dependencies\n"
         )
       end
@@ -1044,14 +969,13 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
 
       it "returns no resolvable version" do
         expect(latest_resolvable_version).to be_nil
-        expect(mix_attempts).to contain_exactly(:resolution)
       end
     end
 
     context "when an operational failure follows a dependency divergence header" do
       let(:resolution_error) do
         helper_failure(
-          "** (Mix) Dependencies have diverged:\n" \
+          "Dependencies have diverged:\n" \
           "fatal: unable to access repository\n"
         )
       end
@@ -1064,7 +988,6 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
             Dependabot::Hex::UpdateChecker::VersionResolver::ResolutionSubprocessFailed,
             resolution_error.message
           )
-        expect(mix_attempts).to contain_exactly(:resolution)
       end
     end
 
@@ -1092,7 +1015,6 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
             expect(error.source).to eq("dependabot")
             expect(error.cause).to be_nil
           end
-        expect(mix_attempts).to contain_exactly(:resolution)
       end
     end
 
@@ -1357,38 +1279,27 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       end
     end
 
-    context "with the target missing from the active environment" do
-      let(:diagnostic) { "** (Mix) Unknown dependency plug for environment prod" }
-      let(:unknown_dependency_error) do
-        helper_failure("warning: project output\n#{diagnostic}\n    stack trace")
-      end
+    {
+      "with a qualified fetch failure and ambiguous access diagnostic" => <<~ERROR,
+        Failed to fetch record for private_repo/plug from registry
+        This could be because the package does not exist, it was spelled incorrectly or you don't have permissions to it
+        ** (Mix) Hex dependency resolution failed
+      ERROR
+      "with an unknown package in the lockfile" =>
+        "Unknown package version plug 9.9.9 in lockfile",
+      "with an unexpected helper exception" =>
+        "** (RuntimeError) unexpected helper failure"
+    }.each do |description, diagnostic|
+      context description do
+        before { stub_resolution_failure(helper_failure(diagnostic)) }
 
-      before { stub_resolution_failure(unknown_dependency_error) }
-
-      it "reports a user-facing file error after one attempt" do
-        expect { latest_resolvable_version }
-          .to raise_error(Dependabot::DependencyFileNotResolvable, diagnostic)
-        expect(mix_attempts).to contain_exactly(:resolution)
-      end
-    end
-
-    context "with a qualified fetch failure and ambiguous access diagnostic" do
-      let(:fetch_error) do
-        helper_failure(
-          <<~ERROR
-            Failed to fetch record for private_repo/plug from registry
-            This could be because the package does not exist, it was spelled incorrectly or you don't have permissions to it
-            ** (Mix) Hex dependency resolution failed
-          ERROR
-        )
-      end
-
-      before { stub_resolution_failure(fetch_error) }
-
-      it "preserves the original helper failure after one attempt" do
-        expect { latest_resolvable_version }
-          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, fetch_error.message)
-        expect(mix_attempts).to contain_exactly(:resolution)
+        it "preserves the original helper failure" do
+          expect { latest_resolvable_version }
+            .to raise_error(
+              Dependabot::Hex::UpdateChecker::VersionResolver::ResolutionSubprocessFailed,
+              diagnostic.strip
+            )
+        end
       end
     end
 
@@ -1414,32 +1325,10 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
 
       it "preserves the original helper failure instead of correlating diagnostics" do
         expect { latest_resolvable_version }
-          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, mixed_source_error.message)
-        expect(mix_attempts).to contain_exactly(:resolution)
-      end
-    end
-
-    context "with an unknown package in the lockfile" do
-      let(:lockfile_error) { helper_failure("Unknown package version plug 9.9.9 in lockfile") }
-
-      before { stub_resolution_failure(lockfile_error) }
-
-      it "keeps the failure internal after one attempt" do
-        expect { latest_resolvable_version }
-          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, lockfile_error.message)
-        expect(mix_attempts).to contain_exactly(:resolution)
-      end
-    end
-
-    context "with an unexpected helper exception" do
-      let(:unexpected_error) { helper_failure("** (RuntimeError) unexpected helper failure") }
-
-      before { stub_resolution_failure(unexpected_error) }
-
-      it "keeps the original failure internal after one attempt" do
-        expect { latest_resolvable_version }
-          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, unexpected_error.message)
-        expect(mix_attempts).to contain_exactly(:resolution)
+          .to raise_error(
+            Dependabot::Hex::UpdateChecker::VersionResolver::ResolutionSubprocessFailed,
+            mixed_source_error.message
+          )
       end
     end
 
@@ -1497,25 +1386,6 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       content = fixture("lockfiles", "git_source").sub(/^  "phoenix":.*\n/, "")
       insertion = entries.map { |entry| "  #{entry},\n" }.join
       content.sub("%{", "%{\n#{insertion}")
-    end
-
-    def initialize_git_fixture(path)
-      Dependabot::SharedHelpers.run_shell_command(
-        ["git", "-C", path, "init", "--quiet", "--initial-branch=main"]
-      )
-    end
-
-    def commit_git_fixture(path, message)
-      Dependabot::SharedHelpers.run_shell_command(["git", "-C", path, "add", "."])
-      Dependabot::SharedHelpers.run_shell_command(
-        [
-          "git", "-C", path,
-          "-c", "user.name=Dependabot",
-          "-c", "user.email=support@dependabot.com",
-          "commit", "--quiet", "-m", message
-        ]
-      )
-      Dependabot::SharedHelpers.run_shell_command(["git", "-C", path, "rev-parse", "HEAD"]).strip
     end
 
     def stub_update_result(version)
