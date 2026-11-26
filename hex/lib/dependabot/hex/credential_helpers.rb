@@ -29,6 +29,13 @@ module Dependabot
         (?=\n|\z)
       /x
       MISSING_CREDENTIALS = /\AMissing credentials for "(?<source>#{AUTHENTICATION_SOURCE})"\z/
+      PUBLIC_KEY_DOWNLOAD_AUTHENTICATION_FAILURE = /
+        (?:\A|\n)
+        Downloading[ ]public[ ]key[ ]for[ ]repo[ ]"(?<source>#{AUTHENTICATION_SOURCE})"
+        [ ]failed[ ]with[ ]code:[ ]401
+        [ ]*
+        (?=\n|\z)
+      /x
 
       sig do
         params(
@@ -84,8 +91,23 @@ module Dependabot
 
       sig { params(message: String).returns(T.nilable(String)) }
       def self.authentication_source(message)
-        match = message.match(UNAUTHENTICATED_ORGANIZATION) || message.match(MISSING_CREDENTIALS)
+        match =
+          message.match(UNAUTHENTICATED_ORGANIZATION) ||
+          message.match(MISSING_CREDENTIALS) ||
+          message.match(PUBLIC_KEY_DOWNLOAD_AUTHENTICATION_FAILURE)
         match&.[](:source)
+      end
+
+      sig do
+        params(
+          original_error: StandardError,
+          error: StandardError
+        ).returns(T.noreturn)
+      end
+      def self.raise_translated_error(original_error:, error:)
+        raise if error.equal?(original_error)
+
+        raise error, cause: nil
       end
 
       sig { params(credentials: T::Array[Dependabot::Credential]).returns(T::Array[Dependabot::Credential]) }
