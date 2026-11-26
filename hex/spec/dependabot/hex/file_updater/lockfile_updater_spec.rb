@@ -263,42 +263,23 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
           end
       end
 
-      context "with unauthenticated access to a private repo" do
-        let(:error_message) do
-          "No authenticated organization found for dependabot."
-        end
-
-        it "raises a PrivateSourceAuthenticationFailure error" do
-          expect { updated_lockfile_content }
-            .to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
-              expect(error.source).to eq("dependabot")
-            end
-        end
-      end
-
-      context "with a newline-terminated unauthenticated organization diagnostic" do
-        let(:error_message) do
-          "** (Mix) No authenticated organization found for dependabot.\n"
-        end
-
-        it "raises a PrivateSourceAuthenticationFailure error" do
-          expect { updated_lockfile_content }
-            .to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
-              expect(error.source).to eq("dependabot")
-            end
-        end
-      end
-
-      context "with guidance after an unauthenticated organization diagnostic" do
-        let(:error_message) do
+      {
+        "with unauthenticated access to a private repo" =>
+          "No authenticated organization found for dependabot.",
+        "with a newline-terminated unauthenticated organization diagnostic" =>
+          "** (Mix) No authenticated organization found for dependabot.\n",
+        "with guidance after an unauthenticated organization diagnostic" =>
           "No authenticated organization found for dependabot. Do you want to authenticate it now?"
-        end
+      }.each do |description, diagnostic|
+        context description do
+          let(:error_message) { diagnostic }
 
-        it "raises a PrivateSourceAuthenticationFailure error" do
-          expect { updated_lockfile_content }
-            .to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
-              expect(error.source).to eq("dependabot")
-            end
+          it "raises a PrivateSourceAuthenticationFailure error" do
+            expect { updated_lockfile_content }
+              .to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+                expect(error.source).to eq("dependabot")
+              end
+          end
         end
       end
 
@@ -314,33 +295,25 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
         end
       end
 
-      context "with an explicit dependency resolution failure" do
-        let(:error_message) { "** (Mix) Hex dependency resolution failed" }
+      {
+        "with an explicit dependency resolution failure" =>
+          "** (Mix) Hex dependency resolution failed",
+        "with a warning before an explicit dependency resolution failure" => <<~ERROR
+          warning: function unused/0 is unused
+            mix.exs:20
+          ** (Mix) Hex dependency resolution failed
+        ERROR
+      }.each do |description, diagnostic|
+        context description do
+          let(:error_message) { diagnostic }
 
-        it "raises a DependencyFileNotResolvable error" do
-          expect { updated_lockfile_content }
-            .to raise_error(
-              Dependabot::DependencyFileNotResolvable,
-              "Hex dependency resolution failed"
-            )
-        end
-      end
-
-      context "with a warning before an explicit dependency resolution failure" do
-        let(:error_message) do
-          <<~ERROR
-            warning: function unused/0 is unused
-              mix.exs:20
-            ** (Mix) Hex dependency resolution failed
-          ERROR
-        end
-
-        it "raises a DependencyFileNotResolvable error" do
-          expect { updated_lockfile_content }
-            .to raise_error(
-              Dependabot::DependencyFileNotResolvable,
-              "Hex dependency resolution failed"
-            )
+          it "raises a DependencyFileNotResolvable error" do
+            expect { updated_lockfile_content }
+              .to raise_error(
+                Dependabot::DependencyFileNotResolvable,
+                "Hex dependency resolution failed"
+              )
+          end
         end
       end
 
@@ -364,32 +337,21 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
         end
       end
 
-      context "with a public key fingerprint mismatch" do
-        let(:error_message) { 'Public key fingerprint mismatch for repo "dependabot"' }
+      {
+        "with a public key fingerprint mismatch" =>
+          'Public key fingerprint mismatch for repo "dependabot"',
+        "with a generic record fetch failure" =>
+          "Failed to fetch record for dependabot",
+        "with a parse failure" =>
+          "Failed to parse registry response"
+      }.each do |description, diagnostic|
+        context description do
+          let(:error_message) { diagnostic }
 
-        it "re-raises the original subprocess error unchanged" do
-          expect { updated_lockfile_content }.to raise_error do |error|
-            expect(error).to equal(subprocess_error)
-          end
-        end
-      end
-
-      context "with a generic record fetch failure" do
-        let(:error_message) { "Failed to fetch record for dependabot" }
-
-        it "re-raises the original subprocess error unchanged" do
-          expect { updated_lockfile_content }.to raise_error do |error|
-            expect(error).to equal(subprocess_error)
-          end
-        end
-      end
-
-      context "with a parse failure" do
-        let(:error_message) { "Failed to parse registry response" }
-
-        it "re-raises the original subprocess error unchanged" do
-          expect { updated_lockfile_content }.to raise_error do |error|
-            expect(error).to equal(subprocess_error)
+          it "re-raises the original subprocess error unchanged" do
+            expect { updated_lockfile_content }.to raise_error do |error|
+              expect(error).to equal(subprocess_error)
+            end
           end
         end
       end
