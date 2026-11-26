@@ -1,0 +1,541 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "ecosystem": "pypi",
+      "basename": "requirements.txt",
+      "matching_rules": [
+        "python-requirements-txt"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "requirements-dev.txt",
+      "matching_rules": [
+        "python-requirements-txt"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "requirements.prod.txt",
+      "matching_rules": [
+        "python-requirements-txt"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "base-requirements.txt",
+      "matching_rules": [
+        "python-requirements-txt"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "test_requirements.txt",
+      "matching_rules": [
+        "python-requirements-txt"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "Requirements.txt",
+      "matching_rules": [
+        "python-requirements-txt"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "my notes-requirements.txt",
+      "matching_rules": [
+        "python-requirements-txt"
+      ],
+      "note": "the prefix before the delimiter may contain spaces"
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "requirements-ü.txt",
+      "matching_rules": [
+        "python-requirements-txt"
+      ],
+      "note": "non-ASCII outside the case-insensitive keyword"
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "requirementſ.txt",
+      "matching_rules": [],
+      "note": "U+017F LONG S does not match s: keyword case-insensitivity is ASCII-only"
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "REQUIREMENTſ.txt",
+      "matching_rules": [],
+      "note": "U+017F LONG S in an upper-case keyword"
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "dependencieſ.txt",
+      "matching_rules": [],
+      "note": "U+017F LONG S does not match s"
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "dependſ.txt",
+      "matching_rules": [],
+      "note": "U+017F LONG S does not match the optional s"
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "requirements-K.txt",
+      "matching_rules": [
+        "python-requirements-txt"
+      ],
+      "note": "U+212A KELVIN SIGN in the free-form suffix"
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "Keep_dependencies.txt",
+      "matching_rules": [
+        "python-dependencies-txt"
+      ],
+      "note": "U+212A KELVIN SIGN in the free-form prefix"
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "requirements.TXT",
+      "matching_rules": [],
+      "note": "extensions are case-sensitive, matching the fetchers"
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "REQUIREMENTS.TXT",
+      "matching_rules": []
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "requirements dev.txt",
+      "matching_rules": [],
+      "note": "no whitespace after the keyword"
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "prerequirements.txt",
+      "matching_rules": [],
+      "note": "keyword must follow a delimiter or the start"
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "REQUİREMENTS.txt",
+      "matching_rules": [],
+      "note": "U+0130 does not fold to ASCII i"
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "requırements.txt",
+      "matching_rules": [],
+      "note": "U+0131 does not fold to ASCII i"
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "ＲEQUIREMENTS.txt",
+      "matching_rules": [],
+      "note": "fullwidth letters do not fold to ASCII"
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "require.txt",
+      "matching_rules": [
+        "python-require-txt"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "require-test.txt",
+      "matching_rules": [
+        "python-require-txt"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "py3-require.txt",
+      "matching_rules": [
+        "python-require-txt"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "pyenv_require_e2e.txt",
+      "matching_rules": [
+        "python-require-txt"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "REQUIRE.txt",
+      "matching_rules": [
+        "python-require-txt"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "Keep-require.txt",
+      "matching_rules": [
+        "python-require-txt"
+      ],
+      "note": "U+212A KELVIN SIGN only appears in the free-form prefix"
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "require.dev.txt",
+      "matching_rules": [],
+      "note": "the require suffix may not contain dots"
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "requires.txt",
+      "matching_rules": []
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "prequire.txt",
+      "matching_rules": []
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "acquire.txt",
+      "matching_rules": []
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "dependencies.txt",
+      "matching_rules": [
+        "python-dependencies-txt"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "my-dependencies.txt",
+      "matching_rules": [
+        "python-dependencies-txt"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "dependency.txt",
+      "matching_rules": [
+        "python-dependencies-txt"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "dependencies-lock.txt",
+      "matching_rules": [
+        "python-dependencies-txt"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "depend.txt",
+      "matching_rules": [
+        "python-depend-txt"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "depends.txt",
+      "matching_rules": [
+        "python-depend-txt"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "depend-test.txt",
+      "matching_rules": [
+        "python-depend-txt"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "py3-depends.txt",
+      "matching_rules": [
+        "python-depend-txt"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "codependent.txt",
+      "matching_rules": []
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "dependent.txt",
+      "matching_rules": []
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "requirements-and-dependencies.txt",
+      "matching_rules": [
+        "python-requirements-txt",
+        "python-dependencies-txt"
+      ],
+      "note": "multiple rules may match one basename"
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "require-depends.txt",
+      "matching_rules": [
+        "python-require-txt",
+        "python-depend-txt"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "README.txt",
+      "matching_rules": []
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "notes.txt",
+      "matching_rules": []
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "CMakeLists.txt",
+      "matching_rules": []
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "requirements.in",
+      "matching_rules": [
+        "python-requirements-in"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "dev.in",
+      "matching_rules": [
+        "python-requirements-in"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "MANIFEST.in",
+      "matching_rules": [
+        "python-requirements-in"
+      ],
+      "note": "name-only rule; core additionally filters .in files by content"
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "requirements.IN",
+      "matching_rules": []
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "requirements.in.bak",
+      "matching_rules": []
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "pyproject.toml",
+      "matching_rules": [
+        "python-project"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "setup.py",
+      "matching_rules": [
+        "python-project"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "setup.cfg",
+      "matching_rules": [
+        "python-project"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "Pipfile",
+      "matching_rules": [
+        "python-project"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "uv.lock",
+      "matching_rules": [
+        "python-project"
+      ]
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "Pipfile.lock",
+      "matching_rules": [],
+      "note": "an input, but not sufficient on its own to define a set"
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "poetry.lock",
+      "matching_rules": []
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "pdm.lock",
+      "matching_rules": []
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": ".python-version",
+      "matching_rules": []
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "PyProject.toml",
+      "matching_rules": []
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "UV.lock",
+      "matching_rules": []
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "uv.lock.bak",
+      "matching_rules": []
+    },
+    {
+      "ecosystem": "pypi",
+      "basename": "go.mod",
+      "matching_rules": []
+    },
+    {
+      "ecosystem": "golang",
+      "basename": "go.mod",
+      "matching_rules": [
+        "go-mod"
+      ]
+    },
+    {
+      "ecosystem": "golang",
+      "basename": "go.sum",
+      "matching_rules": []
+    },
+    {
+      "ecosystem": "golang",
+      "basename": "go.work",
+      "matching_rules": [],
+      "note": "workspaces are reported as unresolvable, not as sets"
+    },
+    {
+      "ecosystem": "golang",
+      "basename": "go.work.sum",
+      "matching_rules": []
+    },
+    {
+      "ecosystem": "golang",
+      "basename": "go.mod.bak",
+      "matching_rules": []
+    },
+    {
+      "ecosystem": "golang",
+      "basename": "Go.mod",
+      "matching_rules": []
+    },
+    {
+      "ecosystem": "golang",
+      "basename": "GO.MOD",
+      "matching_rules": []
+    },
+    {
+      "ecosystem": "golang",
+      "basename": "xgo.mod",
+      "matching_rules": []
+    },
+    {
+      "ecosystem": "golang",
+      "basename": "go.modſ",
+      "matching_rules": []
+    },
+    {
+      "ecosystem": "golang",
+      "basename": "requirements.txt",
+      "matching_rules": []
+    },
+    {
+      "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"k\", \"filename_regex\": \"\\\\A[Kk][Ee][Ee][Pp]\\\\.txt\\\\z\", \"directory\": \"parent\"}, {\"id\": \"s\", \"filename_regex\": \"\\\\A[Ss][Pp][Ee][Cc]\\\\.txt\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"pip\", \"otherwise\": true}]}]}",
+      "ecosystem": "pypi",
+      "basename": "keep.txt",
+      "matching_rules": [
+        "k"
+      ]
+    },
+    {
+      "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"k\", \"filename_regex\": \"\\\\A[Kk][Ee][Ee][Pp]\\\\.txt\\\\z\", \"directory\": \"parent\"}, {\"id\": \"s\", \"filename_regex\": \"\\\\A[Ss][Pp][Ee][Cc]\\\\.txt\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"pip\", \"otherwise\": true}]}]}",
+      "ecosystem": "pypi",
+      "basename": "KEEP.txt",
+      "matching_rules": [
+        "k"
+      ]
+    },
+    {
+      "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"k\", \"filename_regex\": \"\\\\A[Kk][Ee][Ee][Pp]\\\\.txt\\\\z\", \"directory\": \"parent\"}, {\"id\": \"s\", \"filename_regex\": \"\\\\A[Ss][Pp][Ee][Cc]\\\\.txt\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"pip\", \"otherwise\": true}]}]}",
+      "ecosystem": "pypi",
+      "basename": "Keep.txt",
+      "matching_rules": [],
+      "note": "U+212A KELVIN SIGN does not match an ASCII [Kk] class in either engine"
+    },
+    {
+      "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"k\", \"filename_regex\": \"\\\\A[Kk][Ee][Ee][Pp]\\\\.txt\\\\z\", \"directory\": \"parent\"}, {\"id\": \"s\", \"filename_regex\": \"\\\\A[Ss][Pp][Ee][Cc]\\\\.txt\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"pip\", \"otherwise\": true}]}]}",
+      "ecosystem": "pypi",
+      "basename": "spec.txt",
+      "matching_rules": [
+        "s"
+      ]
+    },
+    {
+      "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"k\", \"filename_regex\": \"\\\\A[Kk][Ee][Ee][Pp]\\\\.txt\\\\z\", \"directory\": \"parent\"}, {\"id\": \"s\", \"filename_regex\": \"\\\\A[Ss][Pp][Ee][Cc]\\\\.txt\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"pip\", \"otherwise\": true}]}]}",
+      "ecosystem": "pypi",
+      "basename": "Spec.txt",
+      "matching_rules": [
+        "s"
+      ]
+    },
+    {
+      "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"k\", \"filename_regex\": \"\\\\A[Kk][Ee][Ee][Pp]\\\\.txt\\\\z\", \"directory\": \"parent\"}, {\"id\": \"s\", \"filename_regex\": \"\\\\A[Ss][Pp][Ee][Cc]\\\\.txt\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"pip\", \"otherwise\": true}]}]}",
+      "ecosystem": "pypi",
+      "basename": "ſpec.txt",
+      "matching_rules": [],
+      "note": "U+017F LONG S does not match an ASCII [Ss] class in either engine"
+    },
+    {
+      "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"product\", \"filename_regex\": \"\\\\A(?:q{10}){100}\\\\.txt\\\\z\", \"directory\": \"parent\"}, {\"id\": \"hidden\", \"filename_regex\": \"\\\\A(?:(?:z{1000}){0}){2}\\\\.lock\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"pip\", \"otherwise\": true}]}]}",
+      "ecosystem": "pypi",
+      "basename": "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq.txt",
+      "matching_rules": [
+        "product"
+      ]
+    },
+    {
+      "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"product\", \"filename_regex\": \"\\\\A(?:q{10}){100}\\\\.txt\\\\z\", \"directory\": \"parent\"}, {\"id\": \"hidden\", \"filename_regex\": \"\\\\A(?:(?:z{1000}){0}){2}\\\\.lock\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"pip\", \"otherwise\": true}]}]}",
+      "ecosystem": "pypi",
+      "basename": "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq.txt",
+      "matching_rules": []
+    },
+    {
+      "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"product\", \"filename_regex\": \"\\\\A(?:q{10}){100}\\\\.txt\\\\z\", \"directory\": \"parent\"}, {\"id\": \"hidden\", \"filename_regex\": \"\\\\A(?:(?:z{1000}){0}){2}\\\\.lock\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"pip\", \"otherwise\": true}]}]}",
+      "ecosystem": "pypi",
+      "basename": ".lock",
+      "matching_rules": [
+        "hidden"
+      ]
+    },
+    {
+      "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"product\", \"filename_regex\": \"\\\\A(?:q{10}){100}\\\\.txt\\\\z\", \"directory\": \"parent\"}, {\"id\": \"hidden\", \"filename_regex\": \"\\\\A(?:(?:z{1000}){0}){2}\\\\.lock\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"pip\", \"otherwise\": true}]}]}",
+      "ecosystem": "pypi",
+      "basename": "z.lock",
+      "matching_rules": []
+    }
+  ]
+}
