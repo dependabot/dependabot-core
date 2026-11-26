@@ -62,12 +62,6 @@ defmodule DependencyHelper do
     run_script("check_update.exs", dir, [dependency_name])
   end
 
-  defp run(%{"function" => "get_updated_lockfile", "args" => [dir, dependency_name, credentials]}) do
-    set_credentials(credentials)
-
-    run_script("do_update.exs", dir, [dependency_name])
-  end
-
   defp run_script(script, dir, args \\ []) do
     args =
       [

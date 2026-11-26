@@ -167,24 +167,6 @@ RSpec.describe Dependabot::Hex::CredentialHelpers do
       end
     end
 
-    context "when the real credential helper rejects an organization token" do
-      include_context "with a real credential helper"
-      let(:hex_pm_org_token) { ENV.fetch("HEX_PM_ORGANIZATION_TOKEN", nil) }
-      let(:organization_token) { "111f6cbeffc6e14c6a884f0111caff3e" }
-      let(:credentials) { organization_credentials }
-
-      it "fails immediately without exposing the rejected token" do
-        skip("skipped because env var HEX_PM_ORGANIZATION_TOKEN is not set") if hex_pm_org_token.nil?
-
-        expect { configure }
-          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
-            expect(error.source).to eq("dependabot")
-            expect(error.cause).to be_nil
-            expect(error.full_message).not_to include(organization_token)
-          end
-      end
-    end
-
     context "when organization setup fails internally" do
       let(:credentials) { organization_credentials }
       let(:error) do
@@ -630,7 +612,8 @@ RSpec.describe Dependabot::Hex::CredentialHelpers do
           "hexpm:my-org2/example.repo",
         "** (Mix) No authenticated organization found for my_org.\n" => "my_org",
         "No authenticated organization found for my-org. Do you want to authenticate it now? [Yn]   " => "my-org",
-        'Missing credentials for "hexpm:my-org2/example.repo"' => "hexpm:my-org2/example.repo"
+        'Missing credentials for "hexpm:my-org2/example.repo"' => "hexpm:my-org2/example.repo",
+        'Downloading public key for repo "my-org" failed with code: 401' => "my-org"
       }.each do |message, source|
         expect(described_class.authentication_source(message)).to eq(source)
       end

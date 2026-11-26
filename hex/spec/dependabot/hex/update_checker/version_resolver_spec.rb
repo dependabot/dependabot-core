@@ -344,6 +344,26 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       end
     end
 
+    context "when the legacy helper reports a repository public-key authentication failure" do
+      let(:authentication_error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: 'Downloading public key for repo "dependabot" failed with code: 401',
+          error_context: {}
+        )
+      end
+
+      before { stub_update_checks(authentication_error, "1.3.6") }
+
+      it "raises a repository authentication error without retrying" do
+        expect { latest_resolvable_version }
+          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+            expect(error.source).to eq("dependabot")
+            expect(error.cause).to be_nil
+          end
+        expect(Dependabot::SharedHelpers).to have_received(:run_helper_subprocess).once
+      end
+    end
+
     context "when the helper reports ambiguous repository diagnostics" do
       let(:diagnostics) do
         [

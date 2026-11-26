@@ -65,13 +65,7 @@ module Dependabot
         rescue SharedHelpers::HelperSubprocessFailed => e
           sanitized_error = CredentialHelpers.sanitize_error(error: e, credentials: credentials)
           error = handle_hex_errors(sanitized_error)
-          if sanitized_error.equal?(e)
-            raise if error.equal?(e)
-
-            raise error, cause: nil
-          end
-
-          raise error, cause: nil
+          CredentialHelpers.raise_translated_error(original_error: e, error: error)
         end
 
         private
