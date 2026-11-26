@@ -1,11 +1,11 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "json"
-require "time"
 require "uri"
 require "sorbet-runtime"
 require "dependabot/nix"
+require "dependabot/nix/package/revision_candidate"
 require "dependabot/package/package_release"
 require "dependabot/package/package_details"
 require "dependabot/git_commit_checker"
@@ -32,31 +32,20 @@ module Dependabot
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
-        sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
+        sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
         def available_versions
           versions_metadata = fetch_branch_tip_history || fetch_tags_and_release_date
 
           versions_metadata = fetch_latest_tag_info if versions_metadata.empty?
 
-          pseudo_version = versions_metadata.length + 1
-
-          versions_metadata.flat_map do |version_details|
-            pseudo_version -= 1
-            tag = version_details[:tag]
-            release_date = version_details[:release_date]
-
+          versions_metadata.each_with_index.map do |candidate, index|
             Dependabot::Package::PackageRelease.new(
-              version: Nix::Version.new("0.0.0-0.#{pseudo_version}"),
-              tag: tag,
-              released_at: release_date ? Time.parse(release_date) : nil
-            )
-          rescue ArgumentError
-            Dependabot::Package::PackageRelease.new(
-              version: Nix::Version.new("0.0.0-0.#{pseudo_version}"),
-              tag: tag
+              version: Nix::Version.new("0.0.0-0.#{versions_metadata.length - index}"),
+              tag: candidate.revision,
+              released_at: candidate.released_at
             )
           end
         end
@@ -89,7 +78,7 @@ module Dependabot
         # Returns nil when the activity API isn't usable (non-GitHub host,
         # SHA-pinned ref, missing ref, HTTP error). Callers should fall back to
         # the existing /commits walker in that case.
-        sig { returns(T.nilable(T::Array[T::Hash[Symbol, T.untyped]])) }
+        sig { returns(T.nilable(T::Array[RevisionCandidate])) }
         def fetch_branch_tip_history
           url = source_url
           ref = branch_ref
@@ -105,6 +94,8 @@ module Dependabot
           end
 
           trim_entries_to_locked_sha(entries.reject { |entry| branch_deletion?(entry) })
+        rescue Dependabot::PrivateSourceBadResponse
+          raise
         rescue Octokit::Error => e
           Dependabot.logger.info(
             "Repo Activity API failed for #{dependency.name} (#{e.class}: #{e.message}), " \
@@ -119,7 +110,7 @@ module Dependabot
           nil
         end
 
-        sig { params(url: String, ref: String).returns(T::Array[Sawyer::Resource]) }
+        sig { params(url: String, ref: String).returns(T::Array[RevisionCandidate]) }
         def fetch_activity_entries(url, ref)
           response = github_client.get(
             "/repos/#{github_repo_path(url)}/activity",
@@ -127,52 +118,37 @@ module Dependabot
             activity_type: ACTIVITY_TYPES,
             per_page: 100
           )
-          raise TypeError, "GitHub activity response must be an array" unless response.is_a?(Array)
+          unless response.is_a?(Array)
+            raise Dependabot::PrivateSourceBadResponse.new(url, "Malformed Nix activity response: expected an array")
+          end
 
-          response
+          response.map { |entry| RevisionCandidate.from_activity(entry, source: url) }
         end
 
         # Trim to entries up to and including the currently locked SHA, stopping
         # once that SHA is reached so we don't introduce candidates older than
         # `dependency.version`.
-        sig { params(entries: T::Array[Sawyer::Resource]).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { params(entries: T::Array[RevisionCandidate]).returns(T::Array[RevisionCandidate]) }
         def trim_entries_to_locked_sha(entries)
           locked = dependency.version
-          result = T.let([], T::Array[T::Hash[Symbol, T.untyped]])
-          entries.each do |e|
-            after_sha = activity_string(e, :after)
-            result << { tag: after_sha, release_date: format_timestamp(T.cast(e[:timestamp], T.nilable(Object))) }
+          result = T.let([], T::Array[RevisionCandidate])
+          entries.each do |entry|
+            result << entry
 
             next unless locked
-            break if after_sha == locked
+            break if entry.revision == locked
 
-            if T.cast(e[:before], Object) == locked
-              result << { tag: locked, release_date: nil } unless result.last&.fetch(:tag) == locked
+            if entry.previous_revision == locked
+              result << RevisionCandidate.new(revision: locked) unless result.last&.revision == locked
               break
             end
           end
           result
         end
 
-        sig { params(entry: Sawyer::Resource).returns(T::Boolean) }
+        sig { params(entry: RevisionCandidate).returns(T::Boolean) }
         def branch_deletion?(entry)
-          activity_string(entry, :after) == NULL_SHA
-        end
-
-        sig { params(timestamp: T.nilable(Object)).returns(T.nilable(String)) }
-        def format_timestamp(timestamp)
-          return if timestamp.nil?
-          return timestamp.iso8601 if timestamp.is_a?(Time)
-
-          timestamp.to_s
-        end
-
-        sig { params(entry: Sawyer::Resource, key: Symbol).returns(String) }
-        def activity_string(entry, key)
-          value = T.cast(entry[key], Object)
-          return value if value.is_a?(String)
-
-          raise TypeError, "GitHub activity #{key} must be a string"
+          entry.revision == NULL_SHA
         end
 
         sig { params(url: T.nilable(String), ref: T.nilable(String)).returns(T::Boolean) }
@@ -213,18 +189,18 @@ module Dependabot
           )
         end
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[RevisionCandidate]) }
         def fetch_latest_tag_info
           client = build_client
           head = client.head_commit_for_current_branch
           return [] unless head
 
-          [{ tag: head }]
+          [RevisionCandidate.new(revision: head)]
         end
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[RevisionCandidate]) }
         def fetch_tags_and_release_date
-          parsed_results = T.let([], T::Array[T::Hash[Symbol, T.untyped]])
+          parsed_results = T.let([], T::Array[RevisionCandidate])
 
           begin
             Dependabot.logger.info("Fetching release info for Nix flake input: #{dependency.name}")
@@ -237,17 +213,16 @@ module Dependabot
                 break if commits.empty?
 
                 commits.each do |commit|
-                  sha = commit["sha"]
-                  parsed_results << {
-                    tag: sha,
-                    release_date: commit.dig("commit", "committer", "date")
-                  }
+                  sha = commit.revision
+                  parsed_results << commit
                   throw :found if sha == dependency.version
                 end
                 break if commits.length < Dependabot::GitMetadataFetcher::MAX_COMMITS_PER_PAGE
               end
             end
             parsed_results
+          rescue Dependabot::PrivateSourceBadResponse
+            raise
           rescue StandardError => e
             Dependabot.logger.error("Error while fetching package info for nix flake input: #{e.message}")
             parsed_results
@@ -266,7 +241,7 @@ module Dependabot
           params(
             client: Dependabot::GitCommitChecker,
             sha: T.nilable(String)
-          ).returns(T::Array[T::Hash[String, T.untyped]])
+          ).returns(T::Array[RevisionCandidate])
         end
         def get_commits(client, sha)
           response = sha.nil? ? client.ref_details_for_pinned_ref : client.ref_details(sha)
@@ -275,15 +250,38 @@ module Dependabot
             Dependabot.logger.error(
               "Error while fetching details for #{dependency.name}: #{response.body}"
             )
+            return []
           end
 
-          return [] unless response.status == 200
-
-          commits = JSON.parse(response.body)
-          sha.nil? || commits.empty? ? commits : commits[1..]
+          parse_commits(response.body, skip_first: !sha.nil?)
+        rescue Dependabot::PrivateSourceBadResponse
+          raise
         rescue StandardError => e
           Dependabot.logger.error("Error fetching commits: #{e.message}")
           []
+        end
+
+        sig { params(body: String, skip_first: T::Boolean).returns(T::Array[RevisionCandidate]) }
+        def parse_commits(body, skip_first:)
+          source = source_url || dependency.name
+          values = T.cast(JSON.parse(body), Object)
+          unless values.is_a?(Array)
+            raise Dependabot::PrivateSourceBadResponse.new(
+              source, "Malformed Nix commit response: expected an array"
+            )
+          end
+
+          commits = T.let([], T::Array[RevisionCandidate])
+          values.drop(skip_first ? 1 : 0).each do |value|
+            candidate = RevisionCandidate.from_commit(T.cast(value, Object), source: source)
+            commits << candidate
+            break if candidate.revision == dependency.version
+          end
+          commits
+        rescue JSON::ParserError
+          raise Dependabot::PrivateSourceBadResponse.new(
+            source_url || dependency.name, "Malformed Nix commit response: expected valid JSON"
+          )
         end
       end
     end

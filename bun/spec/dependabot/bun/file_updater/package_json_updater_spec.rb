@@ -41,6 +41,65 @@ RSpec.describe Dependabot::Bun::FileUpdater::PackageJsonUpdater do
         metadata: { catalog: catalog } }
     end
 
+    context "with a regular dependency whose section has a value with backslashes" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "is-number",
+          version: "7.0.0",
+          previous_version: "6.0.0",
+          package_manager: "bun",
+          requirements: [{ file: "package.json", requirement: "^7.0.0", groups: ["dependencies"], source: nil }],
+          previous_requirements: [{ file: "package.json", requirement: "^6.0.0", groups: ["dependencies"],
+                                    source: nil }]
+        )
+      end
+      let(:content) do
+        <<~JSON
+          {
+            "dependencies": {
+              "is-number": "^6.0.0",
+              "shared": "file:..\\\\packages\\\\shared"
+            }
+          }
+        JSON
+      end
+
+      it "updates the dependency and keeps the backslashes escaped" do
+        expect(updated_content).to eq(content.sub('"is-number": "^6.0.0"', '"is-number": "^7.0.0"'))
+        expect(JSON.parse(updated_content)["dependencies"]["shared"]).to eq("file:..\\packages\\shared")
+      end
+    end
+
+    # The git declaration is matched up to the last quote on its line, so on a one-line section it includes the
+    # sibling and its backslashes
+    context "with a git dependency followed by a value with backslashes on the same line" do
+      let(:git_source) { { type: "git", url: "https://github.com/jonschlinkert/is-number", branch: nil } }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "is-number",
+          version: "a" * 40,
+          previous_version: "b" * 40,
+          package_manager: "bun",
+          requirements: [{ file: "package.json", requirement: nil, groups: ["dependencies"],
+                           source: git_source.merge(ref: "v7.0.0") }],
+          previous_requirements: [{ file: "package.json", requirement: nil, groups: ["dependencies"],
+                                    source: git_source.merge(ref: "v6.0.0") }]
+        )
+      end
+      let(:content) do
+        <<~JSON
+          {
+            "dependencies": { "is-number": "github:jonschlinkert/is-number#v6.0.0", "shared": "file:..\\\\packages\\\\shared" }
+          }
+        JSON
+      end
+
+      it "updates the reference and keeps the backslashes escaped" do
+        expect(updated_content).to eq(content.sub("#v6.0.0", "#v7.0.0"))
+        expect(JSON.parse(updated_content)["dependencies"]["shared"]).to eq("file:..\\packages\\shared")
+      end
+    end
+
     context "when a compact ignored root catalog precedes the workspaces catalog" do
       let(:content) do
         <<~JSON

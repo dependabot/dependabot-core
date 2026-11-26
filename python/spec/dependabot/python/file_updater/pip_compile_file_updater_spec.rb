@@ -423,6 +423,41 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
           expect(updated_files[1].content).to include("attrs==18.1.0")
           expect(updated_files.last.content).to include("attrs==18.1.0")
         end
+
+        context "when it has hashes and only a private index is configured" do
+          let(:updater) do
+            described_class.new(
+              dependency_files: dependency_files,
+              dependencies: [dependency],
+              credentials: credentials,
+              index_urls: ["https://private.example.com/simple"]
+            )
+          end
+          let(:other_txt) do
+            Dependabot::DependencyFile.new(
+              name: "requirements.txt",
+              content: "attrs==17.3.0 --hash=sha256:#{'0' * 64}\n"
+            )
+          end
+
+          before do
+            allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_call_original
+            allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+              .with(hash_including(function: "get_dependency_hash"))
+              .and_return([{ "hash" => "123abc" }])
+          end
+
+          it "looks up the hashes on the private index" do
+            expect(updated_files.last.content).to include("attrs==18.1.0 --hash=sha256:123abc")
+            expect(Dependabot::SharedHelpers).to have_received(:run_helper_subprocess)
+              .with(hash_including(
+                      function: "get_dependency_hash",
+                      args: %w(attrs 18.1.0 sha256 https://private.example.com/simple)
+                    ))
+            expect(Dependabot::SharedHelpers).not_to have_received(:run_helper_subprocess)
+              .with(hash_including(function: "get_dependency_hash", args: %w(attrs 18.1.0 sha256)))
+          end
+        end
       end
 
       context "with multiple requirement.in files" do
