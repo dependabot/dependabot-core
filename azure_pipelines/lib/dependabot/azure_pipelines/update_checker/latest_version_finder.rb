@@ -74,21 +74,22 @@ module Dependabot
         sig { returns(T::Boolean) }
         def wants_preview?
           releases = available_versions || []
-          pins = dependency.requirements.filter_map do |requirement|
+          pins = T.let([], T::Array[String])
+          dependency.requirements.each do |requirement|
             pin = requirement[:requirement]
             case pin
-            when String then pin
+            when String then pins << pin
             end
           end
-          version = dependency.version
-          pins << version if version
+          current_version = dependency.version
+          pins << current_version if current_version
 
           pins.any? do |pin|
             next false unless Version.correct?(pin)
 
-            version = Version.new(pin)
+            pinned_version = Version.new(pin)
             current = releases.select do |release|
-              Version.new(release.version.to_s).truncate(version.precision) == version
+              Version.new(release.version.to_s).truncate(pinned_version.precision) == pinned_version
             end.max_by(&:version)
             current ? preview?(current) : false
           end
