@@ -174,7 +174,8 @@ module Dependabot
               "task_version" => task.version.to_s,
               "contribution_identifier" => task.contribution_identifier,
               "contribution_version" => task.contribution_version,
-              "deprecated" => task.deprecated
+              "deprecated" => task.deprecated,
+              "preview" => task.preview
             }
           )
         end
@@ -289,7 +290,8 @@ module Dependabot
             name: name,
             version: Version.new([major, version["Minor"].to_i, version["Patch"].to_i].join(".")),
             id: id.is_a?(String) ? id : nil,
-            deprecated: parsed["deprecated"] == true
+            deprecated: parsed["deprecated"] == true,
+            preview: parsed["preview"] == true
           )
         end
 

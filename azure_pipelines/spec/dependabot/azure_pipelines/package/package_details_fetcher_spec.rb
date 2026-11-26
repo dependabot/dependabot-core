@@ -65,6 +65,22 @@ RSpec.describe Dependabot::AzurePipelines::Package::PackageDetailsFetcher do
 
       expect(release.version.to_s).to eq("4")
       expect(release.details["task_version"]).to eq("4.276.0")
+      expect(release.details["preview"]).to be(false)
+    end
+
+    context "when task.json marks a task as preview" do
+      before do
+        task = JSON.parse(fixture("github", "maven_v4_task.json")).merge("preview" => true)
+        stub_request(:get, "#{raw_url}/MavenV4/task.json")
+          .to_return(status: 200, body: JSON.dump(task))
+      end
+
+      it "preserves preview metadata without changing the numeric version" do
+        release = fetcher.fetch.releases.max_by(&:version)
+
+        expect(release.details["preview"]).to be(true)
+        expect(release.version.to_s).to eq("4")
+      end
     end
 
     it "links each release to the directory it was resolved from" do
@@ -168,6 +184,7 @@ RSpec.describe Dependabot::AzurePipelines::Package::PackageDetailsFetcher do
             "value" => [{
               "id" => "private-task-guid",
               "name" => "PrivateTask",
+              "preview" => true,
               "version" => { "major" => 1, "minor" => 1, "patch" => 0 },
               "contributionIdentifier" => "publisher.extension.task",
               "contributionVersion" => "2.0.0"
@@ -183,6 +200,7 @@ RSpec.describe Dependabot::AzurePipelines::Package::PackageDetailsFetcher do
         expect(release.url).to eq("https://marketplace.visualstudio.com/items?itemName=publisher.extension")
         expect(release.details["task_id"]).to eq("private-task-guid")
         expect(release.details["contribution_version"]).to eq("2.0.0")
+        expect(release.details["preview"]).to be(true)
         expect(WebMock).not_to have_requested(:get, "#{api_url}/releases/latest")
       end
     end

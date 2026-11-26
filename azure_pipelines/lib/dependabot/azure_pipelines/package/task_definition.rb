@@ -11,6 +11,8 @@ module Dependabot
       # A single version of an Azure Pipelines task, either as declared by the
       # `task.json` in its directory of the tasks repository, or as reported by an
       # Azure DevOps organization.
+      # Preview and deprecation flags follow the task manifest schema:
+      # https://github.com/microsoft/azure-pipelines-task-lib/blob/master/tasks.schema.json
       class TaskDefinition < T::Struct
         extend T::Sig
 
@@ -19,6 +21,7 @@ module Dependabot
         const :version, Dependabot::AzurePipelines::Version
         const :id, T.nilable(String)
         const :deprecated, T::Boolean, default: false
+        const :preview, T::Boolean, default: false
         # Set for tasks an organization installed from an extension, as
         # `<publisher>.<extension>.<contribution>`, along with the extension version
         # that contributed this task version.

@@ -6,6 +6,7 @@ require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/package/release_cooldown_options"
+require "dependabot/security_advisory"
 require "dependabot/azure_pipelines/package/package_details_fetcher"
 require "dependabot/azure_pipelines/update_checker"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
@@ -17,12 +18,13 @@ RSpec.describe Dependabot::AzurePipelines::UpdateChecker do
       dependency_files: dependency_files,
       credentials: credentials,
       ignored_versions: ignored_versions,
-      security_advisories: [],
+      security_advisories: security_advisories,
       update_cooldown: update_cooldown
     )
   end
 
   let(:ignored_versions) { [] }
+  let(:security_advisories) { [] }
   let(:update_cooldown) { nil }
   let(:credentials) do
     [Dependabot::Credential.new(
@@ -123,6 +125,117 @@ RSpec.describe Dependabot::AzurePipelines::UpdateChecker do
 
       it "offers nothing" do
         expect(checker.latest_version).to be_nil
+      end
+    end
+  end
+
+  describe "preview tasks" do
+    context "with the public tasks repository" do
+      before do
+        task = JSON.parse(fixture("github", "maven_v4_task.json")).merge("preview" => true)
+        stub_request(:get, "#{raw_url}/MavenV4/task.json")
+          .to_return(status: 200, body: JSON.dump(task))
+      end
+
+      it "does not move a stable task onto a preview major" do
+        expect(checker.latest_version.to_s).to eq("3")
+      end
+
+      context "when the current major is preview" do
+        let(:version) { "2" }
+
+        before do
+          task = JSON.parse(fixture("github", "maven_v2_task.json")).merge("preview" => true)
+          stub_request(:get, "#{raw_url}/MavenV2/task.json")
+            .to_return(status: 200, body: JSON.dump(task))
+        end
+
+        it "allows preview updates while keeping requirements numeric" do
+          expect(checker.latest_version.to_s).to eq("4")
+          expect(checker.updated_requirements.first[:requirement]).to eq("4")
+        end
+      end
+    end
+
+    context "with organization task versions" do
+      let(:version) { "1.0.0" }
+      let(:credentials) do
+        [Dependabot::Credential.new("type" => "azure_devops_organization", "url" => "https://dev.azure.com/example")]
+      end
+
+      before do
+        area = Dependabot::AzurePipelines::Package::ResourceAreaClient
+        stub_request(:get, "https://dev.azure.com/example/_apis/resourceareas/#{area::DISTRIBUTED_TASKS_ID}?api-version=#{area::API_VERSION}")
+          .to_return(status: 200, body: JSON.dump("locationUrl" => "https://dev.azure.com/example/"))
+        stub_request(:get, "https://dev.azure.com/example/_apis/distributedtask/tasks?allversions=true&api-version=7.1")
+          .to_return(
+            status: 200,
+            body: JSON.dump(
+              "value" => [[1, 0, false], [1, 1, true], [2, 0, false], [3, 0, true]].map do |major, minor, preview|
+                {
+                  "id" => "maven-guid", "name" => "Maven", "preview" => preview,
+                  "version" => { "major" => major, "minor" => minor, "patch" => 0 }
+                }
+              end
+            )
+          )
+      end
+
+      it "excludes preview patches and majors for an exact stable pin" do
+        expect(checker.latest_version.to_s).to eq("2.0.0")
+      end
+
+      context "when the exact current version is preview" do
+        let(:version) { "1.1.0" }
+
+        it "allows a newer preview version" do
+          expect(checker.latest_version.to_s).to eq("3.0.0")
+        end
+      end
+
+      context "when the current pin is major-only" do
+        let(:version) { "1" }
+
+        it "uses the newest installed version's preview metadata for that major" do
+          expect(checker.latest_version.to_s).to eq("3")
+        end
+      end
+
+      context "when files use mixed pin precision" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "Maven",
+            version: "1",
+            package_manager: "azure_pipelines",
+            requirements: [
+              { requirement: "1", file: "azure-pipelines.yml", source: nil, groups: [] },
+              { requirement: "1.0.0", file: "ci/build.yml", source: nil, groups: [] }
+            ]
+          )
+        end
+
+        it "recognizes the preview major pin despite full-precision releases" do
+          expect(checker.updated_requirements.map { |req| req[:requirement] }).to eq(["3", "3.0.0"])
+        end
+      end
+
+      context "with a security advisory" do
+        let(:security_advisories) do
+          [Dependabot::SecurityAdvisory.new(
+            dependency_name: "Maven", package_manager: "azure_pipelines", vulnerable_versions: ["<= 1.0.0"]
+          )]
+        end
+
+        it "chooses a stable fix instead of the lower preview fix" do
+          finder = described_class::LatestVersionFinder.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: [],
+            security_advisories: security_advisories
+          )
+          expect(finder.lowest_security_fix_version.to_s).to eq("2.0.0")
+        end
       end
     end
   end

@@ -44,6 +44,7 @@ RSpec.describe Dependabot::AzurePipelines::Package::OrganizationTaskFetcher do
             {
               "id" => "task-guid",
               "name" => "PrivateTask",
+              "preview" => true,
               "version" => { "major" => 1, "minor" => 2, "patch" => 3 },
               "contributionIdentifier" => "publisher.extension.task",
               "contributionVersion" => "4.5.6"
@@ -62,6 +63,7 @@ RSpec.describe Dependabot::AzurePipelines::Package::OrganizationTaskFetcher do
     expect(tasks.map(&:name)).to eq(["PrivateTask"])
     expect(tasks.first.version.to_s).to eq("1.2.3")
     expect(tasks.first.contribution_version).to eq("4.5.6")
+    expect(tasks.first.preview).to be(true)
     expect(WebMock).to(
       have_requested(:get, resource_url).with { |request| !request.headers.key?("Authorization") }
     )

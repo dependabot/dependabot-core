@@ -38,7 +38,7 @@ module Dependabot
             .returns(T::Array[Dependabot::Package::PackageRelease])
         end
         def apply_post_fetch_latest_versions_filter(releases)
-          filter_deprecated_versions(releases)
+          filter_deprecated_versions(filter_preview_versions(releases))
         end
 
         sig do
@@ -47,13 +47,51 @@ module Dependabot
             .returns(T::Array[Dependabot::Package::PackageRelease])
         end
         def apply_post_fetch_lowest_security_fix_versions_filter(releases)
-          filter_deprecated_versions(releases)
+          filter_deprecated_versions(filter_preview_versions(releases))
         end
 
         sig { override.returns(T::Boolean) }
         def cooldown_enabled? = true
 
         private
+
+        sig do
+          params(releases: T::Array[Dependabot::Package::PackageRelease])
+            .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def filter_preview_versions(releases)
+          return releases if wants_preview?
+
+          filtered = releases.reject { |release| preview?(release) }
+          if releases.count > filtered.count
+            Dependabot.logger.info("Filtered out #{releases.count - filtered.count} preview task versions")
+          end
+          filtered
+        end
+
+        # Azure rejects prerelease suffixes in task pins. Preview opt-in must come
+        # from metadata, using the newest release matching each pin's precision.
+        sig { returns(T::Boolean) }
+        def wants_preview?
+          releases = available_versions || []
+          pins = dependency.requirements.map(&:requirement)
+          pins << dependency.version
+
+          pins.any? do |pin|
+            next false unless pin.is_a?(String) && Version.correct?(pin)
+
+            version = Version.new(pin)
+            current = releases.select do |release|
+              Version.new(release.version.to_s).truncate(version.precision) == version
+            end.max_by(&:version)
+            current ? preview?(current) : false
+          end
+        end
+
+        sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
+        def preview?(release)
+          T.cast(release.details["preview"], T.nilable(T::Boolean)) == true
+        end
 
         # Microsoft marks superseded task versions as deprecated in `task.json`. Moving
         # a pipeline onto one would be a pointless churn, so they are never offered as

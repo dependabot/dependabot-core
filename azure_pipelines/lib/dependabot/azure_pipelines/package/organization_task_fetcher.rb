@@ -138,6 +138,7 @@ module Dependabot
             version: Version.new([major, minor, patch].join(".")),
             id: string_or_nil(task["id"]),
             deprecated: task["deprecated"] == true,
+            preview: task["preview"] == true,
             contribution_identifier: string_or_nil(task["contributionIdentifier"]),
             contribution_version: string_or_nil(task["contributionVersion"])
           )
