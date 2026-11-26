@@ -5,6 +5,7 @@ require "dependabot/shared_helpers"
 require "dependabot/python/file_parser"
 require "dependabot/python/subprocess_error_context"
 require "json"
+require "shellwords"
 require "sorbet-runtime"
 
 module Dependabot
@@ -47,10 +48,17 @@ module Dependabot
         extras_spec = extras_specification
         package_spec = "#{dependency_name}#{extras_spec}#{constraint}"
 
-        command = "pyenv exec pipenv upgrade --verbose #{package_spec}"
+        index = dependency_index
+        command = +"pyenv exec pipenv upgrade --verbose"
+        command << " --index #{Shellwords.escape(index)}" if index
+        command << " #{package_spec}"
         command << " --dev" if lockfile_section == "develop"
 
-        run(command, fingerprint: "pyenv exec pipenv upgrade --verbose <dependency_name><extras><constraint>")
+        fingerprint = +"pyenv exec pipenv upgrade --verbose"
+        fingerprint << " --index <index>" if index
+        fingerprint << " <dependency_name><extras><constraint>"
+
+        run(command, fingerprint: fingerprint)
       end
 
       sig { params(constraint: T.nilable(String)).returns(T.nilable(String)) }
@@ -148,6 +156,24 @@ module Dependabot
         return nil unless dependency_data
 
         dependency_data["extras"]
+      end
+
+      sig { returns(T.nilable(String)) }
+      def dependency_index
+        return nil unless lockfile
+
+        lockfile_content = T.must(lockfile).content
+        return nil unless lockfile_content
+
+        parsed_lockfile = JSON.parse(lockfile_content)
+        section_data = parsed_lockfile_section(parsed_lockfile, lockfile_section)
+        return nil unless section_data
+
+        dependency_data = section_data[dependency_name]
+        return nil unless dependency_data.is_a?(Hash)
+
+        index = dependency_data["index"]
+        index if index.is_a?(String)
       end
 
       sig { params(updated_lockfile: T::Hash[String, T.untyped]).returns(T.nilable(String)) }
