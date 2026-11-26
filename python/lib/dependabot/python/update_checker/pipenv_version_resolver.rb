@@ -72,10 +72,11 @@ module Dependabot
 
         sig { params(version: Gem::Version).returns(T::Boolean) }
         def resolvable?(version:)
-          @resolvable ||= T.let({}, T.nilable(T::Hash[Gem::Version, T::Boolean]))
-          return T.must(@resolvable[version]) if @resolvable.key?(version)
+          version_key = version.to_s
+          @resolvable ||= T.let({}, T.nilable(T::Hash[String, T::Boolean]))
+          return T.must(@resolvable[version_key]) if @resolvable.key?(version_key)
 
-          @resolvable[version] = !!fetch_latest_resolvable_version_string(requirement: "==#{version}")
+          @resolvable[version_key] = !!fetch_latest_resolvable_version_string(requirement: "==#{version_key}")
         end
 
         private

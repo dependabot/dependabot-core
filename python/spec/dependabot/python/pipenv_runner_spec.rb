@@ -157,17 +157,9 @@ RSpec.describe Dependabot::Python::PipenvRunner do
           )
         end
         let(:dependency_files) { [pipfile, lockfile] }
-        let(:pipfile) do
-          Dependabot::DependencyFile.new(
-            name: "Pipfile",
-            content: "[packages]\nrequests = \"*\"\n"
-          )
-        end
+        let(:pipfile) { Dependabot::DependencyFile.new(name: "Pipfile", content: "[packages]\nrequests = \"*\"\n") }
         let(:lockfile_content) do
-          JSON.generate(
-            "default" => { "python-decouple" => { "version" => "==3.1", "index" => "testpypi" } },
-            "develop" => {}
-          )
+          JSON.generate("default" => { "python-decouple" => { "version" => "==3.1", "index" => "testpypi" } })
         end
 
         it "selects the section and index using the normalized name" do
@@ -182,17 +174,9 @@ RSpec.describe Dependabot::Python::PipenvRunner do
       end
 
       context "when the Pipfile entry has no explicit index" do
-        let(:pipfile) do
-          Dependabot::DependencyFile.new(
-            name: "Pipfile",
-            content: "[packages]\ntest-mybug = \"*\"\n"
-          )
-        end
+        let(:pipfile) { Dependabot::DependencyFile.new(name: "Pipfile", content: "[packages]\ntest-mybug = \"*\"\n") }
         let(:lockfile_content) do
-          JSON.generate(
-            "default" => { "test-mybug" => { "version" => "==0.0.1", "index" => "stale-index" } },
-            "develop" => {}
-          )
+          JSON.generate("default" => { "test-mybug" => { "version" => "==0.0.1", "index" => "stale-index" } })
         end
 
         it "does not reuse the stale lockfile index" do

@@ -468,8 +468,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         latest_version_finder: finder,
         resolver: resolver
       )
-      allow(resolver).to receive(:resolvable?).with(version: first_version).and_return(false)
-      allow(resolver).to receive(:resolvable?).with(version: second_version).and_return(true)
+      allow(resolver).to receive(:resolvable?).and_return(false, true)
 
       expect(checker.lowest_resolvable_security_fix_version).to eq(second_version)
     end

@@ -21,6 +21,8 @@ module Dependabot
       class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
 
+        MAX_SECURITY_FIX_VERSION_CANDIDATES = 5
+
         sig do
           override.returns(T.nilable(Dependabot::Package::PackageDetails))
         end
@@ -75,7 +77,7 @@ module Dependabot
           releases = filter_lower_versions(releases)
           releases = apply_post_fetch_lowest_security_fix_versions_filter(releases)
 
-          releases.sort_by(&:version).map(&:version).uniq
+          releases.sort_by(&:version).map(&:version).uniq(&:to_s).first(MAX_SECURITY_FIX_VERSION_CANDIDATES)
         end
       end
     end

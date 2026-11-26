@@ -470,6 +470,13 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
 
     let(:version) { Gem::Version.new("2.18.4") }
 
+    it "caches resolvability by the full Python version" do
+      allow(resolver).to receive(:fetch_latest_resolvable_version_string).and_return(nil, "2.1.1.post1")
+
+      expect(resolver.resolvable?(version: Dependabot::Python::Version.new("2.1.1"))).to be(false)
+      expect(resolver.resolvable?(version: Dependabot::Python::Version.new("2.1.1.post1"))).to be(true)
+    end
+
     context "when version is resolvable" do
       let(:version) { Gem::Version.new("2.18.4") }
 
