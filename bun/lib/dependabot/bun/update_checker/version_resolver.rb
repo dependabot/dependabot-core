@@ -616,7 +616,9 @@ module Dependabot
         def run_bun_checker(path:, version:)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
-              workspace_filters(path).flat_map { |filter| run_bun_update(filter: filter, version: version) }
+              Helpers.with_lockfile_changes_allowed do
+                workspace_filters(path).flat_map { |filter| run_bun_update(filter: filter, version: version) }
+              end
             end
           end
         end
