@@ -130,19 +130,39 @@ module Dependabot
         @directories_visited = directories_visited + 1
         contents = repo_contents(dir: dir, raise_errors: false)
 
+        collect_yaml_files(dir, contents)
+        collect_yaml_subdirectories(dir, contents, depth)
+      end
+
+      sig { params(dir: String, contents: T::Array[Dependabot::FileFetchers::RepositoryContent]).void }
+      def collect_yaml_files(dir, contents)
         contents.each do |entry|
-          next unless entry.type == "file" && entry.name.match?(YAML_PATTERN)
+          break if candidates.length >= MAX_CANDIDATES
 
-          candidates << cleaned_path(dir, entry.name)
+          name = entry.name
+          next unless entry.type == "file" && name&.match?(YAML_PATTERN)
+
+          candidates << cleaned_path(dir, name)
         end
+      end
 
+      sig do
+        params(
+          dir: String,
+          contents: T::Array[Dependabot::FileFetchers::RepositoryContent],
+          depth: Integer
+        ).void
+      end
+      def collect_yaml_subdirectories(dir, contents, depth)
         return if depth >= MAX_DEPTH
 
         contents.each do |entry|
           break if budget_spent?
-          next unless entry.type == "dir" && !IGNORED_DIRECTORIES.include?(entry.name.downcase)
 
-          collect_yaml_paths(cleaned_path(dir, entry.name), depth: depth + 1)
+          name = entry.name
+          next unless entry.type == "dir" && name && !IGNORED_DIRECTORIES.include?(name.downcase)
+
+          collect_yaml_paths(cleaned_path(dir, name), depth: depth + 1)
         end
       end
 

@@ -184,6 +184,24 @@ RSpec.describe Dependabot::AzurePipelines::FileFetcher do
       end
     end
 
+    context "with more YAML files than the candidate budget allows" do
+      before do
+        stub_const("#{described_class}::MAX_CANDIDATES", 2)
+        stub_directory("", (1..5).map { |i| entry("pipeline#{i}.yml") })
+        (1..5).each do |i|
+          stub_file("pipeline#{i}.yml", ["projects", "not_a_pipeline", "config.yml"])
+        end
+      end
+
+      it "stops collecting files at the configured limit" do
+        expect { file_fetcher.files }.to raise_error(Dependabot::DependencyFileNotFound)
+
+        expect(WebMock).to have_requested(:get, "#{contents_url}pipeline1.yml?ref=sha").once
+        expect(WebMock).to have_requested(:get, "#{contents_url}pipeline2.yml?ref=sha").once
+        expect(WebMock).not_to have_requested(:get, "#{contents_url}pipeline3.yml?ref=sha")
+      end
+    end
+
     context "when beta ecosystems are not enabled" do
       before do
         Dependabot::Experiments.reset!

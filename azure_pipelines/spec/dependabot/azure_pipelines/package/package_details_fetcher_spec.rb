@@ -65,6 +65,22 @@ RSpec.describe Dependabot::AzurePipelines::Package::PackageDetailsFetcher do
 
       expect(release.version.to_s).to eq("4")
       expect(release.details["task_version"]).to eq("4.276.0")
+      expect(release.details["preview"]).to be(false)
+    end
+
+    context "when task.json marks a task as preview" do
+      before do
+        task = JSON.parse(fixture("github", "maven_v4_task.json")).merge("preview" => true)
+        stub_request(:get, "#{raw_url}/MavenV4/task.json")
+          .to_return(status: 200, body: JSON.dump(task))
+      end
+
+      it "preserves preview metadata without changing the numeric version" do
+        release = fetcher.fetch.releases.max_by(&:version)
+
+        expect(release.details["preview"]).to be(true)
+        expect(release.version.to_s).to eq("4")
+      end
     end
 
     it "links each release to the directory it was resolved from" do
@@ -138,6 +154,124 @@ RSpec.describe Dependabot::AzurePipelines::Package::PackageDetailsFetcher do
 
       it "returns no releases" do
         expect(fetcher.fetch.releases).to be_empty
+      end
+    end
+
+    context "when an Azure DevOps organization registry is configured" do
+      let(:dependency) { build_dependency("PrivateTask", "1") }
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            "type" => "azure_devops_organization",
+            "url" => "https://dev.azure.com/example"
+          )
+        ]
+      end
+
+      before do
+        area_url =
+          "https://dev.azure.com/example/_apis/resourceareas/" \
+          "#{Dependabot::AzurePipelines::Package::ResourceAreaClient::DISTRIBUTED_TASKS_ID}" \
+          "?api-version=#{Dependabot::AzurePipelines::Package::ResourceAreaClient::API_VERSION}"
+        stub_request(:get, area_url)
+          .to_return(status: 200, body: JSON.dump("locationUrl" => "https://dev.azure.com/example/"))
+        stub_request(
+          :get,
+          "https://dev.azure.com/example/_apis/distributedtask/tasks?allversions=true&api-version=7.1"
+        ).to_return(
+          status: 200,
+          body: JSON.dump(
+            "value" => [{
+              "id" => "private-task-guid",
+              "name" => "PrivateTask",
+              "preview" => true,
+              "version" => { "major" => 1, "minor" => 1, "patch" => 0 },
+              "contributionIdentifier" => "publisher.extension.task",
+              "contributionVersion" => "2.0.0"
+            }]
+          )
+        )
+      end
+
+      it "uses the organization as the authoritative source for task versions" do
+        release = fetcher.fetch.releases.first
+
+        expect(release.version.to_s).to eq("1")
+        expect(release.url).to eq("https://marketplace.visualstudio.com/items?itemName=publisher.extension")
+        expect(release.details["task_id"]).to eq("private-task-guid")
+        expect(release.details["contribution_version"]).to eq("2.0.0")
+        expect(release.details["preview"]).to be(true)
+        expect(WebMock).not_to have_requested(:get, "#{api_url}/releases/latest")
+      end
+    end
+
+    context "when an organization has the same task name from two sources" do
+      let(:credentials) do
+        [Dependabot::Credential.new("type" => "azure_devops_organization", "url" => "https://dev.azure.com/example")]
+      end
+
+      before do
+        area_url =
+          "https://dev.azure.com/example/_apis/resourceareas/" \
+          "#{Dependabot::AzurePipelines::Package::ResourceAreaClient::DISTRIBUTED_TASKS_ID}" \
+          "?api-version=#{Dependabot::AzurePipelines::Package::ResourceAreaClient::API_VERSION}"
+        stub_request(:get, area_url)
+          .to_return(status: 200, body: JSON.dump("locationUrl" => "https://dev.azure.com/example/"))
+        stub_request(
+          :get,
+          "https://dev.azure.com/example/_apis/distributedtask/tasks?allversions=true&api-version=7.1"
+        ).to_return(
+          status: 200,
+          body: JSON.dump(
+            "value" => [
+              {
+                "id" => "first-guid", "name" => "Shared",
+                "version" => { "major" => 1, "minor" => 0, "patch" => 0 },
+                "contributionIdentifier" => "first.extension.shared", "contributionVersion" => "1.0.0"
+              },
+              {
+                "id" => "first-guid", "name" => "Shared",
+                "version" => { "major" => 2, "minor" => 0, "patch" => 0 },
+                "contributionIdentifier" => "first.extension.shared", "contributionVersion" => "2.0.0"
+              },
+              {
+                "id" => "second-guid", "name" => "Shared",
+                "version" => { "major" => 5, "minor" => 0, "patch" => 0 },
+                "contributionIdentifier" => "second.extension.shared", "contributionVersion" => "1.0.0"
+              }
+            ]
+          )
+        )
+      end
+
+      context "when the step uses the bare name" do
+        let(:dependency) { build_dependency("Shared", "1") }
+
+        # Azure DevOps refuses to run an ambiguous step, so guessing would only
+        # propose a change to a pipeline that cannot run either way.
+        it "proposes nothing" do
+          expect(fetcher.fetch.releases).to be_empty
+        end
+      end
+
+      context "when the step uses the task's GUID" do
+        let(:dependency) { build_dependency("FIRST-GUID", "1") }
+
+        it "resolves only that task, matching the GUID case-insensitively" do
+          expect(fetcher.fetch.releases.map { |release| release.version.to_s }).to contain_exactly("1", "2")
+        end
+      end
+
+      context "when the step uses the contribution-qualified name" do
+        let(:dependency) { build_dependency("second.extension.shared.Shared", "5") }
+
+        it "resolves only the task from that contribution" do
+          expect(fetcher.fetch.releases.map { |release| release.version.to_s }).to eq(["5"])
+        end
+
+        it "has no tasks repository directory to point at" do
+          expect(fetcher.task_directory).to be_nil
+        end
       end
     end
 
@@ -260,6 +394,136 @@ RSpec.describe Dependabot::AzurePipelines::Package::PackageDetailsFetcher do
 
       it "does not spend requests establishing dates" do
         expect(fetcher.fetch.releases.filter_map(&:released_at)).to be_empty
+      end
+    end
+
+    context "when the task comes from an extension installed in an organization" do
+      subject(:fetcher) do
+        described_class.new(
+          dependency: dependency,
+          credentials: credentials,
+          fetch_release_dates: true,
+          cooldown_options: Dependabot::Package::ReleaseCooldownOptions.new(default_days: 3, semver_major_days: 7)
+        )
+      end
+
+      let(:dependency) { build_dependency("PrivateTask", "1") }
+      let(:credentials) do
+        [Dependabot::Credential.new("type" => "azure_devops_organization", "url" => "https://dev.azure.com/example")]
+      end
+      let(:resource_area) { Dependabot::AzurePipelines::Package::ResourceAreaClient }
+      let(:installed_url) do
+        "https://extmgmt.dev.azure.com/example/_apis/extensionmanagement/installedextensions?api-version=7.1-preview.1"
+      end
+      let(:query_url) { "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery" }
+      let(:installed_extensions) do
+        [{
+          "publisherId" => "publisher",
+          "extensionId" => "extension",
+          "installState" => { "lastUpdated" => installed_at.iso8601 }
+        }]
+      end
+      let(:published_at) { Time.parse("2026-01-01T00:00:00Z") }
+      let(:org_tasks) do
+        [{
+          "id" => "private-task-guid",
+          "name" => "PrivateTask",
+          "version" => { "major" => 1, "minor" => 1, "patch" => 0 },
+          "contributionIdentifier" => "publisher.extension.task",
+          "contributionVersion" => "2.0.0"
+        }]
+      end
+      let(:marketplace_versions) { [{ "version" => "2.0.0", "lastUpdated" => published_at.iso8601 }] }
+
+      def area_url(id)
+        "https://dev.azure.com/example/_apis/resourceareas/#{id}?api-version=#{resource_area::API_VERSION}"
+      end
+
+      before do
+        stub_request(:get, area_url(resource_area::DISTRIBUTED_TASKS_ID))
+          .to_return(status: 200, body: JSON.dump("locationUrl" => "https://dev.azure.com/example/"))
+        stub_request(:get, area_url(resource_area::EXTENSION_MANAGEMENT_ID))
+          .to_return(status: 200, body: JSON.dump("locationUrl" => "https://extmgmt.dev.azure.com/example/"))
+        stub_request(:get, resource_area::GLOBAL_RESOURCE_AREA_URL)
+          .to_return(status: 200, body: JSON.dump("locationUrl" => "https://marketplace.visualstudio.com/"))
+        stub_request(
+          :get,
+          "https://dev.azure.com/example/_apis/distributedtask/tasks?allversions=true&api-version=7.1"
+        ).to_return(
+          status: 200,
+          body: JSON.dump("value" => org_tasks)
+        )
+        stub_request(:get, installed_url).to_return(status: 200, body: JSON.dump("value" => installed_extensions))
+        stub_request(:post, query_url).to_return(
+          status: 200,
+          body: JSON.dump("results" => [{ "extensions" => [{ "versions" => marketplace_versions }] }])
+        )
+      end
+
+      context "when it was installed before the longest cooldown began" do
+        let(:installed_at) { Time.now - (8 * 24 * 60 * 60) }
+
+        it "dates the task from the install without asking the Marketplace" do
+          expect(fetcher.fetch.releases.first.released_at.to_i).to eq(installed_at.to_i)
+          expect(WebMock).not_to have_requested(:post, query_url)
+        end
+      end
+
+      context "when it was installed within the longest cooldown" do
+        let(:installed_at) { Time.now - (5 * 24 * 60 * 60) }
+
+        it "dates the task from the Marketplace" do
+          expect(fetcher.fetch.releases.first.released_at).to eq(published_at)
+        end
+      end
+
+      context "when the organization does not list the extension as installed" do
+        let(:installed_at) { Time.now }
+        let(:installed_extensions) { [] }
+
+        it "dates the task from the Marketplace" do
+          expect(fetcher.fetch.releases.first.released_at).to eq(published_at)
+        end
+      end
+
+      context "when several task versions collapse onto one release" do
+        let(:installed_at) { Time.now }
+        let(:first_published_at) { Time.parse("2025-06-01T00:00:00Z") }
+        let(:org_tasks) do
+          [["1.0.0", 0], ["2.0.0", 1]].map do |contribution_version, minor|
+            {
+              "id" => "private-task-guid",
+              "name" => "PrivateTask",
+              "version" => { "major" => 1, "minor" => minor, "patch" => 0 },
+              "contributionIdentifier" => "publisher.extension.task",
+              "contributionVersion" => contribution_version
+            }
+          end
+        end
+        let(:marketplace_versions) do
+          [
+            { "version" => "1.0.0", "lastUpdated" => first_published_at.iso8601 },
+            { "version" => "2.0.0", "lastUpdated" => published_at.iso8601 }
+          ]
+        end
+
+        it "dates the release from when the major first became available" do
+          release = fetcher.fetch.releases.first
+
+          expect(release.details["task_version"]).to eq("1.1.0")
+          expect(release.released_at).to eq(first_published_at)
+        end
+      end
+
+      context "when the Marketplace has no record of the contributing version" do
+        let(:installed_at) { Time.now }
+        let(:marketplace_versions) { [] }
+
+        # An undated release is never held back, which is the same outcome as when no
+        # cooldown applies, rather than guessing a date.
+        it "leaves the release undated" do
+          expect(fetcher.fetch.releases.first.released_at).to be_nil
+        end
       end
     end
   end

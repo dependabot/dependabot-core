@@ -64,23 +64,22 @@ module Dependabot
         task_references(parsed).filter_map { |reference| build_dependency(reference, file) }
       end
 
-      # `task:` steps are not confined to the `steps`/`jobs`/`stages` spine. They also
-      # appear inside deployment strategies (`runOnce`, `rolling`, `canary` and their
-      # lifecycle hooks), `extends` blocks and `stepList` parameter defaults. Walking
-      # the whole tree covers all of those without having to model the schema.
-      #
-      # A step is always an entry in a list, so only mappings reached through a
-      # sequence count. That keeps a variable or a task input that happens to be
-      # called `task` from being mistaken for a step.
-      sig { params(node: T.anything, in_sequence: T::Boolean).returns(T::Array[String]) }
-      def task_references(node, in_sequence: false)
+      # Task references occur in step lists, including deployment hooks and
+      # stepList parameter defaults. Requiring a mapping to be an entry in one of
+      # those lists avoids treating arbitrary arrays of objects as task steps.
+      sig { params(node: T.anything, in_step_list: T::Boolean).returns(T::Array[String]) }
+      def task_references(node, in_step_list: false)
         case node
         when Hash
           task = node["task"]
-          references = in_sequence && task.is_a?(String) ? [task] : []
-          references + node.each_value.flat_map { |value| task_references(value) }
+          references = in_step_list && task.is_a?(String) ? [task] : []
+          step_list_parameter = node["type"] == "stepList"
+          references + node.each_with_object([]) do |(key, value), nested|
+            child_is_step_list = key == "steps" || (step_list_parameter && key == "default")
+            nested.concat(task_references(value, in_step_list: child_is_step_list))
+          end
         when Array
-          node.flat_map { |value| task_references(value, in_sequence: true) }
+          node.flat_map { |value| task_references(value, in_step_list: in_step_list) }
         else
           []
         end

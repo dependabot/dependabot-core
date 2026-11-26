@@ -11,9 +11,15 @@ require "dependabot/dependency"
 require "dependabot/logger"
 require "dependabot/package/package_details"
 require "dependabot/package/package_release"
+require "dependabot/package/release_cooldown_options"
 require "dependabot/registry_client"
+require "dependabot/update_checkers/cooldown_calculation"
 
 require "dependabot/azure_pipelines/constants"
+require "dependabot/azure_pipelines/package/azure_devops_organization"
+require "dependabot/azure_pipelines/package/installed_extensions_client"
+require "dependabot/azure_pipelines/package/marketplace_client"
+require "dependabot/azure_pipelines/package/organization_task_fetcher"
 require "dependabot/azure_pipelines/package/task_definition"
 require "dependabot/azure_pipelines/version"
 
@@ -33,6 +39,11 @@ module Dependabot
       # branch. Releases lag the branch, which is the point: Azure DevOps rolls tasks
       # out over sprints, so a released tag is closer to what organizations can
       # actually run.
+      #
+      # When a credential for an Azure DevOps organization is configured, the tasks
+      # that organization has installed are used instead, and the tasks repository is
+      # only consulted to date the tasks Microsoft ships. That covers tasks installed
+      # from Marketplace or private extensions, and tasks referenced by GUID.
       class PackageDetailsFetcher
         extend T::Sig
 
@@ -61,6 +72,9 @@ module Dependabot
             @task_directories_cache = nil
             @release_dates_cache = nil
             @latest_ref_cache = nil
+            OrganizationTaskFetcher.clear_cache!
+            MarketplaceClient.clear_cache!
+            InstalledExtensionsClient.clear_cache!
           end
         end
 
@@ -68,13 +82,15 @@ module Dependabot
           params(
             dependency: Dependabot::Dependency,
             credentials: T::Array[Dependabot::Credential],
-            fetch_release_dates: T::Boolean
+            fetch_release_dates: T::Boolean,
+            cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
-        def initialize(dependency:, credentials:, fetch_release_dates: false)
+        def initialize(dependency:, credentials:, fetch_release_dates: false, cooldown_options: nil)
           @dependency = dependency
           @credentials = credentials
           @fetch_release_dates = fetch_release_dates
+          @cooldown_options = cooldown_options
         end
 
         sig { returns(Dependabot::Dependency) }
@@ -89,17 +105,27 @@ module Dependabot
         end
 
         # The directory holding the task's current major version, used to point pull
-        # request metadata at something more specific than the repository root.
+        # request metadata at something more specific than the repository root. Tasks
+        # an organization installed from an extension have no such directory.
         sig { returns(T.nilable(String)) }
         def task_directory
+          definitions = task_directory_definitions
           current = dependency.version
           matching =
             if current && Version.correct?(current)
               major = Version.new(current).truncate(1).to_s
-              task_definitions.find { |task| task.version.truncate(1).to_s == major }
+              definitions.find { |task| task.version.truncate(1).to_s == major }
             end
 
-          (matching || task_definitions.first)&.directory
+          (matching || definitions.first)&.directory
+        end
+
+        sig { returns(T::Array[TaskDefinition]) }
+        def task_directory_definitions
+          return [] if organization && task_definitions.any?(&:contribution_identifier)
+
+          name = organization ? task_definitions.first&.name : dependency.name
+          github_task_definitions(name)
         end
 
         private
@@ -109,24 +135,58 @@ module Dependabot
           @fetch_release_dates
         end
 
-        sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
-        def releases
-          task_definitions.map { |task| build_release(task) }
+        sig { returns(T.nilable(AzureDevOpsOrganization)) }
+        def organization
+          return @organization if defined?(@organization)
+
+          @organization = T.let(
+            AzureDevOpsOrganization.from_credentials(credentials),
+            T.nilable(AzureDevOpsOrganization)
+          )
         end
 
-        sig { params(task: TaskDefinition).returns(Dependabot::Package::PackageRelease) }
-        def build_release(task)
+        # An organization lists every version of a task, so several can collapse onto
+        # the same release once truncated to the pin's precision. The newest one
+        # represents the release, and the earliest date stands for when that release
+        # first became available.
+        sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
+        def releases
+          task_definitions
+            .group_by { |task| task.version.truncate(precision) }
+            .map do |_version, tasks|
+              newest = T.must(tasks.max_by(&:version))
+              build_release(newest, released_at: tasks.filter_map { |task| released_at(task) }.min)
+            end
+        end
+
+        sig do
+          params(task: TaskDefinition, released_at: T.nilable(Time))
+            .returns(Dependabot::Package::PackageRelease)
+        end
+        def build_release(task, released_at:)
           Dependabot::Package::PackageRelease.new(
             version: task.version.truncate(precision),
-            released_at: released_at(task),
-            url: "#{TASKS_REPO_URL}/tree/#{ref}/#{TASKS_DIRECTORY}/#{task.directory}",
+            released_at: released_at,
+            url: release_url(task),
             details: {
               "task_id" => task.id,
               "task_directory" => task.directory,
               "task_version" => task.version.to_s,
-              "deprecated" => task.deprecated
+              "contribution_identifier" => task.contribution_identifier,
+              "contribution_version" => task.contribution_version,
+              "deprecated" => task.deprecated,
+              "preview" => task.preview
             }
           )
+        end
+
+        sig { params(task: TaskDefinition).returns(T.nilable(String)) }
+        def release_url(task)
+          extension_id = task.extension_id
+          return MarketplaceClient.item_url(extension_id) if extension_id
+
+          directory = task.directory
+          directory ? "#{TASKS_REPO_URL}/tree/#{ref}/#{TASKS_DIRECTORY}/#{directory}" : nil
         end
 
         # How precisely the pipeline pins this task. Candidates are compared and
@@ -154,27 +214,68 @@ module Dependabot
         sig { returns(T::Array[TaskDefinition]) }
         def task_definitions
           @task_definitions ||= T.let(
-            candidate_directories.filter_map { |directory| fetch_task_definition(directory) },
+            organization ? organization_task_definitions : github_task_definitions(dependency.name),
             T.nilable(T::Array[TaskDefinition])
           )
+        end
+
+        # A step can name a task by its name, its GUID, or its name qualified by the
+        # contribution that installed it. When a bare name matches tasks from more
+        # than one source, Azure DevOps refuses to run the step, so nothing is
+        # proposed rather than guessing which one was meant.
+        sig { returns(T::Array[TaskDefinition]) }
+        def organization_task_definitions
+          name = dependency.name
+          tasks = OrganizationTaskFetcher.new(organization: T.must(organization)).tasks.select do |task|
+            task.id&.casecmp?(name) ||
+              task.name.casecmp?(name) ||
+              "#{task.contribution_identifier}.#{task.name}".casecmp?(name)
+          end
+
+          if tasks.map { |task| task_identity(task) }.uniq.length > 1
+            Dependabot.logger.info("#{name} matches more than one task installed in #{T.must(organization).url}")
+            return []
+          end
+
+          tasks
+        end
+
+        sig { params(task: TaskDefinition).returns(String) }
+        def task_identity(task)
+          id = task.id
+          return "id:#{id.downcase}" if id
+
+          contribution = task.contribution_identifier
+          return "contribution:#{contribution.downcase}:#{task.name.downcase}" if contribution
+
+          "name:#{task.name.downcase}"
+        end
+
+        sig { params(name: T.nilable(String)).returns(T::Array[TaskDefinition]) }
+        def github_task_definitions(name)
+          return [] unless name
+
+          @github_task_definitions ||= T.let({}, T.nilable(T::Hash[String, T::Array[TaskDefinition]]))
+          @github_task_definitions[name.downcase] ||=
+            candidate_directories(name).filter_map { |directory| fetch_task_definition(directory, name) }
         end
 
         # Narrow 200-odd directories down to the handful that could hold this task. A
         # task referenced by GUID has no matching directory name and resolves to
         # nothing, which leaves the pipeline untouched.
-        sig { returns(T::Array[String]) }
-        def candidate_directories
-          pattern = /\A#{Regexp.escape(dependency.name)}V\d+\z/i
+        sig { params(name: String).returns(T::Array[String]) }
+        def candidate_directories(name)
+          pattern = /\A#{Regexp.escape(name)}V\d+\z/i
           task_directories.select { |directory| directory.match?(pattern) }.sort
         end
 
-        sig { params(directory: String).returns(T.nilable(TaskDefinition)) }
-        def fetch_task_definition(directory)
+        sig { params(directory: String, expected_name: String).returns(T.nilable(TaskDefinition)) }
+        def fetch_task_definition(directory, expected_name)
           parsed = fetch_json("#{TASKS_RAW_URL}/#{ref}/#{TASKS_DIRECTORY}/#{directory}/task.json")
           return nil unless parsed.is_a?(Hash)
 
           name = parsed["name"]
-          return nil unless name.is_a?(String) && name.casecmp?(dependency.name)
+          return nil unless name.is_a?(String) && name.casecmp?(expected_name)
 
           version = parsed["version"]
           return nil unless version.is_a?(Hash)
@@ -189,7 +290,8 @@ module Dependabot
             name: name,
             version: Version.new([major, version["Minor"].to_i, version["Patch"].to_i].join(".")),
             id: id.is_a?(String) ? id : nil,
-            deprecated: parsed["deprecated"] == true
+            deprecated: parsed["deprecated"] == true,
+            preview: parsed["preview"] == true
           )
         end
 
@@ -243,12 +345,90 @@ module Dependabot
           # requests, so they are skipped unless a cooldown is configured.
           return nil unless fetch_release_dates?
 
+          # A task installed from an extension shipped with the extension version that
+          # contributed it, which the Marketplace dates.
+          extension_id = task.extension_id
+          contribution_version = task.contribution_version
+          if extension_id && contribution_version
+            installed_date = installed_before_cooldown(extension_id)
+            return installed_date if installed_date
+
+            marketplace_date = marketplace.published_at(extension_id, contribution_version)
+            return marketplace_date if marketplace_date
+          end
+
+          git_based_release_date(task)
+        end
+
+        # When an extension was installed before the longest configured cooldown began,
+        # every task version it contributes was released earlier still, so none of them
+        # can be in cooldown and the Marketplace need not be asked. The install time is
+        # later than the real release date, which makes it a safe stand-in: it can only
+        # make a release look newer than it is, never old enough to skip a cooldown.
+        sig { params(extension_id: String).returns(T.nilable(Time)) }
+        def installed_before_cooldown(extension_id)
+          days = longest_cooldown_days
+          return nil unless days
+
+          installed_at = installed_extensions.installed_at(extension_id)
+          return nil unless installed_at
+          return nil if Dependabot::UpdateCheckers::CooldownCalculation.within_cooldown_window?(installed_at, days)
+
+          installed_at
+        end
+
+        sig { returns(T.nilable(Integer)) }
+        def longest_cooldown_days
+          cooldown = @cooldown_options
+          return nil unless cooldown
+
+          [
+            cooldown.default_days,
+            cooldown.semver_major_days,
+            cooldown.semver_minor_days,
+            cooldown.semver_patch_days
+          ].max
+        end
+
+        sig { returns(InstalledExtensionsClient) }
+        def installed_extensions
+          @installed_extensions ||= T.let(
+            InstalledExtensionsClient.new(organization: T.must(organization)),
+            T.nilable(InstalledExtensionsClient)
+          )
+        end
+
+        sig { params(task: TaskDefinition).returns(T.nilable(Time)) }
+        def git_based_release_date(task)
           # A pipeline pinned to a major moves between majors, so the date that matters
           # is when that major first shipped. A fully pinned version moves between
           # sprints, so the sprint release date is the right one.
-          return first_seen_at(task.directory) if precision == 1
+          return release_dates["v#{task.version.segments[1]}"] unless precision == 1
 
-          release_dates["v#{task.version.segments[1]}"]
+          directory = task.directory || github_directory_for(task)
+          directory ? first_seen_at(directory) : nil
+        end
+
+        sig { returns(MarketplaceClient) }
+        def marketplace
+          @marketplace ||= T.let(
+            MarketplaceClient.new(organization: T.must(organization)),
+            T.nilable(MarketplaceClient)
+          )
+        end
+
+        # The tasks repository directory of a task Microsoft ships that was found
+        # through an organization, matched on major version and, where both sides
+        # declare one, the task's GUID.
+        sig { params(task: TaskDefinition).returns(T.nilable(String)) }
+        def github_directory_for(task)
+          major = task.version.truncate(1)
+          task_id = task.id
+          github_task_definitions(task.name).find do |definition|
+            definition_id = definition.id
+            definition.version.truncate(1) == major &&
+              definition_id && task_id && definition_id.casecmp?(task_id) == true
+          end&.directory
         end
 
         # The oldest commit touching the major's `task.json`, which is when Microsoft

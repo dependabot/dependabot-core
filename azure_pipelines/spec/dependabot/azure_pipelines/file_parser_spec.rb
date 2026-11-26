@@ -73,6 +73,37 @@ RSpec.describe Dependabot::AzurePipelines::FileParser do
       end
     end
 
+    context "with a task-looking value in an unrelated object list" do
+      let(:pipeline_content) do
+        <<~YAML
+          steps:
+            - task: Maven@3
+          variables:
+            - task: Fake@1
+        YAML
+      end
+
+      it "ignores the unrelated list entry" do
+        expect(parser.parse.map(&:name)).to eq(["Maven"])
+      end
+    end
+
+    context "with a task in a stepList parameter default" do
+      let(:pipeline_content) do
+        <<~YAML
+          parameters:
+            - name: buildSteps
+              type: stepList
+              default:
+                - task: Maven@3
+        YAML
+      end
+
+      it "finds tasks in the template's default step list" do
+        expect(parser.parse.map(&:name)).to eq(["Maven"])
+      end
+    end
+
     context "with the same task pinned in two files" do
       let(:files) do
         [
