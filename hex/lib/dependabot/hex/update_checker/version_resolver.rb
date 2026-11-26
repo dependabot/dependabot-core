@@ -23,6 +23,7 @@ module Dependabot
         GIT_FETCH_TIMEOUT = 120
         RESOLUTION_DIVERGENCE_HEADERS =
           ["Dependencies have diverged:", "** (Mix) Dependencies have diverged:"].freeze
+        RESOLUTION_DIVERGENCE_TRAILER = "** (Mix) Can't continue due to errors on dependencies"
         MALFORMED_REQUIREMENT =
           %r{
             \A\*\*[ ]\(Mix\)[ ]Required[ ]version[ ].+[ ]for[ ]package[ ].+[ ]is[ ]incorrectly[ ]specified
@@ -133,7 +134,10 @@ module Dependabot
 
         sig { params(message: String).returns(T::Boolean) }
         def confirmed_resolution_divergence?(message)
-          message.lines.any? { |line| RESOLUTION_DIVERGENCE_HEADERS.include?(line.strip) }
+          lines = message.lines.map(&:strip).reject(&:empty?)
+
+          lines.any? { |line| RESOLUTION_DIVERGENCE_HEADERS.include?(line) } &&
+            lines.last == RESOLUTION_DIVERGENCE_TRAILER
         end
 
         sig { params(script: String, args: String).returns(T::Array[String]) }

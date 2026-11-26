@@ -818,13 +818,35 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
 
     context "with a confirmed Mix dependency divergence" do
       let(:resolution_error) do
-        helper_failure("warning: project output\n** (Mix) Dependencies have diverged:\n")
+        helper_failure(
+          "warning: project output\n" \
+          "** (Mix) Dependencies have diverged:\n" \
+          "** (Mix) Can't continue due to errors on dependencies\n"
+        )
       end
 
       before { stub_resolution_failure(resolution_error) }
 
       it "returns no resolvable version" do
         expect(latest_resolvable_version).to be_nil
+        expect(mix_attempts).to contain_exactly(:resolution)
+      end
+    end
+
+    context "when an operational failure follows a dependency divergence header" do
+      let(:resolution_error) do
+        helper_failure(
+          "** (Mix) Dependencies have diverged:\n" \
+          "fatal: unable to access repository\n"
+        )
+      end
+
+      before { stub_resolution_failure(resolution_error) }
+
+      it "preserves the operational failure" do
+        expect { latest_resolvable_version }.to raise_error do |error|
+          expect(error).to equal(resolution_error)
+        end
         expect(mix_attempts).to contain_exactly(:resolution)
       end
     end
