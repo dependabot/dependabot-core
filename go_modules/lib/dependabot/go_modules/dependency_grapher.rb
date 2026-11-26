@@ -1,10 +1,15 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "open3"
 require "sorbet-runtime"
 
 require "dependabot/dependency_graphers"
 require "dependabot/dependency_graphers/base"
+require "dependabot/go_modules/go_mod_manifest"
+require "dependabot/go_modules/replace_stubber"
+require "dependabot/manifest_sets/descriptor"
+require "dependabot/shared_helpers"
 
 module Dependabot
   module GoModules
@@ -29,7 +34,52 @@ module Dependabot
         T.must(go_mod)
       end
 
+      sig { override.returns(T.nilable(String)) }
+      def manifest_set_unresolvable_reason
+        return Dependabot::ManifestSets::Descriptor::WORKSPACE if dependency_files.any? { |f| f.name == "go.work" }
+        return Dependabot::ManifestSets::Descriptor::LOCAL_REPLACE if repository_local_replace?
+
+        nil
+      end
+
       private
+
+      # A relative replace that resolves inside the repository makes the module's dependencies depend on files
+      # beyond its own go.mod. Targets outside the repository are stubbed out by the parser and read nothing.
+      # The checkout path is resolved first because the stubber compares it with resolved replace targets, so a
+      # checkout reached through a symlink would otherwise make every in-repository target look external.
+      sig { returns(T::Boolean) }
+      def repository_local_replace?
+        repo_contents_path = file_parser.repo_contents_path
+        return false if repo_contents_path.nil? || go_mod.nil?
+
+        manifest = go_mod_manifest
+        stubbed = ReplaceStubber.new(File.realpath(repo_contents_path)).stub_paths(manifest, go_mod&.directory)
+        manifest.replacements.any? do |replacement|
+          path = replacement.new.path
+          path.start_with?("./", "../") && !stubbed.key?(path)
+        end
+      end
+
+      sig { returns(GoModManifest) }
+      def go_mod_manifest
+        file = T.must(go_mod)
+        stdout = SharedHelpers.in_a_temporary_directory do
+          File.write("go.mod", file.content)
+          out, stderr, status = Open3.capture3("go mod edit -json")
+          raise Dependabot::DependencyFileNotParseable.new(file.path, stderr.strip) unless status.success?
+
+          out
+        end
+        GoModManifest.from_json(stdout, file_path: file.path)
+      end
+
+      # go.sum only verifies checksums and go.env only configures module fetching, so go.mod alone determines
+      # the resolved dependencies.
+      sig { override.params(file: Dependabot::DependencyFile).returns(T::Boolean) }
+      def manifest_set_input_file?(file)
+        file.name == "go.mod"
+      end
 
       sig { override.params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
       def fetch_subdependencies(dependency)

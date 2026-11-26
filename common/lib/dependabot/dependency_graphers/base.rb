@@ -70,6 +70,9 @@ module Dependabot
         @dependencies = T.let([], T::Array[Dependabot::Dependency])
         @prepared = T.let(false, T::Boolean)
         @errored_fetching_subdependencies = T.let(false, T::Boolean)
+        # Captured before preparation can inject generated files (e.g. an ephemeral lockfile) or drop files.
+        @original_dependency_files = T.let(file_parser.dependency_files.dup, T::Array[Dependabot::DependencyFile])
+        @manifest_group_paths = T.let(nil, T.nilable(T::Array[String]))
       end
 
       # Each grapher must implement a heuristic to determine which dependency file should be used as the owner
@@ -129,12 +132,49 @@ module Dependabot
         )
       end
 
+      # The original repository files that determined this directory's resolved dependencies: the union of every
+      # manifest group's files, collected before scoped graphers discard them, plus every fetched support file
+      # (such as a path dependency's setup.py), which the fetcher only retrieves because resolving the directory
+      # needs it, whether or not a manifest group lists it. Restricted to files that were fetched from the
+      # repository (generated files have no repository blob) and that the ecosystem treats as inputs. Requires
+      # the manifest group snapshots, which are built on first use.
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def manifest_set_input_files
+        manifest_group_snapshots
+        group_paths = T.must(@manifest_group_paths).to_set
+
+        @original_dependency_files
+          .select { |file| (group_paths.include?(file.path) || file.support_file?) && manifest_set_input_file?(file) }
+          .uniq(&:path)
+      end
+
+      # Why the directory's manifest set cannot be described by its input files, or nil when it can. Ecosystems
+      # override this for projects whose resolution reads files that are not reported as inputs.
+      sig { overridable.returns(T.nilable(String)) }
+      def manifest_set_unresolvable_reason
+        nil
+      end
+
       private
+
+      # Whether an original dependency file belongs in the directory's input provenance. Ecosystems override
+      # this to exclude files that only affect how dependencies are fetched rather than which are resolved.
+      sig { overridable.params(_file: Dependabot::DependencyFile).returns(T::Boolean) }
+      def manifest_set_input_file?(_file)
+        true
+      end
 
       sig { returns(T::Array[ManifestGroupSnapshot]) }
       def build_manifest_group_snapshots
         groups = manifest_groups
+        snapshots = snapshots_for(groups)
+        # Read after resolving, as preparation may have filtered the group file lists in place.
+        @manifest_group_paths = groups.flat_map { |group| group.files.map(&:path) }.uniq
+        snapshots
+      end
 
+      sig { params(groups: T::Array[ManifestGroup]).returns(T::Array[ManifestGroupSnapshot]) }
+      def snapshots_for(groups)
         if groups.one?
           group = T.must(groups.first)
           return [ManifestGroupSnapshot.new(
@@ -156,8 +196,9 @@ module Dependabot
       end
 
       # Propagates a scoped grapher's subdependency error state onto this grapher so callers can inspect the
-      # aggregate result of resolving every group.
-      sig { params(scoped: Dependabot::DependencyGraphers::Base).void }
+      # aggregate result of resolving every group. Ecosystems override this to also absorb state their own
+      # hooks read, calling super.
+      sig { overridable.params(scoped: Dependabot::DependencyGraphers::Base).void }
       def absorb_error_state(scoped)
         return unless scoped.errored_fetching_subdependencies
 

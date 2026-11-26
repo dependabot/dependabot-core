@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "ecosystems": [
+    {
+      "id": "pypi",
+      "inputs_matched_by_rules": false,
+      "path_rules": [
+        {
+          "id": "python-requirements-txt",
+          "filename_regex": "\\A(?:[^/]*[-._])?[Rr][Ee][Qq][Uu][Ii][Rr][Ee][Mm][Ee][Nn][Tt][Ss][^\\t\\n\\v\\f\\r /]*\\.txt\\z",
+          "directory": "parent"
+        },
+        {
+          "id": "python-require-txt",
+          "filename_regex": "\\A(?:[^/]*[-._])?[Rr][Ee][Qq][Uu][Ii][Rr][Ee](?:[-_][^\\t\\n\\v\\f\\r ./]*)?\\.txt\\z",
+          "directory": "parent"
+        },
+        {
+          "id": "python-dependencies-txt",
+          "filename_regex": "\\A(?:[^/]*[-._])?[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc](?:[Yy]|[Ii][Ee][Ss])[^\\t\\n\\v\\f\\r /]*\\.txt\\z",
+          "directory": "parent"
+        },
+        {
+          "id": "python-depend-txt",
+          "filename_regex": "\\A(?:[^/]*[-._])?[Dd][Ee][Pp][Ee][Nn][Dd][Ss]?(?:[-_][^\\t\\n\\v\\f\\r ./]*)?\\.txt\\z",
+          "directory": "parent"
+        },
+        {
+          "id": "python-requirements-in",
+          "filename_regex": "\\A[^/]*\\.in\\z",
+          "directory": "parent"
+        },
+        {
+          "id": "python-project",
+          "filename_regex": "\\A(?:pyproject\\.toml|setup\\.py|setup\\.cfg|Pipfile|uv\\.lock)\\z",
+          "directory": "parent"
+        }
+      ],
+      "owners": [
+        { "id": "uv", "when_any_basename": ["uv.lock"] },
+        { "id": "pip", "otherwise": true }
+      ]
+    },
+    {
+      "id": "golang",
+      "inputs_matched_by_rules": true,
+      "path_rules": [
+        {
+          "id": "go-mod",
+          "filename_regex": "\\Ago\\.mod\\z",
+          "directory": "parent"
+        }
+      ],
+      "owners": [
+        { "id": "go_modules", "otherwise": true }
+      ]
+    }
+  ]
+}

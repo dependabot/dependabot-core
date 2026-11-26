@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/dependency_graphers/graph_versions"
 require "dependabot/python"
 
 RSpec.describe Dependabot::Python::DependencyGrapher do
@@ -328,6 +329,10 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
       end
 
       let(:dependency_files) { [pyproject_toml, poetry_lock_file] }
+
+      it "can describe the manifest set by its committed inputs" do
+        expect(grapher.manifest_set_unresolvable_reason).to be_nil
+      end
 
       it "extracts dependency relationships from the lockfile" do
         resolved_dependencies = grapher.resolved_dependencies
@@ -888,6 +893,10 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
           grapher.resolved_dependencies
           expect(grapher.relevant_dependency_file).to eql(pyproject_toml)
         end
+
+        it "reports the manifest set as unknown provenance, as the lockfile is not a repository input" do
+          expect(grapher.manifest_set_unresolvable_reason).to eq("unknown_provenance")
+        end
       end
 
       context "when reject_external_code is true" do
@@ -1371,6 +1380,36 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
       expect(resolved_package_names(snapshots.fetch("dev-requirements.txt"))).to contain_exactly("pytest")
       expect(resolved_package_names(snapshots.fetch("setup.py"))).to contain_exactly("requests")
     end
+
+    it "can describe the manifest set by its committed inputs" do
+      expect(grapher.manifest_set_unresolvable_reason).to be_nil
+    end
+
+    context "when the shared manifest is a Poetry project without a committed poetry.lock" do
+      let(:dependency_files) { [dev_requirements_txt, app_requirements_txt, pyproject_toml] }
+
+      let(:lockfile_generator) do
+        instance_double(
+          Dependabot::Python::DependencyGrapher::LockfileGenerator,
+          generate: Dependabot::DependencyFile.new(
+            name: "poetry.lock",
+            content: fixture("dependency_grapher", "poetry_lock_with_relationships.lock"),
+            directory: "/"
+          )
+        )
+      end
+
+      before do
+        allow(Dependabot::Python::DependencyGrapher::LockfileGenerator)
+          .to receive(:new).and_return(lockfile_generator)
+      end
+
+      it "reports the manifest set as unknown provenance, as a layer's graph used a generated lockfile" do
+        expect(grapher.manifest_set_unresolvable_reason).to eq("unknown_provenance")
+        expect(Dependabot::Python::DependencyGrapher::LockfileGenerator)
+          .to have_received(:new).once
+      end
+    end
   end
 
   # A `-c` target only pins versions for the file that references it; it does not add requirements.
@@ -1430,6 +1469,38 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
 
       expect(snapshots.fetch("requirements-tests.txt").resolved_dependencies.fetch("pkg:pypi/pytest@8.3.3").direct)
         .to be(true)
+    end
+
+    it "reports every layer's original files as the directory's inputs" do
+      expect(grapher.manifest_set_input_files.map(&:path)).to contain_exactly(
+        "/requirements.in", "/requirements.txt", "/requirements-tests.in", "/requirements-tests.txt"
+      )
+    end
+
+    context "when the fetcher also retrieved a path dependency's setup.py" do
+      let(:path_dependency_setup_py) do
+        Dependabot::DependencyFile.new(
+          name: "pkg/setup.py",
+          content: "from setuptools import setup\nsetup(name=\"pkg\")\n",
+          directory: "/",
+          support_file: true
+        )
+      end
+
+      let(:dependency_files) do
+        [app_requirements_in, app_requirements_txt, test_requirements_in, test_requirements_txt,
+         path_dependency_setup_py]
+      end
+
+      it "keeps the support file among the directory's inputs although no layer lists it" do
+        expect(grapher.manifest_set_input_files.map(&:path)).to contain_exactly(
+          "/requirements.in",
+          "/requirements.txt",
+          "/requirements-tests.in",
+          "/requirements-tests.txt",
+          "/pkg/setup.py"
+        )
+      end
     end
 
     context "when the directory has a single manifest" do
@@ -1494,6 +1565,24 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         expect(snapshots.length).to eq(1)
         expect(snapshots.first.manifest_file).to eql(pipfile_lock_file)
       end
+    end
+  end
+
+  describe "graph version" do
+    let(:graph_versions) { Dependabot::DependencyGraphers::GraphVersions }
+
+    it "is locked to the current grapher sources (run bin/update-manifest-set-graph-versions.rb)" do
+      expect(graph_versions.stale_owners(owners: ["pip"])).to be_empty
+    end
+
+    # uv's lock also covers parsing code in this gem, but this image has no uv sources and uv's CI does not run
+    # when only this gem changes. A change to that shared code still makes pip stale here, and the refresh
+    # script then requires a decision for every stale owner, uv included.
+    it "covers every source uv shares with this gem" do
+      shared = graph_versions.entries.fetch("uv").sources.reject { |source| source.start_with?("uv/") }
+      pip = graph_versions.entries.fetch("pip").sources
+
+      expect(graph_versions.source_files(shared) - graph_versions.source_files(pip)).to be_empty
     end
   end
 end
