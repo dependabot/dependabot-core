@@ -74,7 +74,10 @@ module Dependabot
         if credentials.any?(&:replaces_base?)
           credentials.select(&:replaces_base?).map { |cred| AuthedUrlBuilder.authed_url(credential: cred) }
         else
-          urls = credentials.map { |cred| AuthedUrlBuilder.authed_url(credential: cred) }
+          # A credential without an index-url (such as the github.com git_source
+          # credential every job carries) gives "". Leave it out: package_hashes_for
+          # would otherwise look up hashes at "/pypi/<name>/json" and fail.
+          urls = credentials.map { |cred| AuthedUrlBuilder.authed_url(credential: cred) }.reject(&:empty?)
           # If there are no credentials that replace the base, we need to
           # ensure that the base URL is included in the list of extra-index-urls.
           [nil, *urls]

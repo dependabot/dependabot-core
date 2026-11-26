@@ -246,6 +246,35 @@ RSpec.describe Dependabot::Uv::FileUpdater do
           expect(instance.send(:pip_compile_index_urls)).to eq([nil, "authed_url"])
         end
       end
+
+      context "when a credential has no index-url" do
+        let(:credentials) do
+          [
+            Dependabot::Credential.new(
+              {
+                "type" => "git_source",
+                "host" => "github.com",
+                "username" => "x-access-token",
+                "password" => "token"
+              }
+            ),
+            Dependabot::Credential.new(
+              {
+                "type" => "python_index",
+                "index-url" => "https://pypi.example.com/simple"
+              }
+            )
+          ]
+        end
+
+        before do
+          allow(Dependabot::Uv::AuthedUrlBuilder).to receive(:authed_url).and_call_original
+        end
+
+        it "leaves it out, so no hash lookup gets an empty index URL" do
+          expect(instance.send(:pip_compile_index_urls)).to eq([nil, "https://pypi.example.com/simple"])
+        end
+      end
     end
   end
 end
