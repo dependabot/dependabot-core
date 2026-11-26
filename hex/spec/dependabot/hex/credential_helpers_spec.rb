@@ -258,6 +258,38 @@ RSpec.describe Dependabot::Hex::CredentialHelpers do
       end
     end
 
+    context "when repository public key authorization fails" do
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "hex_repository",
+              "repo" => "dependabot",
+              "url" => "https://repo.example.com",
+              "public-key-fingerprint" => public_key_fingerprint
+            }
+          )
+        ]
+      end
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "Downloading public key failed with code \"403\"\n",
+          error_context: {}
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_raise(error)
+      end
+
+      it "reports authentication failure for the repository" do
+        expect { configure }
+          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |raised_error|
+            expect(raised_error.source).to eq("dependabot")
+          end
+      end
+    end
+
     context "when repository public key download fails for another reason" do
       let(:credentials) do
         [
