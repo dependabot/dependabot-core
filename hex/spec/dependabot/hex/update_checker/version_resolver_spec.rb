@@ -688,27 +688,22 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       end
     end
 
-    {
-      "with an invalid requirement diagnostic" =>
-        "** (Version.InvalidRequirementError) invalid requirement: >= nope",
-      "with Hex 2.5.4's malformed root requirement diagnostic" =>
-        "** (Mix) Required version >= nope for package jason is incorrectly specified (from: mix.exs)",
-      "with Hex 2.5.4's malformed requirement diagnostic in a complex umbrella path" =>
-        "** (Mix) Required version >= nope for package jason is incorrectly specified " \
-        "(from: umbrella apps/geschäft/mix.exs)",
-      "with the target missing from the active environment" =>
-        "** (Mix) Unknown dependency plug for environment prod"
-    }.each do |description, diagnostic|
-      context description do
-        let(:project_error) do
-          helper_failure("warning: project output\n#{diagnostic}\n    stack trace")
-        end
+    context "with recognized project diagnostics" do
+      it "reports each diagnostic as a user-facing project error" do
+        [
+          "** (Version.InvalidRequirementError) invalid requirement: >= nope",
+          "** (Mix) Required version >= nope for package jason is incorrectly specified (from: mix.exs)",
+          "** (Mix) Required version >= nope for package jason is incorrectly specified " \
+          "(from: umbrella apps/geschäft/mix.exs)",
+          "** (Mix) Unknown dependency plug for environment prod"
+        ].each do |diagnostic|
+          aggregate_failures(diagnostic) do
+            project_error = helper_failure("warning: project output\n#{diagnostic}\n    stack trace")
+            stub_resolution_failure(project_error)
 
-        before { stub_resolution_failure(project_error) }
-
-        it "reports the user-facing project error" do
-          expect { latest_resolvable_version }
-            .to raise_error(Dependabot::DependencyFileNotResolvable, diagnostic)
+            expect { resolver.latest_resolvable_version }
+              .to raise_error(Dependabot::DependencyFileNotResolvable, diagnostic)
+          end
         end
       end
     end
@@ -953,6 +948,34 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
         expect { latest_resolvable_version }
           .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, /30 seconds/)
         expect(mix_attempts).to contain_exactly(:resolution)
+      end
+    end
+
+    context "when stdout contains a complete divergence block but stderr times out" do
+      before do
+        stub_resolution_output(
+          stdout: "Dependencies have diverged:\n** (Mix) Can't continue due to errors on dependencies\n",
+          stderr: "Timed out due to inactivity after 30 seconds",
+          exit_status: 124
+        )
+      end
+
+      it "preserves the timeout" do
+        expect { latest_resolvable_version }
+          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, /30 seconds/)
+      end
+    end
+
+    context "when the divergence block is split across output streams" do
+      before do
+        stub_resolution_output(
+          stdout: "Dependencies have diverged:\n",
+          stderr: "** (Mix) Can't continue due to errors on dependencies\n"
+        )
+      end
+
+      it "returns no resolvable version" do
+        expect(latest_resolvable_version).to be_nil
       end
     end
 
@@ -1279,26 +1302,26 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       end
     end
 
-    {
-      "with a qualified fetch failure and ambiguous access diagnostic" => <<~ERROR,
-        Failed to fetch record for private_repo/plug from registry
-        This could be because the package does not exist, it was spelled incorrectly or you don't have permissions to it
-        ** (Mix) Hex dependency resolution failed
-      ERROR
-      "with an unknown package in the lockfile" =>
-        "Unknown package version plug 9.9.9 in lockfile",
-      "with an unexpected helper exception" =>
-        "** (RuntimeError) unexpected helper failure"
-    }.each do |description, diagnostic|
-      context description do
-        before { stub_resolution_failure(helper_failure(diagnostic)) }
+    context "with untranslated helper diagnostics" do
+      it "preserves each original helper failure" do
+        [
+          <<~ERROR,
+            Failed to fetch record for private_repo/plug from registry
+            This could be because the package does not exist, it was spelled incorrectly or you don't have permissions to it
+            ** (Mix) Hex dependency resolution failed
+          ERROR
+          "Unknown package version plug 9.9.9 in lockfile",
+          "** (RuntimeError) unexpected helper failure"
+        ].each do |diagnostic|
+          aggregate_failures(diagnostic) do
+            stub_resolution_failure(helper_failure(diagnostic))
 
-        it "preserves the original helper failure" do
-          expect { latest_resolvable_version }
-            .to raise_error(
-              Dependabot::Hex::UpdateChecker::VersionResolver::ResolutionSubprocessFailed,
-              diagnostic.strip
-            )
+            expect { resolver.latest_resolvable_version }
+              .to raise_error(
+                Dependabot::Hex::UpdateChecker::VersionResolver::ResolutionSubprocessFailed,
+                diagnostic.strip
+              )
+          end
         end
       end
     end

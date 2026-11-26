@@ -220,10 +220,10 @@ module Dependabot
 
         sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T::Boolean) }
         def confirmed_resolution_divergence?(error)
-          output = [error.message]
-          output << error.stdout if error.is_a?(ResolutionSubprocessFailed)
+          output = error.message
+          output = "#{error.stdout}\n#{output}" if error.is_a?(ResolutionSubprocessFailed)
 
-          output.any? { |stream| confirmed_resolution_divergence_output?(stream) }
+          confirmed_resolution_divergence_output?(output)
         end
 
         sig { params(output: String).returns(T::Boolean) }
