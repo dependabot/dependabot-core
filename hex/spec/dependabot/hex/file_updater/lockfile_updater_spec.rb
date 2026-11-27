@@ -245,45 +245,147 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
     end
 
     context "when SharedHelpers::HelperSubprocessFailed is raised" do
+      let(:subprocess_error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: error_message,
+          error_context: {}
+        )
+      end
+      let(:subprocess_error_cause) { nil }
+
       before do
-        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
-                       message: error_message,
-                       error_context: {}
-                     ))
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(array_including("mix", "run", "do_update.exs"), anything) do
+            raise subprocess_error, cause: subprocess_error_cause if subprocess_error_cause
+
+            raise subprocess_error
+          end
       end
 
-      context "with unauthenticated access to a private repo" do
-        let(:error_message) do
-          "No authenticated organization found for dependabot."
-        end
+      {
+        "with unauthenticated access to a private repo" =>
+          "No authenticated organization found for dependabot.",
+        "with a newline-terminated unauthenticated organization diagnostic" =>
+          "** (Mix) No authenticated organization found for dependabot.\n",
+        "with guidance after an unauthenticated organization diagnostic" =>
+          "No authenticated organization found for dependabot. Do you want to authenticate it now?"
+      }.each do |description, diagnostic|
+        context description do
+          let(:error_message) { diagnostic }
 
-        it "raises a PrivateSourceAuthenticationFailure error" do
-          expect { updated_lockfile_content }
-            .to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
-              expect(error.source).to eq("dependabot")
-            end
-        end
-      end
-
-      context "with JSON parsing error" do
-        let(:error_message) { "Failed to parse JSON response from helper" }
-
-        it "raises a DependencyFileNotResolvable error" do
-          expect { updated_lockfile_content }
-            .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-              expect(error.message).to include("Failed to parse response from Hex helper")
-            end
+          it "raises a PrivateSourceAuthenticationFailure error" do
+            expect { updated_lockfile_content }
+              .to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+                expect(error.source).to eq("dependabot")
+              end
+          end
         end
       end
 
       context "with unknown mix run error" do
         let(:error_message) { "Unknown subprocess error occurred" }
+        let(:subprocess_error_cause) { RuntimeError.new("original helper cause") }
+
+        it "re-raises the original subprocess error unchanged" do
+          expect { updated_lockfile_content }.to raise_error do |error|
+            expect(error).to equal(subprocess_error)
+            expect(error.cause).to equal(subprocess_error_cause)
+          end
+        end
+      end
+
+      {
+        "with an explicit dependency resolution failure" =>
+          "** (Mix) Hex dependency resolution failed",
+        "with a warning before an explicit dependency resolution failure" => <<~ERROR
+          warning: function unused/0 is unused
+            mix.exs:20
+          ** (Mix) Hex dependency resolution failed
+        ERROR
+      }.each do |description, diagnostic|
+        context description do
+          let(:error_message) { diagnostic }
+
+          it "raises a DependencyFileNotResolvable error" do
+            expect { updated_lockfile_content }
+              .to raise_error(
+                Dependabot::DependencyFileNotResolvable,
+                "Hex dependency resolution failed"
+              )
+          end
+        end
+      end
+
+      context "with an unknown lockfile package version" do
+        let(:error_message) { "** (Mix) Unknown package version plug 9.9.9 in lockfile" }
 
         it "raises a DependencyFileNotResolvable error" do
           expect { updated_lockfile_content }
-            .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-              expect(error.message).to include("Failed to update lockfile")
+            .to raise_error(Dependabot::DependencyFileNotResolvable, error_message)
+        end
+      end
+
+      context "with a malformed package requirement" do
+        let(:error_message) do
+          "** (Mix) Required version >= nope for package jason is incorrectly specified (from: mix.exs)"
+        end
+
+        it "raises a DependencyFileNotResolvable error" do
+          expect { updated_lockfile_content }
+            .to raise_error(Dependabot::DependencyFileNotResolvable, error_message)
+        end
+      end
+
+      {
+        "with a public key fingerprint mismatch" =>
+          'Public key fingerprint mismatch for repo "dependabot"',
+        "with a generic record fetch failure" =>
+          "Failed to fetch record for dependabot",
+        "with a parse failure" =>
+          "Failed to parse registry response"
+      }.each do |description, diagnostic|
+        context description do
+          let(:error_message) { diagnostic }
+
+          it "re-raises the original subprocess error unchanged" do
+            expect { updated_lockfile_content }.to raise_error do |error|
+              expect(error).to equal(subprocess_error)
+            end
+          end
+        end
+      end
+
+      context "when resolution output includes a repository URL query secret" do
+        let(:repository_url) do
+          "https://repo.example.com/private?access_token=secret%2Bvalue"
+        end
+        let(:credentials) do
+          Dependabot::Credential.new(
+            {
+              "type" => "hex_repository",
+              "repo" => "dependabot",
+              "url" => repository_url,
+              "public-key-fingerprint" => "SHA256:public-key-fingerprint"
+            }
+          )
+        end
+        let(:error_message) do
+          "Failed to fetch #{repository_url}"
+        end
+        let(:subprocess_error_cause) { RuntimeError.new(error_message) }
+
+        before do
+          allow(Dependabot::Hex::CredentialHelpers).to receive(:configure)
+        end
+
+        it "redacts the query value and preserves the parameter name" do
+          expect { updated_lockfile_content }
+            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
+              expect(error.message).to include("access_token=***")
+              expect(error.message).not_to include("secret%2Bvalue")
+              expect(error.full_message).not_to include("secret%2Bvalue")
+              expect(error.cause).to be_nil
             end
         end
       end
@@ -412,6 +514,39 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
       end
     end
 
+    context "when updating Hex alongside an unchanged Git dependency" do
+      let(:mixfile_fixture_name) { "git_source_no_tag" }
+      let(:lockfile_fixture_name) { "git_source_no_tag" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "cors_plug",
+          version: "1.3.0",
+          previous_version: "1.2.1",
+          requirements: [{
+            requirement: "~> 1.3.0",
+            file: "mix.exs",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            requirement: "~> 1.2.0",
+            file: "mix.exs",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "hex"
+        )
+      end
+
+      it "retains the Git dependency's requirements during resolution" do
+        expect(updated_lockfile_content).to include %({:hex, :cors_plug, "1.3.0")
+        expect(updated_lockfile_content).to include(
+          '{:git, "https://github.com/dependabot-fixtures/phoenix.git",'
+        )
+        expect(updated_lockfile_content).to include('"phoenix_pubsub"')
+      end
+    end
+
     context "with a private repo dependency" do
       let(:mixfile_fixture_name) { "private_repo" }
       let(:dependency) do
@@ -435,32 +570,40 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
             "type" => "hex_repository",
             "repo" => "dependabot",
             "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-            "url" => private_registry_url
+            "url" => private_registry_url,
+            "public_key_fingerprint" => "SHA256:z6VBddQXuo/nbwel0AMqHDAxvYuja4wt4qoQTTl3Ew4"
           }
         )
       end
 
       before do
-        # Check if private registry is reachable (may be down with 503)
-        # If unavailable, mock the subprocess to simulate expected behavior
-        response = Net::HTTP.get_response(URI.parse("#{private_registry_url}/public_key"))
-        raise "Registry unavailable: #{response.code}" if response.code.to_i >= 500
-      rescue StandardError
-        # Registry not reachable (503 Service Unavailable or network error), mock the subprocess
-        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .and_call_original
 
-        # Mock as if registry is reachable for lockfile update
-        # Return updated lockfile with new version and checksum
         updated_lockfile = <<~LOCKFILE
           %{
             "jason": {:hex, :jason, "1.1.0", "99aa691404239cf4f6dbd4f44a2b208e45c98ed4df55ecca2bee58a6e3e2a1c4", [:mix], [], "dependabot", "b96c400e04b7b765c0854c05a4966323e90c0d11fee0483b1567cda079abb205"},
           }
         LOCKFILE
 
-        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-          .with(hash_including(function: "get_updated_lockfile"))
-          .and_return(updated_lockfile)
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(
+            array_including("mix", "run", "lib/configure_credentials.exs", "repository", "dependabot"),
+            hash_including(
+              env: hash_including(
+                "DEPENDABOT_HEX_CREDENTIAL_TOKEN" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4"
+              )
+            )
+          )
+          .and_return("")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(array_including("mix", "run", "do_update.exs", "jason"), anything) do
+            File.write("mix.lock", updated_lockfile)
+            ""
+          end
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(["mix", "deps.get", "--no-archives-check"], anything)
+          .and_return("")
       end
 
       it "updates the dependency version in the lockfile" do
@@ -468,6 +611,243 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
         expect(updated_lockfile_content).not_to include(
           "0f7cfa9bdb23fed721ec05419bcee2b2c21a77e926bce0deda029b5adc716fe2"
         )
+      end
+
+      it "configures the repository without exposing its auth key" do
+        updated_lockfile_content
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          array_including(
+            "lib/configure_credentials.exs",
+            "--",
+            "repository",
+            "dependabot",
+            "SHA256:z6VBddQXuo/nbwel0AMqHDAxvYuja4wt4qoQTTl3Ew4"
+          ),
+          hash_including(
+            fingerprint: "mix run configure_credentials.exs repository <repository>",
+            cwd: Dependabot::Hex::NativeHelpers.hex_helpers_dir,
+            env: hash_including(
+              "HEX_HOME" => a_string_matching(%r{/dependabot-hex-home}),
+              "DEPENDABOT_HEX_CREDENTIAL_TOKEN" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
+              "DEPENDABOT_HEX_REPOSITORY_URL_TOKEN" => private_registry_url
+            )
+          )
+        )
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with(array_including("lib/configure_credentials.exs"), anything) do |command, options|
+          expect(command).not_to include("d6fc2b6n6h7katic6vuq6k5e2csahcm4")
+          expect(options.fetch(:fingerprint)).not_to include("d6fc2b6n6h7katic6vuq6k5e2csahcm4")
+        end
+      end
+    end
+
+    context "with token-bearing Hex organization credentials" do
+      let(:credentials) do
+        Dependabot::Credential.new(
+          {
+            "type" => "hex_organization",
+            "organization" => "dependabot",
+            "token" => "organization-secret-token"
+          }
+        )
+      end
+
+      let(:hex_homes) { [] }
+      let(:mix_exs_values) { [] }
+      let(:project_directories) { [] }
+
+      around do |example|
+        inherited_mix_exs = ENV.fetch("MIX_EXS", nil)
+        ENV["MIX_EXS"] = "/tmp/untrusted/mix.exs"
+        example.run
+      ensure
+        ENV["MIX_EXS"] = inherited_mix_exs
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, **options|
+          if options[:env]&.key?("HEX_HOME")
+            hex_homes << options.fetch(:env).fetch("HEX_HOME")
+            mix_exs_values << options.fetch(:env).fetch("MIX_EXS")
+            project_directories << Dir.pwd
+          end
+          File.write("mix.lock", lockfile.content) if command.include?("do_update.exs")
+          ""
+        end
+      end
+
+      it "configures the organization without exposing its token" do
+        updated_lockfile_content
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          array_including("lib/configure_credentials.exs", "--", "organization", "dependabot"),
+          hash_including(
+            fingerprint: "mix run configure_credentials.exs organization <organization>",
+            env: hash_including(
+              "HEX_HOME" => a_string_matching(%r{/dependabot-hex-home}),
+              "MIX_EXS" => "mix.exs",
+              "DEPENDABOT_HEX_CREDENTIAL_TOKEN" => "organization-secret-token"
+            )
+          )
+        )
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with(array_including("lib/configure_credentials.exs"), anything) do |command, options|
+          expect(command).not_to include("organization-secret-token")
+          expect(options.fetch(:fingerprint)).not_to include("organization-secret-token")
+        end
+      end
+
+      it "shares one external temporary Hex home and removes it afterward" do
+        updated_lockfile_content
+
+        expect(hex_homes.uniq.length).to eq(1)
+        expect(mix_exs_values.uniq).to eq(["mix.exs"])
+        expect(project_directories).not_to include(hex_homes.first)
+        expect(hex_homes.first).not_to start_with("#{project_directories.first}/")
+        expect(File).not_to exist(hex_homes.first)
+      end
+    end
+
+    context "with a private organization dependency" do
+      let(:mixfile_fixture_name) { "private_package" }
+      let(:lockfile_fixture_name) { "private_package" }
+      let(:organization_token) { ENV.fetch("HEX_PM_ORGANIZATION_TOKEN", nil) }
+      let(:credentials) do
+        Dependabot::Credential.new(
+          {
+            "type" => "hex_organization",
+            "organization" => "dependabot",
+            "token" => organization_token
+          }
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "example_package_a",
+          version: "1.1.0",
+          requirements: [{ file: "mix.exs", requirement: "~> 1.1.0", groups: [], source: nil }],
+          previous_version: "1.0.0",
+          previous_requirements: [{ file: "mix.exs", requirement: "~> 1.0.0", groups: [], source: nil }],
+          package_manager: "hex"
+        )
+      end
+      let(:hex_homes) { [] }
+      let(:oauth_exchange_disabled) { [] }
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .and_wrap_original do |method, command, **options|
+          if command.include?("do_update.exs")
+            hex_home = options.fetch(:env).fetch("HEX_HOME")
+            hex_homes << hex_home
+            config = File.read(File.join(hex_home, "hex.config"))
+            oauth_exchange_disabled << config.include?("oauth_exchange => false")
+          end
+
+          method.call(command, **options)
+        end
+      end
+
+      it "authenticates and resolves through the shared Hex home with OAuth exchange disabled" do
+        skip("skipped because env var HEX_PM_ORGANIZATION_TOKEN is not set") if organization_token.nil?
+
+        expect(updated_lockfile_content).to include %({:hex, :example_package_a, "1.1.0")
+        expect(hex_homes.uniq.length).to eq(1)
+        expect(oauth_exchange_disabled).to all(be(true))
+        expect(File).not_to exist(hex_homes.first)
+      end
+    end
+
+    context "with unused tokenless Hex organization metadata" do
+      let(:credentials) do
+        Dependabot::Credential.new(
+          {
+            "type" => "hex_organization",
+            "organization" => "dependabot"
+          }
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+      end
+
+      it "skips credential setup and reaches the dependency update" do
+        expect(updated_lockfile_content).to include %({:hex, :plug, "1.4.3")
+
+        expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command)
+          .with(array_including("lib/configure_credentials.exs"), anything)
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with(
+            array_including("mix", "run", "do_update.exs", "plug"),
+            hash_including(fingerprint: "mix run do_update.exs <dependency_name>")
+          )
+      end
+    end
+
+    context "with a repository public key fingerprint" do
+      let(:credentials) do
+        Dependabot::Credential.new(
+          {
+            "type" => "hex_repository",
+            "repo" => "dependabot",
+            "url" => "https://repo.example.com",
+            "auth_key" => "repository-secret-key",
+            "public_key_fingerprint" => "SHA256:public-key-fingerprint"
+          }
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, **|
+          File.write("mix.lock", lockfile.content) if command.include?("do_update.exs")
+          ""
+        end
+      end
+
+      it "forwards the fingerprint without exposing the auth key" do
+        updated_lockfile_content
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          array_including(
+            "lib/configure_credentials.exs",
+            "--",
+            "repository",
+            "dependabot",
+            "SHA256:public-key-fingerprint"
+          ),
+          hash_including(
+            fingerprint: "mix run configure_credentials.exs repository <repository>",
+            env: hash_including(
+              "DEPENDABOT_HEX_CREDENTIAL_TOKEN" => "repository-secret-key",
+              "DEPENDABOT_HEX_REPOSITORY_URL_TOKEN" => "https://repo.example.com"
+            )
+          )
+        )
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with(array_including("lib/configure_credentials.exs"), anything) do |command, options|
+          expect(command).not_to include("repository-secret-key")
+          expect(options.fetch(:fingerprint)).not_to include("repository-secret-key")
+        end
+      end
+    end
+
+    context "with Hex credentials missing a URL" do
+      let(:credentials) do
+        Dependabot::Credential.new(
+          {
+            "type" => "hex_repository",
+            "repo" => "dependabot"
+          }
+        )
+      end
+
+      it "raises a private source authentication error" do
+        expect { updated_lockfile_content }
+          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+            expect(error.source).to eq("dependabot")
+          end
       end
     end
   end

@@ -2,12 +2,13 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "tmpdir"
 
+require "dependabot/hex/credential_helpers"
 require "dependabot/hex/file_updater"
 require "dependabot/hex/file_updater/mixfile_updater"
 require "dependabot/hex/file_updater/mixfile_sanitizer"
 require "dependabot/hex/file_updater/mixfile_requirement_updater"
-require "dependabot/hex/credential_helpers"
 require "dependabot/hex/native_helpers"
 require "dependabot/hex/version"
 require "dependabot/shared_helpers"
@@ -35,26 +36,36 @@ module Dependabot
         sig { returns(String) }
         def updated_lockfile_content
           unless @updated_lockfile_content
-            result = SharedHelpers.in_a_temporary_directory do
-              write_temporary_dependency_files
-              FileUtils.cp(elixir_helper_do_update_path, "do_update.exs")
+            result = Dir.mktmpdir("dependabot-hex-home") do |hex_home|
+              SharedHelpers.in_a_temporary_directory do
+                write_temporary_dependency_files
+                FileUtils.cp(elixir_helper_do_update_path, "do_update.exs")
 
-              SharedHelpers.with_git_configured(credentials: credentials) do
-                SharedHelpers.run_helper_subprocess(
-                  env: mix_env,
-                  command: "mix run #{elixir_helper_path}",
-                  function: "get_updated_lockfile",
-                  args: [Dir.pwd, dependency.name, CredentialHelpers.hex_credentials(credentials)]
-                )
+                env = mix_env(hex_home)
+                SharedHelpers.with_git_configured(credentials: credentials) do
+                  CredentialHelpers.configure(credentials: credentials, env: env)
+                  run_mix_command(
+                    mix_run_command("do_update.exs", dependency.name),
+                    fingerprint: "mix run do_update.exs <dependency_name>",
+                    env: env
+                  )
+                  run_mix_command(
+                    ["mix", "deps.get", "--no-archives-check"],
+                    fingerprint: "mix deps.get",
+                    env: env
+                  )
+                  File.read("mix.lock")
+                end
               end
             end
-            content = T.cast(result, String)
-            @updated_lockfile_content = content
+            @updated_lockfile_content = result
           end
 
           post_process_lockfile(@updated_lockfile_content)
         rescue SharedHelpers::HelperSubprocessFailed => e
-          handle_hex_errors(e)
+          sanitized_error = CredentialHelpers.sanitize_error(error: e, credentials: credentials)
+          error = handle_hex_errors(sanitized_error)
+          CredentialHelpers.raise_translated_error(original_error: e, error: error)
         end
 
         private
@@ -84,24 +95,47 @@ module Dependabot
           content.sub(/\A%\{\n  "/, "%{\"").sub("},\n}", "}}")
         end
 
-        sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T.noreturn) }
+        sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(StandardError) }
         def handle_hex_errors(error)
-          match = error.message.match(/No authenticated organization found for (?<repo>[a-z_]+)\./)
-          match ||= error.message.match(/Public key fingerprint mismatch for repo "(?<repo>[a-z_]+)"/)
-          match ||= error.message.match(/Missing credentials for "(?<repo>[a-z_]+)"/)
-          match ||= error.message.match(/(?:Downloading|Failed to decode) public key for repo "(?<repo>[a-z_]+)"/)
-          match ||= error.message.match(/Failed to fetch record for (?<repo>[a-z_]+)(?::(?<org>[a-z_]+))?/)
+          source = CredentialHelpers.authentication_source(error.message)
+          return Dependabot::PrivateSourceAuthenticationFailure.new(source) if source
 
-          if match
-            name = match.names.include?("org") && match[:org] ? match[:org] : match[:repo]
-            raise Dependabot::PrivateSourceAuthenticationFailure, name
+          lines = error.message.lines.map(&:strip)
+          if lines.include?("** (Mix) Hex dependency resolution failed")
+            return Dependabot::DependencyFileNotResolvable.new("Hex dependency resolution failed")
           end
 
-          if error.message.include?("JSON") || error.message.include?("parse")
-            raise Dependabot::DependencyFileNotResolvable, "Failed to parse response from Hex helper: #{error.message}"
+          input_error = lines.find do |line|
+            line.match?(/\A(?:\*\* \(Mix\) )?Unknown package version .+ in lockfile\z/) ||
+              line.match?(
+                %r{
+                  \A\*\*[ ]\(Mix\)[ ]Required[ ]version[ ].+[ ]for[ ]package[ ].+[ ]is[ ]incorrectly[ ]specified
+                  [ ]\(from:[ ](?:[^/\r\n]+/)*mix\.exs\)\z
+                }x
+              )
           end
+          return Dependabot::DependencyFileNotResolvable.new(input_error) if input_error
 
-          raise Dependabot::DependencyFileNotResolvable, "Failed to update lockfile: #{error.message}"
+          error
+        end
+
+        sig do
+          params(
+            command: T::Array[String],
+            fingerprint: String,
+            env: T::Hash[String, String]
+          ).void
+        end
+        def run_mix_command(command, fingerprint:, env:)
+          SharedHelpers.run_shell_command(command, env: env, fingerprint: fingerprint)
+        end
+
+        sig { params(script: String, args: String).returns(T::Array[String]) }
+        def mix_run_command(script, *args)
+          [
+            "mix", "run", "--no-deps-check", "--no-start", "--no-compile",
+            "--no-elixir-version-check", script, "--", *args
+          ]
         end
 
         sig { void }
@@ -162,17 +196,13 @@ module Dependabot
           MixfileSanitizer.new(mixfile_content: content).sanitized_content
         end
 
-        sig { returns(T::Hash[String, String]) }
-        def mix_env
+        sig { params(hex_home: String).returns(T::Hash[String, String]) }
+        def mix_env(hex_home)
           {
-            "MIX_EXS" => File.join(NativeHelpers.hex_helpers_dir, "mix.exs"),
+            "HEX_HOME" => hex_home,
+            "MIX_EXS" => "mix.exs",
             "MIX_QUIET" => "1"
           }
-        end
-
-        sig { returns(String) }
-        def elixir_helper_path
-          File.join(NativeHelpers.hex_helpers_dir, "lib/run.exs")
         end
 
         sig { returns(String) }
