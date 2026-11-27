@@ -151,12 +151,14 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       def bazel_version
         bazelversion_file = dependency_files.find { |f| f.name == ".bazelversion" }
-        version = bazelversion_file&.content&.strip
-        return version if version.nil? || Version.correct?(version)
+        version = Dependabot::Bazel::Version.version_from_file(bazelversion_file)
+        return version if version || bazelversion_file.nil?
 
-        # Bazelisk also accepts release channels (latest, last_green) and forks (<fork>/<version>),
-        # which are not versions Dependabot can compare, so treat them as if no version was pinned.
-        Dependabot.logger.info("Ignoring .bazelversion value that is not a version: #{version.inspect}")
+        # Bazelisk also accepts release channels (latest, last_green), which are not versions
+        # Dependabot can compare, so treat them as if no version was pinned.
+        Dependabot.logger.info(
+          "Ignoring .bazelversion value that is not a version: #{bazelversion_file.content&.strip.inspect}"
+        )
         nil
       end
 
