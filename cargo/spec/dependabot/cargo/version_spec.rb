@@ -87,6 +87,78 @@ RSpec.describe Dependabot::Cargo::Version do
     end
   end
 
+  describe "#<=>" do
+    it "compares release components numerically" do
+      expect(described_class.new("1.10.0"))
+        .to be > described_class.new("1.2.0")
+    end
+
+    it "uses SemVer prerelease ordering" do
+      ordered_versions = %w(
+        1.0.0-alpha
+        1.0.0-alpha.1
+        1.0.0-alpha.beta
+        1.0.0-beta
+        1.0.0-beta.2
+        1.0.0-beta.11
+        1.0.0-rc.1
+        1.0.0
+      ).map { |value| described_class.new(value) }
+
+      expect(ordered_versions.shuffle.sort).to eq(ordered_versions)
+    end
+
+    it "distinguishes dot-separated prerelease identifiers" do
+      expect(described_class.new("1.2.3-beta1"))
+        .to be > described_class.new("1.2.3-beta.1")
+    end
+
+    it "ignores build metadata" do
+      expect(described_class.new("1.2.3+linux"))
+        .to eq(described_class.new("1.2.3+darwin"))
+    end
+  end
+
+  describe "equality and hashing" do
+    it "distinguishes hyphenated and dot-separated prerelease identifiers" do
+      hyphenated = described_class.new("1.2.3-alpha-beta")
+      dot_separated = described_class.new("1.2.3-alpha.pre.beta")
+
+      expect(hyphenated).not_to eql(dot_separated)
+      expect(hyphenated.hash).to eq(dot_separated.hash)
+      expect([hyphenated, dot_separated].uniq).to eq([hyphenated, dot_separated])
+    end
+
+    it "preserves hashes when Gem considers a Cargo version equivalent" do
+      cargo_version = described_class.new("1.2.3")
+      gem_version = Gem::Version.new("1.2.3")
+
+      expect(gem_version).to eql(cargo_version)
+      expect(cargo_version.hash).to eq(gem_version.hash)
+      expect({ cargo_version => :found }.fetch(gem_version)).to eq(:found)
+    end
+
+    it "ignores build metadata" do
+      linux = described_class.new("1.2.3+linux")
+      darwin = described_class.new("1.2.3+darwin")
+
+      expect(linux).to eql(darwin)
+      expect(linux.hash).to eq(darwin.hash)
+    end
+
+    it "preserves Gem equality for non-SemVer versions" do
+      expect(described_class.new("1.0")).not_to eql(described_class.new("1.0.0"))
+    end
+
+    it "does not use Gem equality for mixed SemVer formats" do
+      semver = described_class.new("1.2.3-alpha")
+      non_semver = described_class.new("1.2.3.pre.alpha")
+
+      expect(semver).not_to eql(non_semver)
+      expect([semver, non_semver].uniq).to eq([semver, non_semver])
+    end
+  end
+
   describe "#correct?" do
     subject { described_class.correct?(version_string) }
 
