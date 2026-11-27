@@ -1,0 +1,12 @@
+{
+  "name": "patched-dependencies",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "etag": "1.8.1",
+    "fetch-factory": "^0.0.1"
+  },
+  "patchedDependencies": {
+    "etag@1.8.1": "patches/etag@1.8.1.patch"
+  }
+}

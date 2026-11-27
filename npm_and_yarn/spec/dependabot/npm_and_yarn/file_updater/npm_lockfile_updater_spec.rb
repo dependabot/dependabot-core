@@ -74,6 +74,43 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     Dependabot::Experiments.reset!
   end
 
+  # npm 12 records `patchedDependencies` in a lockfileVersion 4 lockfile, with each patch's integrity, and reads
+  # the patch files on every install, so they have to be in the directory npm runs in.
+  describe "with patchedDependencies" do
+    let(:files) { project_dependency_files("npm/patched_dependencies") }
+    let(:patch_path) { "patches/etag@1.8.1.patch" }
+    let(:patch_contents_seen) { [] }
+
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:npm_version)
+        .and_return(Dependabot::NpmAndYarn::Version.new("12.2.0"))
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |_command, **|
+        patch_contents_seen << (File.exist?(patch_path) ? File.read(patch_path) : nil)
+        ""
+      end
+    end
+
+    it "writes the patch files where npm runs" do
+      updater.updated_lockfile
+
+      expect(patch_contents_seen).not_to be_empty
+      expect(patch_contents_seen).to all(eq(files.find { |f| f.name == patch_path }.content))
+    end
+
+    context "when the patch file was not fetched" do
+      let(:files) do
+        project_dependency_files("npm/patched_dependencies").reject { |f| f.name.end_with?(".patch") }
+      end
+
+      it "still runs npm, which reports the missing file" do
+        updater.updated_lockfile
+
+        expect(patch_contents_seen).not_to be_empty
+        expect(patch_contents_seen).to all(be_nil)
+      end
+    end
+  end
+
   describe "npm 12 allow flags through #updated_lockfile" do
     let(:files) { project_dependency_files("npm8/npmrc_allow_policies") }
     let(:dependency_name) { "etag" }
