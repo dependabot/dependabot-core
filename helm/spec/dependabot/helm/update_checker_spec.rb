@@ -163,6 +163,17 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
       it { is_expected.to eq(Dependabot::Helm::Version.new("20.11.3")) }
     end
 
+    context "when the helm CLI search returns a pre-release above the latest release" do
+      let(:repo_tags) do
+        [
+          { "name" => "redis", "version" => "20.11.3" },
+          { "name" => "redis", "version" => "21.0.0-beta.1" }
+        ].to_json
+      end
+
+      it { is_expected.to eq(Dependabot::Helm::Version.new("20.11.3")) }
+    end
+
     context "when dependency is a docker image" do
       let(:dependency_type) { { type: :docker_image } }
       let(:repo_fixture_name) { "ubuntu_no_latest.json" }
@@ -341,6 +352,45 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
           expect(checker.latest_version).to eq(
             Dependabot::Helm::Version.new("1.1.0")
           )
+        end
+      end
+
+      {
+        "builds of the next minor" => "2.6.0-main-8a71677fb8af\nv2.6.0-main-8a71677fb8af",
+        "a release candidate" => "2.6.0-rc.1",
+        "a build of the next patch" => "2.5.3-44.e3b4439",
+        "a build of the latest release" => "2.5.2-3.b36e1c7"
+      }.each do |shape, pre_releases|
+        context "when the newest tags are #{shape}" do
+          # Helm::Version drops or folds in the suffix, so without the filter each of
+          # these outranks 2.5.2 and is written back as a version that was never published.
+          let(:version) { "2.3.1" }
+
+          before do
+            allow(Dependabot::Helm::Helpers).to receive(:fetch_oci_tags)
+              .with("registry.sweet.security/helm/frontierchart")
+              .and_return("2.3.1\n2.5.2\n#{pre_releases}")
+          end
+
+          it "returns the latest release" do
+            expect(checker.latest_version).to eq(Dependabot::Helm::Version.new("2.5.2"))
+          end
+        end
+      end
+
+      context "when only a pre-release is published above the current version" do
+        let(:raise_on_ignored) { true }
+
+        before do
+          allow(Dependabot::Helm::Helpers).to receive(:fetch_oci_tags)
+            .with("registry.sweet.security/helm/frontierchart")
+            .and_return("1.0.119807+c2277fddd003556d4982b86ef4e77fc84a41ed79\n1.0.130000-beta.1")
+          stub_request(:get, "https://registry.sweet.security/helm/index.yaml").to_return(status: 404)
+        end
+
+        # A pre-release is not a newer version, so there is nothing to ignore either.
+        it "returns nil without raising AllVersionsIgnored" do
+          expect(checker.latest_version).to be_nil
         end
       end
     end
@@ -713,6 +763,44 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
 
       it "returns the latest version from the index" do
         expect(latest_chart_version).to eq(Dependabot::Helm::Version.new("20.11.3"))
+      end
+
+      context "when the index only publishes pre-releases above the current version" do
+        let(:index_content) do
+          <<~YAML
+            apiVersion: v1
+            entries:
+              redis:
+              - version: "17.11.3"
+              - version: "20.11.4-beta.0"
+              - version: "20.11.4-beta.1"
+              - version: "20.11.4-123abc"
+          YAML
+        end
+
+        # Helm::Version can't parse "20.11.4-123abc" at all, so this also checks
+        # that pre-releases are dropped before parsing.
+        it "does not propose the unpublished release" do
+          expect(checker.latest_version).to be_nil
+        end
+      end
+
+      context "when the index has betas of the next major next to a newer release" do
+        let(:index_content) do
+          <<~YAML
+            apiVersion: v1
+            entries:
+              redis:
+              - version: "17.11.3"
+              - version: "17.11.4"
+              - version: "18.0.0-beta.1"
+              - version: "18.0.0-beta.2"
+          YAML
+        end
+
+        it "returns the release" do
+          expect(checker.latest_version).to eq(Dependabot::Helm::Version.new("17.11.4"))
+        end
       end
 
       context "when the request returns a string" do

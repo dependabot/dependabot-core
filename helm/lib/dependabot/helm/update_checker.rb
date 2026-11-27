@@ -239,7 +239,8 @@ module Dependabot
         # dependency.version: for a range constraint (">=1.0.0 <2.0.0") the raw
         # version string isn't a single parseable version.
         newer = releases.reject do |release|
-          version_class.new(T.cast(release["version"], String)) <= current_version
+          release_version = T.cast(release["version"], String)
+          chart_prerelease?(release_version) || version_class.new(release_version) <= current_version
         end
         filtered = newer.reject do |release|
           release_version = version_class.new(T.cast(release["version"], String))
@@ -248,6 +249,18 @@ module Dependabot
 
         record_ignore_outcome(newer: newer.any?, surviving: filtered.any?)
         filtered
+      end
+
+      # Chart versions are SemVer, so a hyphen before any build metadata marks a
+      # pre-release. Helm::Version can't tell: it borrows Docker's tag-suffix
+      # stripping, so "2.6.0-rc.1" parses as 2.6.0 and "0.0.9-44.e3b4439" as
+      # 0.0.9.44.e3b4439, either of which would be proposed and written back as a
+      # version that was never published. Hence the check on the raw string,
+      # before version_class.new. A pre-release current version is not exempt:
+      # its newer pre-releases would be misread the same way.
+      sig { params(version: String).returns(T::Boolean) }
+      def chart_prerelease?(version)
+        version.split("+", 2).first.to_s.include?("-")
       end
 
       # Ignore conditions have to be parsed by Helm::Requirement here, not by the
@@ -492,7 +505,9 @@ module Dependabot
 
       sig { params(all_versions: T::Array[String]).returns(T::Array[String]) }
       def filter_valid_versions(all_versions)
-        newer = all_versions.reject { |version| version_class.new(version) <= current_version }
+        newer = all_versions.reject do |version|
+          chart_prerelease?(version) || version_class.new(version) <= current_version
+        end
         filtered = newer.reject do |version|
           helm_ignore_requirements.any? { |r| r.satisfied_by?(version_class.new(version)) }
         end
