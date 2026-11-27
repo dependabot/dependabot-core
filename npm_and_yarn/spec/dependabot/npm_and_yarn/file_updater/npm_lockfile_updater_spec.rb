@@ -1749,6 +1749,31 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             .with(["acorn"], min_release_age_arg: "--min-release-age=7")
         end
       end
+
+      context "when an override keyed by version range pins the sub-dependency" do
+        let(:files) do
+          project_dependency_files("npm8/subdependency_update").map do |file|
+            next file unless file.name == "package.json"
+
+            parsed = JSON.parse(file.content)
+            parsed["overrides"] = { "acorn@<5.7.4" => "5.5.3" }
+            Dependabot::DependencyFile.new(name: file.name, content: JSON.pretty_generate(parsed))
+          end
+        end
+
+        it "raises the override before running npm update so the new version is allowed" do
+          package_json_during_update = nil
+          allow(Dependabot::NpmAndYarn::NativeHelpers)
+            .to receive(:run_npm8_subdependency_update_command) do
+              package_json_during_update = File.read("package.json")
+              ""
+            end
+
+          updated_npm_lock_content
+
+          expect(JSON.parse(package_json_during_update).fetch("overrides")).to eq("acorn@<5.7.4" => "5.7.4")
+        end
+      end
     end
 
     describe "#optional_dependency?" do

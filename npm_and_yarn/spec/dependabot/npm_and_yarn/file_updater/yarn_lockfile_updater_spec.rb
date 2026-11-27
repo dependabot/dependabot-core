@@ -362,6 +362,36 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
     end
   end
 
+  context "when a resolution keyed by a glob path pins the sub-dependency" do
+    let(:files) do
+      project_dependency_files("yarn/yarnrc_npm_registry").map do |file|
+        next file unless file.name == "package.json"
+
+        parsed = JSON.parse(file.content)
+        parsed["resolutions"] = { "**/node-fetch" => "1.6.1" }
+        Dependabot::DependencyFile.new(name: file.name, content: JSON.pretty_generate(parsed))
+      end
+    end
+
+    let(:dependency_name) { "node-fetch" }
+    let(:version) { "1.7.3" }
+    let(:previous_version) { "1.6.1" }
+    let(:requirements) { [] }
+    let(:previous_requirements) { [] }
+
+    it "raises the resolution before running yarn so the new version is allowed" do
+      package_json_during_update = nil
+      allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess) do
+        package_json_during_update = File.read("package.json")
+        { "yarn.lock" => yarn_lock.content }
+      end
+
+      updated_yarn_lock_content
+
+      expect(JSON.parse(package_json_during_update).fetch("resolutions")).to eq("**/node-fetch" => "1.7.3")
+    end
+  end
+
   context "when updating a yarn berry sub-dependency and normal update is a no-op" do
     let(:files) { project_dependency_files("yarn_berry/workspace_subdependency_update") }
 
