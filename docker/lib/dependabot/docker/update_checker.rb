@@ -56,6 +56,7 @@ module Dependabot
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
 
+      OCI_CREATED_LABEL = "org.opencontainers.image.created"
       MANIFEST_LIST_TYPES = [
         "application/vnd.docker.distribution.manifest.list.v2+json",
         "application/vnd.oci.image.index.v1+json"
@@ -491,6 +492,11 @@ module Dependabot
       sig { params(tag: Dependabot::Docker::Tag).returns(T.nilable(Time)) }
       def registry_tag_release_date(tag)
         return docker_hub_tag_release_date(tag) if using_dockerhub?
+
+        # Docker Hub has a registry-reported date, which we prefer because the label is
+        # publisher-controlled. Other registries have no verified source, so use the label.
+        image_created = oci_image_created_label(tag.name)
+        return image_created if image_created
 
         Dependabot.logger.info(
           "No verified registry publication date source for #{registry_hostname}; " \
@@ -1277,6 +1283,47 @@ module Dependabot
         nil
       end
 
+      # Reads the `org.opencontainers.image.created` label from the image config,
+      # i.e. the build time declared by the image author. Unlike registry push
+      # timestamps it is not reset when a tag is re-pushed.
+      sig { params(tag_name: String).returns(T.nilable(Time)) }
+      def oci_image_created_label(tag_name)
+        # Pin to the digest we'd propose so a tag moving mid-check can't lend its old date to a new image.
+        digest = digest_of(tag_name)
+        return nil unless digest
+
+        manifest = with_retries(max_attempts: 3, errors: transient_docker_errors) do
+          docker_registry_client.manifest(docker_repo_name, "sha256:#{digest}")
+        end
+
+        resolved = resolve_platform_manifest(manifest)
+        return nil unless resolved
+
+        config = resolved["config"]
+        config_digest = config.is_a?(Hash) ? config["digest"] : nil
+        return nil unless config_digest.is_a?(String)
+
+        config_blob = with_retries(max_attempts: 3, errors: transient_docker_errors) do
+          docker_registry_client.doget("v2/#{docker_repo_name}/blobs/#{config_digest}")
+        end
+
+        config_data = JSON.parse(config_blob.body)
+        labels = config_data.is_a?(Hash) ? config_data.dig("config", "Labels") : nil
+        created = labels.is_a?(Hash) ? labels[OCI_CREATED_LABEL] : nil
+        return nil unless created.is_a?(String)
+
+        Time.iso8601(created)
+      rescue ArgumentError, TypeError, JSON::ParserError, DockerRegistry2::RegistryHTTPException,
+             DockerRegistry2::NotFound, RestClient::Forbidden, RestClient::TooManyRequests, RestClient::ServerBrokeConnection,
+             DockerRegistry2::RegistryAuthenticationException, DockerRegistry2::RegistryAuthorizationException,
+             Excon::Error::Socket, Excon::Error::Timeout,
+             *transient_docker_errors => e
+        Dependabot.logger.info(
+          "Failed to read #{OCI_CREATED_LABEL} for #{docker_repo_name}:#{tag_name}: #{e.message}"
+        )
+        nil
+      end
+
       # Resolves a manifest to a single platform-specific manifest.
       # If the manifest is a manifest list (multi-arch), selects the most
       # appropriate platform (preferring linux/amd64).
@@ -1317,7 +1364,8 @@ module Dependabot
           platform = m["platform"] || m[:platform] || {}
           next false unless platform.is_a?(Hash)
 
-          (platform["architecture"] || platform[:architecture]) == "amd64"
+          os = platform["os"] || platform[:os]
+          (platform["architecture"] || platform[:architecture]) == "amd64" && (os.nil? || os == "linux")
         end
       end
 
