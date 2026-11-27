@@ -73,8 +73,8 @@ from `cargo/helpers/`. Rust integration tests execute the binary with an empty
 
 ### Ruby graph-transition policy (spike, layer 2)
 
-Explicitly require `dependabot/cargo/graph_transition_policy`. No production
-updater calls this policy. It consumes the helper's schema-v1 facts without
+Explicitly require `dependabot/cargo/graph_transition_policy`. Layer 3 below is
+the only production caller. It consumes the helper's schema-v1 facts without
 parsing lockfile text or invoking Cargo metadata:
 
 ```ruby
@@ -134,4 +134,31 @@ Inside the Cargo development container:
 cd /home/dependabot/cargo
 bundle exec rspec spec/dependabot/cargo/graph_transition_policy_spec.rb spec/dependabot/cargo/lockfile_graph_spec.rb
 bundle exec rubocop lib/dependabot/cargo/graph_transition_policy.rb spec/dependabot/cargo/graph_transition_policy_spec.rb
+```
+
+### Lockfile updater integration (spike, layer 3)
+
+`FileUpdater::LockfileUpdater` validates every non-Git update with exact numeric
+previous and target versions through `FileUpdater::GraphUpdateValidator`. After
+Cargo runs, the validator sends the original and final `Cargo.lock` to the helper
+in a single call. Then it resolves each previous identity from the
+`cargo_package_source` metadata or a unique registry package in the original
+facts. Finally, it evaluates all of the update's intents together so grouped
+parent updates correlate.
+
+The policy is evaluated with unscoped intents first, so every incoming edge must
+move. If the result is unknown, it is evaluated once more with direct dependencies
+scoped to the workspace packages whose manifests declare them. This accepts split
+graphs where other consumers keep the previous version. Dependencies declared in
+`[workspace.dependencies]` stay unscoped. Only `accepted` succeeds. `rejected`,
+`unknown`, incomplete facts, unresolved identities, and helper failures log a
+`Cargo lock graph validation <status>: <reason codes>` warning and raise
+`Dependabot::UpdateNotPossible`.
+
+Covered updates no longer use the textual target-present/version-set checks.
+Git updates and updates without exact numeric versions keep the existing checks.
+The plain/`--precise` command orchestration is unchanged.
+
+```bash
+bundle exec rspec spec/dependabot/cargo/file_updater/lockfile_updater_spec.rb
 ```

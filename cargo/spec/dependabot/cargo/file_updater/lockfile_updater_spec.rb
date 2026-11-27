@@ -311,13 +311,13 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
                 content = content.sub(
                   %(name = "getrandom"\nversion = "0.2.17"),
                   %(name = "getrandom"\nversion = "0.2.18")
-                )
+                ).sub(%("getrandom 0.2.17"), %("getrandom 0.2.18"))
               end
               if command.include?("getrandom:0.4.2")
                 content = content.sub(
                   %(name = "getrandom"\nversion = "0.4.2"),
                   %(name = "getrandom"\nversion = "0.4.3")
-                )
+                ).sub(%("getrandom 0.4.2"), %("getrandom 0.4.3"))
               end
               File.write("Cargo.lock", content)
             end
@@ -341,11 +341,11 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
                 content = content.sub(
                   %(name = "getrandom"\nversion = "0.2.17"),
                   %(name = "getrandom"\nversion = "0.2.18")
-                )
+                ).sub(%("getrandom 0.2.17"), %("getrandom 0.2.18"))
                 content = content.sub(
                   %(name = "getrandom"\nversion = "0.4.2"),
                   %(name = "getrandom"\nversion = "0.4.3")
-                )
+                ).sub(%("getrandom 0.4.2"), %("getrandom 0.4.3"))
                 File.write("Cargo.lock", content)
               end
             end
@@ -367,7 +367,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           end
 
           it "rejects the unchanged package even though a higher line exists" do
-            expect { updated_lockfile_content }.to raise_error("Failed to update getrandom!")
+            expect { updated_lockfile_content }.to raise_error(Dependabot::UpdateNotPossible, /getrandom/)
           end
         end
       end
@@ -474,7 +474,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
               content.sub(
                 %(name = "anyhow"\nversion = "1.0.103"\nsource = "registry),
                 %(name = "anyhow"\nversion = "1.0.104"\nsource = "registry)
-              )
+              ).sub('"anyhow 1.0.103 (registry+', '"anyhow 1.0.104 (registry+')
             )
           end
         end
@@ -490,7 +490,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           end
 
           it "still rejects the unchanged package" do
-            expect { updated_lockfile_content }.to raise_error("Failed to update anyhow!")
+            expect { updated_lockfile_content }.to raise_error(Dependabot::UpdateNotPossible, /anyhow/)
           end
         end
 
@@ -503,13 +503,13 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
                 content.sub(
                   %(version = "1.0.103"\nsource = "git+),
                   %(version = "1.0.104"\nsource = "git+)
-                )
+                ).sub('"anyhow 1.0.103 (git+', '"anyhow 1.0.104 (git+')
               )
             end
           end
 
           it "rejects the update of the wrong source's line" do
-            expect { updated_lockfile_content }.to raise_error("Failed to update anyhow!")
+            expect { updated_lockfile_content }.to raise_error(Dependabot::UpdateNotPossible, /anyhow/)
           end
         end
 
@@ -544,12 +544,14 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
                 %(version = "1.0.103"\nsource = "git+),
                 %(version = "1.0.104"\nsource = "git+)
               )
+              content = content.sub(%( "anyhow 1.0.103 (registry+https://github.com/rust-lang/crates.io-index)",\n), "")
+              content = content.sub('"anyhow 1.0.103 (git+', '"anyhow 1.0.104 (git+')
               File.write("Cargo.lock", content)
             end
           end
 
           it "does not accept another source's copy of the desired version" do
-            expect { updated_lockfile_content }.to raise_error("Failed to update anyhow!")
+            expect { updated_lockfile_content }.to raise_error(Dependabot::UpdateNotPossible, /anyhow/)
           end
         end
       end
@@ -601,7 +603,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           end
 
           it "does not accept the workspace package as the update" do
-            expect { updated_lockfile_content }.to raise_error("Failed to update internal-api!")
+            expect { updated_lockfile_content }.to raise_error(Dependabot::UpdateNotPossible, /internal-api/)
           end
         end
       end
@@ -927,6 +929,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
                          "dependencies = [\n" \
                          " \"kernel32-sys"
               lockfile_content = lockfile_content.gsub(old_time, new_time)
+              lockfile_content = lockfile_content.gsub('"time 0.1.38 (', '"time 0.1.40 (')
               lockfile_content = lockfile_content.gsub(
                 "d5d788d3aa77bc0ef3e9621256885555368b47bd495c13dd2e7413c89f845520",
                 "d825be0eb33fda1a7e68012d51e9c7f451dc1a69391e7fdc197060bb8c56667b"
@@ -1197,16 +1200,15 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
                   constrained_lockfile = lockfile_body
                                          .gsub("0.1.38", "0.1.39")
                                          .gsub("d5d788d3aa77bc0ef3e9621256885555368b47bd495c13dd2e7413c89f845520",
-                                               "a36d7c4b3b2b3bb5f51754f7b778dcbf88e99cd3")
+                                               "a36d7c4b3b2b3bb5f51754f7b778dcbf88e99cd3a36d7c4b3b2b3bb5f51754f7")
                   File.write("Cargo.lock", constrained_lockfile)
                 end
               end
             end
 
-            it "still accepts the update when version differs from expected" do
-              # This would raise "Failed to update time!" without our fix
-              result = test_updater.updated_lockfile_content
-              expect(result).to include('version = "0.1.39"')
+            it "fails closed when Cargo selects a version the lock graph cannot prove" do
+              expect { test_updater.updated_lockfile_content }
+                .to raise_error(Dependabot::UpdateNotPossible, /time/)
             end
           end
         end
@@ -1249,6 +1251,228 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
 
           it "raises HelperSubprocessFailed" do
             expect { result }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+          end
+        end
+      end
+
+      context "when validating registry updates with the lock graph" do
+        let(:registry) { "registry+https://github.com/rust-lang/crates.io-index" }
+        let(:commands) { [] }
+
+        def graph_lockfile(*packages)
+          entries = packages.map do |name, version, source, deps|
+            lines = [%(name = "#{name}"), %(version = "#{version}")]
+            lines << %(source = "#{source}") if source
+            lines << "dependencies = [\n#{deps.map { |dep| %( "#{dep}",\n) }.join}]" if deps
+            "[[package]]\n#{lines.join("\n")}\n"
+          end
+          "version = 3\n\n#{entries.join("\n")}"
+        end
+
+        def cargo_writes(after_lockfile)
+          allow(updater).to receive(:run_cargo_command) do |command, **|
+            commands << command
+            File.write("Cargo.lock", after_lockfile) unless command.include?("--precise")
+          end
+        end
+
+        def registry_dependency(name, previous_version, version, requirements: [])
+          Dependabot::Dependency.new(
+            name: name,
+            version: version,
+            previous_version: previous_version,
+            requirements: requirements,
+            previous_requirements: requirements,
+            package_manager: "cargo"
+          )
+        end
+
+        context "with real Cargo lockfiles locking three incompatible itoa lines" do
+          # low -> itoa 0.3.4, mid -> itoa 0.4.8, high -> itoa 1.0.19; mid bumps
+          # its requirement from 0.4 to 1. Both outcomes drop 0.4.8 while 1.0.19
+          # stays locked through high, so a "target present" check accepts both.
+          let(:dependency_files) { project_dependency_files("itoa_three_lines") }
+          let(:dependency) do
+            registry_dependency(
+              "itoa",
+              "0.4.8",
+              "1.0.19",
+              requirements: [{ file: "mid/Cargo.toml", requirement: "1", groups: ["dependencies"], source: nil }]
+            )
+          end
+
+          context "when Cargo consolidates mid onto the existing target" do
+            before { cargo_writes(fixture("updated_projects", "itoa_three_lines", "consolidated.lock")) }
+
+            it "accepts the retargeted edge" do
+              expect(updated_lockfile_content)
+                .to include(%(name = "mid"\nversion = "0.1.0"\ndependencies = [\n "itoa 1.0.19",))
+              expect(updated_lockfile_content).not_to include(%(version = "0.4.8"))
+            end
+          end
+
+          context "when Cargo moves mid onto the retained lower line" do
+            before { cargo_writes(fixture("updated_projects", "itoa_three_lines", "retained_lower.lock")) }
+
+            it "rejects the downgraded edge" do
+              expect(Dependabot.logger).to receive(:warn)
+                .with(/validation rejected: edge_downgrade previous=itoa@0.4.8 parent=mid@0.1.0 observed=itoa@0.3.4/)
+              expect { updated_lockfile_content }.to raise_error(Dependabot::UpdateNotPossible, /itoa/)
+            end
+          end
+        end
+
+        context "with a transitive dependency" do
+          let(:manifest_body) { %([package]\nname = "app"\nversion = "0.1.0"\n\n[dependencies]\nparent = "1.0"\n) }
+          let(:lockfile_body) do
+            graph_lockfile(
+              ["app", "0.1.0", nil, ["parent"]],
+              ["child", "0.1.0", registry],
+              ["parent", "1.0.0", registry, ["child"]]
+            )
+          end
+          let(:dependency) { registry_dependency("child", "0.1.0", "0.1.1") }
+
+          context "when Cargo introduces the target version" do
+            before do
+              cargo_writes(
+                graph_lockfile(
+                  ["app", "0.1.0", nil, ["parent"]],
+                  ["child", "0.1.1", registry],
+                  ["parent", "1.0.0", registry, ["child"]]
+                )
+              )
+            end
+
+            it "accepts the update" do
+              expect(updated_lockfile_content).to include(%(name = "child"\nversion = "0.1.1"))
+              expect(commands).to eq(["cargo update -p child:0.1.0"])
+            end
+          end
+
+          context "when the update is a no-op" do
+            let(:dependency) { registry_dependency("child", "0.1.0", "0.1.0") }
+
+            before { cargo_writes(lockfile_body) }
+
+            it "accepts the unchanged edge" do
+              expect(updated_lockfile_content).to eq(lockfile_body)
+            end
+          end
+
+          context "when the graph facts are incomplete" do
+            let(:lockfile_body) do
+              graph_lockfile(
+                ["app", "0.1.0", nil, %w(parent missing)],
+                ["child", "0.1.0", registry],
+                ["parent", "1.0.0", registry, ["child"]]
+              )
+            end
+
+            before do
+              cargo_writes(
+                graph_lockfile(
+                  ["app", "0.1.0", nil, %w(parent missing)],
+                  ["child", "0.1.1", registry],
+                  ["parent", "1.0.0", registry, ["child"]]
+                )
+              )
+            end
+
+            it "fails closed instead of accepting the present target" do
+              expect(Dependabot.logger).to receive(:warn).with(/validation unknown: .*incomplete_facts/)
+              expect { updated_lockfile_content }.to raise_error(Dependabot::UpdateNotPossible, /child/)
+            end
+          end
+
+          context "when the parent is updated in the same group" do
+            let(:dependencies) do
+              [
+                registry_dependency(
+                  "parent",
+                  "1.0.0",
+                  "1.1.0",
+                  requirements: [{ file: "Cargo.toml", requirement: "1.1", groups: ["dependencies"], source: nil }]
+                ),
+                registry_dependency("child", "0.1.0", "0.2.0")
+              ]
+            end
+
+            before do
+              cargo_writes(
+                graph_lockfile(
+                  ["app", "0.1.0", nil, ["parent"]],
+                  ["child", "0.2.0", registry],
+                  ["parent", "1.1.0", registry, ["child"]]
+                )
+              )
+            end
+
+            it "correlates the child edge through the updated parent" do
+              expect(updated_lockfile_content).to include(%(name = "child"\nversion = "0.2.0"))
+              expect(updated_lockfile_content).to include(%(name = "parent"\nversion = "1.1.0"))
+            end
+
+            context "when only the child is part of the update" do
+              let(:dependencies) { [registry_dependency("child", "0.1.0", "0.2.0")] }
+
+              it "fails closed because the replaced parent is uncorrelated" do
+                expect(Dependabot.logger).to receive(:warn).with(/validation unknown: parent_uncorrelated/)
+                expect { updated_lockfile_content }.to raise_error(Dependabot::UpdateNotPossible, /child/)
+              end
+            end
+          end
+
+          context "when the dependency has multiple parents" do
+            let(:manifest_body) do
+              %([package]\nname = "app"\nversion = "0.1.0"\n\n[dependencies]\nfirst = "1.0"\nsecond = "1.0"\n)
+            end
+            let(:lockfile_body) do
+              graph_lockfile(
+                ["app", "0.1.0", nil, %w(first second)],
+                ["child", "0.1.0", registry],
+                ["first", "1.0.0", registry, ["child"]],
+                ["second", "1.0.0", registry, ["child"]]
+              )
+            end
+            let(:dependency) { registry_dependency("child", "0.1.0", "0.2.0") }
+
+            context "when Cargo retargets every parent" do
+              before do
+                cargo_writes(
+                  graph_lockfile(
+                    ["app", "0.1.0", nil, %w(first second)],
+                    ["child", "0.2.0", registry],
+                    ["first", "1.0.0", registry, ["child"]],
+                    ["second", "1.0.0", registry, ["child"]]
+                  )
+                )
+              end
+
+              it "accepts the update" do
+                expect(updated_lockfile_content).to include(%(name = "child"\nversion = "0.2.0"))
+              end
+            end
+
+            context "when one parent keeps the previous version" do
+              before do
+                cargo_writes(
+                  graph_lockfile(
+                    ["app", "0.1.0", nil, %w(first second)],
+                    ["child", "0.1.0", registry],
+                    ["child", "0.2.0", registry],
+                    ["first", "1.0.0", registry, ["child 0.2.0"]],
+                    ["second", "1.0.0", registry, ["child 0.1.0"]]
+                  )
+                )
+              end
+
+              it "fails closed even though the target is present" do
+                expect(Dependabot.logger).to receive(:warn)
+                  .with(/validation unknown: unchanged_edge previous=child@0.1.0 parent=second@1.0.0/)
+                expect { updated_lockfile_content }.to raise_error(Dependabot::UpdateNotPossible, /child/)
+              end
+            end
           end
         end
       end
