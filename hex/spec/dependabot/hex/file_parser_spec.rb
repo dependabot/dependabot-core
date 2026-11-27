@@ -365,6 +365,68 @@ RSpec.describe Dependabot::Hex::FileParser do
       its(:length) { is_expected.to eq(2) }
     end
 
+    context "when a project run alias exits without invoking the parser" do
+      let(:mixfile_fixture_name) { "run_alias_noop" }
+      let(:files) { [mixfile] }
+
+      it "raises a DependencyFileNotEvaluatable error" do
+        expect { dependencies }
+          .to raise_error(
+            Dependabot::DependencyFileNotEvaluatable,
+            "Hex dependency parser did not produce a result"
+          )
+      end
+    end
+
+    context "when the parser helper writes a result alongside stdout output" do
+      around do |example|
+        inherited_mix_exs = ENV.fetch("MIX_EXS", nil)
+        ENV["MIX_EXS"] = "/tmp/untrusted/mix.exs"
+        example.run
+      ensure
+        ENV["MIX_EXS"] = inherited_mix_exs
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .and_call_original
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(array_including("mix", "run", end_with("/parse_deps.exs")), anything) do
+            File.write(
+              ".dependabot-result.json",
+              JSON.generate(
+                [{
+                  name: "plug",
+                  package_name: "plug",
+                  from: "mix.exs",
+                  version: "1.3.5",
+                  groups: [],
+                  checksum: "checksum",
+                  requirement: "~> 1.3.0",
+                  source: nil,
+                  top_level: true
+                }]
+              )
+            )
+            "warning from mix.exs"
+          end
+      end
+
+      it "reads dependencies from the filesystem with an isolated Hex home and pinned manifest" do
+        expect(dependencies.map(&:name)).to eq(["plug"])
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          array_including("mix", "run", end_with("/parse_deps.exs")),
+          hash_including(
+            env: hash_including(
+              "HEX_HOME" => end_with("/.hex"),
+              "MIX_EXS" => "mix.exs"
+            ),
+            fingerprint: "mix run parse_deps.exs"
+          )
+        )
+      end
+    end
+
     context "with an umbrella app" do
       let(:mixfile_fixture_name) { "umbrella" }
       let(:lockfile_fixture_name) { "umbrella" }
