@@ -17,11 +17,14 @@ def copy_fixture(name, tmp_path):
     return directory
 
 
-def relock(directory, names):
+def relock(directory, names, pins=None):
     # Run through run.py so the exit code and error JSON are covered too.
+    args = [str(directory), names]
+    if pins is not None:
+        args.append(pins)
     input_json = json.dumps({
         "function": "relock_poetry_project",
-        "args": [str(directory), names],
+        "args": args,
     })
     result = subprocess.run(
         [sys.executable, RUN_PY], input=input_json,
@@ -31,9 +34,19 @@ def relock(directory, names):
 
 
 def locked_version(lockfile, name):
+    return locked_versions(lockfile, name)[0]
+
+
+def locked_versions(lockfile, name):
     blocks = lockfile.split("[[package]]")
-    block = next(b for b in blocks if f'name = "{name}"' in b)
-    return block.split('version = "')[1].split('"')[0]
+    return [
+        b.split('version = "')[1].split('"')[0]
+        for b in blocks if f'name = "{name}"' in b
+    ]
+
+
+PY39 = 'python_version == "3.9"'
+PY310 = 'python_version >= "3.10"'
 
 
 class TestRelockErrors:
@@ -54,6 +67,15 @@ class TestRelockErrors:
         assert status == 1
         assert output["error_class"] == "RuntimeError"
         assert "The Poetry configuration is invalid" in output["error"]
+
+    def test_rejects_pins_on_packages_that_are_not_updated(self, tmp_path):
+        directory = copy_fixture("stale_multiple_locked_versions", tmp_path)
+        pins = [{"name": "idna", "version": "3.4", "markers": {"main": None}}]
+
+        status, output = relock(directory, ["requests"], pins)
+
+        assert status == 1
+        assert output["error_class"] == "InvalidPinError"
 
 
 # These resolve against PyPI.
@@ -104,3 +126,52 @@ class TestRelock:
 
         assert status == 0
         assert "\r\n" in output["result"]["lockfile"]
+
+
+# These resolve against PyPI. requests 2.33 dropped Python 3.9, so the
+# fixture locks 2.32.3 for 3.9 and 2.33.0 for 3.10+.
+@pytest.mark.network
+class TestRelockMultipleLockedVersions:
+    def test_without_pins_poetry_collapses_to_one_version(self, tmp_path):
+        # This is what `poetry update requests --lock` does: the 3.10+ copy
+        # is downgraded to the newest release that still supports 3.9.
+        directory = copy_fixture("stale_multiple_locked_versions", tmp_path)
+
+        status, output = relock(directory, ["requests"])
+
+        assert status == 0
+        assert output["result"]["versions"] == {"requests": ["2.32.5"]}
+
+    def test_pins_move_each_locked_version_to_its_own_target(self, tmp_path):
+        directory = copy_fixture("stale_multiple_locked_versions", tmp_path)
+        pins = [
+            {"name": "requests", "version": "2.32.4",
+             "markers": {"main": PY39}},
+            {"name": "requests", "version": "2.34.0",
+             "markers": {"main": PY310}},
+        ]
+
+        status, output = relock(directory, ["requests"], pins)
+
+        assert status == 0
+        lockfile = output["result"]["lockfile"]
+        assert locked_versions(lockfile, "requests") == ["2.32.4", "2.34.0"]
+        assert f"markers = {json.dumps(PY39)}" in lockfile
+        assert f"markers = {json.dumps(PY310)}" in lockfile
+        # Other packages stay locked, and pyproject.toml isn't touched.
+        assert locked_version(lockfile, "urllib3") == "2.3.0"
+        assert "requests ==" not in (directory / "pyproject.toml").read_text()
+
+    def test_a_pin_outside_its_python_range_fails_to_solve(self, tmp_path):
+        directory = copy_fixture("stale_multiple_locked_versions", tmp_path)
+        pins = [
+            {"name": "requests", "version": "2.34.0",
+             "markers": {"main": PY39}},
+            {"name": "requests", "version": "2.34.0",
+             "markers": {"main": PY310}},
+        ]
+
+        status, output = relock(directory, ["requests"], pins)
+
+        assert status == 1
+        assert output["error_class"] == "SolverProblemError"

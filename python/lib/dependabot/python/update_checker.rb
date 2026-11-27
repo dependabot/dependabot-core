@@ -10,6 +10,7 @@ require "dependabot/dependency_requirement"
 require "dependabot/errors"
 require "dependabot/python/file_parser"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/poetry_locked_versions"
 require "dependabot/python/requirement_parser"
 require "dependabot/python/requirement"
 require "dependabot/registry_client"
@@ -103,6 +104,13 @@ module Dependabot
           fetch_lowest_resolvable_security_fix_version,
           T.nilable(Gem::Version)
         )
+      end
+
+      # A Poetry package locked at several versions carries a target per
+      # locked version in its metadata, so the file updater can pin each one.
+      sig { params(requirements_to_unlock: T.nilable(Symbol)).returns(T::Array[Dependabot::Dependency]) }
+      def updated_dependencies(requirements_to_unlock:)
+        super.map { |updated| with_locked_version_targets(updated) }
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
@@ -200,6 +208,26 @@ module Dependabot
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def updated_dependencies_after_full_unlock
         raise NotImplementedError
+      end
+
+      sig { params(updated: Dependabot::Dependency).returns(Dependabot::Dependency) }
+      def with_locked_version_targets(updated)
+        version = updated.version
+        targets = version && @poetry_version_resolver&.locked_version_targets(version)
+        return updated unless targets
+
+        Dependency.new(
+          name: updated.name,
+          version: version,
+          previous_version: updated.previous_version,
+          # Targets are picked within the declared requirements, which stay
+          # as they are: raising a lower bound would rule out older copies.
+          requirements: updated.previous_requirements || updated.requirements,
+          previous_requirements: updated.previous_requirements,
+          package_manager: updated.package_manager,
+          metadata: updated.metadata.merge(PoetryLockedVersions::METADATA_KEY => targets.map(&:to_metadata)),
+          subdependency_metadata: updated.subdependency_metadata
+        )
       end
 
       sig { returns(T.nilable(Gem::Version)) }
@@ -304,7 +332,8 @@ module Dependabot
             dependency: dependency,
             dependency_files: dependency_files,
             credentials: credentials,
-            repo_contents_path: repo_contents_path
+            repo_contents_path: repo_contents_path,
+            latest_version_finder: latest_version_finder
           ),
           T.nilable(PoetryVersionResolver)
         )
