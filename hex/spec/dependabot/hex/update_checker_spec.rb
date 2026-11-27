@@ -421,6 +421,33 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       end
 
       it { is_expected.to eq("81705318ff929b2bc3c9c1b637c3f801e7371551") }
+
+      context "when checking whether the latest tag is resolvable fails" do
+        let(:resolution_error) do
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: "Hex dependency resolution failed",
+            error_context: {}
+          )
+        end
+
+        before do
+          file_preparer = instance_double(
+            Dependabot::Hex::UpdateChecker::FilePreparer,
+            prepared_dependency_files: files
+          )
+          resolver = instance_double(Dependabot::Hex::UpdateChecker::VersionResolver)
+          allow(Dependabot::Hex::UpdateChecker::FilePreparer).to receive(:new).and_return(file_preparer)
+          allow(Dependabot::Hex::UpdateChecker::VersionResolver).to receive(:new).and_return(resolver)
+          allow(resolver).to receive(:latest_resolvable_version).and_raise(resolution_error)
+        end
+
+        it "preserves the resolution failure on repeated checks" do
+          2.times do
+            expect { checker.send(:latest_git_tag_is_resolvable?) }
+              .to raise_error(resolution_error.class, resolution_error.message)
+          end
+        end
+      end
     end
   end
 

@@ -122,25 +122,28 @@ module Dependabot
       def latest_git_tag_is_resolvable?
         return T.must(@git_tag_resolvable) if @latest_git_tag_is_resolvable_checked
 
-        @latest_git_tag_is_resolvable_checked = T.let(true, T.nilable(T::Boolean))
-
-        return false if git_commit_checker.local_tag_for_latest_version(update_cooldown).nil?
-
         replacement_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
+        result =
+          if replacement_tag.nil?
+            false
+          else
+            prepared_files = FilePreparer.new(
+              dependency: dependency,
+              dependency_files: dependency_files,
+              replacement_git_pin: replacement_tag.tag
+            ).prepared_dependency_files
 
-        prepared_files = FilePreparer.new(
-          dependency: dependency,
-          dependency_files: dependency_files,
-          replacement_git_pin: T.must(replacement_tag).tag
-        ).prepared_dependency_files
+            resolver_result = VersionResolver.new(
+              dependency: dependency,
+              prepared_dependency_files: prepared_files,
+              credentials: credentials
+            ).latest_resolvable_version
 
-        resolver_result = VersionResolver.new(
-          dependency: dependency,
-          prepared_dependency_files: prepared_files,
-          credentials: credentials
-        ).latest_resolvable_version
+            !resolver_result.nil?
+          end
 
-        @git_tag_resolvable = T.let(!resolver_result.nil?, T.nilable(T::Boolean))
+        @git_tag_resolvable = T.let(result, T.nilable(T::Boolean))
+        @latest_git_tag_is_resolvable_checked = T.let(true, T.nilable(T::Boolean))
         T.must(@git_tag_resolvable)
       end
 
