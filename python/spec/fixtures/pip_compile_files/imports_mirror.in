@@ -1,1 +1,1 @@
--r mirror.txt
+--requirement=mirror.txt

@@ -12,8 +12,7 @@ require "dependabot/python/language_version_manager"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/pip_compile_file_matcher"
 require "dependabot/python/pipenv_runner"
-require "dependabot/python/requirement_references"
-require "dependabot/python/shared_file_fetcher"
+require "dependabot/python/requirements_file_parser"
 require "toml-rb"
 
 module Dependabot
@@ -76,7 +75,10 @@ module Dependabot
       def manifest_groups
         return super unless supports_layering?
 
-        groups = RequirementsLayers.new(dependency_files: dependency_files).groups
+        groups = RequirementsLayers.new(
+          dependency_files: dependency_files,
+          requirements_file_result: requirements_file_result
+        ).groups
         # If we try to apply grouping, but find there is only one group, we prefer
         # to fallback to the base method (the whole directory parsed as one manifest,
         # which naturally includes any setup.py/setup.cfg/pyproject.toml present).
@@ -139,8 +141,6 @@ module Dependabot
       # never dropped, so references originating from them are followed too).
       sig { returns(T::Set[String]) }
       def txt_files_to_keep
-        files_by_name = dependency_files.to_h { |file| [file.name, file] }
-
         seeds = dependency_files.select do |file|
           file.name.end_with?(".txt") &&
             (RequirementsLayers.manifest_txt_filename?(file.name) ||
@@ -148,41 +148,30 @@ module Dependabot
         end
 
         # `.in` files are always retained, so a `.txt` they reference must be kept too.
-        roots = seeds + dependency_files.select { |file| file.name.end_with?(".in") }
-
-        reachable_txt_names(roots, files_by_name, Set.new(seeds.map(&:name)))
+        roots = requirements_file_roots
+        reachable = requirements_file_result.reachable_local_files(roots.map(&:name))
+        Set.new(seeds.map(&:name) + reachable.select { |path| path.end_with?(".txt") })
       end
 
-      # Breadth-first closure over `-r`/`-c` references starting from `roots`, adding every referenced `.txt`
-      # file that exists in `files_by_name` to `keep`.
-      sig do
-        params(
-          roots: T::Array[Dependabot::DependencyFile],
-          files_by_name: T::Hash[String, Dependabot::DependencyFile],
-          keep: T::Set[String]
-        ).returns(T::Set[String])
-      end
-      def reachable_txt_names(roots, files_by_name, keep)
-        queue = roots.dup
-        until queue.empty?
-          file = T.must(queue.shift)
-          referenced_txt_names(file).each do |name|
-            referenced_file = files_by_name[name]
-            next if referenced_file.nil? || keep.include?(name)
-
-            keep << name
-            queue << referenced_file
-          end
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def requirements_file_roots
+        dependency_files.select do |file|
+          file.name.end_with?(".in") ||
+            (file.name.end_with?(".txt") &&
+              (RequirementsLayers.manifest_txt_filename?(file.name) ||
+                pip_compile_file_matcher.lockfile_for_pip_compile_file?(file)))
         end
-
-        keep
       end
 
-      # Resolves the `.txt` files referenced from a requirements file via `-r`/`-c`, returning their names
-      # relative to the repo (matching the fetched DependencyFile names) so we can retain them.
-      sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
-      def referenced_txt_names(file)
-        RequirementReferences.paths(file).select { |path| path.end_with?(".txt") }
+      sig { returns(RequirementsFileParser::Result) }
+      def requirements_file_result
+        @requirements_file_result ||= T.let(
+          RequirementsFileParser.new(
+            dependency_files: dependency_files,
+            requirement_files: requirements_file_roots.map(&:name)
+          ).parse,
+          T.nilable(RequirementsFileParser::Result)
+        )
       end
 
       sig { returns(T::Boolean) }

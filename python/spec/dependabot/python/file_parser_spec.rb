@@ -50,15 +50,39 @@ RSpec.describe Dependabot::Python::FileParser do
           "markers" => "None",
           "file" => "requirements.txt",
           "requirement" => "==2.31.0",
-          "extras" => ["security"]
+          "source_requirement" => "requests[security]==2.31.0",
+          "extras" => ["security"],
+          "constraint" => false,
+          "editable" => false,
+          "local" => false,
+          "hashes" => [],
+          "source" => { "start_line" => 1, "end_line" => 1 }
         }
       end
-      let(:helper_result) { [helper_record] }
+      let(:helper_result) do
+        {
+          "schema_version" => 1,
+          "declarations" => [helper_record],
+          "files" => [{ "path" => "requirements.txt", "component_id" => "component-0" }],
+          "edges" => [],
+          "roots" => ["requirements.txt"],
+          "components" => [
+            {
+              "id" => "component-0",
+              "files" => ["requirements.txt"],
+              "roots" => ["requirements.txt"],
+              "status" => "complete",
+              "reasons" => [],
+              "has_index_options" => false
+            }
+          ]
+        }
+      end
 
       before do
         allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_call_original
         allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-          .with(hash_including(function: "parse_requirements")).and_return(helper_result)
+          .with(hash_including(function: "parse_requirements_v2")).and_return(helper_result)
         allow(parser).to receive(:python_raw_version).and_return("3.13.1")
       end
 
@@ -106,24 +130,26 @@ RSpec.describe Dependabot::Python::FileParser do
 
         it "reports a malformed requirements result" do
           expect { dependencies }.to raise_error(
-            Dependabot::DependencyFileNotEvaluatable,
-            "parse_requirements result must be an array"
+            Dependabot::Python::InvalidRequirementsFileParserResult,
+            "parse_requirements result must be an object"
           )
         end
       end
 
       context "with a malformed record excluded by its marker" do
         let(:helper_result) do
-          [
-            helper_record,
-            helper_record.merge("name" => "ignored", "markers" => "python_version < \"3.0\"", "extras" => [1])
-          ]
+          super().merge(
+            "declarations" => [
+              helper_record,
+              helper_record.merge("name" => "ignored", "markers" => "python_version < \"3.0\"", "extras" => [1])
+            ]
+          )
         end
 
         it "rejects the complete result before filtering records" do
           expect { dependencies }.to raise_error(
-            Dependabot::DependencyFileNotEvaluatable,
-            /parse_requirements result\[1\].*extras/
+            Dependabot::Python::InvalidRequirementsFileParserResult,
+            /parse_requirements declarations\[1\].*extras/
           )
         end
       end
@@ -133,6 +159,14 @@ RSpec.describe Dependabot::Python::FileParser do
 
         it "preserves the requirement evaluation error" do
           expect { dependencies }.to raise_error(Dependabot::DependencyFileNotEvaluatable)
+        end
+      end
+
+      context "with an editable VCS requirement" do
+        let(:helper_record) { super().merge("editable" => true) }
+
+        it "does not route the dependency through static PyPI updates" do
+          expect(dependencies).to be_empty
         end
       end
 
@@ -147,7 +181,7 @@ RSpec.describe Dependabot::Python::FileParser do
 
           before do
             allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-              .with(hash_including(function: "parse_requirements")).and_raise(helper_error)
+              .with(hash_including(function: "parse_requirements_v2")).and_raise(helper_error)
           end
 
           it "preserves the existing helper error mapping" do
@@ -159,7 +193,8 @@ RSpec.describe Dependabot::Python::FileParser do
       context "when the helper call itself raises a type error" do
         before do
           allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-            .with(hash_including(function: "parse_requirements")).and_raise(TypeError, "unexpected helper type error")
+            .with(hash_including(function: "parse_requirements_v2"))
+            .and_raise(TypeError, "unexpected helper type error")
         end
 
         it "does not treat it as a malformed result" do
@@ -448,9 +483,8 @@ RSpec.describe Dependabot::Python::FileParser do
         )
       end
 
-      it "raises a Dependabot::DependencyFileNotEvaluatable error" do
-        expect { parser.parse }
-          .to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      it "parses the cyclic file independently for static updates" do
+        expect(parser.parse.map(&:name)).to eq(["requests"])
       end
     end
 
@@ -660,6 +694,26 @@ RSpec.describe Dependabot::Python::FileParser do
             )
           end
 
+          context "when a remote reference makes local traversal partial" do
+            let(:files) { [requirements, constraints, nested_requirements] }
+            let(:requirements_body) do
+              "-c constraints.txt\n-r https://example.com/remote.txt\nrequests==2.31.0\n"
+            end
+            let(:constraints) do
+              Dependabot::DependencyFile.new(
+                name: "constraints.txt",
+                content: "-r nested.txt\nurllib3==2.2.3\n"
+              )
+            end
+            let(:nested_requirements) do
+              Dependabot::DependencyFile.new(name: "nested.txt", content: "certifi==2024.8.30\n")
+            end
+
+            it "preserves constraint roles while treating nested requirements normally" do
+              expect(dependencies.map(&:name)).to contain_exactly("requests", "certifi")
+            end
+          end
+
           context "when the files reference each other" do
             let(:constraints) do
               Dependabot::DependencyFile.new(
@@ -668,8 +722,13 @@ RSpec.describe Dependabot::Python::FileParser do
               )
             end
 
-            it "reports the loop rather than parsing nothing" do
-              expect { dependencies }.to raise_error(Dependabot::DependencyFileNotEvaluatable, /recursively references/)
+            it "parses each file independently for static updates" do
+              expect(dependencies.map(&:name)).to eq(["requests"])
+              expect(dependencies.first.requirements)
+                .to contain_exactly(
+                  { requirement: nil, file: "requirements.txt", groups: ["dependencies"], source: nil },
+                  { requirement: "==2.0.0", file: "constraints.txt", groups: ["dependencies"], source: nil }
+                )
             end
 
             context "when another file is a root" do
@@ -678,9 +737,8 @@ RSpec.describe Dependabot::Python::FileParser do
                 Dependabot::DependencyFile.new(name: "requirements-other.txt", content: "certifi==2024.2.2\n")
               end
 
-              it "reports the loop rather than parsing only that root" do
-                expect { dependencies }
-                  .to raise_error(Dependabot::DependencyFileNotEvaluatable, /recursively references/)
+              it "preserves declarations from both the cyclic and rooted components" do
+                expect(dependencies.map(&:name)).to contain_exactly("requests", "certifi")
               end
             end
           end
