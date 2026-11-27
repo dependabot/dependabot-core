@@ -1,0 +1,11 @@
+lockfileVersion: '6.0'
+
+dependencies:
+  runtime-test-package:
+    specifier: 1.0.0
+    version: 1.0.0
+
+packages:
+  /runtime-test-package@1.0.0:
+    resolution: {integrity: sha512-YQ==}
+    dev: false

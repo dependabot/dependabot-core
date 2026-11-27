@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+# Never source a repository's .nvmrc or install shell hooks.
+export NVM_NODEJS_ORG_MIRROR="${NVM_NODEJS_ORG_MIRROR:?Node.js distribution mirror must be configured}"
+export NVM_NO_COLORS=1
+export CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+# shellcheck source=/dev/null
+source "$NVM_DIR/nvm.sh" --no-use
+
+case "$1" in
+  list)
+    nvm ls-remote --no-colors node
+    ;;
+  resolve)
+    if [[ ! "$2" =~ ^(node|stable|lts/(\*|[a-zA-Z0-9-]+))$ ]]; then
+      echo "Invalid Node.js alias: $2" >&2
+      exit 1
+    fi
+    nvm version-remote "$2"
+    ;;
+  install)
+    version="$2"
+    if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+      echo "Invalid Node.js version: $version" >&2
+      exit 1
+    fi
+    # nvm shares a download cache; serialize installation across concurrent jobs.
+    exec 9>"$NVM_DIR/.dependabot-install.lock"
+    flock 9
+    nvm install -b "$version" >&2
+    nvm which "$version"
+    ;;
+  *)
+    echo "Unknown Node.js version manager command: $1" >&2
+    exit 1
+    ;;
+esac

@@ -59,6 +59,7 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependency]) }
       def parse
+        Helpers.dependency_files = dependency_files
         locked = lockfile_dependencies
         dependency_set = DependencySet.new
         dependency_set += manifest_dependencies
@@ -82,6 +83,7 @@ module Dependabot
 
       sig { returns(Ecosystem) }
       def ecosystem
+        Helpers.dependency_files = dependency_files
         @ecosystem ||= T.let(
           begin
             package_manager = package_manager_helper.package_manager
