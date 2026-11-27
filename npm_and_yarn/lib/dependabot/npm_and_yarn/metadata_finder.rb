@@ -2,11 +2,11 @@
 # frozen_string_literal: true
 
 require "excon"
-require "time"
 require "sorbet-runtime"
 
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
+require "dependabot/package/npm_registry_metadata"
 require "dependabot/registry_client"
 require "dependabot/npm_and_yarn/package/registry_finder"
 require "dependabot/npm_and_yarn/package/registry_credential_helpers"
@@ -17,6 +17,8 @@ module Dependabot
     class MetadataFinder < Dependabot::MetadataFinders::Base
       extend T::Sig
       include Package::RegistryCredentialHelpers
+
+      RegistryMetadata = Dependabot::Package::NpmRegistryMetadata
 
       # Lifecycle scripts that run automatically during package installation.
       # These are security-relevant because they execute with user privileges.
@@ -31,17 +33,16 @@ module Dependabot
       def homepage_url
         # Attempt to use version_listing first, as fetching the entire listing
         # array can be slow (if it's large)
-        return latest_version_listing["homepage"] if latest_version_listing["homepage"]
-
-        listing = all_version_listings.find { |_, l| l["homepage"] }
-        listing&.last&.fetch("homepage", nil) || super
+        latest_version_listing.homepage ||
+          all_version_listings.lazy.filter_map { |release| release.listing.homepage }.first ||
+          super
       end
 
       sig { override.returns(T.nilable(String)) }
       def maintainer_changes
         releaser = npm_releaser
         return unless releaser
-        return unless npm_listing.dig("time", dependency.version)
+        return unless npm_listing.published?(dependency.version)
         return if previous_releasers&.include?(releaser)
 
         encoded_releaser = encode_npm_releaser(releaser)
@@ -73,13 +74,8 @@ module Dependabot
         previous_scripts = install_scripts_for_version(dependency.previous_version)
         current_scripts = install_scripts_for_version(dependency.version)
 
-        return if previous_scripts == current_scripts
-
-        added = current_scripts.keys - previous_scripts.keys
-        modified = (current_scripts.keys & previous_scripts.keys).reject do |script|
-          current_scripts[script] == previous_scripts[script]
-        end
-
+        added = current_scripts.added_since(previous_scripts)
+        modified = current_scripts.modified_since(previous_scripts)
         changes = []
         changes << format_script_list("adds", added) if added.any?
         changes << format_script_list("modifies", modified) if modified.any?
@@ -112,25 +108,17 @@ module Dependabot
         end
       end
 
-      sig { params(version: T.nilable(String)).returns(T::Hash[String, String]) }
+      sig { params(version: T.nilable(String)).returns(RegistryMetadata::LifecycleScripts) }
       def install_scripts_for_version(version)
-        return {} unless version
+        listing = version_listing(version)
+        return RegistryMetadata::LifecycleScripts.new unless listing
 
-        version_data = all_version_listings.find { |v, _| v == version }&.last
-        return {} unless version_data
-
-        scripts = version_data["scripts"] || {}
-        scripts.slice(*INSTALL_SCRIPTS)
+        listing.lifecycle_scripts(INSTALL_SCRIPTS)
       end
 
       sig { params(version: T.nilable(String)).returns(T::Boolean) }
       def version_has_attestation?(version)
-        return false unless version
-
-        version_data = all_version_listings.find { |v, _| v == version }&.last
-        return false unless version_data
-
-        version_data.dig("dist", "attestations").is_a?(Hash)
+        version_listing(version)&.attested? || false
       end
 
       sig { override.returns(T.nilable(Dependabot::Source)) }
@@ -149,25 +137,23 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       def npm_releaser
         all_version_listings
-          .find { |v, _| v == dependency.version }
-          &.last&.dig("_npmUser", "name")
+          .find { |release| release.version == dependency.version }
+          &.listing&.releaser
       end
 
       sig { returns(T.nilable(T::Array[String])) }
       def previous_releasers
-        times = npm_listing.fetch("time")
-
         cutoff =
-          if dependency.previous_version && times[dependency.previous_version]
-            Time.parse(times[dependency.previous_version])
-          elsif times[dependency.version]
-            Time.parse(times[dependency.version]) - 1
+          if dependency.previous_version && npm_listing.published?(dependency.previous_version)
+            npm_listing.published_at(dependency.previous_version)
+          elsif npm_listing.published?(dependency.version)
+            npm_listing.published_at(dependency.version) - 1
           end
         return unless cutoff
 
         all_version_listings
-          .reject { |v, _| Time.parse(times[v]) > cutoff }
-          .filter_map { |_, d| d.dig("_npmUser", "name") }
+          .reject { |release| npm_listing.published_at(release.version) > cutoff }
+          .filter_map { |release| release.listing.historical_releaser }
       end
 
       sig { returns(T.nilable(Dependabot::Source)) }
@@ -178,8 +164,8 @@ module Dependabot
         return latest_source if latest_source
 
         seen_urls = T.let(Set.new, T::Set[String])
-        all_version_listings.each do |_, listing|
-          listing_source = source_from_listing(listing, seen_urls)
+        all_version_listings.each do |release|
+          listing_source = source_from_listing(release.listing, seen_urls)
           return listing_source if listing_source
         end
 
@@ -188,17 +174,15 @@ module Dependabot
 
       sig do
         params(
-          listing: T::Hash[String, T.untyped],
+          listing: RegistryMetadata::Listing,
           seen_urls: T.nilable(T::Set[String])
         ).returns(T.nilable(Dependabot::Source))
       end
       def source_from_listing(listing, seen_urls = nil)
-        [listing["repository"], listing["homepage"], listing["bugs"]].each do |details|
-          url = get_url(details)
-          next unless url
-          next if seen_urls && !seen_urls.add?(url)
+        listing.each_source_link do |link|
+          next if seen_urls && !seen_urls.add?(link.url)
 
-          source = get_source(details)
+          source = link.to_source
           return source if source
         end
 
@@ -214,103 +198,49 @@ module Dependabot
         sources.first
       end
 
-      sig do
-        params(
-          details: T.nilable(T.any(String, T::Array[T.untyped], T::Hash[String, T.untyped]))
-        )
-          .returns(T.nilable(Dependabot::Source))
-      end
-      def get_source(details)
-        potential_url = get_url(details)
-        return unless potential_url
-
-        potential_source = Source.from_url(potential_url)
-        return unless potential_source
-
-        potential_source.directory = get_directory(details)
-        potential_source
-      end
-
-      sig do
-        params(
-          details: T.nilable(T.any(String, T::Array[String], T::Hash[String, String]))
-        ).returns(T.nilable(String))
-      end
-      def get_url(details)
-        return unless details
-
-        url =
-          case details
-          when String then details
-          when Hash then details.fetch("url", nil)
-          when Array
-            # Try to find the first valid URL string, and if not, return the first string (even if it isn't a URL)
-            details.find { |d| d.is_a?(String) && d.match?(%r{^[\w.-]+/[\w.-]+$}) } ||
-            details.find { |d| d.is_a?(String) }
-          end
-        return url unless url&.match?(%r{^[\w.-]+/[\w.-]+$})
-
-        "https://github.com/" + url
-      end
-
-      sig do
-        params(
-          details: T.nilable(T.any(String, T::Array[T.untyped], T::Hash[String, T.untyped]))
-        )
-          .returns(T.nilable(String))
-      end
-      def get_directory(details)
-        # Only return a directory if it is explicitly specified
-        return unless details.is_a?(Hash)
-
-        details.fetch("directory", nil)
-      end
-
       sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_git_url
         url = new_source&.[](:url) || new_source&.fetch("url")
         Source.from_url(T.cast(url, T.nilable(String)))
       end
 
-      sig { returns(T::Hash[String, T.untyped]) }
+      sig { returns(RegistryMetadata::Listing) }
       def latest_version_listing
         return @latest_version_listing if defined?(@latest_version_listing) && @latest_version_listing
 
-        @latest_version_listing = T.let({}, T.nilable(T::Hash[String, T.untyped]))
+        @latest_version_listing = T.let(RegistryMetadata::Listing.new, T.nilable(RegistryMetadata::Listing))
 
         response = Dependabot::RegistryClient.get(url: "#{dependency_url}/latest", headers: registry_auth_headers)
-        if response.status == 200
-          parsed = JSON.parse(response.body)
-          @latest_version_listing = parsed if parsed.is_a?(Hash)
-        end
+        @latest_version_listing = RegistryMetadata.latest_from_json(response.body) if response.status == 200
 
         T.must(@latest_version_listing)
       rescue JSON::ParserError, Excon::Error::Timeout
         T.must(@latest_version_listing)
       end
 
-      sig { returns(T::Array[[String, T::Hash[String, T.untyped]]]) }
-      def all_version_listings
-        return [] if npm_listing["versions"].nil?
+      sig { params(version: T.nilable(String)).returns(T.nilable(RegistryMetadata::Listing)) }
+      def version_listing(version)
+        return unless version
 
-        npm_listing["versions"]
-          .reject { |_, details| details["deprecated"] }
-          .sort_by { |version, _| NpmAndYarn::Version.new(version) }
-          .reverse
+        all_version_listings.find { |release| release.version == version }&.listing
       end
 
-      sig { returns(T::Hash[String, T.untyped]) }
+      sig { returns(T::Array[RegistryMetadata::VersionListing]) }
+      def all_version_listings
+        npm_listing.version_listings.sort_by { |release| NpmAndYarn::Version.new(release.version) }.reverse
+      end
+
+      sig { returns(RegistryMetadata) }
       def npm_listing
         return @npm_listing if defined?(@npm_listing) && @npm_listing
 
-        @npm_listing = T.let({}, T.nilable(T::Hash[String, T.untyped]))
+        @npm_listing = T.let(RegistryMetadata.new, T.nilable(RegistryMetadata))
 
         response = Dependabot::RegistryClient.get(url: dependency_url, headers: registry_auth_headers)
         return T.must(@npm_listing) if response.status >= 500
 
         begin
-          parsed = JSON.parse(response.body)
-          @npm_listing = parsed if parsed.is_a?(Hash)
+          @npm_listing = RegistryMetadata.from_json(response.body)
         rescue JSON::ParserError
           raise unless non_standard_registry?
         end
