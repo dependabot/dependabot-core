@@ -19,7 +19,7 @@ module Dependabot
         extend T::Sig
 
         RESULT_FILE = ".dependabot-result"
-        RESOLUTION_TIMEOUT = 30
+        RESOLUTION_TIMEOUT = 120
         GIT_FETCH_TIMEOUT = 120
         RESOLUTION_DIVERGENCE_HEADER = "Dependencies have diverged:"
         RESOLUTION_DIVERGENCE_TRAILER = "** (Mix) Can't continue due to errors on dependencies"
@@ -27,6 +27,11 @@ module Dependabot
           %r{
             \A\*\*[ ]\(Mix\)[ ]Required[ ]version[ ].+[ ]for[ ]package[ ].+[ ]is[ ]incorrectly[ ]specified
             [ ]\(from:[ ](?:[^/\r\n]+/)*mix\.exs\)\z
+          }x
+        UNSATISFIABLE_REQUIREMENT =
+          %r{
+            \A\*\*[ ]\(Mix\)[ ]Required[ ]version[ ].+[ ]for[ ]package[ ].+[ ]can[ ]never[ ]be[ ]satisfied
+            [ ]\(from:[ ](?:[^/\r\n]+/)*mix\.exs\):[ ].+\z
           }x
 
         sig do
@@ -200,6 +205,9 @@ module Dependabot
 
           malformed_requirement = lines.find { |line| line.match?(MALFORMED_REQUIREMENT) }
           return Dependabot::DependencyFileNotResolvable.new(malformed_requirement) if malformed_requirement
+
+          unsatisfiable_requirement = lines.find { |line| line.match?(UNSATISFIABLE_REQUIREMENT) }
+          return Dependabot::DependencyFileNotResolvable.new(unsatisfiable_requirement) if unsatisfiable_requirement
 
           unknown_dependency = /\A\*\* \(Mix\) Unknown dependency #{Regexp.escape(dependency.name)} for environment\b/
           unknown_dependency_diagnostic = lines.find { |line| line.match?(unknown_dependency) }

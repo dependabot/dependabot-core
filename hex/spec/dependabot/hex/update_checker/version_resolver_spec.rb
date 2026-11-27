@@ -513,7 +513,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
           hash_including(
             env: hash_including("HEX_HOME" => a_string_matching(%r{/dependabot-hex-home})),
             fingerprint: "mix run check_update.exs <dependency_name>",
-            timeout: 30
+            timeout: 120
           )
         )
       end
@@ -567,7 +567,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
     context "when dependency resolution times out" do
       let(:timeout_error) do
         helper_failure(
-          "Timed out due to inactivity after 30 seconds",
+          "Timed out due to inactivity after 120 seconds",
           process_exit_value: "pid 123 exit 124"
         )
       end
@@ -578,7 +578,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
 
       it "preserves the inactivity timeout as an internal helper failure after one attempt" do
         expect { latest_resolvable_version }
-          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, /30 seconds/)
+          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, /120 seconds/)
       end
     end
 
@@ -711,6 +711,9 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
           "** (Mix) Required version >= nope for package jason is incorrectly specified (from: mix.exs)",
           "** (Mix) Required version >= nope for package jason is incorrectly specified " \
           "(from: umbrella apps/geschäft/mix.exs)",
+          '** (Mix) Required version "~> 2.0" for package jason can never be satisfied ' \
+          '(from: umbrella apps/geschäft/mix.exs): the package requirement "~> 1.0" and ' \
+          'the application requirement "~> 2.0" are disjoint',
           "** (Mix) Unknown dependency plug for environment prod"
         ].each do |diagnostic|
           aggregate_failures(diagnostic) do

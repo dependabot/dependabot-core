@@ -12,17 +12,7 @@ defmodule DependabotHexCredentials do
   end
 
   defp configure(["organization", organization], credential, _public_key, _repository_url) do
-    case Mix.Task.get!("hex.organization").run(["auth", organization, "--key=#{credential}"]) do
-      :error ->
-        :error
-
-      _ ->
-        Mix.Task.get!("hex.repo").run([
-          "set",
-          "hexpm:#{organization}",
-          "--no-oauth-exchange"
-        ])
-    end
+    Mix.Task.get!("hex.organization").run(["auth", organization, "--key=#{credential}"])
   end
 
   defp configure(["repository", repo, fingerprint], credential, public_key, repository_url) do

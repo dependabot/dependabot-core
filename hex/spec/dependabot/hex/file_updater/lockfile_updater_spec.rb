@@ -745,7 +745,7 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
         )
       end
       let(:hex_homes) { [] }
-      let(:oauth_exchange_disabled) { [] }
+      let(:organization_oauth_exchange_disabled) { [] }
 
       before do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
@@ -754,19 +754,19 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
             hex_home = options.fetch(:env).fetch("HEX_HOME")
             hex_homes << hex_home
             config = File.read(File.join(hex_home, "hex.config"))
-            oauth_exchange_disabled << config.include?("oauth_exchange => false")
+            organization_oauth_exchange_disabled << config.include?("oauth_exchange => false")
           end
 
           method.call(command, **options)
         end
       end
 
-      it "authenticates and resolves through the shared Hex home with OAuth exchange disabled" do
+      it "authenticates and resolves through the shared Hex home without changing OAuth exchange" do
         skip("skipped because env var HEX_PM_ORGANIZATION_TOKEN is not set") if organization_token.nil?
 
         expect(updated_lockfile_content).to include %({:hex, :example_package_a, "1.1.0")
         expect(hex_homes.uniq.length).to eq(1)
-        expect(oauth_exchange_disabled).to all(be(true))
+        expect(organization_oauth_exchange_disabled).to all(be(false))
         expect(File).not_to exist(hex_homes.first)
       end
     end
