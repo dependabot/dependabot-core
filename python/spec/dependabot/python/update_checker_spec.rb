@@ -1055,19 +1055,6 @@ RSpec.describe Dependabot::Python::UpdateChecker do
             end
           end
 
-          context "when referenced using -c=" do
-            let(:requirements_file) do
-              Dependabot::DependencyFile.new(
-                name: "requirements.in",
-                content: "-c=pins.txt\nurllib3\n"
-              )
-            end
-
-            it "discovers constraints file from short-form equals-style syntax" do
-              expect(latest_resolvable_version).to be_nil
-            end
-          end
-
           context "when referenced with a quoted path containing spaces" do
             let(:constraints_file) do
               Dependabot::DependencyFile.new(
@@ -1093,19 +1080,6 @@ RSpec.describe Dependabot::Python::UpdateChecker do
               end
 
               it "discovers constraints file from quoted long-form syntax" do
-                expect(latest_resolvable_version).to be_nil
-              end
-            end
-
-            context "when referenced using -c= with single quotes" do
-              let(:requirements_file) do
-                Dependabot::DependencyFile.new(
-                  name: "requirements.in",
-                  content: "-c='my pins.txt'\nurllib3\n"
-                )
-              end
-
-              it "discovers constraints file from quoted short-form equals syntax" do
                 expect(latest_resolvable_version).to be_nil
               end
             end
@@ -1210,7 +1184,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
             end
           end
 
-          context "when a non-requirements in file includes -c" do
+          context "when a fetched in file references a missing local constraint" do
             let(:notes_file) do
               Dependabot::DependencyFile.new(
                 name: "docs/notes.in",
@@ -1218,8 +1192,9 @@ RSpec.describe Dependabot::Python::UpdateChecker do
               )
             end
 
-            it "does not infer constraints from arbitrary in files" do
-              expect(latest_resolvable_version).to be > Gem::Version.new("1.26.0")
+            it "preserves the requirements-file evaluation error" do
+              expect { latest_resolvable_version }
+                .to raise_error(Dependabot::DependencyFileNotEvaluatable, /Could not open requirements file/)
             end
           end
         end

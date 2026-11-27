@@ -45,7 +45,8 @@ RSpec.describe Dependabot::Python::RequirementsFileParser do
           "roots" => ["requirements.txt"],
           "status" => "complete",
           "reasons" => [],
-          "has_index_options" => false
+          "has_index_options" => false,
+          "source_spans_applicable" => true
         }
       ]
     }
@@ -63,6 +64,7 @@ RSpec.describe Dependabot::Python::RequirementsFileParser do
       )
       expect(parsed.components.first).to be_complete
       expect(parsed.components.first.has_index_options).to be(false)
+      expect(parsed.components.first.source_spans_applicable).to be(true)
     end
 
     it "walks exact local edges" do

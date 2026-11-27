@@ -46,6 +46,18 @@ RSpec.describe Dependabot::Python::MarkerEvaluator do
       expect(marker_evaluator.marker_satisfied?(marker: marker, python_version: python_version)).to be(false)
     end
 
+    it "evaluates python_version using major.minor" do
+      expect(
+        marker_evaluator.marker_satisfied?(marker: "python_version > '3.11'", python_version: "3.11.18")
+      ).to be(false)
+    end
+
+    it "evaluates python_full_version using the complete version" do
+      expect(
+        marker_evaluator.marker_satisfied?(marker: "python_full_version > '3.11'", python_version: "3.11.18")
+      ).to be(true)
+    end
+
     context "when non-python markers are assumed satisfied" do
       subject(:marker_evaluator) { described_class.new(non_python_markers_satisfied: true) }
 

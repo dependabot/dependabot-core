@@ -134,6 +134,26 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       expect(finder.latest_version(language_version: "3.9")).to eq(Dependabot::Python::Version.new("1.5.0"))
     end
 
+    context "when an unsupported release has no publication date" do
+      let(:pypi_response) do
+        JSON.generate(
+          "files" => [
+            { "filename" => "demo-3.0.0.whl", "requires-python" => ">=3.10" },
+            { "filename" => "demo-1.5.0.whl", "requires-python" => ">=3.8",
+              "upload-time" => "2024-05-01T00:00:00Z" }
+          ]
+        )
+      end
+
+      it "does not report missing cooldown data for an ineligible release" do
+        expect(finder.eligible_versions(language_version: "3.9"))
+          .to eq([Dependabot::Python::Version.new("1.5.0")])
+        expect(finder.resolver_excluded_versions(language_version: "3.9"))
+          .to eq([Dependabot::Python::Version.new("3.0.0")])
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be_nil
+      end
+    end
+
     context "with a security advisory" do
       let(:security_advisories) do
         [Dependabot::SecurityAdvisory.new(
@@ -144,6 +164,24 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       it "retains the minimum eligible security fix" do
         expect(finder.lowest_security_fix_version(language_version: "3.9"))
           .to eq(Dependabot::Python::Version.new("1.5.0"))
+      end
+    end
+
+    context "when a prerelease is not policy eligible" do
+      let(:cooldown_options) { nil }
+      let(:pypi_response) do
+        JSON.generate(
+          "files" => [
+            { "filename" => "demo-2.0.0.whl", "requires-python" => ">=3.8" },
+            { "filename" => "demo-2.5.0rc1.whl", "requires-python" => ">=3.8" },
+            { "filename" => "demo-3.0.0.whl", "requires-python" => ">=3.8" }
+          ]
+        )
+      end
+
+      it "excludes the prerelease from native resolver candidates" do
+        expect(finder.resolver_excluded_versions(language_version: "3.9"))
+          .to eq([Dependabot::Python::Version.new("2.5.0rc1")])
       end
     end
   end
@@ -898,6 +936,14 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
     end
 
     it { is_expected.to eq(Gem::Version.new("2.1.1")) }
+
+    it "exposes policy-eligible security fixes in ascending order" do
+      versions = finder.eligible_security_fix_versions
+
+      expect(versions).to eq(versions.sort)
+      expect(versions.first).to eq(Gem::Version.new("2.1.1"))
+      expect(versions).to all(be > Gem::Version.new("2.1.0"))
+    end
 
     context "when the lowest version has been yanked" do
       let(:pypi_response) do

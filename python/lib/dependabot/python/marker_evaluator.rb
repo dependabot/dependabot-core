@@ -223,12 +223,15 @@ module Dependabot
         return default if condition.nil?
 
         candidate = strip_wrapping_parentheses(condition.strip)
-        match = candidate.match(/\Apython(?:_full)?_version\s*(<=|>=|<|>|==|!=)\s*['\"]([^'\"]+)['\"]\z/)
+        match = candidate.match(/\A(python(?:_full)?_version)\s*(<=|>=|<|>|==|!=)\s*['\"]([^'\"]+)['\"]\z/)
         return default unless match
 
-        operator = T.must(match[1])
-        version = T.must(match[2])
-        lhs = Dependabot::Python::Version.new(python_version)
+        variable = T.must(match[1])
+        operator = T.must(match[2])
+        version = T.must(match[3])
+        evaluated_python_version =
+          variable == "python_version" ? python_version.split(".").first(2).join(".") : python_version
+        lhs = Dependabot::Python::Version.new(evaluated_python_version)
         rhs = Dependabot::Python::Version.new(version)
 
         case operator

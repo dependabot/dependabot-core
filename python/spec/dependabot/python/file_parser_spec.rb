@@ -73,7 +73,8 @@ RSpec.describe Dependabot::Python::FileParser do
               "roots" => ["requirements.txt"],
               "status" => "complete",
               "reasons" => [],
-              "has_index_options" => false
+              "has_index_options" => false,
+              "source_spans_applicable" => true
             }
           ]
         }
@@ -122,6 +123,20 @@ RSpec.describe Dependabot::Python::FileParser do
 
         it "preserves the existing upper-bound filtering" do
           expect(dependencies).to be_empty
+        end
+
+        context "with a python_version marker that excludes pip's major.minor version" do
+          let(:helper_record) do
+            super().merge("markers" => "python_version > \"3.11\"")
+          end
+
+          before do
+            allow(parser).to receive(:python_raw_version).and_return("3.11.18")
+          end
+
+          it "filters the dependency before native resolution" do
+            expect(dependencies).to be_empty
+          end
         end
       end
 

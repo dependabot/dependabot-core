@@ -70,6 +70,7 @@ module Dependabot
         const :status, String
         const :reasons, T::Array[String]
         const :has_index_options, T::Boolean
+        const :source_spans_applicable, T::Boolean
 
         sig { returns(T::Boolean) }
         def complete?
@@ -317,7 +318,9 @@ module Dependabot
             roots: string_array(hash["roots"], "#{context} roots"),
             status: status,
             reasons: reasons,
-            has_index_options: boolean(hash["has_index_options"], "#{context} has_index_options")
+            has_index_options: boolean(hash["has_index_options"], "#{context} has_index_options"),
+            source_spans_applicable:
+              boolean(hash["source_spans_applicable"], "#{context} source_spans_applicable")
           )
         end
 
