@@ -9,6 +9,7 @@ require "dependabot/python/file_parser"
 require "dependabot/python/requirement"
 require "dependabot/errors"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/poetry_project"
 
 module Dependabot
   module Python
@@ -315,6 +316,26 @@ module Dependabot
 
         sig { returns(T::Array[T.nilable(String)]) }
         def parse_production_dependency_names
+          native_production_dependency_names || shell_production_dependency_names
+        end
+
+        # Reads production membership from the lockfile through Poetry itself.
+        # Unlike `poetry show --only main`, this doesn't depend on the Python
+        # version Dependabot happens to run under. Returns nil to fall back to
+        # the shell-out when the experiment is off or Poetry can't load the
+        # project.
+        sig { returns(T.nilable(T::Array[T.nilable(String)])) }
+        def native_production_dependency_names
+          return unless PoetryProject.enabled?
+
+          PoetryProject.load(pyproject: T.must(pyproject), lockfile: lockfile).production_dependency_names
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          Dependabot.logger.warn("Native Poetry helper failed, falling back to `poetry show`: #{e.message}")
+          nil
+        end
+
+        sig { returns(T::Array[T.nilable(String)]) }
+        def shell_production_dependency_names
           SharedHelpers.in_a_temporary_directory do
             pyproject_file = T.must(pyproject)
             lockfile_file = T.must(lockfile)

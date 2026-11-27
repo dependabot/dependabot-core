@@ -47,3 +47,13 @@ class TestRunRouting:
         assert "result" in result
         names = {d["name"] for d in result["result"]}
         assert "requests" in names
+
+    def test_parse_poetry_project_routing(self):
+        fixture_dir = os.path.join(
+            FIXTURES, "poetry", "multiple_locked_versions"
+        )
+        result = run_helper("parse_poetry_project", [fixture_dir])
+
+        assert "result" in result
+        names = {p["name"] for p in result["result"]["locked"]}
+        assert "urllib3" in names

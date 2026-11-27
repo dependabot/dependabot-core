@@ -377,6 +377,90 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
       end
     end
 
+    context "with the native Poetry helper enabled" do
+      before { Dependabot::Experiments.register(:enable_native_poetry_helper, true) }
+
+      context "when poetry.lock pins a package at several versions" do
+        let(:pyproject_toml) do
+          Dependabot::DependencyFile.new(
+            name: "pyproject.toml",
+            content: fixture("dependency_grapher", "poetry_native_multiple_locked_versions.toml"),
+            directory: "/"
+          )
+        end
+        let(:poetry_lock_file) do
+          Dependabot::DependencyFile.new(
+            name: "poetry.lock",
+            content: fixture("dependency_grapher", "poetry_native_multiple_locked_versions.lock"),
+            directory: "/"
+          )
+        end
+        let(:dependency_files) { [pyproject_toml, poetry_lock_file] }
+
+        it "graphs every locked version" do
+          expect(grapher.resolved_dependencies.keys).to include(
+            "pkg:pypi/requests@2.32.5",
+            "pkg:pypi/requests@2.34.2",
+            "pkg:pypi/urllib3@1.26.20",
+            "pkg:pypi/urllib3@2.2.1"
+          )
+        end
+
+        it "links each version to the child version it installs with" do
+          resolved_dependencies = grapher.resolved_dependencies
+
+          old_requests = resolved_dependencies.fetch("pkg:pypi/requests@2.32.5").dependencies
+          new_requests = resolved_dependencies.fetch("pkg:pypi/requests@2.34.2").dependencies
+
+          expect(old_requests).to include("pkg:pypi/urllib3@1.26.20")
+          expect(old_requests).not_to include("pkg:pypi/urllib3@2.2.1")
+          expect(new_requests).to include("pkg:pypi/urllib3@2.2.1")
+          expect(new_requests).not_to include("pkg:pypi/urllib3@1.26.20")
+        end
+      end
+
+      context "when poetry.lock pins one version per package" do
+        let(:poetry_lock_file) do
+          Dependabot::DependencyFile.new(
+            name: "poetry.lock",
+            content: fixture("dependency_grapher", "poetry_lock_with_relationships.lock"),
+            directory: "/"
+          )
+        end
+        let(:dependency_files) { [pyproject_toml, poetry_lock_file] }
+
+        it "matches the graph built without the helper" do
+          native = grapher.resolved_dependencies
+
+          Dependabot::Experiments.register(:enable_native_poetry_helper, false)
+          ruby_only = Dependabot::DependencyGraphers.for_package_manager("pip").new(
+            file_parser: Dependabot::FileParsers.for_package_manager("pip").new(
+              dependency_files: dependency_files, source: nil, credentials: [], reject_external_code: false
+            )
+          ).resolved_dependencies
+
+          expect(native.keys).to match_array(ruby_only.keys)
+          native.each do |purl, dependency|
+            expect(dependency.dependencies).to match_array(ruby_only.fetch(purl).dependencies)
+            expect([dependency.direct, dependency.runtime])
+              .to eq([ruby_only.fetch(purl).direct, ruby_only.fetch(purl).runtime])
+          end
+        end
+
+        it "falls back to reading poetry.lock when the helper fails" do
+          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_call_original
+          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+            .with(hash_including(function: "parse_poetry_project"))
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "boom", error_context: {})
+            )
+
+          expect(grapher.resolved_dependencies.fetch("pkg:pypi/requests@2.32.5").dependencies)
+            .to include("pkg:pypi/urllib3@2.6.3")
+        end
+      end
+    end
+
     context "when a non-manifest .txt file is fetched alongside a real manifest" do
       let(:requirements_txt) do
         Dependabot::DependencyFile.new(
