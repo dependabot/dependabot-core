@@ -155,11 +155,13 @@ module Dependabot
         ERR_PNPM_UNSUPPORTED_ENGINE = /ERR_PNPM_UNSUPPORTED_ENGINE/
         PACAKGE_MANAGER = /Your (?<pkg_mgr>.*) version is incompatible with/
         VERSION_REQUIREMENT = /Expected version: (?<supported_ver>.*)\nGot: (?<detected_ver>.*)\n/
-        # pnpm 12 lists only the engines that failed, as JSON: `Unsupported engine for <dir>: wanted: {"node":">=26"}
-        # (current: {"node":"24.22.3"})`. The subject is the project's absolute path; a dependency is named instead
-        # (`<name>@<version>`) and is not a requirement of the repository.
-        UNSUPPORTED_ENGINE_WANTED =
-          %r{Unsupported engine for /[^\n]*?: wanted: (?<wanted>\{[^\n]*?\}) \(current: (?<current>\{[^\n]*?\})\)}
+        # pnpm 12 lists only the engines that failed, as JSON, on the error line (normalized to start with its code):
+        # `Unsupported engine for <dir>: wanted: {"node":">=26"} (current: {"node":"24.22.3"})`. The same text can come
+        # before it as a `[WARN]` line, which is not what failed. The subject is the project's absolute path; a
+        # dependency is named instead (`<name>@<version>`) and is not a requirement of the repository.
+        UNSUPPORTED_ENGINE_LINE = "[ERR_PNPM_UNSUPPORTED_ENGINE] Unsupported engine for /"
+        UNSUPPORTED_ENGINE_WANTED = ": wanted: "
+        UNSUPPORTED_ENGINE_CURRENT = " (current: "
         ENGINE_TOOL_NAMES = T.let({ "node" => "Node" }.freeze, T::Hash[String, String])
 
         # No version of a package that pnpm has to resolve is old enough for the minimumReleaseAge window. pnpm 10,
@@ -1408,19 +1410,46 @@ module Dependabot
         # when both are listed.
         sig { params(error_message: String).void }
         def raise_wanted_engine_error(error_message)
-          match = error_message.match(UNSUPPORTED_ENGINE_WANTED)
-          return unless match
-
-          wanted = engine_versions(T.must(match[:wanted]))
+          wanted, current = refused_engines(error_message)
           engine = wanted.key?(PNPMPackageManager::NAME) ? PNPMPackageManager::NAME : wanted.keys.first
           return unless engine
 
+          requirement = T.must(wanted[engine])
           Dependabot.logger.warn(error_message)
-          raise Dependabot::ToolVersionNotSupported.new(
-            ENGINE_TOOL_NAMES.fetch(engine, engine),
-            T.must(wanted[engine]),
-            engine_versions(T.must(match[:current])).fetch(engine, "")
-          )
+          raise_node_version_setting_conflict(requirement, current["node"]) if engine == "node"
+
+          supported = if engine == PNPMPackageManager::NAME
+                        PNPMPackageManager::SUPPORTED_VERSIONS.map { |version| "#{version}.*" }.join(", ")
+                      else
+                        current.fetch(engine, "")
+                      end
+          raise Dependabot::ToolVersionNotSupported.new(ENGINE_TOOL_NAMES.fetch(engine, engine), requirement, supported)
+        end
+
+        # The wanted and current engines on the error line, or empty hashes when there is none
+        sig { params(error_message: String).returns([T::Hash[String, String], T::Hash[String, String]]) }
+        def refused_engines(error_message)
+          line = error_message.each_line.map(&:chomp).find { |text| text.start_with?(UNSUPPORTED_ENGINE_LINE) }
+          wanted_at = line&.index(UNSUPPORTED_ENGINE_WANTED)
+          current_at = line&.rindex(UNSUPPORTED_ENGINE_CURRENT)
+          return [{}, {}] unless line&.end_with?(")") && wanted_at && current_at && current_at > wanted_at
+
+          [
+            engine_versions(T.must(line[(wanted_at + UNSUPPORTED_ENGINE_WANTED.length)...current_at])),
+            engine_versions(T.must(line[(current_at + UNSUPPORTED_ENGINE_CURRENT.length)...-1]))
+          ]
+        end
+
+        # pnpm checks engines.node against a configured nodeVersion, not the Node.js that runs, so the repository's own
+        # settings conflict
+        sig { params(requirement: String, checked_version: T.nilable(String)).void }
+        def raise_node_version_setting_conflict(requirement, checked_version)
+          running_version = Helpers.node_version
+          return if checked_version.nil? || running_version.nil? || checked_version == running_version
+
+          raise Dependabot::DependencyFileNotResolvable,
+                "pnpm checks engines.node (#{requirement}) against Node.js #{checked_version}, the version set with " \
+                "the nodeVersion setting, which the requirement does not accept. Update nodeVersion or engines.node."
         end
 
         sig { params(json: String).returns(T::Hash[String, String]) }

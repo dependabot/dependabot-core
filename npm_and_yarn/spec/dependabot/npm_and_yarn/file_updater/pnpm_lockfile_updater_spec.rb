@@ -512,15 +512,22 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     # listed.
     context "when pnpm 12 reports an unsupported engine" do
       let(:project_name) { "pnpm/simple" }
+      let(:supported_pnpm) do
+        Dependabot::NpmAndYarn::PNPMPackageManager::SUPPORTED_VERSIONS.map { |version| "#{version}.*" }.join(", ")
+      end
+
+      before { allow(Dependabot::NpmAndYarn::Helpers).to receive(:node_version).and_return("24.22.3") }
 
       {
         "unsupported_engine_node" => ["Node", ">=26.13.0 <27", "24.22.3"],
         "unsupported_engine_node_wrapped" => ["Node", ">=26.13.0 <27", "24.22.3"],
-        "unsupported_engine_pnpm" => ["pnpm", "^10.26.0", "12.22.0"],
-        "unsupported_engine_node_and_pnpm" => ["pnpm", "use npm", "12.22.0"],
-        "unsupported_engine_node_and_pnpm_not_strict" => ["pnpm", "^10.26.0", "12.22.0"],
-        "unsupported_engine_escaped" => ["pnpm", 'use "npm" instead', "12.22.0"]
-      }.each do |scenario, (tool_name, requirement, current)|
+        "unsupported_engine_pnpm" => ["pnpm", "^10.26.0", :supported_pnpm],
+        "unsupported_engine_node_and_pnpm" => ["pnpm", "use npm", :supported_pnpm],
+        "unsupported_engine_node_and_pnpm_not_strict" => ["pnpm", "^10.26.0", :supported_pnpm],
+        "unsupported_engine_escaped" => ["pnpm", 'use "npm" instead', :supported_pnpm],
+        # A root warning (no engineStrict) comes before a workspace package's fatal pnpm mismatch
+        "unsupported_engine_after_warning" => ["pnpm", "^10.26.0", :supported_pnpm]
+      }.each do |scenario, (tool_name, requirement, supported)|
         context "with #{scenario}" do
           before do
             allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
@@ -535,8 +542,26 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
             expect { updated_pnpm_lock_content }.to raise_error(Dependabot::ToolVersionNotSupported) do |error|
               expect(error.tool_name).to eq(tool_name)
               expect(error.detected_version).to eq(requirement)
-              expect(error.supported_versions).to eq(current)
+              expect(error.supported_versions).to eq(supported.is_a?(Symbol) ? public_send(supported) : supported)
             end
+          end
+        end
+      end
+
+      # pnpm checks engines.node against a configured nodeVersion instead of the Node.js that runs
+      context "when a nodeVersion setting is refused" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: fixture("pnpm_errors", "pnpm12", "unsupported_engine_node_version_setting.txt"),
+              error_context: {}
+            )
+          )
+        end
+
+        it "reports the conflicting settings" do
+          expect { updated_pnpm_lock_content }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).to include("engines.node (>=22)", "Node.js 20.0.0", "nodeVersion")
           end
         end
       end

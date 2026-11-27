@@ -1,0 +1,5 @@
+[WARN] Unsupported engine for /home/dependabot/dependabot-updater/repo: wanted: {"node":">=26"} (current: {"node":"24.22.3"})
+Error: ERR_PNPM_UNSUPPORTED_ENGINE
+
+  × Unsupported engine for /home/dependabot/dependabot-updater/repo/packages/a: wanted: {"pnpm":"^10.26.0"} (current: {"node":"","pnpm":"12.22.0"})
+
