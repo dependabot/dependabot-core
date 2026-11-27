@@ -2446,4 +2446,72 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
       end
     end
   end
+
+  describe "editing pyproject.toml with the native Poetry helper" do
+    subject(:updated_pyproject_content) { updater.send(:updated_pyproject_content) }
+
+    let(:dependency_files) { [pyproject] }
+
+    before { Dependabot::Experiments.register(:enable_native_poetry_helper, true) }
+
+    context "with a multi-line multiple-constraint declaration" do
+      let(:pyproject_fixture_name) { "multiple_constraint_dependency.toml" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "numpy",
+          version: "1.24.0",
+          previous_version: "1.21.6",
+          package_manager: "pip",
+          requirements: [
+            { requirement: ">=1.15,<1.25", file: "pyproject.toml", source: nil, groups: ["dependencies"] },
+            { requirement: ">=1.24", file: "pyproject.toml", source: nil, groups: ["dependencies"] }
+          ],
+          previous_requirements: [
+            { requirement: ">=1.15,<1.22", file: "pyproject.toml", source: nil, groups: ["dependencies"] },
+            { requirement: ">=1.22", file: "pyproject.toml", source: nil, groups: ["dependencies"] }
+          ]
+        )
+      end
+
+      it "updates each constraint and keeps the layout" do
+        expect(updated_pyproject_content).to eq(
+          pyproject.content
+            .sub('version = ">=1.15,<1.22"', 'version = ">=1.15,<1.25"')
+            .sub('version = ">=1.22"', 'version = ">=1.24"')
+        )
+      end
+
+      it "can't be done by the regex path" do
+        Dependabot::Experiments.register(:enable_native_poetry_helper, false)
+
+        expect { updated_pyproject_content }.to raise_error(Dependabot::DependencyFileContentNotChanged)
+      end
+    end
+
+    context "when the helper fails" do
+      let(:pyproject_fixture_name) { "caret_version.toml" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.19.1",
+          previous_version: "1.0.0",
+          package_manager: "pip",
+          requirements: [{ requirement: "^2.19.1", file: "pyproject.toml", source: nil, groups: ["dependencies"] }],
+          previous_requirements: [
+            { requirement: "^1.0.0", file: "pyproject.toml", source: nil, groups: ["dependencies"] }
+          ]
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+          .with(hash_including(function: "update_poetry_declarations"))
+          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "boom", error_context: {}))
+      end
+
+      it "falls back to the regex path" do
+        expect(updated_pyproject_content).to include('requests = "^2.19.1"')
+      end
+    end
+  end
 end
