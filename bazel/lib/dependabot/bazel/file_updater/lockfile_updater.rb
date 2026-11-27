@@ -14,6 +14,8 @@ module Dependabot
       class LockfileUpdater
         extend T::Sig
 
+        BAZEL_EXECUTABLE_NOT_FOUND = /(?:\A|[\s:])bazel(?:isk)?\s*:\s*(?:command\s+)?not found\b/i
+
         sig do
           params(
             dependency_files: T::Array[Dependabot::DependencyFile],
@@ -186,7 +188,7 @@ module Dependabot
           Dependabot.logger.warn("Bazel lockfile generation failed: #{error.message}")
 
           case error.message
-          when /command not found/i, /bazel(isk)?\s*:\s*(command\s+)?not found/i
+          when BAZEL_EXECUTABLE_NOT_FOUND
             raise Dependabot::DependencyFileNotResolvable,
                   "Bazel binary not available. Cannot generate MODULE.bazel.lock file."
           when /module.*not.*found/i, /registry.*not.*found/i
@@ -212,7 +214,7 @@ module Dependabot
           Dependabot.logger.warn("Bazel lockfile generation failed: #{error.message}")
 
           case error.message
-          when /command not found/i, /bazel(isk)?\s*:\s*(command\s+)?not found/i
+          when BAZEL_EXECUTABLE_NOT_FOUND
             raise Dependabot::DependencyFileNotResolvable,
                   "Bazel binary not available. Cannot generate MODULE.bazel.lock file."
           when /module.*not.*found/i, /registry.*not.*found/i
