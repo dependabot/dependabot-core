@@ -19,22 +19,32 @@ module Dependabot
         class Package < T::ImmutableStruct
           extend T::Sig
 
+          # Packages from these sources are not on a package index, so they do not get a PyPI identity.
+          NON_INDEX_SOURCE_TYPES = %w(directory file git url).freeze
+
           const :name, String
           const :version, String
           const :source_type, T.nilable(String), default: nil
+          const :dependency_names, T::Array[String], default: []
 
           sig { params(value: Object).returns(Package) }
           def self.from_object(value)
             Record.new(value).to_package
           end
 
-          sig { returns(T::Hash[Symbol, T.nilable(String)]) }
+          sig { returns(T::Hash[Symbol, T.nilable(T.any(String, T::Array[String]))]) }
           def to_h
             {
               name: name,
               version: version,
-              source_type: source_type
+              source_type: source_type,
+              dependency_names: dependency_names
             }
+          end
+
+          sig { returns(T::Boolean) }
+          def from_index?
+            !NON_INDEX_SOURCE_TYPES.include?(source_type)
           end
         end
 

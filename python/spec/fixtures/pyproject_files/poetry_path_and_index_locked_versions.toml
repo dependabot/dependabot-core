@@ -1,0 +1,13 @@
+[tool.poetry]
+name = "path-and-index-locked-versions"
+version = "0.1.0"
+description = "Poetry project that locks one package from a local path and from PyPI"
+authors = ["Test <test@example.com>"]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.9"
+six = [
+    { path = "vendor/six", python = "<3.10" },
+    { version = "1.17.0", python = ">=3.10" },
+]

@@ -40,8 +40,17 @@ module Dependabot
             Package.new(
               name: PyprojectValueParser.string(object["name"], "Poetry lock package name"),
               version: version,
-              source_type: source_type
+              source_type: source_type,
+              dependency_names: dependency_names
             )
+          end
+
+          sig { returns(T::Array[String]) }
+          def dependency_names
+            value = object["dependencies"]
+            return [] unless value.is_a?(Hash)
+
+            value.keys.grep(String)
           end
 
           sig { returns(T.nilable(String)) }
