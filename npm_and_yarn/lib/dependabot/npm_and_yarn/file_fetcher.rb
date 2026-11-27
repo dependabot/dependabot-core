@@ -458,7 +458,24 @@ module Dependabot
         )
 
         # Only fetch from parent directories if the file wasn't found initially
-        @pnpm_workspace_yaml ||= fetch_file_from_parent_directories(PNPMPackageManager::PNPM_WS_YML_FILENAME)
+        @pnpm_workspace_yaml ||= ancestor_pnpm_workspace_yaml
+      end
+
+      # An ancestor pnpm-workspace.yaml is the project's workspace only if its `packages` include the project's
+      # directory. pnpm 12 treats a directory the workspace leaves out as a standalone project, and Helpers runs
+      # pnpm 10 and 11 with --ignore-workspace so they do too, so that workspace's catalogs and settings do not
+      # apply to it.
+      sig { returns(T.nilable(DependencyFile)) }
+      def ancestor_pnpm_workspace_yaml
+        file = fetch_file_from_parent_directories(PNPMPackageManager::PNPM_WS_YML_FILENAME)
+        return file unless file
+        return file if Helpers.pnpm_workspace_includes?(file, directory)
+
+        Dependabot.logger.info(
+          "#{file.name} does not include #{directory} in its packages, so #{directory} is updated as a " \
+          "standalone pnpm project"
+        )
+        nil
       end
 
       sig { returns(T.nilable(DependencyFile)) }
