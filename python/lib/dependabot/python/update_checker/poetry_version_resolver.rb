@@ -318,7 +318,8 @@ module Dependabot
           unless updated_requirement
             # Poetry's lock result for a package locked at several versions can't be read back as one version.
             if pep621_only_poetry_project?(pyproject_content)
-              PoetrySubdependencyPin.new(poetry_lock, dependency.name).ensure_single_version!
+              PoetrySubdependencyPin.new(poetry_lock, dependency.name, project: native_poetry_project)
+                                    .ensure_single_version!
             end
             return pyproject_content
           end
@@ -355,7 +356,7 @@ module Dependabot
         # as scratch input to run `poetry lock`, so it never reaches the real manifest.
         sig { params(document: FileParser::PyprojectDocument, updated_requirement: String).void }
         def set_pep621_target_dependency_req(document, updated_requirement)
-          PoetrySubdependencyPin.new(poetry_lock, dependency.name)
+          PoetrySubdependencyPin.new(poetry_lock, dependency.name, project: native_poetry_project)
                                 .set_requirement!(document, updated_requirement)
         end
 
@@ -383,6 +384,15 @@ module Dependabot
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def poetry_lock
           dependency_files.find { |f| f.name == "poetry.lock" }
+        end
+
+        # Loaded once per instance so every pin reads the same lockfile view.
+        sig { returns(T.nilable(PoetryProject)) }
+        def native_poetry_project
+          return @native_poetry_project if defined?(@native_poetry_project)
+
+          project = PoetryProject.load_if_enabled(pyproject: pyproject, lockfile: lockfile)
+          @native_poetry_project = T.let(project, T.nilable(PoetryProject))
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }

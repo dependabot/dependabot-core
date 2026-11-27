@@ -177,6 +177,19 @@ module Dependabot
           @data.key?("dependency-groups")
         end
 
+        # Poetry merges [tool.poetry.dependencies] into these when present.
+        sig { returns(T::Boolean) }
+        def pep621_dependency_tables?
+          project = section(@data, "project", "project")
+          !project.nil? && (project.key?("dependencies") || project.key?("optional-dependencies"))
+        end
+
+        sig { returns(T::Array[String]) }
+        def dependency_group_names
+          groups = section(@data, "dependency-groups", "dependency-groups")
+          groups ? groups.keys : []
+        end
+
         sig { params(type: String).returns(PoetryDependencyMap) }
         def poetry_dependencies(type)
           root = poetry_root

@@ -70,7 +70,16 @@ def _declared(dep):
             dep.source_subdirectory,
             getattr(dep, "source_name", None),
         ),
+        "git_ref": _git_ref(dep),
     }
+
+
+def _git_ref(dep):
+    # ``source_reference`` collapses tag, branch and rev into one value, but
+    # callers only track git dependencies pinned to a tag.
+    if not dep.is_vcs():
+        return None
+    return {"tag": dep.tag, "branch": dep.branch, "rev": dep.rev}
 
 
 def _locked_packages(poetry):

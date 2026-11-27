@@ -81,3 +81,14 @@ class TestInvalidProject:
         assert "result" not in result
         assert result["error_class"] == "RuntimeError"
         assert "secondary" in result["error"]
+
+
+class TestDeclaredGitReferences:
+    def test_reports_which_kind_of_git_reference_was_declared(self):
+        result = parse("git_refs")["result"]
+
+        refs = {d["name"]: d["git_ref"] for d in result["declared"]}
+        assert refs["fastapi"] == {
+            "tag": "0.110.0", "branch": None, "rev": None
+        }
+        assert refs["toml"] == {"tag": None, "branch": "master", "rev": None}

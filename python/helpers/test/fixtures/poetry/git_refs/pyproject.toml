@@ -1,0 +1,10 @@
+[tool.poetry]
+name = "git-refs"
+version = "0.1.0"
+description = ""
+authors = []
+
+[tool.poetry.dependencies]
+python = "^3.9"
+fastapi = { git = "https://github.com/tiangolo/fastapi", tag = "0.110.0" }
+toml = { git = "https://github.com/uiri/toml.git", branch = "master" }

@@ -32,16 +32,12 @@ module Dependabot
           ).returns(T.nilable(PoetryNativeGraph))
         end
         def self.build(pyproject:, lockfile:, dependency_names:, purl_builder:)
-          return unless PoetryProject.enabled? && pyproject && lockfile
+          return unless lockfile
 
-          new(
-            project: PoetryProject.load(pyproject: pyproject, lockfile: lockfile),
-            dependency_names: dependency_names,
-            purl_builder: purl_builder
-          )
-        rescue SharedHelpers::HelperSubprocessFailed => e
-          Dependabot.logger.warn("Native Poetry helper failed, graphing from poetry.lock directly: #{e.message}")
-          nil
+          project = PoetryProject.load_if_enabled(pyproject: pyproject, lockfile: lockfile)
+          return unless project
+
+          new(project: project, dependency_names: dependency_names, purl_builder: purl_builder)
         end
 
         sig do

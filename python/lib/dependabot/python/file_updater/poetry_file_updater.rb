@@ -273,7 +273,8 @@ module Dependabot
             next if git_dependency_being_updated?(dep)
             next unless dep.version
 
-            PoetrySubdependencyPin.new(lockfile, dep.name).set_requirement!(document, "==#{dep.version}")
+            PoetrySubdependencyPin.new(lockfile, dep.name, project: native_poetry_project)
+                                  .set_requirement!(document, "==#{dep.version}")
           rescue PoetrySubdependencyPin::ScopeNotReproducible
             # The update checker declines these; skipping keeps a direct run from promoting the package.
             next
@@ -450,6 +451,14 @@ module Dependabot
         def pyproject
           @pyproject ||=
             dependency_files.find { |f| f.name == "pyproject.toml" }
+        end
+
+        sig { returns(T.nilable(PoetryProject)) }
+        def native_poetry_project
+          return @native_poetry_project if defined?(@native_poetry_project)
+
+          project = PoetryProject.load_if_enabled(pyproject: pyproject, lockfile: lockfile)
+          @native_poetry_project = T.let(project, T.nilable(PoetryProject))
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
