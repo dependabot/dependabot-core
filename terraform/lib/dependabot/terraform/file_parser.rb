@@ -198,7 +198,27 @@ module Dependabot
           archive_extensions: RegistryClient::ARCHIVE_EXTENSIONS,
           proxy_url: raw_source == bare_source ? nil : raw_source
         )
-        source unless source.is_a?(ModuleSource::Interpolation)
+        return if source.is_a?(ModuleSource::Interpolation)
+
+        share_registry_identifier_case(source)
+      end
+
+      # Declarations of the same module that only differ in case must share one
+      # source, otherwise `Dependency#source_details` raises "Multiple sources!".
+      # The first declaration found decides the case that is used for all of them.
+      sig { params(source: T.nilable(ModuleSource::Variant)).returns(T.nilable(ModuleSource::Variant)) }
+      def share_registry_identifier_case(source)
+        return source unless source.is_a?(ModuleSource::Registry)
+
+        @module_identifiers ||= T.let({}, T.nilable(T::Hash[String, String]))
+        identifier = @module_identifiers[source.module_identifier.downcase] ||= source.module_identifier
+        return source if identifier == source.module_identifier
+
+        ModuleSource::Registry.new(
+          registry_hostname: source.registry_hostname,
+          module_identifier: identifier,
+          proxy_url: source.proxy_url
+        )
       end
 
       sig { params(source_address: T.nilable(String), name: String).returns([String, String, String]) }

@@ -154,7 +154,7 @@ module Dependabot
           when 4 then [parts.fetch(0), parts.drop(1).join("/")]
           else raise DependencyFileNotEvaluatable, "Invalid registry source specified: '#{source}'"
           end
-        Registry.new(registry_hostname: hostname.downcase, module_identifier: identifier.downcase, proxy_url: proxy_url)
+        Registry.new(registry_hostname: hostname.downcase, module_identifier: identifier, proxy_url: proxy_url)
       end
       private_class_method :registry_from
 
