@@ -42,6 +42,7 @@ archives, and `SHASUMS256.txt`.
 
    Runtime integration specs require `DEPENDABOT_TEST_NODE_18` and
    `DEPENDABOT_TEST_NODE_22` to point to installed Node directories; they skip
-   locally when unset.
+   locally when unset. The Node 18 pnpm integration also requires
+   `corepack install -g --cache-only pnpm@8.4.0`.
 
 [core-repo]: https://github.com/dependabot/dependabot-core

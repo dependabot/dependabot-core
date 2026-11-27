@@ -6,6 +6,12 @@
 require "spec_helper"
 require "dependabot/npm_and_yarn/file_updater/pnpm_lockfile_updater"
 require_relative "../../../support/node_runtime"
+require "base64"
+require "digest"
+require "rubygems/package"
+require "stringio"
+require "webrick"
+require "zlib"
 
 RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
   subject(:updated_pnpm_lock_content) do
@@ -422,25 +428,68 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     context "when package.json declares a supported Node.js engine" do
       include NodeRuntimeSpecHelper
 
-      let(:dependency_name) { "@blocknote/core" }
-      let(:version) { "0.15.4" }
-      let(:previous_version) { "0.15.3 " }
+      let(:dependency_name) { "runtime-test-package" }
+      let(:version) { "1.0.1" }
+      let(:previous_version) { "1.0.0" }
       let(:requirements) do
         [{
           file: "package.json",
-          requirement: "0.15.4",
+          requirement: "1.0.1",
           groups: ["dependencies"],
           source: nil
         }]
       end
 
-      let(:project_name) { "pnpm/unsupported_engine" }
+      let(:previous_requirements) do
+        [{ file: "package.json", requirement: "1.0.0", groups: ["dependencies"], source: nil }]
+      end
+      let(:project_name) { "pnpm/node18_runtime" }
 
       before { stub_node_runtime(18) }
 
       it "updates the lockfile using the declared Node.js version" do
+        registry = WEBrick::HTTPServer.new(
+          BindAddress: "127.0.0.1", Port: 0, AccessLog: [], Logger: WEBrick::Log.new(File::NULL, 7)
+        )
+        url = "http://127.0.0.1:#{registry[:Port]}"
+        requests = []
+        archives = %w(1.0.0 1.0.1).to_h do |release|
+          content = JSON.generate(name: dependency_name, version: release)
+          tar = StringIO.new
+          Gem::Package::TarWriter.new(tar) do |writer|
+            writer.mkdir("package", 0o755)
+            writer.add_file_simple("package/package.json", 0o644, content.bytesize) { |file| file.write(content) }
+          end
+          [release, Zlib.gzip(tar.string)]
+        end
+        registry.mount_proc "/runtime-test-package" do |request, response|
+          requests << request.path
+          if request.path.end_with?(".tgz")
+            release = File.basename(request.path, ".tgz")
+            response["Content-Type"] = "application/octet-stream"
+            response.body = archives.fetch(release)
+          else
+            versions = archives.to_h do |release, archive|
+              integrity = "sha512-#{Base64.strict_encode64(Digest::SHA512.digest(archive))}"
+              [release, { name: dependency_name, version: release,
+                          dist: { tarball: "#{url}/runtime-test-package/-/#{release}.tgz", integrity: integrity } }]
+            end
+            response["Content-Type"] = "application/json"
+            response.body = JSON.generate(name: dependency_name, "dist-tags" => { latest: version }, versions: versions)
+          end
+        end
+        registry_thread = Thread.new { registry.start }
+        store = File.join(repo_contents_path, ".pnpm-store")
+        allow(updater).to receive(:npmrc_content)
+          .and_return("registry=#{url}\nengine-strict=true\nstore-dir=#{store}\n")
+
         lockfile = YAML.safe_load(updated_pnpm_lock_content)
-        expect(lockfile.dig("dependencies", "@blocknote/core", "version")).to eq("0.15.4")
+        expect(lockfile.dig("dependencies", dependency_name, "version")).to eq(version)
+        expect(requests).to include("/runtime-test-package", "/runtime-test-package/-/1.0.1.tgz")
+        expect(Dependabot::NpmAndYarn::Helpers.node_version).to start_with("18.")
+      ensure
+        registry&.shutdown
+        registry_thread&.join
       end
     end
 

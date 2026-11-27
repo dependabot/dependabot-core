@@ -1,0 +1,8 @@
+{
+  "name": "node18-runtime",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@8.4.0",
+  "engines": { "node": "18.x" },
+  "dependencies": { "runtime-test-package": "1.0.0" }
+}

@@ -5,6 +5,7 @@
 
 require "spec_helper"
 require "dependabot/npm_and_yarn/file_fetcher"
+require_relative "../../support/node_runtime"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
@@ -97,7 +98,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
   end
 
   context "with Node version files" do
+    include NodeRuntimeSpecHelper
+
     before do
+      stub_node_runtime(22)
       listing = JSON.parse(fixture("github", "contents_js_npm.json"))
       %w(.nvmrc .node-version).each do |name|
         listing << { "name" => name, "path" => name, "type" => "file", "size" => 3 }

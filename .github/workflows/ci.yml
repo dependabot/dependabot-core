@@ -101,9 +101,11 @@ jobs:
         if: steps.changes.outputs[matrix.suite.path] == 'true'
         run: |
           node_args=()
+          test_setup=""
           if [ "${{ matrix.suite.path }}" = "npm_and_yarn" ]; then
             node_args+=(--volume "${TEST_NODE_18}:/opt/test-node-18:ro" --env DEPENDABOT_TEST_NODE_18=/opt/test-node-18)
             node_args+=(--volume "${TEST_NODE_22}:/opt/test-node-22:ro" --env DEPENDABOT_TEST_NODE_22=/opt/test-node-22)
+            test_setup="corepack install -g --cache-only pnpm@8.4.0 &&"
           fi
           docker run \
             --pull never \
@@ -113,7 +115,7 @@ jobs:
             --env "DEPENDABOT_TEST_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }}" \
             --env "SUITE_NAME=${{ matrix.suite.name }}" \
             --rm ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }} bash -c \
-            "cd /home/dependabot/${{ matrix.suite.path }} && ./script/ci-test"
+            "${test_setup} cd /home/dependabot/${{ matrix.suite.path }} && ./script/ci-test"
 
   updater:
     env:
