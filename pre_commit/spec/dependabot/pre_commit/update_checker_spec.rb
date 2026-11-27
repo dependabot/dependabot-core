@@ -32,11 +32,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
     }
   end
   let(:source_details) { Dependabot::GitCommitChecker::SourceDetails.from_hash(dependency_source) }
-  let(:dependency_version) do
-    return unless Dependabot::PreCommit::Version.correct?(reference)
-
-    Dependabot::PreCommit::Version.new(reference).to_s
-  end
+  let(:dependency_version) { reference }
   let(:dependency_name) { "pre-commit/pre-commit-hooks" }
   let(:dependency) do
     Dependabot::Dependency.new(
