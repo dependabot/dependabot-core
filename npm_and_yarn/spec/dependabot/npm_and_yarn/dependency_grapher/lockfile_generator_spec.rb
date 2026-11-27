@@ -178,8 +178,8 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
 
         expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_pnpm_command)
           .with(
-            "install --lockfile-only --ignore-scripts",
-            fingerprint: "install --lockfile-only --ignore-scripts"
+            "install --lockfile-only --no-frozen-lockfile --ignore-scripts",
+            fingerprint: "install --lockfile-only --no-frozen-lockfile --ignore-scripts"
           )
       end
     end

@@ -1,0 +1,9 @@
+{
+  "name": "frozen-lockfile-setting",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@11.5.3",
+  "dependencies": {
+    "zod": "3.25.76"
+  }
+}

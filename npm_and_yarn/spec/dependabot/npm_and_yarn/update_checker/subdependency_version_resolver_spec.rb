@@ -372,6 +372,18 @@ RSpec.describe namespace::SubdependencyVersionResolver do
         latest_resolvable_version
       end
 
+      it "runs the install after pnpm audit --fix without a frozenLockfile setting refusing it" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
+        allow(Dependabot::NpmAndYarn::NativeHelpers).to receive(:run_pnpm_audit_fix_command).and_return("")
+
+        latest_resolvable_version
+
+        expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_pnpm_command).with(
+          "install --lockfile-only --no-frozen-lockfile",
+          fingerprint: "install --lockfile-only --no-frozen-lockfile"
+        )
+      end
+
       it "tries a deep pnpm update before pnpm audit --fix" do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
         allow(Dependabot::NpmAndYarn::NativeHelpers)
