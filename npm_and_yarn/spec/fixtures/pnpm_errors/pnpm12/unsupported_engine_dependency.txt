@@ -1,0 +1,5 @@
+Error: ERR_PNPM_UNSUPPORTED_ENGINE
+
+  × installing dependencies
+  ╰─▶ Unsupported engine for incompatible-engine@file:dep: wanted: {"node":">=99"} (current: {"node":"24.22.3"})
+

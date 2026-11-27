@@ -1,0 +1,4 @@
+Error: ERR_PNPM_UNSUPPORTED_ENGINE
+
+  × Unsupported engine for /tmp/usenpm: wanted: {"node":"20.11.1","pnpm":"use npm"} (current: {"node":"24.22.3","pnpm":"12.22.0"})
+

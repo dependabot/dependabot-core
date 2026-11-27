@@ -507,8 +507,83 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
-    # pnpm 12 does not enforce engines.pnpm and succeeds here, but a repository pinned to pnpm 10 or 11 still gets
-    # this error from pnpm, so the pnpm 11 output is replayed.
+    # pnpm 12 lists only the engines that failed, on one line (12.22) or wrapped after `wanted:` (12.18). A refused
+    # engines.pnpm always fails, while engines.node fails only with engineStrict, so pnpm is reported when both are
+    # listed.
+    context "when pnpm 12 reports an unsupported engine" do
+      let(:project_name) { "pnpm/simple" }
+      let(:supported_pnpm) do
+        Dependabot::NpmAndYarn::PNPMPackageManager::SUPPORTED_VERSIONS.map { |version| "#{version}.*" }.join(", ")
+      end
+
+      before { allow(Dependabot::NpmAndYarn::Helpers).to receive(:node_version).and_return("24.22.3") }
+
+      {
+        "unsupported_engine_node" => ["Node", ">=26.13.0 <27", "24.22.3"],
+        "unsupported_engine_node_wrapped" => ["Node", ">=26.13.0 <27", "24.22.3"],
+        "unsupported_engine_pnpm" => ["pnpm", "^10.26.0", :supported_pnpm],
+        "unsupported_engine_node_and_pnpm" => ["pnpm", "use npm", :supported_pnpm],
+        "unsupported_engine_node_and_pnpm_not_strict" => ["pnpm", "^10.26.0", :supported_pnpm],
+        "unsupported_engine_escaped" => ["pnpm", 'use "npm" instead', :supported_pnpm],
+        # A root warning (no engineStrict) comes before a workspace package's fatal pnpm mismatch
+        "unsupported_engine_after_warning" => ["pnpm", "^10.26.0", :supported_pnpm]
+      }.each do |scenario, (tool_name, requirement, supported)|
+        context "with #{scenario}" do
+          before do
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: fixture("pnpm_errors", "pnpm12", "#{scenario}.txt"),
+                error_context: {}
+              )
+            )
+          end
+
+          it "reports the #{tool_name} requirement" do
+            expect { updated_pnpm_lock_content }.to raise_error(Dependabot::ToolVersionNotSupported) do |error|
+              expect(error.tool_name).to eq(tool_name)
+              expect(error.detected_version).to eq(requirement)
+              expect(error.supported_versions).to eq(supported.is_a?(Symbol) ? public_send(supported) : supported)
+            end
+          end
+        end
+      end
+
+      # pnpm checks engines.node against a configured nodeVersion instead of the Node.js that runs
+      context "when a nodeVersion setting is refused" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: fixture("pnpm_errors", "pnpm12", "unsupported_engine_node_version_setting.txt"),
+              error_context: {}
+            )
+          )
+        end
+
+        it "reports the conflicting settings" do
+          expect { updated_pnpm_lock_content }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).to include("engines.node (>=22)", "Node.js 20.0.0", "nodeVersion")
+          end
+        end
+      end
+
+      # A dependency's engines field is not a requirement of the repository, so it is not reported as one
+      context "when a dependency is refused" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: fixture("pnpm_errors", "pnpm12", "unsupported_engine_dependency.txt"),
+              error_context: {}
+            )
+          )
+        end
+
+        it "does not report a tool version of the repository" do
+          expect { updated_pnpm_lock_content }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+        end
+      end
+    end
+
+    # A repository pinned to pnpm 10 or 11 gets this error in the older layout, so the pnpm 11 output is replayed.
     context "when pnpm 11 reports an unsupported engine for pnpm" do
       let(:project_name) { "pnpm/unsupported_engine_pnpm" }
 
