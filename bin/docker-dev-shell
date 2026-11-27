@@ -157,6 +157,7 @@ docker run --rm -ti \
   -v "$(pwd)/bundler/spec:$CODE_DIR/bundler/spec" \
   -v "$(pwd)/cargo/.rubocop.yml:$CODE_DIR/cargo/.rubocop.yml" \
   -v "$(pwd)/cargo/dependabot-cargo.gemspec:$CODE_DIR/cargo/dependabot-cargo.gemspec" \
+  -v "$(pwd)/cargo/helpers:$CODE_DIR/cargo/helpers" \
   -v "$(pwd)/cargo/lib:$CODE_DIR/cargo/lib" \
   -v "$(pwd)/cargo/script:$CODE_DIR/cargo/script" \
   -v "$(pwd)/cargo/spec:$CODE_DIR/cargo/spec" \

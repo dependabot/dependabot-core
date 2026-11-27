@@ -22,3 +22,9 @@ RUN mkdir -p ~/.cargo && printf "[net]\ngit-fetch-with-cli = true\n" >> ~/.cargo
 
 COPY --chown=dependabot:dependabot --parents cargo common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
+
+ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
+USER root
+RUN mkdir -p /opt/cargo && chown dependabot:dependabot /opt/cargo
+USER dependabot
+RUN bash "$DEPENDABOT_HOME/cargo/helpers/build"

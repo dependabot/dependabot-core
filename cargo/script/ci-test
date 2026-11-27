@@ -2,5 +2,7 @@
 
 set -e
 
+bash helpers/build
+cargo test --locked --manifest-path helpers/Cargo.toml
 bundle install
 bundle exec turbo_tests2 --verbose

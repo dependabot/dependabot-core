@@ -1,0 +1,36 @@
+version = 4
+
+[[package]]
+name = "app"
+version = "0.1.0"
+dependencies = [
+ "local",
+ "shared 1.0.0 (registry+https://example.com/index)",
+ "shared 1.0.0 (sparse+https://example.com/index/)",
+ "shared 2.0.0",
+ "remote 1.0.0 (git+https://example.com/repo?branch=next)",
+]
+
+[[package]]
+name = "local"
+version = "0.1.0"
+
+[[package]]
+name = "shared"
+version = "1.0.0"
+source = "registry+https://example.com/index"
+
+[[package]]
+name = "shared"
+version = "1.0.0"
+source = "sparse+https://example.com/index/"
+
+[[package]]
+name = "shared"
+version = "2.0.0"
+source = "registry+https://example.com/index"
+
+[[package]]
+name = "remote"
+version = "1.0.0"
+source = "git+https://example.com/repo?branch=next#0123456789012345678901234567890123456789"

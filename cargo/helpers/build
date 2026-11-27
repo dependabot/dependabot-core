@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+helpers_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+root="${DEPENDABOT_NATIVE_HELPERS_PATH:-$helpers_dir/install-dir}"
+if [[ "$root" != /* ]]; then
+  echo "DEPENDABOT_NATIVE_HELPERS_PATH must be an absolute path" >&2
+  exit 1
+fi
+
+cd "$helpers_dir"
+cargo build --release --locked
+install -D target/release/dependabot-cargo-lock-graph "$root/cargo/bin/lock-graph"
