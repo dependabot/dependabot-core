@@ -12,6 +12,7 @@ require "dependabot/metadata_finders/base"
 require "dependabot/credential"
 require "dependabot/errors"
 require_relative "commit_response_parser"
+require_relative "package_tag_matcher"
 
 module Dependabot
   module MetadataFinders
@@ -83,16 +84,13 @@ module Dependabot
 
           return new_ref if new_ref && ref_changed?
 
-          tags = dependency_tags
-                 .select { |tag| tag_matches_version?(tag, new_version) }
-                 .sort_by(&:length)
+          tags = dependency_tags.select { |tag| tag_matches_version?(tag, new_version) }
 
-          tags.find { |t| t.include?(dependency.name) } || tags.first
+          PackageTagMatcher.preferred_tag(tags, dependency.name, new_version)
         end
 
         private
 
-        # rubocop:disable Metrics/PerceivedComplexity
         sig { returns(T.nilable(String)) }
         def previous_tag
           previous_version = dependency.previous_version
@@ -103,26 +101,23 @@ module Dependabot
           elsif previous_ref && ref_changed?
             previous_ref
           elsif previous_version
-            tags = dependency_tags
-                   .select { |tag| tag_matches_version?(tag, previous_version) }
-                   .sort_by(&:length)
+            tags = dependency_tags.select { |tag| tag_matches_version?(tag, previous_version) }
 
-            tags.find { |t| t.include?(dependency.name) } || tags.first
+            PackageTagMatcher.preferred_tag(tags, dependency.name, previous_version)
           elsif !git_source?(dependency.previous_requirements)
             lowest_tag_satisfying_previous_requirements
           end
         end
-
-        # rubocop:enable Metrics/PerceivedComplexity
 
         sig { returns(T.nilable(String)) }
         def lowest_tag_satisfying_previous_requirements
           tags = dependency_tags
                  .select { |t| version_from_tag(t) }
                  .select { |t| satisfies_previous_reqs?(version_from_tag(t)) }
-                 .sort_by { |t| [version_from_tag(t), t.length] }
 
-          tags.find { |t| t.include?(dependency.name) } || tags.first
+          PackageTagMatcher.without_other_packages(tags, dependency.name).min_by do |t|
+            [PackageTagMatcher.contains_dependency?(t, dependency.name) ? 0 : 1, version_from_tag(t), t.length, t]
+          end
         end
 
         sig { params(tag: String).returns(T.nilable(Dependabot::Version)) }
