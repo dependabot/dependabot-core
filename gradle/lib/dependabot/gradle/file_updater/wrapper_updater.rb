@@ -250,24 +250,45 @@ module Dependabot
         end
         def update_files_content(temp_dir, local_files, updated_files)
           local_files.each do |file|
-            f_content = if file.binary?
-                          File.binread(File.join(temp_dir, file.directory, file.name))
+            real_path = real_file_path(file)
+            target_file = updated_files.find do |candidate|
+              candidate.type != "symlink" && real_file_path(candidate) == real_path
+            end
+            unless target_file
+              raise Dependabot::DependencyFileNotResolvable,
+                    "Could not find real wrapper file for #{file.name}"
+            end
+
+            target_path = File.join(temp_dir, real_path)
+            f_content = if target_file.binary?
+                          File.binread(target_path)
                         else
-                          File.read(File.join(temp_dir, file.directory, file.name))
+                          File.read(target_path)
                         end
-            tmp_file = file.dup
+            tmp_file = target_file.dup
             tmp_file.content = tmp_file.binary? ? Base64.encode64(f_content) : f_content
-            updated_files[T.must(updated_files.index(file))] = tmp_file
+            updated_files[T.must(updated_files.index(target_file))] = tmp_file
           end
         end
 
         sig { params(temp_dir: T.any(Pathname, String)).void }
         def populate_temp_directory(temp_dir)
-          files_to_populate.each do |file|
+          files_to_populate.sort_by { |file| file.type == "symlink" ? 1 : 0 }.each do |file|
             in_path_name = File.join(temp_dir, file.directory, file.name)
             FileUtils.mkdir_p(File.dirname(in_path_name))
-            File.binwrite(in_path_name, file.decoded_content)
+            if file.type == "symlink"
+              target = Pathname.new(real_file_path(file))
+              link_directory = Pathname.new(File.dirname(file.path.delete_prefix("/")))
+              File.symlink(target.relative_path_from(link_directory).to_path, in_path_name)
+            else
+              File.binwrite(in_path_name, file.decoded_content)
+            end
           end
+        end
+
+        sig { params(file: Dependabot::DependencyFile).returns(String) }
+        def real_file_path(file)
+          Pathname.new(file.realpath).cleanpath.to_path.delete_prefix("/")
         end
 
         sig { params(path: T.any(Pathname, String)).returns(T.nilable(String)) }
