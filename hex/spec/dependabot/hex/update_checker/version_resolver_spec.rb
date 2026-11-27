@@ -979,6 +979,22 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       end
     end
 
+    context "when stdout contains a fatal failure between split divergence diagnostics" do
+      before do
+        stub_resolution_output(
+          stdout: "Dependencies have diverged:\nfatal: unable to access repository\n",
+          stderr: "** (Mix) Can't continue due to errors on dependencies\n"
+        )
+      end
+
+      it "preserves the operational failure" do
+        expect { latest_resolvable_version }
+          .to raise_error(Dependabot::Hex::UpdateChecker::VersionResolver::ResolutionSubprocessFailed) do |error|
+            expect(error.stdout).to include("fatal: unable to access repository")
+          end
+      end
+    end
+
     context "with a confirmed Mix dependency divergence" do
       let(:resolution_error) do
         helper_failure(
