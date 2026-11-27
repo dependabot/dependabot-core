@@ -507,8 +507,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
-    # pnpm 12 lists only the engines that failed, on one line (12.22) or wrapped after `wanted:` (12.18). When more
-    # than one failed, the first is reported.
+    # pnpm 12 lists only the engines that failed, on one line (12.22) or wrapped after `wanted:` (12.18). A refused
+    # engines.pnpm always fails, while engines.node fails only with engineStrict, so pnpm is reported when both are
+    # listed.
     context "when pnpm 12 reports an unsupported engine" do
       let(:project_name) { "pnpm/simple" }
 
@@ -516,7 +517,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         "unsupported_engine_node" => ["Node", ">=26.13.0 <27", "24.22.3"],
         "unsupported_engine_node_wrapped" => ["Node", ">=26.13.0 <27", "24.22.3"],
         "unsupported_engine_pnpm" => ["pnpm", "^10.26.0", "12.22.0"],
-        "unsupported_engine_node_and_pnpm" => ["Node", "20.11.1", "24.22.3"]
+        "unsupported_engine_node_and_pnpm" => ["pnpm", "use npm", "12.22.0"],
+        "unsupported_engine_node_and_pnpm_not_strict" => ["pnpm", "^10.26.0", "12.22.0"],
+        "unsupported_engine_escaped" => ["pnpm", 'use "npm" instead', "12.22.0"]
       }.each do |scenario, (tool_name, requirement, current)|
         context "with #{scenario}" do
           before do
@@ -535,6 +538,22 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
               expect(error.supported_versions).to eq(current)
             end
           end
+        end
+      end
+
+      # A dependency's engines field is not a requirement of the repository, so it is not reported as one
+      context "when a dependency is refused" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: fixture("pnpm_errors", "pnpm12", "unsupported_engine_dependency.txt"),
+              error_context: {}
+            )
+          )
+        end
+
+        it "does not report a tool version of the repository" do
+          expect { updated_pnpm_lock_content }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
         end
       end
     end

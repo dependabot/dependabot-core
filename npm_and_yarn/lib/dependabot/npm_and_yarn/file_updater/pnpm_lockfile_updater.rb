@@ -155,12 +155,11 @@ module Dependabot
         ERR_PNPM_UNSUPPORTED_ENGINE = /ERR_PNPM_UNSUPPORTED_ENGINE/
         PACAKGE_MANAGER = /Your (?<pkg_mgr>.*) version is incompatible with/
         VERSION_REQUIREMENT = /Expected version: (?<supported_ver>.*)\nGot: (?<detected_ver>.*)\n/
-        # pnpm 12 lists only the engines that failed: `Unsupported engine for <dir>: wanted: {"node":">=26"}
-        # (current: {"node":"24.22.3"})`
-        UNSUPPORTED_ENGINE_WANTED = /
-          Unsupported\ engine\ for\ [^\n]*?:\ wanted:\ \{"(?<engine>[^"]+)":"(?<requirement>[^"]*)"
-          [^\n]*?\(current:\ (?<current>\{[^\n]*?\})\)
-        /x
+        # pnpm 12 lists only the engines that failed, as JSON: `Unsupported engine for <dir>: wanted: {"node":">=26"}
+        # (current: {"node":"24.22.3"})`. The subject is the project's absolute path; a dependency is named instead
+        # (`<name>@<version>`) and is not a requirement of the repository.
+        UNSUPPORTED_ENGINE_WANTED =
+          %r{Unsupported engine for /[^\n]*?: wanted: (?<wanted>\{[^\n]*?\}) \(current: (?<current>\{[^\n]*?\})\)}
         ENGINE_TOOL_NAMES = T.let({ "node" => "Node" }.freeze, T::Hash[String, String])
 
         # No version of a package that pnpm has to resolve is old enough for the minimumReleaseAge window. pnpm 10,
@@ -1405,20 +1404,39 @@ module Dependabot
           nil
         end
 
+        # A refused engines.pnpm always fails, while engines.node fails only with engineStrict, so pnpm is reported
+        # when both are listed.
         sig { params(error_message: String).void }
         def raise_wanted_engine_error(error_message)
           match = error_message.match(UNSUPPORTED_ENGINE_WANTED)
           return unless match
 
-          engine = T.must(match[:engine])
-          current = T.must(match[:current])[/"#{Regexp.escape(engine)}":"([^"]*)"/, 1].to_s
+          wanted = engine_versions(T.must(match[:wanted]))
+          engine = wanted.key?(PNPMPackageManager::NAME) ? PNPMPackageManager::NAME : wanted.keys.first
+          return unless engine
 
           Dependabot.logger.warn(error_message)
           raise Dependabot::ToolVersionNotSupported.new(
             ENGINE_TOOL_NAMES.fetch(engine, engine),
-            T.must(match[:requirement]),
-            current
+            T.must(wanted[engine]),
+            engine_versions(T.must(match[:current])).fetch(engine, "")
           )
+        end
+
+        sig { params(json: String).returns(T::Hash[String, String]) }
+        def engine_versions(json)
+          parsed = T.let(JSON.parse(json), Object)
+          versions = T.let({}, T::Hash[String, String])
+          return versions unless parsed.is_a?(Hash)
+
+          parsed.each do |raw_name, raw_version|
+            name = T.cast(raw_name, Object)
+            version = T.cast(raw_version, Object)
+            versions[name] = version if name.is_a?(String) && version.is_a?(String)
+          end
+          versions
+        rescue JSON::ParserError
+          {}
         end
 
         sig do
