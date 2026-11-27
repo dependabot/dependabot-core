@@ -31,6 +31,31 @@ RSpec.describe Dependabot::Package::NpmPackageManagerConfig do
       )
     end
 
+    context "with devEngines.packageManager" do
+      {
+        "an object" => [{ "name" => "pnpm", "version" => "10.26.0" }, ["pnpm"]],
+        "an array" => [[{ "name" => "pnpm" }, { "name" => "npm", "onFail" => "warn" }], %w(pnpm npm)],
+        "a string" => ["pnpm@10.26.0", []],
+        "an entry without a name" => [[{ "version" => "10" }, { "name" => 10 }], []]
+      }.each do |shape, (package_manager, names)|
+        context "when it is #{shape}" do
+          let(:package_json) { { "devEngines" => { "packageManager" => package_manager } } }
+
+          it "lists the package managers it names" do
+            expect(config.dev_engines_package_managers).to eq(names)
+          end
+        end
+      end
+
+      context "when devEngines is not an object" do
+        let(:package_json) { { "devEngines" => "pnpm" } }
+
+        it "lists none" do
+          expect(config.dev_engines_package_managers).to eq([])
+        end
+      end
+    end
+
     context "with missing known fields" do
       let(:package_json) { { "name" => "example" } }
 

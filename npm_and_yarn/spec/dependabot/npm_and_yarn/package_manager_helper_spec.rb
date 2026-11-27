@@ -181,11 +181,34 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
         let(:version) { "9.0" }
         let(:package_json) { { "engines" => { "pnpm" => "^10.26.0" } } }
 
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with(["corepack", "pnpm@^10.26.0", "-v"], any_args).and_return("10.34.9\n")
+        end
+
+        after { Thread.current[:npm_and_yarn_package_manager_versions] = nil }
+
         it "reports the pnpm that engines.pnpm accepts" do
           allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
-            .with("pnpm@10", env: nil).and_return("10.34.9")
+            .with("pnpm@10.34.9", env: nil).and_return("10.34.9")
 
           expect(helper.package_manager.version.to_s).to eq("10.34.9")
+        end
+
+        context "when devEngines.packageManager names pnpm" do
+          let(:package_json) do
+            {
+              "devEngines" => { "packageManager" => { "name" => "pnpm", "version" => "10.26.0" } },
+              "engines" => { "pnpm" => "^10.26.0" }
+            }
+          end
+
+          it "asks Corepack for pnpm and lets it honor devEngines" do
+            helper.package_manager
+
+            expect(Dependabot::NpmAndYarn::Helpers)
+              .not_to have_received(:package_manager_version).with("pnpm@10.34.9", env: nil)
+          end
         end
       end
 

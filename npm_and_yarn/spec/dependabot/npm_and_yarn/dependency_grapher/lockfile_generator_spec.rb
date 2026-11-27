@@ -182,6 +182,26 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
             fingerprint: "install --lockfile-only --ignore-scripts"
           )
       end
+
+      # The pnpm to run is chosen from Helpers.dependency_files, which a previous job on this thread may have set
+      it "runs pnpm with this job's files" do
+        Dependabot::NpmAndYarn::Helpers.dependency_files = project_dependency_files("grapher/npm_no_lockfile")
+        files_seen = nil
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do
+          files_seen = Dependabot::NpmAndYarn::Helpers.dependency_files
+          ""
+        end
+        allow(File).to receive(:exist?).and_call_original
+        allow(File).to receive(:exist?).with("pnpm-lock.yaml").and_return(true)
+        allow(File).to receive(:read).and_call_original
+        allow(File).to receive(:read).with("pnpm-lock.yaml").and_return("")
+
+        generator.generate
+
+        expect(files_seen).to eq(dependency_files)
+      ensure
+        Dependabot::NpmAndYarn::Helpers.dependency_files = nil
+      end
     end
   end
 

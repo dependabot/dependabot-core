@@ -864,7 +864,7 @@ module Dependabot
       end
       def self.run_selected_pnpm(command, fingerprint: nil, env: nil)
         matching_version = matching_pnpm_major_for_files(dependency_files) ||
-                           engines_pnpm_version_for_files(dependency_files)
+                           engines_pnpm_selector_for_files(dependency_files)
 
         if matching_version
           return package_manager_run_command(
@@ -922,81 +922,152 @@ module Dependabot
       end
 
       # The pnpm to run instead of the default: the major that wrote an older lockfile, or else the pnpm that
-      # engines.pnpm accepts (see matching_pnpm_major and engines_pnpm_version). Nil runs the default.
+      # engines.pnpm accepts (see matching_pnpm_major and engines_pnpm_selector). Nil runs the default.
       sig do
         params(
-          lockfile_version: T.nilable(String),
-          package_manager_pin: T.nilable(String),
-          engines_pnpm: T.nilable(String)
+          lockfile: T.nilable(Dependabot::DependencyFile),
+          config: Dependabot::Package::NpmPackageManagerConfig
         ).returns(T.nilable(String))
       end
-      def self.pnpm_version_to_run(lockfile_version, package_manager_pin, engines_pnpm)
-        matching_pnpm_major(lockfile_version: lockfile_version, package_manager_pin: package_manager_pin) ||
-          engines_pnpm_version(constraint: engines_pnpm, package_manager_pin: package_manager_pin)
+      def self.pnpm_version_to_run(lockfile, config)
+        matching_pnpm_major(
+          lockfile_version: lockfile&.content && pnpm_lockfile_version(lockfile),
+          package_manager_pin: config.package_manager
+        ) || engines_pnpm_selector(lockfile, config)
       end
 
-      # The pnpm to run when the job's package.json has an `engines.pnpm` that the default pnpm does not satisfy, since
-      # pnpm refuses to run then (see engines_pnpm_version).
+      # engines_pnpm_selector for the job's own package.json and lockfile
       sig { params(files: T.nilable(T::Array[Dependabot::DependencyFile])).returns(T.nilable(String)) }
-      def self.engines_pnpm_version_for_files(files)
+      def self.engines_pnpm_selector_for_files(files)
         manifest = files&.find { |file| file.name == "package.json" }
         return unless manifest&.content
 
-        engines = JSON.parse(T.must(manifest.content))["engines"]
-        constraint = engines.is_a?(Hash) ? engines[PNPMPackageManager::NAME] : nil
-        return unless constraint.is_a?(String)
-
-        engines_pnpm_version(constraint: constraint, package_manager_pin: package_manager_pin(T.must(files)))
-      rescue JSON::ParserError
+        config = Dependabot::Package::NpmPackageManagerConfig.from_package_json(JSON.parse(T.must(manifest.content)))
+        engines_pnpm_selector(files&.find { |file| file.name == PNPMPackageManager::LOCKFILE_NAME }, config)
+      rescue JSON::ParserError, TypeError
         nil
       end
 
-      # The newest supported pnpm major that satisfies `engines.pnpm`, or the exact version it names when no release of
-      # that major is newer. Nil when the default pnpm satisfies it, pnpm is pinned (Corepack runs the pin), it is not
-      # a version range, or no pnpm that reads a current lockfile satisfies it; pnpm then reports the requirement.
-      sig { params(constraint: T.nilable(String), package_manager_pin: T.nilable(String)).returns(T.nilable(String)) }
-      def self.engines_pnpm_version(constraint:, package_manager_pin:)
-        return if constraint.nil? || constraint.strip.empty?
-        return if package_manager_pin&.start_with?("#{PNPMPackageManager::NAME}@")
+      # pnpm refuses to run when `engines.pnpm` does not accept its version. Returns the pnpm release to run instead
+      # (see resolve_engines_pnpm), when:
+      # - the job's own lockfile is one the default pnpm reads, since an ancestor lockfile can come with a
+      #   `packageManager` pin that is not fetched, and an older lockfile is matched by matching_pnpm_major;
+      # - pnpm is not pinned with `packageManager` or `devEngines.packageManager`, which Corepack already honors;
+      # - the default pnpm does not satisfy the requirement;
+      # - a pnpm from 9 up to the default's major satisfies it, and no newer major does.
+      # Otherwise nil: the default pnpm runs and reports the requirement it cannot meet.
+      sig do
+        params(
+          lockfile: T.nilable(Dependabot::DependencyFile),
+          config: Dependabot::Package::NpmPackageManagerConfig
+        ).returns(T.nilable(String))
+      end
+      def self.engines_pnpm_selector(lockfile, config)
+        return unless current_local_pnpm_lockfile?(lockfile)
+        return if pnpm_pinned?(config)
 
+        constraint = config.engines&.fetch(PNPMPackageManager::NAME, nil)&.strip
+        return if constraint.nil? || constraint.empty?
+
+        selector_for_engines_pnpm(constraint)
+      end
+
+      sig { params(lockfile: T.nilable(Dependabot::DependencyFile)).returns(T::Boolean) }
+      def self.current_local_pnpm_lockfile?(lockfile)
+        return false unless lockfile && lockfile.name == PNPMPackageManager::LOCKFILE_NAME && lockfile.content
+
+        pnpm_lockfile_version(lockfile).to_f >= PNPM_MIN_DEFAULT_LOCKFILE_VERSION
+      end
+      private_class_method :current_local_pnpm_lockfile?
+
+      sig { params(constraint: String).returns(T.nilable(String)) }
+      def self.selector_for_engines_pnpm(constraint)
         requirements = Requirement.requirements_array(constraint)
-        literals = T.cast(constraint.scan(/\d+(?:\.\d+){0,2}/), T::Array[String])
-        majors = current_lockfile_pnpm_majors
-        major = majors.find { |candidate| accepted_pnpm_version(candidate, requirements, literals) }
-        return if major.nil? || major == majors.first
+        default_version = default_pnpm_version
+        return if default_version.nil? || requirements_accept?(requirements, default_version)
+        return unless accepts_supported_pnpm?(requirements, default_version.split(".").first.to_i)
 
-        accepted_pnpm_version(major, requirements, literals)
+        version = resolve_engines_pnpm(constraint)
+        version if version && requirements_accept?(requirements, version)
       rescue Dependabot::BadRequirementError
         nil
       end
+      private_class_method :selector_for_engines_pnpm
 
-      # `<major>` when the requirement accepts the newest release of that major, otherwise a version of that major the
-      # requirement names and accepts
-      sig do
-        params(major: Integer, requirements: T::Array[Requirement], literals: T::Array[String]).returns(T.nilable(String))
-      end
-      def self.accepted_pnpm_version(major, requirements, literals)
-        return major.to_s if requirements_accept?(requirements, "#{major}.#{LATEST_IN_MAJOR}")
+      # Corepack runs the newest pnpm release that satisfies a range, so `corepack pnpm@<range> -v` resolves it once,
+      # with an argument vector since a range can contain spaces and command strings are split on whitespace. The
+      # release is then run by its exact version. An exact version is used as is.
+      sig { params(constraint: String).returns(T.nilable(String)) }
+      def self.resolve_engines_pnpm(constraint)
+        return constraint if SubprocessErrorContext.valid_version?(constraint)
 
-        exact = literals.find { |literal| literal.to_i == major && requirements_accept?(requirements, literal) }
-        exact && (exact.split(".") + %w(0 0)).first(3).join(".")
+        name = "#{PNPMPackageManager::NAME}@#{constraint}"
+        cached = package_manager_version_for(name)
+        return cached if cached
+
+        output = Dependabot::SharedHelpers.run_shell_command(
+          ["corepack", name, "-v"],
+          fingerprint: "corepack pnpm@<engines.pnpm> -v",
+          env: merge_corepack_env(nil)
+        )
+        version = version_from_output(output)
+        return unless SubprocessErrorContext.valid_version?(version)
+
+        register_package_manager_version(name, version)
+        version
+      rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+        Dependabot.logger.warn("Could not resolve engines.pnpm #{constraint} with Corepack: #{e.message}")
+        nil
       end
-      private_class_method :accepted_pnpm_version
+      private_class_method :resolve_engines_pnpm
+
+      sig { params(config: Dependabot::Package::NpmPackageManagerConfig).returns(T::Boolean) }
+      def self.pnpm_pinned?(config)
+        config.package_manager&.start_with?("#{PNPMPackageManager::NAME}@") ||
+          config.dev_engines_package_managers.include?(PNPMPackageManager::NAME)
+      end
+      private_class_method :pnpm_pinned?
+
+      # The version `pnpm` runs when nothing selects another, as printed by `corepack pnpm -v`
+      sig { returns(T.nilable(String)) }
+      def self.default_pnpm_version
+        version = package_manager_version_for(PNPMPackageManager::NAME) ||
+                  package_manager_version(PNPMPackageManager::NAME)
+        SubprocessErrorContext.valid_version?(version) ? version : nil
+      rescue StandardError => e
+        Dependabot.logger.warn("Could not determine the default pnpm version: #{e.message}")
+        nil
+      end
+      private_class_method :default_pnpm_version
+
+      # Whether a pnpm from 9 (the first to read the current lockfile format) up to `default_major` satisfies the
+      # requirement, and no newer major does. Checks each major's first and last possible release, plus the bounds the
+      # requirement names and the patch release after each (for an exclusive lower bound).
+      sig { params(requirements: T::Array[Requirement], default_major: Integer).returns(T::Boolean) }
+      def self.accepts_supported_pnpm?(requirements, default_major)
+        bounds = requirements.flat_map { |requirement| requirement.requirements.map { |_op, version| version.to_s } }
+        candidates = bounds.flat_map { |bound| [bound, next_patch(bound)] } +
+                     (PNPM_V9..default_major).flat_map { |major| ["#{major}.0.0", "#{major}.#{LATEST_IN_MAJOR}"] } +
+                     ["#{default_major + 1}.0.0", "#{LATEST_IN_MAJOR}.0"]
+        accepted_majors = candidates.select { |version| requirements_accept?(requirements, version) }.map(&:to_i)
+
+        accepted_majors.any? { |major| major.between?(PNPM_V9, default_major) } &&
+          accepted_majors.none? { |major| major > default_major }
+      end
+      private_class_method :accepts_supported_pnpm?
+
+      sig { params(version: String).returns(String) }
+      def self.next_patch(version)
+        major, minor, patch = version.split(/[.+-]/).first(3).map(&:to_i)
+        "#{major}.#{minor.to_i}.#{patch.to_i + 1}"
+      end
+      private_class_method :next_patch
 
       sig { params(requirements: T::Array[Requirement], version: String).returns(T::Boolean) }
       def self.requirements_accept?(requirements, version)
         requirements.any? { |requirement| requirement.satisfied_by?(Version.new(version)) }
       end
       private_class_method :requirements_accept?
-
-      # Supported pnpm majors that read a lockfile the default pnpm writes, newest (the default) first
-      sig { returns(T::Array[Integer]) }
-      def self.current_lockfile_pnpm_majors
-        PNPMPackageManager::SUPPORTED_VERSIONS.map { |version| version.segments.first.to_i }
-                                              .select { |major| major >= PNPM_V9 }
-                                              .sort.reverse
-      end
-      private_class_method :current_lockfile_pnpm_majors
 
       # The `packageManager` of the job's own package.json.
       sig { params(files: T::Array[Dependabot::DependencyFile]).returns(T.nilable(String)) }

@@ -159,6 +159,7 @@ module Dependabot
         @package_manager_detector = T.let(PackageManagerDetector.new(lockfiles, config), PackageManagerDetector)
         @manifest_package_manager = T.let(config.package_manager, T.nilable(String))
         @engines = T.let(config.engines, T.nilable(T::Hash[String, String]))
+        @config = config
 
         @installed_versions = T.let({}, T::Hash[String, String])
         @registries = T.let({}, T::Hash[String, String])
@@ -453,9 +454,7 @@ module Dependabot
       def runnable_package_manager_name(name)
         return name unless name == PNPMPackageManager::NAME
 
-        lockfile = @lockfiles[name.to_sym]
-        lockfile_version = lockfile&.content && Helpers.pnpm_lockfile_version(lockfile)
-        matching_version = Helpers.pnpm_version_to_run(lockfile_version, @manifest_package_manager, @engines&.[](name))
+        matching_version = Helpers.pnpm_version_to_run(@lockfiles[name.to_sym], @config)
         matching_version ? "#{name}@#{matching_version}" : name
       end
 
