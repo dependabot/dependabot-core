@@ -50,11 +50,7 @@ module Dependabot
         )
 
         @latest_resolvable_version_with_no_unlock ||=
-          if git_dependency?
-            latest_resolvable_commit_with_unchanged_git_source
-          else
-            fetch_latest_resolvable_version(unlock_requirement: false)
-          end
+          fetch_latest_resolvable_version(unlock_requirement: false)
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
@@ -83,7 +79,7 @@ module Dependabot
       def latest_resolvable_version_for_git_dependency
         # If the gem isn't pinned, the latest version is just the latest
         # commit for the specified branch.
-        return latest_resolvable_commit_with_unchanged_git_source unless git_commit_checker.pinned?
+        return fetch_latest_resolvable_version(unlock_requirement: false) unless git_commit_checker.pinned?
 
         # If the dependency is pinned to a tag that looks like a version then
         # we want to update that tag. The latest version will then be the SHA
@@ -96,18 +92,6 @@ module Dependabot
 
         # If the dependency is pinned then there's nothing we can do.
         dependency.version
-      end
-
-      sig { returns(T.any(String, T.nilable(Dependabot::Version))) }
-      def latest_resolvable_commit_with_unchanged_git_source
-        fetch_latest_resolvable_version(unlock_requirement: false)
-      rescue SharedHelpers::HelperSubprocessFailed,
-             Dependabot::DependencyFileNotResolvable => e
-        # Resolution may fail, as Elixir updates straight to the tip of the
-        # branch. Just return `nil` if it does (so no update).
-        return if e.message.include?("resolution failed")
-
-        raise e
       end
 
       sig { returns(T::Boolean) }
@@ -138,33 +122,29 @@ module Dependabot
       def latest_git_tag_is_resolvable?
         return T.must(@git_tag_resolvable) if @latest_git_tag_is_resolvable_checked
 
-        @latest_git_tag_is_resolvable_checked = T.let(true, T.nilable(T::Boolean))
-
-        return false if git_commit_checker.local_tag_for_latest_version(update_cooldown).nil?
-
         replacement_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
+        result =
+          if replacement_tag.nil?
+            false
+          else
+            prepared_files = FilePreparer.new(
+              dependency: dependency,
+              dependency_files: dependency_files,
+              replacement_git_pin: replacement_tag.tag
+            ).prepared_dependency_files
 
-        prepared_files = FilePreparer.new(
-          dependency: dependency,
-          dependency_files: dependency_files,
-          replacement_git_pin: T.must(replacement_tag).tag
-        ).prepared_dependency_files
+            resolver_result = VersionResolver.new(
+              dependency: dependency,
+              prepared_dependency_files: prepared_files,
+              credentials: credentials
+            ).latest_resolvable_version
 
-        resolver_result = VersionResolver.new(
-          dependency: dependency,
-          prepared_dependency_files: prepared_files,
-          original_dependency_files: dependency_files,
-          credentials: credentials
-        ).latest_resolvable_version
+            !resolver_result.nil?
+          end
 
-        @git_tag_resolvable = !resolver_result.nil?
-        @git_tag_resolvable
-      rescue SharedHelpers::HelperSubprocessFailed,
-             Dependabot::DependencyFileNotResolvable => e
-        raise e unless e.message.include?("resolution failed")
-
-        @git_tag_resolvable = T.let(false, T.nilable(T::Boolean))
-        false
+        @git_tag_resolvable = T.let(result, T.nilable(T::Boolean))
+        @latest_git_tag_is_resolvable_checked = T.let(true, T.nilable(T::Boolean))
+        T.must(@git_tag_resolvable)
       end
 
       sig { returns(T.nilable(Dependabot::DependencyRequirement::ObjectHash)) }
@@ -236,7 +216,6 @@ module Dependabot
             VersionResolver.new(
               dependency: dependency,
               prepared_dependency_files: prepared_dependency_files,
-              original_dependency_files: dependency_files,
               credentials: credentials
             )
           end
