@@ -2514,4 +2514,45 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
       end
     end
   end
+
+  describe "re-locking with the native Poetry helper" do
+    subject(:updated_lockfile) { updater.updated_dependency_files.find { |f| f.name == "poetry.lock" } }
+
+    before do
+      Dependabot::Experiments.register(:enable_native_poetry_helper, true)
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+    end
+
+    it "matches `poetry update` without running it" do
+      native = updated_lockfile.content
+      expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command).with(/poetry update/, any_args)
+
+      Dependabot::Experiments.register(:enable_native_poetry_helper, false)
+      shell = described_class.new(
+        dependency_files: dependency_files, dependencies: [dependency], credentials: credentials
+      ).updated_dependency_files.find { |f| f.name == "poetry.lock" }.content
+
+      expect(native).to eq(shell)
+    end
+
+    context "when the helper fails for a reason other than resolution" do
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_call_original
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+          .with(hash_including(function: "relock_poetry_project"))
+          .and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: "boom", error_class: "RuntimeError", error_context: {}
+            )
+          )
+      end
+
+      it "falls back to `poetry update`" do
+        requests = TomlRB.parse(updated_lockfile.content)["package"].find { |d| d["name"] == "requests" }
+
+        expect(requests["version"]).to eq("2.19.1")
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(/poetry update requests/, any_args)
+      end
+    end
+  end
 end

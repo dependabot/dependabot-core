@@ -42,6 +42,11 @@ module Dependabot
         @plugins_installed = true
       end
 
+      sig { returns(T::Boolean) }
+      def plugins_required?
+        required_plugins.any?
+      end
+
       private
 
       sig { returns(T.nilable(String)) }

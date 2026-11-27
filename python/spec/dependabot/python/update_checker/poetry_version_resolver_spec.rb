@@ -577,6 +577,23 @@ RSpec.describe namespace::PoetryVersionResolver do
     end
   end
 
+  describe "re-locking with the native Poetry helper" do
+    before do
+      Dependabot::Experiments.register(:enable_native_poetry_helper, true)
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+    end
+
+    it "resolves without running `poetry update`" do
+      expect(resolver.latest_resolvable_version(requirement: "==2.18.4")).to eq(Gem::Version.new("2.18.4"))
+      expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command).with(/poetry update/, any_args)
+    end
+
+    it "treats solver failures as unresolvable without falling back to `poetry update`" do
+      expect(resolver.resolvable?(version: Gem::Version.new("99.18.4"))).to be(false)
+      expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command).with(/poetry update/, any_args)
+    end
+  end
+
   describe "#resolvable?" do
     subject(:resolvable) { resolver.resolvable?(version: version) }
 
