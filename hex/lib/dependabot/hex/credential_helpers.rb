@@ -70,14 +70,7 @@ module Dependabot
         ).returns(SharedHelpers::HelperSubprocessFailed)
       end
       def self.sanitize_error(error:, credentials:)
-        redactions = credentials.each_with_object({}) do |credential, substitutions|
-          next unless credential["type"] == "hex_repository"
-
-          url = underscore_keys(credential)["url"]
-          next unless url.is_a?(String) && !url.empty?
-
-          substitutions.merge!(repository_url_query_redactions(url))
-        end
+        redactions = credential_redactions(credentials)
         pattern = Regexp.union(redactions.keys.sort_by { |value| -value.length })
         message = error.message.gsub(pattern) { |match| redactions.fetch(match) }
         error_context = redact_value(error.error_context, redactions, pattern)
@@ -214,6 +207,29 @@ module Dependabot
         )
       end
       private_class_method :run_mix_command
+
+      sig { params(credentials: T::Array[Dependabot::Credential]).returns(T::Hash[String, String]) }
+      def self.credential_redactions(credentials)
+        credentials.each_with_object({}) do |credential, redactions|
+          case credential["type"]
+          when "hex_organization"
+            add_credential_redaction(redactions, credential["token"])
+          when "hex_repository"
+            add_credential_redaction(redactions, credential["auth_key"] || credential["auth-key"])
+            url = credential["url"]
+            redactions.merge!(repository_url_query_redactions(url)) if url.is_a?(String) && !url.empty?
+          when "git_source"
+            add_credential_redaction(redactions, credential["password"])
+          end
+        end
+      end
+      private_class_method :credential_redactions
+
+      sig { params(redactions: T::Hash[String, String], value: T.untyped).void }
+      def self.add_credential_redaction(redactions, value)
+        redactions[value] = "***" if value.is_a?(String) && !value.empty?
+      end
+      private_class_method :add_credential_redaction
 
       sig { params(url: String).returns(T::Hash[String, String]) }
       def self.repository_url_query_redactions(url)
