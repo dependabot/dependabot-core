@@ -169,6 +169,63 @@ RSpec.describe Dependabot::Swift::FileUpdater do
     end
   end
 
+  # Packages/HostConditional adds OpenCombine under `#if !canImport(Combine)`, so SwiftPM only pins it on hosts
+  # without Combine, such as the Linux image the updater runs in.
+  context "with a dependency that SwiftPM only adds on hosts without Combine" do
+    subject(:lockfile) { updater.updated_dependency_files.find { |file| file.name == "Package.resolved" } }
+
+    let(:dependencies) do
+      requirements = [{
+        requirement: ">= 1.14.0, < 2.0.0",
+        groups: [],
+        file: "Package.swift",
+        source: { type: "git", url: "https://github.com/apple/swift-log.git", ref: "1.14.0", branch: nil },
+        metadata: { kind: "upToNextMajorVersion", requirement_string: "from: \"1.14.0\"" }
+      }]
+      [
+        Dependabot::Dependency.new(
+          name: "github.com/apple/swift-log",
+          version: "1.15.0",
+          previous_version: "1.14.0",
+          requirements: requirements,
+          previous_requirements: requirements,
+          package_manager: "swift",
+          metadata: { identity: "swift-log" }
+        )
+      ]
+    end
+    let(:original_lockfile) { files.find { |file| file.name == "Package.resolved" } }
+
+    # The file parser runs this in the same checkout before the update, which leaves SwiftPM's state in .build.
+    before do
+      Dir.chdir(repo_contents_path) do
+        Dependabot::SharedHelpers.run_shell_command("swift package show-dependencies --format json")
+      end
+    end
+
+    context "when Package.resolved was generated on macOS" do
+      let(:project_name) { "host_conditional_pins" }
+
+      it "updates the dependency without adding the host-only pin" do
+        expect(lockfile.content).to eq(
+          original_lockfile.content
+            .sub("a878e7f8f46cfc0e1125e565b5c08e7d5272dc9a", "3ffafb9722d5d918c614feb496c8789a3b59d222")
+            .sub('"version" : "1.14.0"', '"version" : "1.15.0"')
+        )
+      end
+    end
+
+    context "when Package.resolved already pins the host-only dependency" do
+      let(:project_name) { "host_conditional_pins_from_linux" }
+
+      it "keeps that pin" do
+        pins = JSON.parse(lockfile.content).fetch("pins").to_h { |pin| [pin["identity"], pin["state"]["version"]] }
+
+        expect(pins).to eq("opencombine" => "0.14.0", "swift-log" => "1.15.0")
+      end
+    end
+  end
+
   context "with Xcode SPM projects" do
     describe "#updated_dependency_files" do
       subject(:updated_dependency_files) { updater.updated_dependency_files }
