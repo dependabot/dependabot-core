@@ -899,6 +899,19 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
     it { is_expected.to eq(Gem::Version.new("2.1.1")) }
 
+    describe "#security_fix_versions" do
+      it "keeps distinct post-releases and caps safe candidates" do
+        releases = %w(2.1.0 2.1.1 2.1.1.post1 2.1.2 2.1.3 2.1.4 2.1.5).map do |version|
+          Dependabot::Package::PackageRelease.new(version: Dependabot::Python::Version.new(version))
+        end
+        allow(finder).to receive(:available_versions).and_return(releases)
+
+        versions = finder.security_fix_versions
+
+        expect(versions.map(&:to_s)).to eq(%w(2.1.1 2.1.1.post1 2.1.2 2.1.3 2.1.4))
+      end
+    end
+
     context "when the lowest version has been yanked" do
       let(:pypi_response) do
         fixture("pypi", "pypi_simple_response_yanked.html")

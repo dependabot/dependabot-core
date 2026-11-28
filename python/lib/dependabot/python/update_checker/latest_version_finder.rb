@@ -21,6 +21,8 @@ module Dependabot
       class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
 
+        MAX_SECURITY_FIX_VERSION_CANDIDATES = 5
+
         sig do
           override.returns(T.nilable(Dependabot::Package::PackageDetails))
         end
@@ -57,6 +59,25 @@ module Dependabot
           releases = filter_prerelease_versions(releases)
           releases = filter_ignored_versions(releases)
           apply_post_fetch_latest_versions_filter(releases)
+        end
+
+        sig do
+          params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+            .returns(T::Array[Dependabot::Version])
+        end
+        def security_fix_versions(language_version: nil)
+          releases = available_versions
+          return [] unless releases
+
+          releases = filter_yanked_versions(releases)
+          releases = filter_unsupported_versions(releases, language_version)
+          releases = Dependabot::UpdateCheckers::VersionFilters
+                     .filter_vulnerable_versions(releases, security_advisories)
+          releases = filter_ignored_versions(releases)
+          releases = filter_lower_versions(releases)
+          releases = apply_post_fetch_lowest_security_fix_versions_filter(releases)
+
+          releases.sort_by(&:version).map(&:version).uniq(&:to_s).first(MAX_SECURITY_FIX_VERSION_CANDIDATES)
         end
       end
     end
