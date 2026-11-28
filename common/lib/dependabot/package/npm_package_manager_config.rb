@@ -17,6 +17,8 @@ module Dependabot
 
       const :package_manager, T.nilable(String), default: nil
       const :engines, T.nilable(T::Hash[String, String]), default: nil
+      # Names in devEngines.packageManager, which Corepack runs when packageManager is absent
+      const :dev_engines_package_managers, T::Array[String], default: []
 
       sig { params(package_json: T.nilable(Object)).returns(NpmPackageManagerConfig) }
       def self.from_package_json(package_json)
@@ -26,9 +28,28 @@ module Dependabot
 
         new(
           package_manager: optional_string(manifest["packageManager"], "packageManager"),
-          engines: parse_engines(manifest)
+          engines: parse_engines(manifest),
+          dev_engines_package_managers: parse_dev_engines_package_managers(manifest)
         )
       end
+
+      # devEngines.packageManager is an object, or an array of objects, with a `name`. Other shapes are ignored, since
+      # Dependabot only reads which package managers it names.
+      sig { params(manifest: ObjectHash).returns(T::Array[String]) }
+      def self.parse_dev_engines_package_managers(manifest)
+        dev_engines = manifest["devEngines"]
+        return [] unless dev_engines.is_a?(Hash)
+
+        raw = T.cast(dev_engines["packageManager"], Object)
+        entries = raw.is_a?(Array) ? raw.map { |entry| T.cast(entry, Object) } : [raw]
+        entries.filter_map do |entry|
+          next unless entry.is_a?(Hash)
+
+          name = T.cast(entry["name"], Object)
+          name if name.is_a?(String)
+        end
+      end
+      private_class_method :parse_dev_engines_package_managers
 
       sig { params(manifest: ObjectHash).returns(T.nilable(T::Hash[String, String])) }
       def self.parse_engines(manifest)

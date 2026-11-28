@@ -155,6 +155,10 @@ module Dependabot
 
         sig { void }
         def run_pnpm_lockfile_generation
+          # The pnpm to run is chosen from these files, so they must be this job's (see Helpers.run_selected_pnpm)
+          Helpers.dependency_files = dependency_files
+          Helpers.credentials = credentials
+
           # pnpm uses --lockfile-only to generate lockfile without installing
           command = "install --lockfile-only --ignore-scripts"
           Helpers.run_pnpm_command(command, fingerprint: command)

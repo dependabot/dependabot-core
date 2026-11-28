@@ -239,6 +239,145 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       end
     end
 
+    # pnpm refuses to run when engines.pnpm does not accept its version
+    context "when engines.pnpm does not accept the default pnpm" do
+      before do
+        Thread.current[:npm_and_yarn_package_manager_versions] = nil
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with("corepack pnpm -v", any_args).and_return(default_version)
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(["corepack", "pnpm@#{engines_pnpm}", "-v"], any_args).and_return("#{resolved_version}\n")
+      end
+
+      after { Thread.current[:npm_and_yarn_package_manager_versions] = nil }
+
+      let(:default_version) { "12.22.0\n" }
+      let(:resolved_version) { "10.30.3" }
+      let(:lockfile_version) { "9.0" }
+      let(:engines_pnpm) { "^10.26.0" }
+      let(:manifest) { { "name" => "example", "engines" => { "pnpm" => engines_pnpm } } }
+
+      def expect_pnpm(version)
+        described_class.run_pnpm_command("install", env: env)
+
+        command = version ? "corepack pnpm@#{version} install" : "pnpm install"
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with(command, fingerprint: command, env: env)
+      end
+
+      # Corepack resolves the range to the newest release that satisfies it, which is then run
+      ["10", "10.x", "^10.26.0", ">=10.30.3 <11", "^9 || ^10", ">10.26.0 <10.34.9", "^10.26.0 || 9.x"]
+        .each do |requirement|
+          context "with #{requirement}" do
+            let(:engines_pnpm) { requirement }
+
+            it "runs the release Corepack resolves for it" do
+              expect_pnpm(resolved_version)
+              expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+                .with(["corepack", "pnpm@#{requirement}", "-v"], any_args).once
+            end
+          end
+        end
+
+      ["10.26.0", "12.18.0"].each do |requirement|
+        context "with #{requirement}" do
+          let(:engines_pnpm) { requirement }
+
+          it "runs that version" do
+            expect_pnpm(requirement)
+          end
+        end
+      end
+
+      context "when Corepack cannot resolve the range" do
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with(["corepack", "pnpm@#{engines_pnpm}", "-v"], any_args)
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "Tag not found", error_context: {})
+            )
+        end
+
+        it "runs the default pnpm" do
+          expect_pnpm(nil)
+        end
+      end
+
+      # The default pnpm is accepted, the requirement is not a version range, no pnpm that reads the lockfile is
+      # accepted, or a newer major than the default is; pnpm then reports the requirement itself.
+      [">=9", "^12", "<12.23.0", "use npm", "8", "^9 || >=13"].each do |requirement|
+        context "with #{requirement}" do
+          let(:engines_pnpm) { requirement }
+
+          it "runs the default pnpm" do
+            expect_pnpm(nil)
+          end
+        end
+      end
+
+      context "when packageManager pins pnpm" do
+        let(:manifest) do
+          { "name" => "example", "packageManager" => "pnpm@12.22.0", "engines" => { "pnpm" => engines_pnpm } }
+        end
+
+        it "leaves the pinned version to Corepack" do
+          expect_pnpm(nil)
+        end
+      end
+
+      context "when devEngines.packageManager names pnpm" do
+        let(:manifest) do
+          {
+            "name" => "example",
+            "devEngines" => { "packageManager" => { "name" => "pnpm", "version" => "10.26.0" } },
+            "engines" => { "pnpm" => engines_pnpm }
+          }
+        end
+
+        it "leaves the selection to Corepack" do
+          expect_pnpm(nil)
+        end
+      end
+
+      context "when the lockfile sits above the job's directory" do
+        let(:files) do
+          [
+            Dependabot::DependencyFile.new(name: "package.json", content: manifest_content),
+            Dependabot::DependencyFile.new(name: "../../pnpm-lock.yaml", content: "lockfileVersion: '9.0'\n")
+          ]
+        end
+
+        it "runs the default pnpm, which Corepack can match to a pin in that directory" do
+          expect_pnpm(nil)
+        end
+      end
+
+      context "when the lockfile is older than the default pnpm reads" do
+        let(:lockfile_version) { "6.0" }
+
+        it "runs the pnpm that wrote the lockfile" do
+          expect_pnpm("8")
+        end
+      end
+
+      context "when the lockfile is too old for any supported pnpm" do
+        let(:lockfile_version) { "5.3" }
+        let(:engines_pnpm) { "^11" }
+
+        it "runs the default pnpm" do
+          expect_pnpm(nil)
+        end
+      end
+
+      context "when the default pnpm version is unknown" do
+        let(:default_version) { "" }
+
+        it "runs the default pnpm" do
+          expect_pnpm(nil)
+        end
+      end
+    end
+
     context "without a pnpm lockfile" do
       let(:files) { [Dependabot::DependencyFile.new(name: "package.json", content: manifest_content)] }
 
