@@ -75,7 +75,7 @@ module Dependabot
       end
 
       # Xcode SPM parsing: delegates to XcodeSpmResolver which parses
-      # Package.resolved JSON and enriches with project.pbxproj requirements
+      # Package.resolved JSON and enriches with project.pbxproj/project.xcproj requirements
       sig { returns(T::Array[Dependabot::Dependency]) }
       def parse_xcode_spm
         XcodeSpmResolver.new(
@@ -124,12 +124,12 @@ module Dependabot
         )
       end
 
-      # All project.pbxproj support files
+      # All Xcode project support files (project.pbxproj or project.xcproj)
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def pbxproj_files
         @pbxproj_files ||= T.let(
           dependency_files.select do |f|
-            f.name.end_with?("project.pbxproj") && f.support_file?
+            XcodeFileHelpers.xcode_project_file?(f.name) && f.support_file?
           end,
           T.nilable(T::Array[Dependabot::DependencyFile])
         )

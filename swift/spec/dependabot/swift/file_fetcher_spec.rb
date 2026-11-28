@@ -78,6 +78,22 @@ RSpec.describe Dependabot::Swift::FileFetcher do
     end
   end
 
+  context "with a single .xcodeproj in the JSON project format (project.xcproj)" do
+    let(:project_name) { "xcode_project_xcproj" }
+    let(:directory) { "/" }
+
+    it "fetches project.xcproj as support file and Package.resolved" do
+      files = file_fetcher_instance.files
+      expect(files.map(&:name)).to match_array(
+        %w(
+          MyApp.xcodeproj/project.xcproj
+          MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+        )
+      )
+      expect(files.find { |f| f.name.end_with?("project.xcproj") }.support_file).to be true
+    end
+  end
+
   context "with multiple .xcodeproj directories" do
     let(:project_name) { "xcode_project_multiple" }
     let(:directory) { "/" }

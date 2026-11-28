@@ -61,8 +61,8 @@ module Dependabot
       sig { params(fetched_files: T::Array[DependencyFile]).void }
       def fetch_xcode_spm_files(fetched_files)
         xcodeproj_dirs.each do |xcodeproj_path|
-          pbxproj = fetch_support_file(File.join(xcodeproj_path, "project.pbxproj"))
-          fetched_files << pbxproj if pbxproj
+          project_file = xcode_project_file(xcodeproj_path)
+          fetched_files << project_file if project_file
 
           resolved = fetch_file_if_present(File.join(xcodeproj_path, XCODE_SPM_PACKAGE_RESOLVED_PATH))
           fetched_files << resolved if resolved
@@ -75,6 +75,16 @@ module Dependabot
           resolved = fetch_file_if_present(File.join(workspace_path, XCWORKSPACE_PACKAGE_RESOLVED_PATH))
           fetched_files << resolved if resolved
         end
+      end
+
+      sig { params(xcodeproj_path: String).returns(T.nilable(DependencyFile)) }
+      def xcode_project_file(xcodeproj_path)
+        XcodeFileHelpers::PROJECT_FILENAMES.each do |filename|
+          file = fetch_support_file(File.join(xcodeproj_path, filename))
+          return file if file
+        end
+
+        nil
       end
 
       sig { returns(T::Array[String]) }
