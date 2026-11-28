@@ -42,8 +42,7 @@ module Dependabot
           updated_file(file: file, content: updated_manifest_content(file))
         end
 
-        updated_lockfile = updated_lockfile(updated_files)
-        updated_files << updated_lockfile if updated_lockfile
+        updated_files.concat(updated_lockfile_files(updated_files))
 
         raise "No files changed!" if updated_files.none?
 
@@ -69,29 +68,32 @@ module Dependabot
         dependencies.any? { |dep| requirement_changed?(file, dep) }
       end
 
-      # Regenerates the lockfile against the updated manifest. A branch pin
-      # update changes only the lockfile, as the manifest still names the branch.
-      # The lockfile is only ever updated, never created.
+      # Regenerates the lockfile against the updated manifest, with any
+      # committed deployed files `apm install` changed alongside it. A branch
+      # pin update changes only the lockfile, as the manifest still names the
+      # branch. The lockfile is only ever updated, never created.
       sig do
         params(updated_manifests: T::Array[Dependabot::DependencyFile])
-          .returns(T.nilable(Dependabot::DependencyFile))
+          .returns(T::Array[Dependabot::DependencyFile])
       end
-      def updated_lockfile(updated_manifests)
+      def updated_lockfile_files(updated_manifests)
         lockfile = get_original_file(LOCKFILE_FILENAME)
         manifest = get_original_file(MANIFEST_FILENAME)
-        return unless lockfile && manifest
+        return [] unless lockfile && manifest
 
         manifest_content = updated_manifests.find { |f| f.name == manifest.name }&.content || manifest.content
-        content = LockfileUpdater.new(
+        lockfile_updater = LockfileUpdater.new(
           dependencies: dependencies,
           lockfile: lockfile,
           manifest_content: T.must(manifest_content),
           credentials: credentials,
           repo_contents_path: repo_contents_path
-        ).updated_lockfile_content
-        return if content == lockfile.content
+        )
+        content = lockfile_updater.updated_lockfile_content
+        files = lockfile_updater.updated_deployed_files
+        return files if content == lockfile.content
 
-        updated_file(file: lockfile, content: content)
+        [updated_file(file: lockfile, content: content), *files]
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(String) }

@@ -15,6 +15,10 @@ module Dependabot
     class Lockfile
       extend T::Sig
 
+      URI_KIND = "uri"
+      PROJECT_SCOPE = "project"
+      TARGET_NAME_REGEX = /\A[a-z][a-z0-9-]*\z/
+
       sig { params(file: Dependabot::DependencyFile).void }
       def initialize(file)
         @document = T.let(parse(file), T::Hash[Object, Object])
@@ -46,12 +50,110 @@ module Dependabot
         entry.delete("content_hash")
       end
 
+      # APM's name for the package locked as `key`, which `apm update` matches
+      # its operands against: the unique key APM builds from the entry's
+      # `host`, `port`, `repo_url` and `virtual_path` (build_dependency_unique_key
+      # in apm_cli/models/dependency/identity.py). Unlike `key`, it keeps a
+      # non-default port, HTTPS or SSH, which APM records as part of the
+      # identity, and joins a virtual path with `/`. github.com is the only
+      # host it leaves off.
+      sig { params(key: String).returns(T.nilable(String)) }
+      def package_name(key)
+        entry = entry_for(key)
+        return unless entry
+
+        repo_url = entry["repo_url"]
+        host = entry["host"]
+        port = entry["port"]
+        virtual_path = entry["virtual_path"]
+        hostname = host.is_a?(String) && !host.empty? ? host.downcase : PackageSpecifier::DEFAULT_HOST
+        repo_url = T.cast(repo_url, String)
+        repo_url = repo_url.downcase if PackageSpecifier.github_family?(hostname)
+        authority = port.is_a?(Integer) ? "#{hostname}:#{port}" : hostname
+        name = authority == PackageSpecifier::DEFAULT_HOST ? repo_url : "#{authority}/#{repo_url}"
+        virtual_path.is_a?(String) && !virtual_path.empty? ? "#{name}/#{virtual_path}" : name
+      end
+
+      # The targets the lockfile records project files as deployed to, from its
+      # `deployments` entries. MCP and LSP servers are `uri` entries whose
+      # target (`mcp`, `lsp`) isn't a harness, so they are skipped. Not every
+      # name is a harness either (APM records unattributed paths as `legacy`),
+      # so callers check these against `apm targets`. A lockfile without
+      # `deployments` yields none: like APM, this doesn't infer harnesses from
+      # legacy `deployed_files` paths.
+      sig { returns(T::Array[String]) }
+      def deployment_targets
+        project_deployments.filter_map do |deployment|
+          deployment_name(deployment, "target") unless deployment["kind"] == URI_KIND
+        end.uniq.sort
+      end
+
+      # The runtimes (e.g. `claude`, `intellij`) the lockfile records MCP and
+      # LSP servers as configured for.
+      sig { returns(T::Array[String]) }
+      def service_runtimes
+        project_deployments.filter_map do |deployment|
+          deployment_name(deployment, "runtime") if deployment["kind"] == URI_KIND
+        end.uniq.sort
+      end
+
+      # The digest (e.g. `sha256:…`) the lockfile records for each file a
+      # dependency deployed, keyed by the file's path.
+      sig { returns(T::Hash[String, String]) }
+      def deployed_file_hashes
+        entries = @document["dependencies"]
+        return {} unless entries.is_a?(Array)
+
+        entries.each_with_object({}) do |entry, hashes|
+          recorded = entry["deployed_file_hashes"] if entry.is_a?(Hash)
+          next unless recorded.is_a?(Hash)
+
+          recorded.each { |path, digest| hashes[path] = digest if path.is_a?(String) && digest.is_a?(String) }
+        end
+      end
+
+      # Every path the lockfile records a dependency as deploying to the
+      # project: its `deployed_files` (files and the directories that hold
+      # them), its `deployed_file_hashes` and the project-scope `deployments`.
+      # MCP and LSP servers are `uri` deployments named by server, not path,
+      # so they are skipped.
+      sig { returns(T::Array[String]) }
+      def deployed_paths
+        paths = deployed_file_hashes.keys
+        entries = @document["dependencies"]
+        if entries.is_a?(Array)
+          entries.each do |entry|
+            files = entry["deployed_files"] if entry.is_a?(Hash)
+            paths.concat(files.grep(String)) if files.is_a?(Array)
+          end
+        end
+        project_deployments.each do |deployment|
+          value = deployment["value"]
+          paths << value if value.is_a?(String) && deployment["kind"] != URI_KIND
+        end
+        paths.uniq
+      end
+
       sig { returns(String) }
       def to_yaml
         @document.to_yaml
       end
 
       private
+
+      sig { returns(T::Array[T::Hash[Object, Object]]) }
+      def project_deployments
+        deployments = @document["deployments"]
+        return [] unless deployments.is_a?(Array)
+
+        deployments.select { |deployment| deployment.is_a?(Hash) && deployment["scope"] == PROJECT_SCOPE }
+      end
+
+      sig { params(deployment: T::Hash[Object, Object], field: String).returns(T.nilable(String)) }
+      def deployment_name(deployment, field)
+        name = deployment[field]
+        name if name.is_a?(String) && name.match?(TARGET_NAME_REGEX)
+      end
 
       sig { params(key: String).returns(T.nilable(T::Hash[Object, Object])) }
       def entry_for(key)

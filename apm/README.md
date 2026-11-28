@@ -80,11 +80,52 @@ declarations (tag, then SHA, then branch) are updated.
 #### Lockfile regeneration
 
 When the repository has an `apm.lock.yaml`, Dependabot regenerates it with the
-APM CLI's `apm lock`, which resolves the updated manifest without deploying any
-package files. APM only re-resolves the entries whose manifest ref changed, so
-every other entry keeps its locked commit. A branch pin's lock entry is first
-moved to the branch's new head commit (dropping its now stale `content_hash`)
-for APM to verify and re-hash. APM rewrites the whole file, so its
+APM CLI. `apm install` keeps each entry's deployed file list and hashes in step
+with the new version, as `apm install --frozen` requires, so Dependabot uses it
+whenever it can tell which harnesses to deploy to:
+
+1. If `apm.yml` declares `targets:`, it runs `apm install`.
+2. Otherwise, if the lockfile's `deployments` record project files for harnesses
+   the CLI supports (`apm targets --json --all`), it runs `apm install --target`
+   with those harnesses.
+3. Otherwise, or if an MCP or LSP server is configured for a runtime outside
+   those harnesses, it runs `apm lock`, which resolves the updated manifest
+   without deploying anything.
+
+Each `apm install` passes `--no-frozen`. When the `CI` environment variable is
+set, APM otherwise verifies a committed lockfile as `apm install --frozen` does,
+which fails on the manifest Dependabot has just edited.
+
+A fresh checkout has none of the local deployment receipts APM keeps outside
+the repository, so `apm install` refuses every committed file of a package with
+a file edited since APM deployed it, and fails with one error per file. So when
+any committed deployed file no longer matches the digest the lockfile recorded,
+the update fails before `apm install` with a message naming only the edited
+files. The digests are compared the way APM computes them, with CRLF line
+endings in text files read as LF, so a checkout with CRLF line endings isn't
+mistaken for edited.
+
+When the repository commits its deployed files, the pull request carries the
+changes `apm install` made to them alongside `apm.yml` and `apm.lock.yaml`: the
+files the new version adds, changes and removes. Dependabot reads them from
+`git status`, limited to the paths the old or new lockfile records as deployed
+(`deployed_files`, `deployed_file_hashes` and the project's `deployments`), so
+other files APM writes, such as MCP configuration, are left out. Git doesn't
+report ignored files, so a repository that ignores its deployed files gets only
+`apm.yml` and `apm.lock.yaml`, as does any update that runs `apm lock`.
+
+The files APM writes are removed after each update. A grouped update keeps the
+files it returns as added, as it commits each update's changes before the next
+one runs, so the next update doesn't report them again. APM only re-resolves the
+entries whose manifest ref changed, so every other entry keeps its locked
+commit. A branch pin's ref doesn't change, so after `apm install` Dependabot
+moves it the way APM does, with `apm update --yes` for that package (and the
+install's `--target`), skipping the install when only branch pins are updated.
+The lockfile still names the commit the committed files were deployed from, so
+on a fresh checkout APM can match them against that commit's output before
+replacing them. With `apm lock`, the branch pin's lock entry is instead moved
+to the branch's new head commit (dropping its now stale `content_hash`) for APM
+to verify and re-hash. APM rewrites the whole file, so its
 `apm_version` also changes to the version of the CLI Dependabot runs. A missing
 lockfile is never created.
 
