@@ -161,6 +161,8 @@ internal static class SdkProjectDiscovery
         }
         commonArgs.Add("/p:TreatWarningsAsErrors=false");
         commonArgs.Add("/p:MSBuildTreatWarningsAsErrors=false");
+        // Allow discovery to restore an out-of-date lock file after a version has been written.
+        commonArgs.Add("/p:RestoreLockedMode=false");
 
         async Task<(int ExitCode, string Output, string Error)> RunMSBuildAsync(List<string> args)
         {
