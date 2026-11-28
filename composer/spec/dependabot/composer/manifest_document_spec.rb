@@ -74,6 +74,42 @@ RSpec.describe Dependabot::Composer::ManifestDocument do
     end
   end
 
+  describe "#platform_extensions" do
+    let(:data) do
+      {
+        "config" => {
+          "platform" => { "php" => "8.2.0", "ext-mongodb" => "2.4.0", "ext-intl" => false, "lib-icu" => "70.1" }
+        }
+      }
+    end
+
+    it "returns every configured ext-* entry, with nil for non-string values" do
+      expect(document.platform_extensions).to eq("ext-mongodb" => "2.4.0", "ext-intl" => nil)
+      expect(document.platform_extension_pinned?("ext-intl")).to be(true)
+      expect(document.platform_extension_pinned?("lib-icu")).to be(false)
+    end
+
+    it "only exposes string versions as constraints" do
+      expect(document.platform_extension_versions).to eq("ext-mongodb" => "2.4.0")
+    end
+
+    context "without a platform config" do
+      let(:data) { {} }
+
+      it { expect(document.platform_extensions).to eq({}) }
+    end
+
+    context "with a mixed-case extension name" do
+      let(:data) { { "config" => { "platform" => { "Ext-MongoDB" => "2.4.0" } } } }
+
+      it "matches it case-insensitively, like Composer" do
+        expect(document.platform_extensions).to eq("ext-mongodb" => "2.4.0")
+        expect(document.platform_extension_pinned?("ext-mongodb")).to be(true)
+        expect(document.platform_extension_pinned?("Ext-MongoDB")).to be(true)
+      end
+    end
+  end
+
   describe "#repositories" do
     let(:data) do
       {
