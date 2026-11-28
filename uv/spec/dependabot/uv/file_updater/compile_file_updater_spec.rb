@@ -766,6 +766,51 @@ RSpec.describe Dependabot::Uv::FileUpdater::CompileFileUpdater do
     end
   end
 
+  describe "updating an uncompiled requirement file with hashes" do
+    let(:updater) do
+      described_class.new(
+        dependency_files: [requirement_file],
+        dependencies: [dependency],
+        credentials: credentials,
+        index_urls: [index_url]
+      )
+    end
+    let(:index_url) { "https://registry.example.com/api/pypi/pypi-remote/simple" }
+    let(:requirement_file) do
+      Dependabot::DependencyFile.new(
+        name: "requirements-lock.txt",
+        content: fixture("requirements", "hashes_single.txt")
+      )
+    end
+    let(:dependency_name) { "flask-featureflags" }
+    let(:dependency_version) { "0.6" }
+    let(:dependency_previous_version) { "0.5" }
+    let(:dependency_requirements) do
+      [{ file: "requirements-lock.txt", requirement: "==0.6", groups: [], source: nil }]
+    end
+    let(:dependency_previous_requirements) do
+      [{ file: "requirements-lock.txt", requirement: "==0.5", groups: [], source: nil }]
+    end
+
+    before do
+      allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_return([{ "hash" => "abc123" }])
+    end
+
+    it "fetches the new hashes from the configured index" do
+      updated_files = updater.updated_dependency_files
+
+      expect(updated_files.map(&:name)).to eq(["requirements-lock.txt"])
+      expect(updated_files.first.content)
+        .to include("flask-featureflags==0.6").and include("--hash=sha256:abc123")
+      expect(Dependabot::SharedHelpers).to have_received(:run_helper_subprocess).with(
+        hash_including(
+          function: "get_dependency_hash",
+          args: ["flask-featureflags", "0.6", "sha256", index_url]
+        )
+      )
+    end
+  end
+
   describe "#package_hashes_for" do
     let(:name) { "package_name" }
     let(:version) { "1.0.0" }
