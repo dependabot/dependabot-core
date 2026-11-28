@@ -845,6 +845,13 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
 
             its([:requirement]) { is_expected.to eq("^1.3.0") }
 
+            context "when only a zero major version is given" do
+              let(:pyproject_req_string) { "^0" }
+              let(:latest_resolvable_version) { "0.5.0" }
+
+              its([:requirement]) { is_expected.to eq("^0") }
+            end
+
             context "when dealing with a development dependency" do
               let(:groups) { ["dev-dependencies"] }
 
