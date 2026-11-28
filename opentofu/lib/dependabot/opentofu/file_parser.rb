@@ -355,11 +355,34 @@ module Dependabot
           return OciSource.parse(bare_source, proxy_url: proxy_url)
         end
 
-        ModuleSource.parse(
-          bare_source,
-          default_registry: DEFAULT_REGISTRY,
-          archive_extensions: RegistryClient::ARCHIVE_EXTENSIONS,
-          proxy_url: proxy_url
+        share_registry_identifier_case(
+          ModuleSource.parse(
+            bare_source,
+            default_registry: DEFAULT_REGISTRY,
+            archive_extensions: RegistryClient::ARCHIVE_EXTENSIONS,
+            proxy_url: proxy_url
+          )
+        )
+      end
+
+      # Declarations of the same module that only differ in case must share one
+      # source, otherwise `Dependency#source_details` raises "Multiple sources!".
+      # The first declaration found decides the case that is used for all of them.
+      sig do
+        params(source: T.nilable(T.any(SourceVariant, ModuleSource::Interpolation)))
+          .returns(T.nilable(T.any(SourceVariant, ModuleSource::Interpolation)))
+      end
+      def share_registry_identifier_case(source)
+        return source unless source.is_a?(ModuleSource::Registry)
+
+        @module_identifiers ||= T.let({}, T.nilable(T::Hash[String, String]))
+        identifier = @module_identifiers[source.module_identifier.downcase] ||= source.module_identifier
+        return source if identifier == source.module_identifier
+
+        ModuleSource::Registry.new(
+          registry_hostname: source.registry_hostname,
+          module_identifier: identifier,
+          proxy_url: source.proxy_url
         )
       end
 
