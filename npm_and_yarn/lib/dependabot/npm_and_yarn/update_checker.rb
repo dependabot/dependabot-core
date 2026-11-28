@@ -525,7 +525,8 @@ module Dependabot
             ignored_versions: ignored_versions,
             latest_allowable_version: latest_version,
             repo_contents_path: repo_contents_path,
-            security_advisories: security_advisories
+            security_advisories: security_advisories,
+            update_cooldown: @selection_cooldown
           )
       end
 

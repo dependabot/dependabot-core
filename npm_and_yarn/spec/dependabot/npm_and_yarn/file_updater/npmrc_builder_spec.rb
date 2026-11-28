@@ -105,6 +105,21 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
           expect(npmrc_content).to eq("allow-git=${ALLOW_GIT}\n\nregistry=https://example.com\n")
         end
       end
+
+      context "when min-release-age uses environment substitution" do
+        let(:dependency_files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: ".npmrc",
+              content: "min-release-age=${MIN_AGE}\n//npm.fury.io/:_authToken=${TOKEN}\nregistry=https://example.com\n"
+            )
+          ]
+        end
+
+        it "keeps the release-age gate but still removes other environment variable use" do
+          expect(npmrc_content).to eq("min-release-age=${MIN_AGE}\n\nregistry=https://example.com\n")
+        end
+      end
     end
 
     context "with no private sources and some credentials" do
@@ -1517,6 +1532,32 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
               allow-git=none
               "allow-remote" = root
               allow-git=${ALLOW_GIT}
+            NPMRC
+        end
+      end
+
+      context "when credentials have scope and the committed .npmrc sets min-release-age" do
+        let(:dependency_files) do
+          [Dependabot::DependencyFile.new(name: ".npmrc", content: "min-release-age=7\nregistry=https://example.com\n")]
+        end
+
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "npm_registry",
+              "registry" => "npm.pkg.github.com",
+              "token" => "my_token",
+              "scope" => "@my-company"
+            }
+          )]
+        end
+
+        it "keeps the release-age gate in the generated .npmrc" do
+          expect(npmrc_content)
+            .to eq(<<~NPMRC.chomp)
+              @my-company:registry=https://npm.pkg.github.com
+              //npm.pkg.github.com/:_authToken=my_token
+              min-release-age=7
             NPMRC
         end
       end
