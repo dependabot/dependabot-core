@@ -58,7 +58,8 @@ module Dependabot
           LockfileUpdater.new(
             dependencies: dependencies,
             dependency_files: dependency_files,
-            credentials: credentials
+            credentials: credentials,
+            update_cooldown: T.cast(options[:update_cooldown], T.nilable(Dependabot::Package::ReleaseCooldownOptions))
           ).updated_lockfile_content,
           T.nilable(String)
         )

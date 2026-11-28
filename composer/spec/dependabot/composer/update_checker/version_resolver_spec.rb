@@ -416,4 +416,54 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       end
     end
   end
+
+  describe "the composer.json handed to the composer helper" do
+    subject(:policy) do
+      resolver.latest_resolvable_version
+      helper_composer_json.dig("config", "policy")
+    end
+
+    let(:project_name) { "exact_version" }
+    let(:dependency_name) { "monolog/monolog" }
+    let(:dependency_version) { "1.0.1" }
+    let(:string_req) { "1.0.1" }
+    let(:latest_allowable_version) { Gem::Version.new("1.22.1") }
+    let(:helper_composer_json) { {} }
+    let(:update_cooldown) { nil }
+
+    let(:resolver) do
+      described_class.new(
+        credentials: credentials,
+        dependency: dependency,
+        dependency_files: dependency_files,
+        latest_allowable_version: latest_allowable_version,
+        requirements_to_unlock: requirements_to_unlock,
+        update_cooldown: update_cooldown
+      )
+    end
+
+    before do
+      allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess) do
+        helper_composer_json.replace(JSON.parse(File.read("composer.json")))
+        "1.22.1"
+      end
+    end
+
+    context "with a cooldown" do
+      let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+
+      it "applies the cooldown to everything the resolver touches except the dependency being updated" do
+        expect(policy).to eq(
+          "cooldown" => {
+            "period" => "7 days",
+            "ignore" => { "monolog/monolog" => "Handled by Dependabot's cooldown settings" }
+          }
+        )
+      end
+    end
+
+    context "without a cooldown" do
+      it { is_expected.to be_nil }
+    end
+  end
 end

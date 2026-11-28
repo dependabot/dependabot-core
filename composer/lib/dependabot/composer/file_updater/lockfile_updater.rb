@@ -50,10 +50,12 @@ module Dependabot
           params(
             dependencies: T::Array[Dependabot::Dependency],
             dependency_files: T::Array[Dependabot::DependencyFile],
-            credentials: T::Array[Dependabot::Credential]
+            credentials: T::Array[Dependabot::Credential],
+            update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
-        def initialize(dependencies:, dependency_files:, credentials:)
+        def initialize(dependencies:, dependency_files:, credentials:, update_cooldown: nil)
+          @update_cooldown = update_cooldown
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
@@ -86,6 +88,9 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
+        sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
+        attr_reader :update_cooldown
 
         sig { returns(T::Hash[String, T::Array[String]]) }
         attr_reader :composer_platform_extensions
@@ -303,7 +308,7 @@ module Dependabot
           content = lock_dependencies_being_updated(content)
           content = lock_git_dependencies(content) if @lock_git_deps != false
           content = add_temporary_platform_extensions(content)
-          content
+          Helpers.with_cooldown_policy(content, update_cooldown, dependencies.map(&:name))
         end
 
         sig { params(content: String).returns(String) }

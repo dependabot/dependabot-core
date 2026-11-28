@@ -115,11 +115,20 @@ module Dependabot
 
           Release.new(
             version_string: DocumentValueParser.optional_string(fields["version"], "#{context}.version"),
-            released_at: parse_time(fields["time"], "#{context}.time"),
+            released_at: parse_released_at(fields, context),
             url: distribution_url(fields["dist"], "#{context}.dist")
           )
         end
         private_class_method :parse_release
+
+        # Same date Composer's cooldown policy uses; registries without it fall back to time.
+        sig { params(fields: DocumentValueParser::ObjectHash, context: String).returns(T.nilable(Time)) }
+        def self.parse_released_at(fields, context)
+          return parse_time(fields["published-time"], "#{context}.published-time") if fields["published-time"]
+
+          parse_time(fields["time"], "#{context}.time")
+        end
+        private_class_method :parse_released_at
 
         sig { params(value: Object, context: String).returns(T.nilable(Time)) }
         def self.parse_time(value, context)

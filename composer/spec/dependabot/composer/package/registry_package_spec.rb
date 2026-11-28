@@ -33,6 +33,21 @@ RSpec.describe Dependabot::Composer::Package::RegistryPackage do
     expect(package.releases.last).to have_attributes(version_string: "1.0.0", released_at: nil, url: nil)
   end
 
+  context "with a published-time" do
+    let(:entries) do
+      [
+        { "version" => "v2.0.0", "time" => "2024-01-02T03:04:05+00:00",
+          "published-time" => "2024-01-09T00:00:00+00:00" },
+        { "version" => "v1.0.0", "time" => "2024-01-01T00:00:00+00:00" }
+      ]
+    end
+
+    it "prefers it over time and falls back to time when it is absent" do
+      expect(package.releases.map(&:released_at))
+        .to eq([Time.iso8601("2024-01-09T00:00:00+00:00"), Time.iso8601("2024-01-01T00:00:00+00:00")])
+    end
+  end
+
   context "with a legacy map" do
     let(:data) do
       { "packages" => { package_name => { "arbitrary-key" => entries.first, "unrelated-key" => entries.last } } }

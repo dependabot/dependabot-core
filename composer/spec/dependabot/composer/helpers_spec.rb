@@ -287,6 +287,109 @@ RSpec.describe Dependabot::Composer::Helpers do
     end
   end
 
+  describe ".with_cooldown_policy" do
+    subject(:policy) do
+      JSON.parse(described_class.with_cooldown_policy(content, cooldown, ["Laravel/Tinker"])).dig("config", "policy")
+    end
+
+    let(:content) { { "require" => { "laravel/tinker" => "^3.0" } }.to_json }
+    let(:cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+
+    it "sets the period and ignores the dependency being updated" do
+      expect(policy).to eq(
+        "cooldown" => {
+          "period" => "7 days",
+          "ignore" => { "laravel/tinker" => "Handled by Dependabot's cooldown settings" }
+        }
+      )
+    end
+
+    context "with excluded dependencies" do
+      let(:cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7, exclude: ["symfony/*"])
+      end
+
+      it "ignores them as well" do
+        expect(policy.dig("cooldown", "ignore").keys).to contain_exactly("laravel/tinker", "symfony/*")
+      end
+    end
+
+    context "with existing config" do
+      let(:content) do
+        { "config" => { "platform" => { "php" => "8.2" }, "policy" => { "audit" => {} } } }.to_json
+      end
+
+      it "keeps the other settings" do
+        parsed = JSON.parse(described_class.with_cooldown_policy(content, cooldown, ["a/b"]))
+        expect(parsed["config"]["platform"]).to eq("php" => "8.2")
+        expect(parsed["config"]["policy"]).to include("audit" => {})
+        expect(parsed.dig("config", "policy", "cooldown", "period")).to eq("7 days")
+      end
+    end
+
+    context "with Composer repositories" do
+      let(:content) do
+        {
+          "repositories" => [
+            { "type" => "composer", "url" => "https://satis.example.test" },
+            { "type" => "composer", "url" => "https://strict.example.test", "require-published-time" => true },
+            { "type" => "vcs", "url" => "https://github.com/a/b" },
+            { "packagist.org" => false }
+          ]
+        }.to_json
+      end
+
+      it "lets them fall back to time unless the project says otherwise" do
+        repositories = JSON.parse(described_class.with_cooldown_policy(content, cooldown, ["a/b"]))["repositories"]
+        expect(repositories.map { |repository| repository["require-published-time"] }).to eq([false, true, nil, nil])
+      end
+
+      it "handles repositories declared as a map" do
+        map = { "repositories" => { "satis" => { "type" => "composer", "url" => "https://satis.example.test" } } }
+        parsed = JSON.parse(described_class.with_cooldown_policy(map.to_json, cooldown, ["a/b"]))
+        expect(parsed.dig("repositories", "satis", "require-published-time")).to be(false)
+        expect(parsed.dig("repositories", "packagist.org", "require-published-time")).to be(false)
+      end
+
+      it "configures the implicit packagist.org repository to fall back to time" do
+        parsed = JSON.parse(described_class.with_cooldown_policy({}.to_json, cooldown, ["a/b"]))
+        expect(parsed["repositories"]).to eq(
+          [
+            {
+              "type" => "composer",
+              "url" => "https://repo.packagist.org",
+              "require-published-time" => false
+            }
+          ]
+        )
+      end
+    end
+
+    context "when the project already configures a cooldown" do
+      let(:content) { { "config" => { "policy" => { "cooldown" => { "period" => "1 day" } } } }.to_json }
+
+      it "leaves the content untouched" do
+        expect(described_class.with_cooldown_policy(content, cooldown, ["a/b"])).to eq(content)
+      end
+    end
+
+    {
+      "without a cooldown" => nil,
+      "with a zero day cooldown" =>
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 0, semver_patch_days: 3),
+      "with an include list" =>
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7, include: ["a/*"])
+    }.each do |description, options|
+      context description do
+        let(:cooldown) { options }
+
+        it "leaves the content untouched" do
+          expect(described_class.with_cooldown_policy(content, cooldown, ["a/b"])).to eq(content)
+        end
+      end
+    end
+  end
+
   describe ".out_of_memory_error?" do
     it "detects PHP's memory limit error" do
       message = "Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes)"
